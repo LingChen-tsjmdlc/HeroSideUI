@@ -1,0 +1,40 @@
+repos:
+  # ============================================================
+  # 本地钩子
+  # ============================================================
+  - repo: local
+    hooks:
+      # 版本号自动递增（commit-msg 阶段）
+      - id: auto-version-bump
+        name: Auto Version Bump | 版本号自动递增
+        entry: python .hooks/commit_msg_bump.py
+        language: system
+        stages: [commit-msg]
+        always_run: true
+        pass_filenames: false
+
+  # ============================================================
+  # 标准钩子
+  # ============================================================
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v5.0.0
+    hooks:
+      # 尾部空白清理
+      - id: trailing-whitespace
+        name: Trailing Whitespace | 清理尾部空白
+      # 文件末尾换行
+      - id: end-of-file-fixer
+        name: End of File | 文件末尾换行修复
+      # YAML 语法检查
+      - id: check-yaml
+        name: Check YAML | YAML 语法检查
+      # TOML 语法检查
+      - id: check-toml
+        name: Check TOML | TOML 语法检查
+      # 大文件检查
+      - id: check-added-large-files
+        name: Large Files | 大文件检查
+        args: ["--maxkb=500"]
+      # 合并冲突标记检查
+      - id: check-merge-conflict
+        name: Merge Conflict | 合并冲突检查
