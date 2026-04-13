@@ -2,6 +2,6 @@
 from .colors import HEROUI_COLORS
 from .radius import RADIUS
 from .font import FONT_FAMILY
-from .sizes import BUTTON_SIZES
+from .sizes import BUTTON_SIZES, ACCORDION_SIZES
 
-__all__ = ["HEROUI_COLORS", "RADIUS", "FONT_FAMILY", "BUTTON_SIZES"]
+__all__ = ["HEROUI_COLORS", "RADIUS", "FONT_FAMILY", "BUTTON_SIZES", "ACCORDION_SIZES"]

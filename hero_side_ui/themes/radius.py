@@ -13,6 +13,7 @@ RADIUS = {
 }
 
 # 兼容长名称
+RADIUS["no"] = RADIUS["none"]
 RADIUS["small"] = RADIUS["sm"]
 RADIUS["medium"] = RADIUS["md"]
 RADIUS["large"] = RADIUS["lg"]
