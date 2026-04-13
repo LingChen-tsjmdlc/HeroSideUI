@@ -152,6 +152,41 @@ HeroSideUI/
 
 ---
 
+## 测试
+
+使用 [pytest](https://docs.pytest.org/) + [pytest-qt](https://pytest-qt.readthedocs.io/) 进行组件测试。
+
+```bash
+# 运行全部测试
+uv run python -m pytest tests/ -v
+
+# 只测某个组件
+uv run python -m pytest tests/test_button.py -v
+uv run python -m pytest tests/test_accordion.py -v
+```
+
+测试覆盖构造参数、颜色/变体/尺寸遍历、动态 API、展开收起逻辑、信号触发等。视觉效果和动画通过 `examples/` 目录的示例人工验证。
+
+---
+
+## Git 钩子
+
+使用 [pre-commit](https://pre-commit.com/) 管理 Git 钩子。首次 clone 后安装：
+
+```bash
+uv run pre-commit install --hook-type commit-msg --hook-type pre-commit
+```
+
+内置钩子：
+- **版本号自动递增**（commit-msg 阶段）
+  - 默认提交 → `z+1`（0.0.1 → 0.0.2）
+  - 消息末尾加 `(y)` → `y+1`（0.0.2 → 0.1.0）
+  - 消息末尾加 `(x)` → `x+1`（0.1.0 → 1.0.0）
+  - 支持中英文括号：`(y)` `（y）` `(Y)` `（Y）`
+- **尾部空白清理** / **文件末尾换行** / **YAML/TOML 检查** / **大文件检查** / **合并冲突检查**
+
+---
+
 ## 鸣谢
 
 - [HeroUI](https://heroui.com/) (原 NextUI) — 本项目的设计灵感和样式规范来源，优秀的 React 组件库

@@ -1,6 +1,6 @@
 [project]
 name = "herosideui"
-version = "0.0.1"
+version = "0.0.2"
 description = "PySide6 component library inspired by HeroUI v2 design system"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
@@ -42,3 +42,10 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["hero_side_ui"]
+
+[dependency-groups]
+dev = [
+    "pre-commit>=4.5.1",
+    "pytest>=9.0.3",
+    "pytest-qt>=4.5.0",
+]
