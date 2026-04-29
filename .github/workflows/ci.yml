@@ -13,6 +13,9 @@ jobs:
   test:
     name: Test | 测试 (${{ matrix.os }}, py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
+    # Windows 上 PySide6 + pytest-qt 存在已知的 access violation（见 tests/conftest.py 注释），
+    # 暂时不阻断 CI；Ubuntu/macOS 必须通过。
+    continue-on-error: ${{ matrix.os == 'windows-latest' }}
     strategy:
       matrix:
         os: [ubuntu-latest, windows-latest, macos-latest]
