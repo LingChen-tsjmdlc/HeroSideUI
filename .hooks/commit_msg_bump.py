@@ -100,8 +100,25 @@ def main():
             f'__version__ = "{new_version}"',
         )
 
+    # 同步 uv.lock：pyproject.toml 的 version 变了，lock 里的 herosideui
+    # 版本也得跟上，否则会在后续 commit 里累积落后。
+    try:
+        subprocess.run(
+            ["uv", "lock"],
+            cwd=root,
+            env={**os.environ, _ENV_GUARD: "1"},
+            check=False,
+            stdout=subprocess.DEVNULL,
+            stderr=subprocess.DEVNULL,
+        )
+    except FileNotFoundError:
+        pass  # 没装 uv 就跳过，不阻断提交
+
     # 将修改的文件加入暂存区并 amend 到当前 commit
-    subprocess.run(["git", "add", "pyproject.toml", "hero_side_ui/__init__.py"], cwd=root)
+    subprocess.run(
+        ["git", "add", "pyproject.toml", "hero_side_ui/__init__.py", "uv.lock"],
+        cwd=root,
+    )
     env = {**os.environ, _ENV_GUARD: "1"}
     subprocess.run(
         ["git", "commit", "--amend", "--no-edit", "--no-verify"],
