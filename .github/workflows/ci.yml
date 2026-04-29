@@ -29,6 +29,10 @@ jobs:
       - name: Setup Python | 安装 Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
+      - name: Install Qt system deps | 安装 Qt 系统依赖
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1-mesa-glx libopengl0
+
       - name: Install deps | 安装依赖
         run: uv sync
 
@@ -80,20 +84,22 @@ jobs:
       - name: Setup Python | 安装 Python
         run: uv python install 3.11
 
+      - name: Install Qt system deps | 安装 Qt 系统依赖
+        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1-mesa-glx libopengl0
+
       - name: Install deps | 安装依赖
         run: uv sync
 
       - name: Import all components | 导入全部组件
         uses: coactions/setup-xvfb@v1
         with:
-          run: |
-            uv run python -c "
-            from hero_side_ui import Button, Accordion, AccordionItem
-            from hero_side_ui.themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, BUTTON_SIZES, ACCORDION_SIZES
-            from hero_side_ui.utils import hex_to_rgba, load_svg_icon
-            from hero_side_ui.animation import RippleOverlay, PressScaleEffect, CollapseAnimation
-            print('所有组件导入成功 ✅')
-            "
+          run: >-
+            uv run python -c
+            "from hero_side_ui import Button, Accordion, AccordionItem;
+            from hero_side_ui.themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, BUTTON_SIZES, ACCORDION_SIZES;
+            from hero_side_ui.utils import hex_to_rgba, load_svg_icon;
+            from hero_side_ui.animation import RippleOverlay, PressScaleEffect, CollapseAnimation;
+            print('All imports OK')"
 
   # ============================================================
   # 构建检查：确保能正常打包

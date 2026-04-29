@@ -31,27 +31,27 @@ accordion.add_item(AccordionItem(
 
 ## Accordion（容器）参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `variant` | `str` | `"light"` | 外观变体，见 [variant 可选值](#variant-可选值) |
-| `allow_multiple` | `bool` | `False` | 是否允许同时展开多项 |
-| `size` | `str` | `"md"` | 尺寸 (`sm` / `md` / `lg`) |
-| `radius` | `str` | `"md"` | 圆角 (`none` / `sm` / `md` / `lg`)，仅 shadow/bordered/splitted 生效，light 固定无圆角 |
-| `theme` | `str` | `"light"` | 主题 (`light` / `dark`) |
-| `show_divider` | `bool` | `True` | 是否显示子项之间的分割线（最后一项不显示） |
+| 参数             | 类型   | 默认值    | 说明                                                                                   |
+| ---------------- | ------ | --------- | -------------------------------------------------------------------------------------- |
+| `variant`        | `str`  | `"light"` | 外观变体，见 [variant 可选值](#variant-可选值)                                         |
+| `allow_multiple` | `bool` | `False`   | 是否允许同时展开多项                                                                   |
+| `size`           | `str`  | `"md"`    | 尺寸 (`sm` / `md` / `lg`)                                                              |
+| `radius`         | `str`  | `"md"`    | 圆角 (`none` / `sm` / `md` / `lg`)，仅 shadow/bordered/splitted 生效，light 固定无圆角 |
+| `theme`          | `str`  | `"light"` | 主题 (`light` / `dark`)                                                                |
+| `show_divider`   | `bool` | `True`    | 是否显示子项之间的分割线（最后一项不显示）                                             |
 
 ## AccordionItem（子项）参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `title` | `str` | `""` | 标题文字 |
-| `subtitle` | `str` | `""` | 副标题（可选，显示在标题下方） |
-| `content_widget` | `QWidget \| None` | `None` | 折叠内容区的自定义控件 |
-| `content_text` | `str` | `""` | 简单文本内容（与 `content_widget` 二选一） |
-| `expanded` | `bool` | `False` | 初始是否展开 |
-| `is_disabled` | `bool` | `False` | 禁用状态 |
-| `start_icon` | `str \| None` | `None` | 标题左侧图标，内置图标名如 `"chevron-right"` 或 SVG 文件路径 |
-| `end_icon` | `str \| None` | `None` | 替换右侧指示器箭头，默认 `chevron-right`，传入其他图标名或 SVG 路径可自定义 |
+| 参数             | 类型              | 默认值  | 说明                                                                        |
+| ---------------- | ----------------- | ------- | --------------------------------------------------------------------------- |
+| `title`          | `str`             | `""`    | 标题文字                                                                    |
+| `subtitle`       | `str`             | `""`    | 副标题（可选，显示在标题下方）                                              |
+| `content_widget` | `QWidget \| None` | `None`  | 折叠内容区的自定义控件                                                      |
+| `content_text`   | `str`             | `""`    | 简单文本内容（与 `content_widget` 二选一）                                  |
+| `expanded`       | `bool`            | `False` | 初始是否展开                                                                |
+| `is_disabled`    | `bool`            | `False` | 禁用状态                                                                    |
+| `start_icon`     | `str \| None`     | `None`  | 标题左侧图标，内置图标名如 `"chevron-right"` 或 SVG 文件路径                |
+| `end_icon`       | `str \| None`     | `None`  | 替换右侧指示器箭头，默认 `chevron-right`，传入其他图标名或 SVG 路径可自定义 |
 
 ---
 
@@ -59,12 +59,12 @@ accordion.add_item(AccordionItem(
 
 4 种外观变体，对标 HeroUI v2：
 
-| 值 | 说明 | 容器外观 | 子项之间 |
-|----|------|----------|----------|
-| `light` | 极简（默认） | 透明，无边框无圆角 | 分割线分隔 |
-| `shadow` | 卡片阴影 | 白色背景 + 圆角（像一张 Card 垫底） | 分割线分隔 |
-| `bordered` | 边框 | 透明背景 + 边框 + 圆角 | 分割线分隔 |
-| `splitted` | 独立卡片 | 透明容器 | 每项独立 Card（白底+圆角），间距分隔，无分割线 |
+| 值         | 说明         | 容器外观                            | 子项之间                                       |
+| ---------- | ------------ | ----------------------------------- | ---------------------------------------------- |
+| `light`    | 极简（默认） | 透明，无边框无圆角                  | 分割线分隔                                     |
+| `shadow`   | 卡片阴影     | 白色背景 + 圆角（像一张 Card 垫底） | 分割线分隔                                     |
+| `bordered` | 边框         | 透明背景 + 边框 + 圆角              | 分割线分隔                                     |
+| `splitted` | 独立卡片     | 透明容器                            | 每项独立 Card（白底+圆角），间距分隔，无分割线 |
 
 ---
 
@@ -72,22 +72,22 @@ accordion.add_item(AccordionItem(
 
 通过 `radius` 参数控制，仅 `shadow`/`bordered`/`splitted` 变体生效，`light` 始终无圆角。
 
-| 值 | 像素 |
-|----|------|
-| `none` | 0px |
-| `sm` | 4px |
-| `md` | 8px（默认） |
-| `lg` | 14px |
+| 值     | 像素        |
+| ------ | ----------- |
+| `none` | 0px         |
+| `sm`   | 4px         |
+| `md`   | 8px（默认） |
+| `lg`   | 14px        |
 
 ---
 
 ## 尺寸
 
-| 值 | 标题字号 | 内容字号 |
-|----|----------|----------|
-| `sm` | 14px | 13px |
-| `md` | 16px | 14px |
-| `lg` | 18px | 16px |
+| 值   | 标题字号 | 内容字号 |
+| ---- | -------- | -------- |
+| `sm` | 14px     | 13px     |
+| `md` | 16px     | 14px     |
+| `lg` | 18px     | 16px     |
 
 ---
 
@@ -126,8 +126,8 @@ AccordionItem(title="自定义箭头", end_icon="C:/project/icons/plus.svg")
 
 ## 信号
 
-| 信号 | 参数 | 说明 |
-|------|------|------|
+| 信号                             | 参数   | 说明                    |
+| -------------------------------- | ------ | ----------------------- |
 | `AccordionItem.expanded_changed` | `bool` | 展开/收起状态变化时触发 |
 
 ---
