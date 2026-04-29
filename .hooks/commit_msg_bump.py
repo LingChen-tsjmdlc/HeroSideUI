@@ -1,13 +1,8 @@
 #!/usr/bin/env python3
 """
-Git pre-commit 钩子：根据暂存的 commit message 自动递增版本号
+Git post-commit 钩子：根据提交消息自动递增版本号
 
-由于 pre-commit 阶段尚无 commit message 文件，此脚本改为在 commit
-完成后通过 post-commit 钩子运行。
-
----
-
-实际使用方式：作为 post-commit hook 调用（无参数）。
+作为 post-commit hook 调用（无参数）。
 脚本会读取最新 commit 的 message，判断 bump 类型，更新版本号文件，
 然后用 --amend 将变更追加到刚才的 commit 中。
 
