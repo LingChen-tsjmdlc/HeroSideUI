@@ -27,18 +27,18 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 ## 构造参数
 
-| 参数 | 类型 | 默认值 | 说明 |
-|------|------|--------|------|
-| `text` | `str` | `""` | 按钮文字 |
-| `color` | `str` | `"primary"` | 颜色主题，见下方 [color 可选值](#color-可选值) |
-| `variant` | `str` | `"solid"` | 样式变体，见下方 [variant 可选值](#variant-可选值) |
-| `size` | `str` | `"md"` | 尺寸，见下方 [size 可选值](#size-可选值) |
-| `radius` | `str \| None` | `None` | 圆角，`None` 时跟随尺寸默认值。见 [radius 可选值](#radius-可选值) |
-| `is_disabled` | `bool` | `False` | 禁用状态，禁用后样式变灰且不响应交互 |
-| `full_width` | `bool` | `False` | 是否撑满父容器宽度（`QSizePolicy.Expanding`） |
-| `theme` | `str` | `"light"` | 主题模式：`"light"` 亮色 / `"dark"` 暗色 |
-| `parent` | `QObject \| None` | `None` | Qt 父对象 |
-| `disable_ripple` | `bool` | `False` | 通过 `**kwargs` 传入，设为 `True` 关闭水波纹效果 |
+| 参数             | 类型              | 默认值      | 说明                                                              |
+| ---------------- | ----------------- | ----------- | ----------------------------------------------------------------- |
+| `text`           | `str`             | `""`        | 按钮文字                                                          |
+| `color`          | `str`             | `"primary"` | 颜色主题，见下方 [color 可选值](#color-可选值)                    |
+| `variant`        | `str`             | `"solid"`   | 样式变体，见下方 [variant 可选值](#variant-可选值)                |
+| `size`           | `str`             | `"md"`      | 尺寸，见下方 [size 可选值](#size-可选值)                          |
+| `radius`         | `str \| None`     | `None`      | 圆角，`None` 时跟随尺寸默认值。见 [radius 可选值](#radius-可选值) |
+| `is_disabled`    | `bool`            | `False`     | 禁用状态，禁用后样式变灰且不响应交互                              |
+| `full_width`     | `bool`            | `False`     | 是否撑满父容器宽度（`QSizePolicy.Expanding`）                     |
+| `theme`          | `str`             | `"light"`   | 主题模式：`"light"` 亮色 / `"dark"` 暗色                          |
+| `parent`         | `QObject \| None` | `None`      | Qt 父对象                                                         |
+| `disable_ripple` | `bool`            | `False`     | 通过 `**kwargs` 传入，设为 `True` 关闭水波纹效果                  |
 
 ---
 
@@ -46,14 +46,14 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 6 种语义颜色，每种颜色有 50-900 共 10 个色阶（来自 HeroUI v2 官方色板）。
 
-| 值 | 色系 | 说明 | 亮色 solid 示例色 |
-|----|------|------|------------------|
-| `default` | 灰色 (zinc) | 中性色，适合次要操作 | `#71717a` |
-| `primary` | 蓝色 (blue) | 主色调，适合主要操作 | `#006FEE` |
-| `secondary` | 紫色 (purple) | 辅助色 | `#7828c8` |
-| `success` | 绿色 (green) | 成功/确认 | `#17c964` |
-| `warning` | 黄色 (yellow) | 警告（文字为黑色） | `#f5a524` |
-| `danger` | 红色 (red) | 危险/删除 | `#f31260` |
+| 值          | 色系          | 说明                 | 亮色 solid 示例色 |
+| ----------- | ------------- | -------------------- | ----------------- |
+| `default`   | 灰色 (zinc)   | 中性色，适合次要操作 | `#71717a`         |
+| `primary`   | 蓝色 (blue)   | 主色调，适合主要操作 | `#006FEE`         |
+| `secondary` | 紫色 (purple) | 辅助色               | `#7828c8`         |
+| `success`   | 绿色 (green)  | 成功/确认            | `#17c964`         |
+| `warning`   | 黄色 (yellow) | 警告（文字为黑色）   | `#f5a524`         |
+| `danger`    | 红色 (red)    | 危险/删除            | `#f31260`         |
 
 > **暗色模式差异**: `default` 颜色在暗色模式下 solid 底色更深（`#3f3f46`），文字为中灰色而非纯白。
 
@@ -63,18 +63,19 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 6 种样式变体，控制按钮的填充、边框、背景透明度。
 
-| 值 | 说明 | 亮色表现 | 暗色差异 |
-|----|------|----------|----------|
-| `solid` | 实心填充 | 主色底 + 白字 | 无变化 |
-| `bordered` | 边框描边，背景透明 | 主色边框 + 主色字 | 文字更亮(300色阶) |
-| `flat` | 半透明背景填充 | 主色15%透明度底 | 文字更亮，背景20%透明度 |
-| `light` | 全透明，悬停显色 | 透明底 + 主色字 | 文字更亮 |
-| `faded` | 灰底 + 灰边框 | 浅灰底(#f4f4f5) | 深灰底(#27272a) + 深灰边框 |
-| `ghost` | 边框描边，悬停时反转填充 | 透明底 → hover 填充 | 文字更亮 |
+| 值         | 说明                     | 亮色表现            | 暗色差异                   |
+| ---------- | ------------------------ | ------------------- | -------------------------- |
+| `solid`    | 实心填充                 | 主色底 + 白字       | 无变化                     |
+| `bordered` | 边框描边，背景透明       | 主色边框 + 主色字   | 文字更亮(300色阶)          |
+| `flat`     | 半透明背景填充           | 主色15%透明度底     | 文字更亮，背景20%透明度    |
+| `light`    | 全透明，悬停显色         | 透明底 + 主色字     | 文字更亮                   |
+| `faded`    | 灰底 + 灰边框            | 浅灰底(#f4f4f5)     | 深灰底(#27272a) + 深灰边框 |
+| `ghost`    | 边框描边，悬停时反转填充 | 透明底 → hover 填充 | 文字更亮                   |
 
 ### 悬停 (hover) 行为
 
 所有变体在 hover 时都有视觉反馈：
+
 - `solid`: 底色加深一档 (500→600)
 - `bordered`/`flat`: 背景透明度增加
 - `light`: 出现淡色背景
@@ -87,11 +88,11 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 3 种尺寸，同时兼容长名称（`small`/`medium`/`large`）。
 
-| 值 | 别名 | 字号 | 字重 | 内边距 | 最小宽度 |
-|----|------|------|------|--------|----------|
-| `sm` | `small` | 13px | 500 | 6px 12px | 36px |
-| `md` | `medium` | 16px | 500 | 10px 16px | 52px |
-| `lg` | `large` | 19px | 600 | 14px 20px | 66px |
+| 值   | 别名     | 字号 | 字重 | 内边距    | 最小宽度 |
+| ---- | -------- | ---- | ---- | --------- | -------- |
+| `sm` | `small`  | 13px | 500  | 6px 12px  | 36px     |
+| `md` | `medium` | 16px | 500  | 10px 16px | 52px     |
+| `lg` | `large`  | 19px | 600  | 14px 20px | 66px     |
 
 > 每种尺寸有自己的默认圆角：sm→sm(4px), md→md(8px), lg→lg(14px)。
 
@@ -101,13 +102,13 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 5 种圆角等级。不设置 `radius` 参数时跟随 `size` 的默认圆角。
 
-| 值 | 别名 | 像素 | 说明 |
-|----|------|------|------|
-| `none` | — | 0px | 直角 |
-| `sm` | `small` | 4px | 小圆角 |
-| `md` | `medium` | 8px | 中圆角（默认） |
-| `lg` | `large` | 14px | 大圆角 |
-| `full` | — | 动态 | 胶囊形（高度÷2），额外增加 8px 水平内边距 |
+| 值     | 别名     | 像素 | 说明                                      |
+| ------ | -------- | ---- | ----------------------------------------- |
+| `none` | —        | 0px  | 直角                                      |
+| `sm`   | `small`  | 4px  | 小圆角                                    |
+| `md`   | `medium` | 8px  | 中圆角（默认）                            |
+| `lg`   | `large`  | 14px | 大圆角                                    |
+| `full` | —        | 动态 | 胶囊形（高度÷2），额外增加 8px 水平内边距 |
 
 ---
 
@@ -124,6 +125,7 @@ btn_dark = Button("Dark", color="primary", variant="flat", theme="dark")
 ```
 
 暗色模式下的主要差异：
+
 - **文字颜色**: 使用更浅的色阶 (300/200)，确保在深色背景上可读
 - **flat/light 背景**: 透明度稍高 (0.2 vs 0.15)
 - **faded**: 灰底从浅灰改为深灰
@@ -167,13 +169,13 @@ btn.set_radius("full")        # 切换圆角
 btn.set_theme("dark")         # 切换主题
 ```
 
-| 方法 | 参数 | 说明 |
-|------|------|------|
-| `set_color(color)` | `str` | 切换颜色主题 |
-| `set_variant(variant)` | `str` | 切换样式变体 |
-| `set_size(size)` | `str` | 切换尺寸 |
-| `set_radius(radius)` | `str` | 切换圆角 |
-| `set_theme(theme)` | `str` | 切换亮/暗色主题 |
+| 方法                   | 参数  | 说明            |
+| ---------------------- | ----- | --------------- |
+| `set_color(color)`     | `str` | 切换颜色主题    |
+| `set_variant(variant)` | `str` | 切换样式变体    |
+| `set_size(size)`       | `str` | 切换尺寸        |
+| `set_radius(radius)`   | `str` | 切换圆角        |
+| `set_theme(theme)`     | `str` | 切换亮/暗色主题 |
 
 ---
 

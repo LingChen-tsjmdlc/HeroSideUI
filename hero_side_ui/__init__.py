@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.0.2"
+__version__ = "0.0.3"
 
 from .components import Button, Accordion, AccordionItem, Input
 

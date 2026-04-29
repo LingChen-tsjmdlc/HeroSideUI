@@ -133,11 +133,12 @@ HeroSideUI/
 
 各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录：
 
-| 组件                | 文档                                       | 状态    |
-| ------------------- | ------------------------------------------ | ------- |
-| Button 按钮         | [docs/button.md](docs/button.md)           | ✅ 完成 |
-| Accordion 手风琴    | [docs/accordion.md](docs/accordion.md)     | ✅ 完成 |
-| _更多组件开发中..._ |                                            |         |
+| 组件                | 文档                                   | 状态    |
+| ------------------- | -------------------------------------- | ------- |
+| Button 按钮         | [docs/button.md](docs/button.md)       | ✅ 完成 |
+| Accordion 手风琴    | [docs/accordion.md](docs/accordion.md) | ✅ 完成 |
+| Input 输入框        | [docs/input.md](docs/input.md)         | ✅ 完成 |
+| _更多组件开发中..._ |                                        |         |
 
 ---
 
@@ -178,6 +179,7 @@ uv run pre-commit install --hook-type commit-msg --hook-type pre-commit
 ```
 
 内置钩子：
+
 - **版本号自动递增**（commit-msg 阶段）
   - 默认提交 → `z+1`（0.0.1 → 0.0.2）
   - 消息末尾加 `(y)` → `y+1`（0.0.2 → 0.1.0）
