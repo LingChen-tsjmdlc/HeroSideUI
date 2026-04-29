@@ -2,16 +2,8 @@ repos:
   # ============================================================
   # 本地钩子
   # ============================================================
-  - repo: local
-    hooks:
-      # 版本号自动递增（commit-msg 阶段）
-      - id: auto-version-bump
-        name: Auto Version Bump | 版本号自动递增
-        entry: python .hooks/commit_msg_bump.py
-        language: system
-        stages: [commit-msg]
-        always_run: true
-        pass_filenames: false
+  # 注意: 版本号自动递增已移至 .git/hooks/post-commit，
+  # 不再通过 pre-commit 框架管理（post-commit 阶段 + amend 方式）。
 
   # ============================================================
   # 标准钩子

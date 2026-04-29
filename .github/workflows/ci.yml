@@ -2,9 +2,12 @@ name: CI
 
 on:
   push:
-    branches: [main]
+    branches: [main, ci/test-pipeline]
   pull_request:
     branches: [main]
+
+env:
+  QT_QPA_PLATFORM: offscreen
 
 jobs:
   # ============================================================
@@ -29,9 +32,11 @@ jobs:
       - name: Setup Python | 安装 Python ${{ matrix.python-version }}
         run: uv python install ${{ matrix.python-version }}
 
-      - name: Install Qt system deps | 安装 Qt 系统依赖
+      - name: Install Qt system deps | 安装 Qt 系统依赖 (Linux)
         if: runner.os == 'Linux'
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1-mesa-glx libopengl0
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libopengl0 libxkbcommon0 libdbus-1-3
 
       - name: Install deps | 安装依赖
         run: uv sync
@@ -39,10 +44,15 @@ jobs:
       - name: Install test deps | 安装测试依赖
         run: uv add --dev pytest pytest-qt
 
-      - name: Run tests | 运行测试
+      - name: Run tests (Linux) | 运行测试 (Linux)
+        if: runner.os == 'Linux'
         uses: coactions/setup-xvfb@v1
         with:
           run: uv run python -m pytest tests/ -v --tb=short
+
+      - name: Run tests (non-Linux) | 运行测试 (非 Linux)
+        if: runner.os != 'Linux'
+        run: uv run python -m pytest tests/ -v --tb=short
 
   # ============================================================
   # 语法检查
@@ -85,7 +95,9 @@ jobs:
         run: uv python install 3.11
 
       - name: Install Qt system deps | 安装 Qt 系统依赖
-        run: sudo apt-get update && sudo apt-get install -y libegl1 libgl1-mesa-glx libopengl0
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y libegl1 libgl1 libopengl0 libxkbcommon0 libdbus-1-3
 
       - name: Install deps | 安装依赖
         run: uv sync
