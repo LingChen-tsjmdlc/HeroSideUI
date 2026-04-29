@@ -1,6 +1,6 @@
 [project]
 name = "herosideui"
-version = "0.0.10"
+version = "0.0.11"
 description = "PySide6 component library inspired by HeroUI v2 design system"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"

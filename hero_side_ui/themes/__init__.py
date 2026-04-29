@@ -2,7 +2,7 @@
 from .colors import HEROUI_COLORS
 from .radius import RADIUS
 from .font import FONT_FAMILY
-from .sizes import BUTTON_SIZES, ACCORDION_SIZES, INPUT_SIZES
+from .sizes import BUTTON_SIZES, ACCORDION_SIZES, INPUT_SIZES, DIVIDER_SIZES, CARD_SHADOWS
 
 __all__ = [
     "HEROUI_COLORS",
@@ -11,4 +11,6 @@ __all__ = [
     "BUTTON_SIZES",
     "ACCORDION_SIZES",
     "INPUT_SIZES",
+    "DIVIDER_SIZES",
+    "CARD_SHADOWS",
 ]
