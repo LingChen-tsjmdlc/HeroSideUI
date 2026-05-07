@@ -14,6 +14,7 @@ from .input import INPUT_SIZES
 from .divider import DIVIDER_SIZES
 from .card import CARD_SHADOWS
 from .checkbox import CHECKBOX_SIZES
+from .progress import PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES
 
 __all__ = [
     "BUTTON_SIZES",
@@ -22,4 +23,6 @@ __all__ = [
     "DIVIDER_SIZES",
     "CARD_SHADOWS",
     "CHECKBOX_SIZES",
+    "PROGRESS_SIZES",
+    "CIRCULAR_PROGRESS_SIZES",
 ]
