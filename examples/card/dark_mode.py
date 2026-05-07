@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont, QColor, QPalette, QLinearGradient, QPainter, QBrush
 
-from hero_side_ui import Card, CardHeader, CardBody, CardFooter, Divider, Button, Input
+from hero_side_ui import Card, CardHeader, CardBody, CardFooter, Divider, Button, Input, Checkbox
 
 
 def make_card(title: str, body_text: str, footer_text: str = "", **card_kwargs):
@@ -259,12 +259,11 @@ def main():
 
     extras_row = QHBoxLayout()
     extras_row.setContentsMargins(0, 2, 0, 0)
-    remember_lbl = QLabel("Remember me")
-    remember_lbl.setStyleSheet("color: #d4d4d8; font-size: 13px;")
+    remember_cb = Checkbox("Remember me", color="primary", size="sm", theme="dark")
     forgot_btn = Button(
         "Forgot password?", color="primary", variant="light", size="sm", theme="dark"
     )
-    extras_row.addWidget(remember_lbl)
+    extras_row.addWidget(remember_cb)
     extras_row.addStretch()
     extras_row.addWidget(forgot_btn)
     body.layout().addLayout(extras_row)
@@ -308,6 +307,107 @@ def main():
     signup_btn.clicked.connect(lambda: print("[Link/dark] Sign up clicked"))
 
     layout.addWidget(btn_card)
+
+    # ---- Todo List Card (Checkbox 展示) ----
+    section4b = QLabel("Card with Checkbox List (Todo)")
+    section4b.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+    section4b.setStyleSheet("color: #d4d4d8; margin-top: 8px;")
+    layout.addWidget(section4b)
+
+    todo_card = Card(shadow="sm", radius="lg", theme="dark")
+    todo_card.setFixedWidth(360)
+
+    todo_header = CardHeader()
+    todo_header_col = QVBoxLayout()
+    todo_header_col.setContentsMargins(0, 0, 0, 0)
+    todo_header_col.setSpacing(2)
+    todo_title = QLabel("Today's Tasks")
+    todo_title.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+    todo_title.setStyleSheet("color: #f4f4f5;")
+    todo_subtitle = QLabel("Check items off as you complete them")
+    todo_subtitle.setStyleSheet("color: #a1a1aa; font-size: 12px;")
+    todo_header_col.addWidget(todo_title)
+    todo_header_col.addWidget(todo_subtitle)
+    todo_header.layout().addLayout(todo_header_col)
+    todo_card.add_header(todo_header)
+
+    todo_card.add_divider()
+
+    todo_body = CardBody()
+    todo_body.layout().setSpacing(8)
+    todo_body.layout().addWidget(
+        Checkbox("Buy groceries", is_selected=True, line_through=True,
+                 color="success", theme="dark")
+    )
+    todo_body.layout().addWidget(
+        Checkbox("Finish HeroSideUI checkbox", line_through=True,
+                 color="primary", theme="dark")
+    )
+    todo_body.layout().addWidget(
+        Checkbox("Read a book for 30 minutes", line_through=True,
+                 color="secondary", theme="dark")
+    )
+    todo_body.layout().addWidget(
+        Checkbox("Go to the gym", line_through=True,
+                 color="warning", theme="dark")
+    )
+    todo_body.layout().addWidget(
+        Checkbox("Reply to emails", is_selected=True, line_through=True,
+                 color="danger", theme="dark")
+    )
+    todo_card.add_body(todo_body)
+
+    todo_card.add_divider()
+
+    todo_footer = CardFooter()
+    todo_hint = QLabel("Tip: click any item to toggle.")
+    todo_hint.setStyleSheet("color: #71717a; font-size: 12px;")
+    todo_footer.layout().addWidget(todo_hint)
+    todo_footer.layout().addStretch()
+    clear_btn = Button("Clear done", color="danger", variant="light", size="sm", theme="dark")
+    todo_footer.layout().addWidget(clear_btn)
+    todo_card.add_footer(todo_footer)
+
+    layout.addWidget(todo_card)
+
+    # ---- Notification Preferences Card (indeterminate 示例) ----
+    section4c = QLabel("Card with indeterminate + CheckboxGroup-like layout")
+    section4c.setFont(QFont("Segoe UI", 16, QFont.Weight.Bold))
+    section4c.setStyleSheet("color: #d4d4d8; margin-top: 8px;")
+    layout.addWidget(section4c)
+
+    prefs_card = Card(shadow="sm", radius="lg", theme="dark")
+    prefs_card.setFixedWidth(360)
+
+    prefs_header = CardHeader()
+    prefs_title = QLabel("Notification preferences")
+    prefs_title.setFont(QFont("Segoe UI", 14, QFont.Weight.Bold))
+    prefs_title.setStyleSheet("color: #f4f4f5;")
+    prefs_header.layout().addWidget(prefs_title)
+    prefs_card.add_header(prefs_header)
+    prefs_card.add_divider()
+
+    prefs_body = CardBody()
+    prefs_body.layout().setSpacing(8)
+    all_cb = Checkbox("Select all (indeterminate)", is_indeterminate=True,
+                      color="primary", theme="dark")
+    prefs_body.layout().addWidget(all_cb)
+    prefs_body.layout().addWidget(Divider(theme="dark"))
+    prefs_body.layout().addWidget(
+        Checkbox("Email", is_selected=True, color="primary", size="sm", theme="dark")
+    )
+    prefs_body.layout().addWidget(
+        Checkbox("SMS", color="primary", size="sm", theme="dark")
+    )
+    prefs_body.layout().addWidget(
+        Checkbox("Push (mobile)", is_selected=True, color="primary", size="sm", theme="dark")
+    )
+    prefs_body.layout().addWidget(
+        Checkbox("Slack", color="primary", size="sm", theme="dark")
+    )
+    prefs_card.add_body(prefs_body)
+
+    layout.addWidget(prefs_card)
 
     # ---- Blurred Card (带渐变背景展示磨砂玻璃效果) ----
     section5 = QLabel("Blurred Card")
