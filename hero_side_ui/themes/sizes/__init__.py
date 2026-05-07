@@ -13,6 +13,7 @@ from .accordion import ACCORDION_SIZES
 from .input import INPUT_SIZES
 from .divider import DIVIDER_SIZES
 from .card import CARD_SHADOWS
+from .checkbox import CHECKBOX_SIZES
 
 __all__ = [
     "BUTTON_SIZES",
@@ -20,4 +21,5 @@ __all__ = [
     "INPUT_SIZES",
     "DIVIDER_SIZES",
     "CARD_SHADOWS",
+    "CHECKBOX_SIZES",
 ]
