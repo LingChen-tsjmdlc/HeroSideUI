@@ -53,6 +53,9 @@ from ..themes import (
     PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES,
 )
 from ..utils import hex_to_rgba
+from ..animation import (
+    IndeterminateBarAnimation, SpinAnimation, StripeFlowAnimation,
+)
 
 
 # ============================================================
@@ -81,14 +84,10 @@ class _LinearTrack(QWidget):
         self._owner = owner
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        # indeterminate 滑块位置：-0.4 → 1.0，循环
-        self._indet_pos = -0.4
-        self._indet_anim = QPropertyAnimation(self, b"indet_pos")
-        self._indet_anim.setDuration(1500)
-        self._indet_anim.setStartValue(-0.4)
-        self._indet_anim.setEndValue(1.0)
-        self._indet_anim.setLoopCount(-1)
-        self._indet_anim.setEasingCurve(QEasingCurve.Type.InOutSine)
+        # indeterminate 滑块动画（复用 IndeterminateBarAnimation）
+        self._indet_loop = IndeterminateBarAnimation(
+            owner=self, duration=1500, bar_ratio=0.4,
+        )
 
         # 确定态：progress_px 动画（跟随 owner 宽度 * ratio）
         self._anim_ratio = 0.0
@@ -96,26 +95,12 @@ class _LinearTrack(QWidget):
         self._ratio_anim.setDuration(500)
         self._ratio_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        # striped 条带流动：offset 0 → stripe_period 循环（只在 is_striped 时启用）
-        self._stripe_offset = 0.0
-        self._stripe_anim = QPropertyAnimation(self, b"stripe_offset")
-        self._stripe_anim.setDuration(1000)   # 1 个周期 1s
-        self._stripe_anim.setStartValue(0.0)
-        # stripe 条带宽度是 16px，两条一组 32px 为一个周期
-        self._stripe_anim.setEndValue(32.0)
-        self._stripe_anim.setLoopCount(-1)
-        self._stripe_anim.setEasingCurve(QEasingCurve.Type.Linear)
+        # striped 条带流动（复用 StripeFlowAnimation）
+        self._stripe_flow = StripeFlowAnimation(
+            owner=self, period=32.0, duration=1000,
+        )
 
     # ----- Qt Properties -----
-    def _get_indet(self) -> float:
-        return self._indet_pos
-
-    def _set_indet(self, v: float):
-        self._indet_pos = v
-        self.update()
-
-    indet_pos = Property(float, _get_indet, _set_indet)
-
     def _get_ratio(self) -> float:
         return self._anim_ratio
 
@@ -125,32 +110,19 @@ class _LinearTrack(QWidget):
 
     anim_ratio = Property(float, _get_ratio, _set_ratio)
 
-    def _get_stripe_offset(self) -> float:
-        return self._stripe_offset
-
-    def _set_stripe_offset(self, v: float):
-        self._stripe_offset = v
-        if self._owner._is_striped:
-            self.update()
-
-    stripe_offset = Property(float, _get_stripe_offset, _set_stripe_offset)
-
     # ----- 动画控制 -----
     def start_indeterminate(self):
-        self._indet_anim.stop()
-        self._indet_pos = -0.4
-        self._indet_anim.start()
+        self._indet_loop.start()
         self.update()
 
     def stop_indeterminate(self):
-        self._indet_anim.stop()
+        self._indet_loop.stop()
 
     def start_stripe_flow(self):
-        if self._stripe_anim.state() != QPropertyAnimation.State.Running:
-            self._stripe_anim.start()
+        self._stripe_flow.start()
 
     def stop_stripe_flow(self):
-        self._stripe_anim.stop()
+        self._stripe_flow.stop()
 
     def animate_to(self, ratio: float, disable_animation: bool = False):
         self._ratio_anim.stop()
@@ -191,8 +163,9 @@ class _LinearTrack(QWidget):
 
         # 2) indicator
         if owner._is_indeterminate:
-            bar_w = w * 0.4
-            x = self._indet_pos * w
+            bar_ratio = self._indet_loop.bar_ratio()
+            bar_w = w * bar_ratio
+            x = self._indet_loop.position * w
             rect = QRectF(x, 0, bar_w, h)
             clip = QPainterPath()
             clip.addRoundedRect(QRectF(0, 0, w, h), radius, radius)
@@ -225,7 +198,7 @@ class _LinearTrack(QWidget):
         if self._owner._is_striped:
             # 叠加 45° 白色半透明斜纹 + 流动
             stripe = 16  # 条带宽度
-            period = stripe * 2
+            period = self._stripe_flow.period()
             stripe_color = QColor(255, 255, 255, 48)
             # clip 到 indicator 区域
             clip_path = QPainterPath()
@@ -236,8 +209,8 @@ class _LinearTrack(QWidget):
             h = rect.height()
             y_top = rect.top()
             y_bot = rect.bottom()
-            # 流动: stripe_offset ∈ [0, period)，让起点向右平移
-            offset = self._stripe_offset % period
+            # 流动: offset_value % period
+            offset = self._stripe_flow.offset_value() % period
             # 起始 x 向左延伸至少 (h + period)，保证右端填满，左端不会露白
             x = rect.left() - h - period + offset
             while x < rect.right() + stripe + period:
@@ -571,21 +544,15 @@ class CircularProgress(QWidget):
         self._ratio_anim.setDuration(500)
         self._ratio_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        # indeterminate 旋转：0 → 360，线性循环
-        self._spin_angle = 0.0
-        self._spin_anim = QPropertyAnimation(self, b"spin_angle")
-        self._spin_anim.setDuration(900)
-        self._spin_anim.setStartValue(0.0)
-        self._spin_anim.setEndValue(360.0)
-        self._spin_anim.setLoopCount(-1)
-        self._spin_anim.setEasingCurve(QEasingCurve.Type.Linear)
-
         self._setup_ui()
         self._apply_styles()
         self._refresh_text_labels()
 
+        # indeterminate 旋转（复用 SpinAnimation；owner 设为 _svg 以便其 update 触发重绘）
+        self._spin = SpinAnimation(owner=self._svg, duration=900)
+
         if is_indeterminate:
-            self._spin_anim.start()
+            self._spin.start()
 
         if is_disabled:
             self._apply_disabled_effect(True)
@@ -602,15 +569,6 @@ class CircularProgress(QWidget):
             self._value_label.setText(self._format_value_from_ratio(v))
 
     anim_ratio = Property(float, _get_ratio, _set_ratio)
-
-    def _get_spin(self) -> float:
-        return self._spin_angle
-
-    def _set_spin(self, v: float):
-        self._spin_angle = v
-        self._svg.update()
-
-    spin_angle = Property(float, _get_spin, _set_spin)
 
     # ----- UI 组装 -----
     def _setup_ui(self):
@@ -749,9 +707,9 @@ class CircularProgress(QWidget):
     def set_is_indeterminate(self, indet: bool):
         self._is_indeterminate = indet
         if indet:
-            self._spin_anim.start()
+            self._spin.start()
         else:
-            self._spin_anim.stop()
+            self._spin.stop()
         self._refresh_text_labels()
         self._svg.update()
 
@@ -809,8 +767,8 @@ class _CircularSvg(QWidget):
         # Qt 的 drawArc 单位是 1/16 度，起点 3 点钟方向，逆时针正角
         # 我们希望从 12 点钟开始顺时针，所以起点角 = 90°，span 取负
         if owner._is_indeterminate:
-            # 30% 弧在旋转（angle 从 _spin_angle 起）
-            start_deg = 90.0 - owner._spin_angle
+            # 30% 弧在旋转（角度从 SpinAnimation 读取）
+            start_deg = 90.0 - owner._spin.angle_value()
             span_deg = -0.3 * 360.0
             painter.drawArc(
                 rect,
