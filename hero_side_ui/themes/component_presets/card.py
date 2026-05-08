@@ -1,4 +1,4 @@
-"""Card 组件尺寸配置。
+"""Card 组件主题预设。
 
 对齐 HeroUI v2 的 Card 规范:
   - header/body/footer 的 padding 均为 p-3 (12px) —— 写死在组件里，不再暴露 size prop

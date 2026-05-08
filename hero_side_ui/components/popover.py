@@ -47,20 +47,13 @@ from PySide6.QtGui import (
 )
 from typing import Optional
 
-from ..themes import HEROUI_COLORS
+from ..themes import HEROUI_COLORS, POPOVER_SHADOWS
 from ..animation import FadeScaleAnimation, BackdropFade, PixmapScaleProxy
 
 ARROW_SIZE = 5  # 箭头一半边长（视觉像 5~6px 的小箭头）
 ARROW_INSET = 2  # 箭头底边相对 content_rect 向内偏移，避免圆角缝隙
 DEFAULT_PADDING = 10  # 内部内容默认 padding
 
-
-SHADOW_LEVELS = {
-    "none": {"layers": 0, "blur": 0, "offset_y": 0, "alpha": 0},
-    "sm": {"layers": 2, "blur": 4, "offset_y": 1, "alpha": 8},
-    "md": {"layers": 3, "blur": 6, "offset_y": 1, "alpha": 12},
-    "lg": {"layers": 3, "blur": 8, "offset_y": 2, "alpha": 14},
-}
 
 # 合法 placement
 VALID_PLACEMENTS = {
@@ -719,7 +712,7 @@ class Popover(QWidget):
     # ============================================================
     def _frame_margins(self) -> tuple:
         """内 layout 在四个方向需要让出多少空间给 arrow 和阴影。"""
-        cfg = SHADOW_LEVELS.get(self._shadow, SHADOW_LEVELS["md"])
+        cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
         sm = cfg["blur"] + abs(cfg["offset_y"])
         # arrow 占用一边（仅在 self._arrow=True 时保留空间）
         arrow = ARROW_SIZE if self._arrow else 0
@@ -894,7 +887,7 @@ class Popover(QWidget):
             return
 
         m = self._frame_margins()
-        cfg = SHADOW_LEVELS.get(self._shadow, SHADOW_LEVELS["md"])
+        cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
         bg = self._bg_color()
         radius = self._resolve_radius()
 

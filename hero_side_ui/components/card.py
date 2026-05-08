@@ -41,8 +41,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
 from typing import Optional
 
-from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY
-from ..themes.sizes import CARD_SHADOWS
+from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CARD_SHADOWS
 from ..utils import hex_to_rgba
 from ..animation import RippleOverlay, PressScaleEffect
 
