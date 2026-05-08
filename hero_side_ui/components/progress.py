@@ -273,9 +273,10 @@ class Progress(QWidget):
     ):
         super().__init__(parent)
 
-        self._value = value
         self._min = min_value
         self._max = max_value
+        # 初始化时夹紧到 [min, max]，与 set_value / set_range 行为一致
+        self._value = max(self._min, min(self._max, value))
         self._label_text = label
         self._show_value = show_value_label
         self._formatter = value_label_formatter
@@ -523,9 +524,10 @@ class CircularProgress(QWidget):
     ):
         super().__init__(parent)
 
-        self._value = value
         self._min = min_value
         self._max = max_value
+        # 初始化时夹紧到 [min, max]，与 set_value / set_range 行为一致
+        self._value = max(self._min, min(self._max, value))
         self._label_text = label
         self._show_value = show_value_label
         self._formatter = value_label_formatter
