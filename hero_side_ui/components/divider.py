@@ -24,8 +24,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QPen
 from typing import Optional
 
-from ..themes import HEROUI_COLORS, FONT_FAMILY
-from ..themes.sizes import DIVIDER_SIZES
+from ..themes import HEROUI_COLORS, FONT_FAMILY, DIVIDER_SIZES
 
 
 class Divider(QFrame):

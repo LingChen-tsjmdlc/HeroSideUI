@@ -2,10 +2,11 @@
 from .colors import HEROUI_COLORS
 from .radius import RADIUS
 from .font import FONT_FAMILY
-from .sizes import (
+from .component_presets import (
     BUTTON_SIZES, ACCORDION_SIZES, INPUT_SIZES, DIVIDER_SIZES, CARD_SHADOWS,
     CHECKBOX_SIZES,
     PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES,
+    POPOVER_SHADOWS,
 )
 
 __all__ = [
@@ -20,4 +21,5 @@ __all__ = [
     "CHECKBOX_SIZES",
     "PROGRESS_SIZES",
     "CIRCULAR_PROGRESS_SIZES",
+    "POPOVER_SHADOWS",
 ]
