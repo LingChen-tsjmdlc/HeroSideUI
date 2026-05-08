@@ -1,6 +1,6 @@
 # Progress / CircularProgress
 
-基于 HeroUI v2 [progress](https://heroui.com/docs/components/progress) 和 [circular-progress](https://heroui.com/docs/components/circular-progress) 复刻的进度指示器。全 `QWidget` + `QPainter` 自绘，动画由 `QPropertyAnimation` 驱动。
+基于 HeroUI v2 [progress](https://v2.heroui.com/docs/components/progress) 和 [circular-progress](https://v2.heroui.com/docs/components/circular-progress) 复刻的进度指示器。全 `QWidget` + `QPainter` 自绘，动画由 `QPropertyAnimation` 驱动。
 
 ## Progress（线性）
 
@@ -38,21 +38,21 @@ p3 = Progress(is_indeterminate=True, label="Fetching...", color="secondary")
 
 ### 参数
 
-| 参数                    | 类型                                                            | 默认值     | 说明                          |
-| ----------------------- | --------------------------------------------------------------- | ---------- | ----------------------------- |
-| `value`                 | `float`                                                         | `0`        | 当前进度                      |
-| `min_value` / `max_value` | `float`                                                       | `0` / `100`| 进度范围                      |
-| `label`                 | `str`                                                           | `""`       | 顶部左边文字                  |
-| `show_value_label`      | `bool`                                                          | `False`    | 是否显示右侧进度值            |
-| `value_label_formatter` | `Callable[(value, min, max), str]`                              | `None`     | 自定义值显示格式              |
-| `color`                 | `default / primary / secondary / success / warning / danger`    | `primary`  | indicator 颜色                |
-| `size`                  | `sm / md / lg`                                                  | `md`       | track 高度                    |
-| `radius`                | `none / sm / full`                                              | `full`     | 圆角                          |
-| `is_striped`            | `bool`                                                          | `False`    | 斜纹填充                      |
-| `is_indeterminate`      | `bool`                                                          | `False`    | 未定态滚动                    |
-| `is_disabled`           | `bool`                                                          | `False`    | 禁用                          |
-| `disable_animation`     | `bool`                                                          | `False`    | 关闭过渡动画                  |
-| `theme`                 | `light / dark`                                                  | `light`    | 主题                          |
+| 参数                      | 类型                                                         | 默认值      | 说明               |
+| ------------------------- | ------------------------------------------------------------ | ----------- | ------------------ |
+| `value`                   | `float`                                                      | `0`         | 当前进度           |
+| `min_value` / `max_value` | `float`                                                      | `0` / `100` | 进度范围           |
+| `label`                   | `str`                                                        | `""`        | 顶部左边文字       |
+| `show_value_label`        | `bool`                                                       | `False`     | 是否显示右侧进度值 |
+| `value_label_formatter`   | `Callable[(value, min, max), str]`                           | `None`      | 自定义值显示格式   |
+| `color`                   | `default / primary / secondary / success / warning / danger` | `primary`   | indicator 颜色     |
+| `size`                    | `sm / md / lg`                                               | `md`        | track 高度         |
+| `radius`                  | `none / sm / full`                                           | `full`      | 圆角               |
+| `is_striped`              | `bool`                                                       | `False`     | 斜纹填充           |
+| `is_indeterminate`        | `bool`                                                       | `False`     | 未定态滚动         |
+| `is_disabled`             | `bool`                                                       | `False`     | 禁用               |
+| `disable_animation`       | `bool`                                                       | `False`     | 关闭过渡动画       |
+| `theme`                   | `light / dark`                                               | `light`     | 主题               |
 
 ### 动态 API
 
@@ -87,14 +87,14 @@ spinner = CircularProgress(is_indeterminate=True, size="md", color="primary")
 
 ### 参数
 
-| 参数                    | 类型                                                            | 默认值     |
-| ----------------------- | --------------------------------------------------------------- | ---------- |
-| `value` / `min_value` / `max_value` |  同 Progress                                        | `0/0/100`  |
-| `label` / `show_value_label` / `value_label_formatter` | 同 Progress                  | `""/False/None` |
-| `color`                 | 同 Progress                                                     | `primary`  |
-| `size`                  | `sm / md / lg`                                                  | `md`       |
-| `stroke_width`          | `float \| None`                                                 | `None`     |
-| `is_indeterminate` / `is_disabled` / `disable_animation` / `theme` | 同 Progress       | —          |
+| 参数                                                               | 类型            | 默认值          |
+| ------------------------------------------------------------------ | --------------- | --------------- |
+| `value` / `min_value` / `max_value`                                | 同 Progress     | `0/0/100`       |
+| `label` / `show_value_label` / `value_label_formatter`             | 同 Progress     | `""/False/None` |
+| `color`                                                            | 同 Progress     | `primary`       |
+| `size`                                                             | `sm / md / lg`  | `md`            |
+| `stroke_width`                                                     | `float \| None` | `None`          |
+| `is_indeterminate` / `is_disabled` / `disable_animation` / `theme` | 同 Progress     | —               |
 
 ## 便捷别名：Spinner
 

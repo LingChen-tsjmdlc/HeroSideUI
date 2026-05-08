@@ -105,10 +105,18 @@ class PressScaleEffect(QObject):
 
     # ---- Qt Property: scale_value ----
     def _get_scale(self) -> float:
-        return self._effect.scale()
+        try:
+            return self._effect.scale()
+        except RuntimeError:
+            return 1.0
 
     def _set_scale(self, value: float):
-        self._effect.setScale(value)
+        # 若 _effect 的 C++ 端已被销毁（例如被 setGraphicsEffect 覆盖），
+        # 静默忽略，避免 property metacall 触发异常风暴。
+        try:
+            self._effect.setScale(value)
+        except RuntimeError:
+            self._anim.stop()
 
     scale_value = Property(float, _get_scale, _set_scale)
 
@@ -116,16 +124,24 @@ class PressScaleEffect(QObject):
 
     def press(self):
         """鼠标按下 — 缩小到 scale_factor"""
+        try:
+            start = self._effect.scale()
+        except RuntimeError:
+            return
         self._anim.stop()
-        self._anim.setStartValue(self._effect.scale())
+        self._anim.setStartValue(start)
         self._anim.setEndValue(self._scale_factor)
         self._anim.setDuration(self._press_duration)
         self._anim.start()
 
     def release(self):
         """鼠标松开 — 恢复到 1.0"""
+        try:
+            start = self._effect.scale()
+        except RuntimeError:
+            return
         self._anim.stop()
-        self._anim.setStartValue(self._effect.scale())
+        self._anim.setStartValue(start)
         self._anim.setEndValue(1.0)
         self._anim.setDuration(self._release_duration)
         self._anim.start()
