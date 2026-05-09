@@ -9,6 +9,7 @@ from .indeterminate import IndeterminateBarAnimation, SpinAnimation
 from .stripe_flow import StripeFlowAnimation
 from .backdrop_fade import BackdropFade
 from .pixmap_scale_proxy import PixmapScaleProxy
+from .tween import tween_value, stop_tween, tween_geometry
 
 __all__ = [
     "RippleOverlay",
@@ -22,4 +23,7 @@ __all__ = [
     "StripeFlowAnimation",
     "BackdropFade",
     "PixmapScaleProxy",
+    "tween_value",
+    "stop_tween",
+    "tween_geometry",
 ]

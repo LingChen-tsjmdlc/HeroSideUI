@@ -60,16 +60,21 @@ from ..animation import LabelFloatAnimation, UnderlineBar
 # 内部控件：无边框/无焦点框的 QLineEdit
 # ============================================================
 class _LineEdit(QLineEdit):
-    """继承 QLineEdit，禁用默认边框/焦点框以融入 inputWrapper 背景
+    """无边框透明背景的 QLineEdit，融入 _InputWrapper 底色。
 
-    保留原生 API：textChanged / editingFinished / setText / text / setEchoMode 等。
+    - setFrame(False): 去掉默认边框
+    - palette.Base = transparent: 阻止 Qt Fusion 的 PE_PanelLineEdit 绘制白色背景
+      （背景完全由外层 _InputWrapper paintEvent 负责）
+    - _apply_styles 里每次 setPalette 时必须同步保持 Base = transparent
     """
 
     def __init__(self, parent: Optional[QWidget] = None):
         super().__init__(parent)
         self.setFrame(False)
         self.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)
-        self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
+        pal = self.palette()
+        pal.setColor(QPalette.ColorRole.Base, QColor(0, 0, 0, 0))
+        self.setPalette(pal)
 
 
 # ============================================================
@@ -778,9 +783,10 @@ class Input(QWidget):
             }}
             """
         )
-        # 占位符颜色
+        # 占位符颜色 + 保持 Base 透明（防止 Fusion 覆盖画白色背景）
         pal = self.line_edit.palette()
         pal.setColor(QPalette.ColorRole.PlaceholderText, QColor(placeholder_color))
+        pal.setColor(QPalette.ColorRole.Base, QColor(0, 0, 0, 0))
         self.line_edit.setPalette(pal)
 
         # ---- 禁用态 ----

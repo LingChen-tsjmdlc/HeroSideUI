@@ -1,0 +1,10 @@
+{
+  "recommendations": [
+    "ms-python.black-formatter",
+    "editorconfig.editorconfig",
+    "ms-python.python",
+    "ms-python.debugpy",
+    "ms-python.vscode-python-envs",
+    "kevinrose.vsc-python-indent"
+  ]
+}
