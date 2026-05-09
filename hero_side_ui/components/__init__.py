@@ -7,6 +7,7 @@ from .card import Card, CardHeader, CardBody, CardFooter
 from .checkbox import Checkbox, CheckboxGroup
 from .progress import Progress, CircularProgress, Spinner
 from .popover import Popover, PopoverContent
+from .tabs import Tabs, TabItem
 
 __all__ = [
     "Button", "Accordion", "AccordionItem", "Input",
@@ -15,4 +16,5 @@ __all__ = [
     "Checkbox", "CheckboxGroup",
     "Progress", "CircularProgress", "Spinner",
     "Popover", "PopoverContent",
+    "Tabs", "TabItem",
 ]
