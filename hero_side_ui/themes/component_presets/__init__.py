@@ -26,6 +26,7 @@ from .card import CARD_SHADOWS
 from .checkbox import CHECKBOX_SIZES
 from .progress import PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES
 from .popover import POPOVER_SHADOWS
+from .tooltip import TOOLTIP_SIZES
 from .tabs import TABS_SIZES
 
 __all__ = [
@@ -38,5 +39,6 @@ __all__ = [
     "PROGRESS_SIZES",
     "CIRCULAR_PROGRESS_SIZES",
     "POPOVER_SHADOWS",
+    "TOOLTIP_SIZES",
     "TABS_SIZES",
 ]

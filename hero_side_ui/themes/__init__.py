@@ -7,6 +7,7 @@ from .component_presets import (
     CHECKBOX_SIZES,
     PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES,
     POPOVER_SHADOWS,
+    TOOLTIP_SIZES,
     TABS_SIZES,
 )
 
@@ -23,5 +24,6 @@ __all__ = [
     "PROGRESS_SIZES",
     "CIRCULAR_PROGRESS_SIZES",
     "POPOVER_SHADOWS",
+    "TOOLTIP_SIZES",
     "TABS_SIZES",
 ]
