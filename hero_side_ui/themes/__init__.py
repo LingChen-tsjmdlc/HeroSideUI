@@ -10,6 +10,7 @@ from .component_presets import (
     TOOLTIP_SIZES,
     TABS_SIZES,
     SWITCH_SIZES,
+    LISTBOX_SIZES,
 )
 
 __all__ = [
@@ -28,4 +29,5 @@ __all__ = [
     "TOOLTIP_SIZES",
     "TABS_SIZES",
     "SWITCH_SIZES",
+    "LISTBOX_SIZES",
 ]

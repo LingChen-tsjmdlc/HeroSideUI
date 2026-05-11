@@ -10,6 +10,7 @@ from .stripe_flow import StripeFlowAnimation
 from .backdrop_fade import BackdropFade
 from .pixmap_scale_proxy import PixmapScaleProxy
 from .tween import tween_value, stop_tween, tween_geometry
+from .check_draw import paint_animated_check, CheckDrawAnimation
 
 __all__ = [
     "RippleOverlay",
@@ -26,4 +27,6 @@ __all__ = [
     "tween_value",
     "stop_tween",
     "tween_geometry",
+    "paint_animated_check",
+    "CheckDrawAnimation",
 ]
