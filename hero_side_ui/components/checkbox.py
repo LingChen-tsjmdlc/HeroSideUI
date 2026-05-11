@@ -60,6 +60,7 @@ from typing import Optional, List
 
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CHECKBOX_SIZES
 from ..utils import hex_to_rgba
+from ..animation import paint_animated_check
 from ..core import ThemeProvider
 
 # ============================================================
@@ -509,16 +510,13 @@ class Checkbox(QCheckBox):
                 svg.render(painter, QRectF(ic_x, ic_y, ic_w, ic_h))
                 painter.restore()
             else:
-                # check: 手绘两段线，按 _check_draw 进度描出
-                self._draw_animated_check(
+                # check: 手绘两段线，按 _check_draw 进度描出 —— 复用 animation/check_draw.paint_animated_check
+                paint_animated_check(
                     painter,
-                    ic_x,
-                    ic_y,
-                    ic_w,
-                    ic_h,
+                    (ic_x, ic_y, ic_w, ic_h),
                     icon_color,
-                    opacity,
-                    cfg,
+                    progress=self._check_draw,
+                    opacity=opacity,
                 )
 
         if press_scale < 1.0:
@@ -579,71 +577,9 @@ class Checkbox(QCheckBox):
         painter.end()
 
     # ============================================================
-    # 动画 check 图标（手绘对勾）
+    # 动画 check 图标（手绘对勾）—— 已抽取到 animation/check_draw.paint_animated_check
+    # 保留这一段标题占位，便于读者按"功能区"导航；具体绘制见 paintEvent 的调用。
     # ============================================================
-    def _draw_animated_check(
-        self,
-        painter: QPainter,
-        x: float,
-        y: float,
-        w: float,
-        h: float,
-        color: QColor,
-        opacity: float,
-        cfg: dict,
-    ):
-        """按 self._check_draw 进度从起点开始"描"出对勾
-
-        对勾路径 (24×24 viewBox):
-            A(4.5, 12.75) --AB--> B(10.5, 18.75) --BC--> C(19.5, 5.25)
-        先画短下斜段 AB，再画长上斜段 BC。
-        """
-        import math
-
-        progress = max(0.0, min(1.0, self._check_draw))
-        if progress <= 0.001:
-            return
-
-        sx = w / 24.0
-        sy = h / 24.0
-        ax, ay = x + 4.5 * sx, y + 12.75 * sy
-        bx, by = x + 10.5 * sx, y + 18.75 * sy
-        cx, cy = x + 19.5 * sx, y + 5.25 * sy
-
-        len_ab = math.hypot(bx - ax, by - ay)
-        len_bc = math.hypot(cx - bx, cy - by)
-        total = len_ab + len_bc
-        if total <= 0.0:
-            return
-
-        target = total * progress
-
-        painter.save()
-        painter.setOpacity(opacity)
-
-        # 笔宽：参考 SVG stroke-width=3（viewBox 24）等比缩放，最小 1.5
-        pen_w = max(1.5, 3.0 * min(sx, sy))
-        pen = QPen(color, pen_w)
-        pen.setCapStyle(Qt.PenCapStyle.RoundCap)
-        pen.setJoinStyle(Qt.PenJoinStyle.RoundJoin)
-        painter.setPen(pen)
-
-        from PySide6.QtCore import QPointF
-
-        if target <= len_ab:
-            t = target / len_ab if len_ab > 0 else 0
-            end_x = ax + (bx - ax) * t
-            end_y = ay + (by - ay) * t
-            painter.drawLine(QPointF(ax, ay), QPointF(end_x, end_y))
-        else:
-            painter.drawLine(QPointF(ax, ay), QPointF(bx, by))
-            remaining = target - len_ab
-            t = remaining / len_bc if len_bc > 0 else 0
-            end_x = bx + (cx - bx) * t
-            end_y = by + (cy - by) * t
-            painter.drawLine(QPointF(bx, by), QPointF(end_x, end_y))
-
-        painter.restore()
 
     # ============================================================
     # 公共 API (运行时切换)
