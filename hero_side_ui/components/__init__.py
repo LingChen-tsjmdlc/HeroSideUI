@@ -11,6 +11,7 @@ from .tooltip import Tooltip
 from .tabs import Tabs, TabItem
 from .theme_switcher import ThemeSwitcher
 from .text import Title, Subtitle, Caption, Body
+from .switch import Switch
 
 __all__ = [
     "Button", "Accordion", "AccordionItem", "Input",
@@ -23,4 +24,5 @@ __all__ = [
     "Tabs", "TabItem",
     "ThemeSwitcher",
     "Title", "Subtitle", "Caption", "Body",
+    "Switch",
 ]
