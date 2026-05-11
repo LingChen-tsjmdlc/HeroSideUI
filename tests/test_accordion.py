@@ -56,7 +56,7 @@ class TestAccordionInit:
         assert acc._variant == "light"
         assert acc._allow_multiple is False
         assert acc._size == "md"
-        assert acc._theme == "light"
+        assert acc._theme_mode == "auto"
 
 
 class TestAccordionExpandCollapse:

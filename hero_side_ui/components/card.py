@@ -44,6 +44,7 @@ from typing import Optional
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CARD_SHADOWS
 from ..utils import hex_to_rgba
 from ..animation import RippleOverlay, PressScaleEffect
+from ..core import ThemeProvider
 
 # Card 的固定结构参数（对齐 HeroUI，不再暴露 size prop）
 # padding 统一 12，字号由用户自己在子控件上设置（header 用 h3，body 用正文）
@@ -131,7 +132,7 @@ class Card(QWidget):
         is_blurred: bool = False,
         is_footer_blurred: bool = False,
         full_width: bool = False,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -143,7 +144,8 @@ class Card(QWidget):
         self._is_blurred = is_blurred
         self._is_footer_blurred = is_footer_blurred
         self._full_width = full_width
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
 
         self._is_hovered = False
         self._is_pressed_state = False
@@ -172,6 +174,10 @@ class Card(QWidget):
                 color=self._get_ripple_color(),
                 ripple_enabled=True,
             )
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ---- hover_progress property (动画驱动) ----
     def _get_hp(self) -> float:
@@ -557,8 +563,27 @@ class Card(QWidget):
         self._apply_styles()
 
     def set_theme(self, t: str):
-        self._theme = t
+        if t == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = t
+            self._theme = t
         self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
+        self._theme = theme
+        self._apply_styles()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_is_hoverable(self, v: bool):
         self._is_hoverable = v

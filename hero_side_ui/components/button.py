@@ -6,13 +6,14 @@ HeroSideUI Button Component
 """
 
 from PySide6.QtWidgets import QPushButton
-from PySide6.QtCore import QObject, Qt
-from PySide6.QtGui import QColor
+from PySide6.QtCore import QObject, Qt, QSize, QEvent
+from PySide6.QtGui import QColor, QIcon, QPixmap
 from typing import Optional
 
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, BUTTON_SIZES
-from ..utils import hex_to_rgba
+from ..utils import hex_to_rgba, load_svg_icon
 from ..animation import RippleOverlay, PressScaleEffect
+from ..core import ThemeProvider
 
 
 class Button(QPushButton):
@@ -25,12 +26,18 @@ class Button(QPushButton):
     - 支持变体 (solid, bordered, flat, light, faded, ghost)
     - 支持尺寸 (sm, md, lg)
     - 支持圆角 (none, sm, md, lg, full)
-    - 支持主题 (light, dark) — 暗色模式下自动调整文字和背景配色
+    - 支持主题 (light, dark, auto) — auto 跟随 ThemeProvider 全局切换
+    - 支持 icon_only 模式（锁成正方形，适合纯图标按钮）
+    - 支持 icon 参数（内置图标名或 SVG 路径）——icon 颜色自动根据 variant/color/theme
+      和 hover 状态切换，用户不用关心配色
     - 按压视觉反馈 (通过 QSS padding 模拟缩放)
 
     用法:
         btn = Button("Click me", color="primary", variant="solid", size="md")
         btn_dark = Button("Dark", color="primary", variant="flat", theme="dark")
+        btn_auto = Button("Auto", theme="auto")  # 跟随系统/全局主题
+        btn_icon = Button(icon_only=True, icon="heroicons--eye-solid", variant="flat")
+        btn_with_icon = Button("搜索", icon="heroicons--magnifying-glass-solid")
     """
 
     def __init__(
@@ -42,8 +49,12 @@ class Button(QPushButton):
         radius: Optional[str] = None,
         is_disabled: bool = False,
         full_width: bool = False,
+        icon_only: bool = False,
+        icon: Optional[str] = None,
+        icon_size: Optional[int] = None,
+        icon_color=None,
         parent: Optional[QObject] = None,
-        theme: str = "light",
+        theme: str = "auto",
         **kwargs,
     ):
         super().__init__(text, parent)
@@ -53,7 +64,13 @@ class Button(QPushButton):
         self._size = size
         self._radius = radius
         self._full_width = full_width
-        self._theme = theme
+        self._icon_only = icon_only
+        self._icon_src = icon
+        self._icon_size_override = icon_size
+        self._icon_color_override = icon_color  # 用户显式指定则覆盖自动配色
+        self._is_hovered = False
+        self._theme_mode = theme  # 用户设定的模式: "auto"/"light"/"dark"
+        self._theme = self._resolve_theme(theme)  # 实际生效: "light"/"dark"
         self._disable_ripple = kwargs.get("disable_ripple", False)
 
         # 应用样式
@@ -74,6 +91,17 @@ class Button(QPushButton):
         if is_disabled:
             self.setEnabled(False)
 
+        # icon: 初始渲染
+        if self._icon_src:
+            self._refresh_icon()
+
+        # 开启 hover 事件追踪（用于动态切换 icon 颜色）
+        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
+
     # ============================================================
     # 样式系统
     # ============================================================
@@ -86,6 +114,16 @@ class Button(QPushButton):
         if self._full_width:
             from PySide6.QtWidgets import QSizePolicy
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+        # icon_only: 把按钮锁成正方形（边长 = 高度）
+        if self._icon_only:
+            size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
+            h = int(size_config["height"].replace("px", ""))
+            padding_y = size_config["padding_y"]
+            side = h + 2 * padding_y  # 总高 = 内容高 + 上下 padding
+            from PySide6.QtWidgets import QSizePolicy
+            self.setFixedSize(side, side)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self.setMouseTracking(True)
         from PySide6.QtCore import Qt
@@ -102,6 +140,13 @@ class Button(QPushButton):
         if self._radius == "full":
             padding_x += 8
 
+        # icon_only: padding 对称 + 清空 min-width，避免压扁 icon
+        if self._icon_only:
+            padding_x = padding_y  # 左右 padding 等于上下
+            min_width = "0"
+        else:
+            min_width = size_config["min_width"]
+
         normal_colors, hover_colors, disabled_colors = \
             self._get_variant_styles(colors)
 
@@ -110,7 +155,7 @@ class Button(QPushButton):
             {normal_colors}
             border-radius: {radius};
             font-size: {size_config['font_size']};
-            min-width: {size_config['min_width']};
+            min-width: {min_width};
             padding: {padding_y}px {padding_x}px;
             font-weight: {size_config['font_weight']};
             outline: none;
@@ -281,6 +326,99 @@ class Button(QPushButton):
             self._ripple_overlay.set_color(self._get_ripple_color())
 
     # ============================================================
+    # Icon 系统 —— 根据 variant/color/theme/hover 自动选对比色
+    # ============================================================
+
+    def _resolve_icon_color(self) -> str:
+        """计算 icon 应该用的颜色（HEX 字符串）
+
+        规则（与 _get_variant_styles 的 foreground color 对齐）：
+        - 用户显式传 icon_color → 用它
+        - solid 变体: 底色是 color-500，icon 用 fg_on_solid（白色/黑色）
+        - ghost 变体:
+            * normal（未 hover）→ 底色透明，icon 用 color-500（和边框色一致）
+            * hover → 底色变 color-500，icon 用 fg_on_solid 对比色
+        - 其他变体（bordered/flat/light/faded）→ 透明/浅底，icon 用 color-500
+          （和 _get_variant_styles 的 c_text 对齐：dark 用 color-300，light 用 color-600）
+        """
+        # 用户显式指定 → 直接用
+        if self._icon_color_override is not None:
+            c = self._icon_color_override
+            if isinstance(c, QColor):
+                return c.name()
+            return c
+
+        colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
+        is_dark = self._theme == "dark"
+
+        # fg_on_solid: 和 _get_variant_styles 保持一致
+        if self._color == "warning":
+            fg_on_solid = "#000000"
+        elif self._color == "default":
+            fg_on_solid = "#d4d4d8" if is_dark else "#FFFFFF"
+        else:
+            fg_on_solid = "#FFFFFF"
+
+        variant = self._variant
+
+        if variant == "solid":
+            return fg_on_solid
+        if variant == "ghost":
+            # hover 时底色变深，用对比色；normal 用彩色
+            if self._is_hovered:
+                return fg_on_solid
+            # normal 状态用 color-500
+            if self._color == "default":
+                return colors[700] if not is_dark else colors[400]
+            return colors[500]
+
+        # bordered / flat / light / faded / underlined：和文字色对齐
+        if self._color == "default":
+            return colors[700] if not is_dark else colors[400]
+        # 与 _get_variant_styles 里 c_text 一致: dark 用 300，light 用 600
+        return colors[300] if is_dark else colors[600]
+
+    def _refresh_icon(self):
+        """重新渲染 icon pixmap（根据当前 variant/color/theme/hover 状态）"""
+        if not self._icon_src:
+            return
+
+        # 计算 icon 尺寸
+        size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
+        if self._icon_size_override is not None:
+            icon_size = self._icon_size_override
+        elif self._icon_only:
+            # icon_only: icon 占按钮约 50%
+            h = int(size_config["height"].replace("px", ""))
+            padding_y = size_config["padding_y"]
+            side = h + 2 * padding_y
+            icon_size = int(side * 0.5)
+        else:
+            # 带文字的按钮：icon 大小跟 font_size 对齐 + 微增
+            font_size = int(size_config["font_size"].replace("px", ""))
+            icon_size = font_size + 2
+
+        color_str = self._resolve_icon_color()
+        pixmap = load_svg_icon(self._icon_src, size=icon_size, color=color_str)
+        # 直接调 QPushButton 原生 setIcon，避开我们重写的 setIcon（会把 _icon_src 清空）
+        QPushButton.setIcon(self, QIcon(pixmap))
+        self.setIconSize(QSize(icon_size, icon_size))
+
+    def enterEvent(self, event):
+        """hover 进入 → 刷新 icon（ghost variant 需要换色）"""
+        self._is_hovered = True
+        if self._icon_src:
+            self._refresh_icon()
+        super().enterEvent(event)
+
+    def leaveEvent(self, event):
+        """hover 离开 → 刷新 icon"""
+        self._is_hovered = False
+        if self._icon_src:
+            self._refresh_icon()
+        super().leaveEvent(event)
+
+    # ============================================================
     # 公共 API
     # ============================================================
 
@@ -288,21 +426,97 @@ class Button(QPushButton):
         self._color = color
         self._apply_styles()
         self._update_ripple_color()
+        self._refresh_icon()
 
     def set_variant(self, variant: str):
         self._variant = variant
         self._apply_styles()
         self._update_ripple_color()
+        self._refresh_icon()
 
     def set_size(self, size: str):
         self._size = size
         self._apply_styles()
+        self._refresh_icon()
 
     def set_radius(self, radius: str):
         self._radius = radius
         self._apply_styles()
 
+    def set_icon(self, icon):
+        """设置图标（snake_case 版本）—— 等同于 setIcon
+
+        支持两种形式：
+        - 字符串（内置图标名或 SVG 路径）→ Button 会自动根据 variant/color/theme/hover 着色
+        - QIcon 对象 → 直接调用 QPushButton.setIcon（用户自己负责颜色）
+        """
+        self.setIcon(icon)
+
+    def setIcon(self, icon):  # noqa: N802 —— 重写 Qt 原生 setIcon
+        """重写 QPushButton.setIcon 支持字符串（内置图标名或 SVG 路径）
+
+        传字符串 → Button 自动 render（根据 variant/color/theme/hover 动态着色）
+        传 QIcon / QPixmap → 退回原生行为，用户自己管颜色
+        """
+        if isinstance(icon, str):
+            self._icon_src = icon
+            self._refresh_icon()
+        else:
+            # QIcon/QPixmap —— 用户自己管色
+            self._icon_src = None
+            super().setIcon(icon)
+
+    def set_icon_color(self, color):
+        """显式指定 icon 颜色（覆盖自动配色）。传 None 恢复自动配色。"""
+        self._icon_color_override = color
+        self._refresh_icon()
+
+    def set_icon_only(self, icon_only: bool):
+        """切换 icon_only 模式（True 时按钮锁成正方形）"""
+        self._icon_only = bool(icon_only)
+        if not self._icon_only:
+            # 解除固定尺寸
+            self.setMinimumSize(0, 0)
+            self.setMaximumSize(16777215, 16777215)
+            from PySide6.QtWidgets import QSizePolicy
+            self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+        self._apply_styles()
+        self._refresh_icon()
+
     def set_theme(self, theme: str):
+        """设置主题
+
+        - "auto": 跟随 ThemeProvider 全局切换（并注册）
+        - "light"/"dark": 强制固定（并取消注册）
+        """
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            # 如果从 auto 切到固定模式，取消注册
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+        self._update_ripple_color()
+        self._refresh_icon()
+
+    # ============================================================
+    # 内部：解析主题模式
+    # ============================================================
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        """将模式解析为实际的 'light' 或 'dark'"""
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用——只更新实际主题，不改 _theme_mode"""
         self._theme = theme
         self._apply_styles()
         self._update_ripple_color()
+        self._refresh_icon()

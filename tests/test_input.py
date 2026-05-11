@@ -17,7 +17,7 @@ class TestInputInit:
         assert inp._color == "default"
         assert inp._size == "md"
         assert inp._label_placement == "inside"
-        assert inp._theme == "light"
+        assert inp._theme_mode == "auto"
         assert not inp._is_disabled
         assert not inp._is_invalid
 

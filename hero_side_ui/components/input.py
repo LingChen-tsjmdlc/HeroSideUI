@@ -54,6 +54,7 @@ from typing import Optional
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, INPUT_SIZES
 from ..utils import hex_to_rgba, load_svg_icon
 from ..animation import LabelFloatAnimation, UnderlineBar
+from ..core import ThemeProvider
 
 
 # ============================================================
@@ -337,7 +338,7 @@ class Input(QWidget):
         end_content=None,
         on_start_content_click=None,
         on_end_content_click=None,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -364,7 +365,8 @@ class Input(QWidget):
         self._end_content = end_content
         self._on_start_click = on_start_content_click
         self._on_end_click = on_end_content_click
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
 
         self._is_hover = False
         self._is_focused = False
@@ -380,6 +382,14 @@ class Input(QWidget):
         # 初始化 label 浮起状态（瞬切，不走动画）——避免有 placeholder 时
         # 组件显示瞬间 label 还在中心和 placeholder 文字挤在一起
         self._update_label_animation(animate=False)
+
+        # auto 模式：注册到 ThemeProvider
+        # 注意：register() 会立即调一次 _apply_provider_theme()，但 Input 的
+        # palette.Base = transparent 已经在 _apply_styles() 里设好；
+        # _apply_provider_theme 重新走一遍 _apply_styles，会再次设置 palette
+        # 保持透明，所以"挖空"问题不会复发（_apply_styles 已经在上面调过一次了）。
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ============================================================
     # UI 结构
@@ -1344,8 +1354,27 @@ class Input(QWidget):
         self._update_label_animation()
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用——只更新实际主题，不改 _theme_mode"""
         self._theme = theme
         self._apply_styles()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_is_disabled(self, disabled: bool):
         self._is_disabled = disabled

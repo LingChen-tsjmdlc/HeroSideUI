@@ -99,7 +99,7 @@ class TestCardInit:
         assert card._is_blurred is False
         assert card._is_footer_blurred is False
         assert card._full_width is False
-        assert card._theme == "light"
+        assert card._theme_mode == "auto"
 
     def test_custom_params(self, qtbot):
         card = Card(

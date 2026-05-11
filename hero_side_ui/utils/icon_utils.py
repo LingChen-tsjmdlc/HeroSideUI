@@ -5,6 +5,13 @@ SVG 图标渲染工具
   1. 内置图标名: load_svg_icon("heroicons--chevron-right-solid") — 从库自带的 resources/icons/ 加载
   2. 任意路径: load_svg_icon("/path/to/icon.svg") — 从用户指定的路径加载
 
+颜色处理（color 参数）:
+  - 传 QColor / "#RRGGBB" → 使用这个颜色
+  - 传 None（或不传）→ 根据 ThemeProvider 当前主题自动选对比色：
+      * 亮色模式 → 深色 icon（#18181b）
+      * 暗色模式 → 浅色 icon（#fafafa）
+  - 传 "original" → 保留 SVG 原始颜色（不做任何替换）
+
 用法:
     from hero_side_ui.utils import load_svg_icon
 
@@ -13,6 +20,12 @@ SVG 图标渲染工具
 
     # 方式2: 任意 SVG 文件路径
     pixmap = load_svg_icon("C:/my_project/icons/star.svg", size=24, color="#006FEE")
+
+    # 方式3: 自动跟随主题（暗色显示浅色 icon，亮色显示深色 icon）
+    pixmap = load_svg_icon("heroicons--eye-solid", size=24)
+
+    # 方式4: 保留原始 SVG 颜色
+    pixmap = load_svg_icon("my_colorful_logo.svg", size=24, color="original")
 """
 
 from pathlib import Path
@@ -26,11 +39,31 @@ _BUILTIN_ICONS_DIR = (
     Path(__file__).resolve().parent.parent.parent / "resources" / "icons"
 )
 
+# 主题感知的默认对比色
+_DEFAULT_LIGHT_ICON = "#18181b"  # 亮色背景下用深色 icon（zinc-900）
+_DEFAULT_DARK_ICON = "#fafafa"   # 暗色背景下用浅色 icon（zinc-50）
+
+
+def _resolve_theme_aware_color() -> str:
+    """根据 ThemeProvider 当前主题返回合适的对比色
+
+    - 暗色主题 → 浅色 icon
+    - 亮色主题 → 深色 icon
+    - ThemeProvider 未初始化或无 QApplication → fallback 到深色
+    """
+    try:
+        # 延迟 import 避免循环依赖
+        from ..core import ThemeProvider
+        theme = ThemeProvider.instance().current_theme
+        return _DEFAULT_DARK_ICON if theme == "dark" else _DEFAULT_LIGHT_ICON
+    except Exception:
+        return _DEFAULT_LIGHT_ICON
+
 
 def load_svg_icon(
     name_or_path: str,
     size: int = 24,
-    color: QColor | str | None = None,
+    color=None,
 ) -> QPixmap:
     """加载 SVG 图标并渲染为 QPixmap
 
@@ -39,8 +72,10 @@ def load_svg_icon(
             - 内置图标名（不含 .svg），如 "heroicons--chevron-right-solid"
             - SVG 文件的完整路径，如 "/path/to/icon.svg"
         size: 渲染尺寸（正方形，单位 px）
-        color: 图标颜色。None 则使用 SVG 原始颜色。
-               支持 QColor 对象或 HEX 字符串如 "#006FEE"
+        color: 图标颜色。
+            - None（默认）：根据 ThemeProvider 当前主题自动选对比色（暗色→浅，亮色→深）
+            - QColor 对象或 HEX 字符串（如 "#006FEE"）：使用这个颜色
+            - "original"：保留 SVG 原始颜色，不做替换
 
     Returns:
         渲染好的 QPixmap。路径不存在时返回空的透明 pixmap。
@@ -55,12 +90,19 @@ def load_svg_icon(
 
     svg_data = svg_path.read_text(encoding="utf-8")
 
-    # 着色: 替换 SVG 中的 currentColor
-    if color is not None:
-        if isinstance(color, QColor):
-            color_str = color.name()
-        else:
-            color_str = color
+    # 着色策略
+    if color is None:
+        # None → 根据主题自动选对比色
+        color_str = _resolve_theme_aware_color()
+    elif isinstance(color, str) and color == "original":
+        # "original" → 保留 SVG 原始颜色
+        color_str = None
+    elif isinstance(color, QColor):
+        color_str = color.name()
+    else:
+        color_str = color
+
+    if color_str is not None:
         svg_data = svg_data.replace("currentColor", color_str)
 
     # 渲染
@@ -76,7 +118,7 @@ def load_svg_icon(
     return QPixmap.fromImage(image)
 
 
-def _resolve_svg_path(name_or_path: str) -> Path | None:
+def _resolve_svg_path(name_or_path: str):
     """解析 SVG 路径
 
     - 如果是完整路径（含 / 或 \\ 或 .svg 后缀）→ 直接用

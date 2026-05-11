@@ -67,6 +67,7 @@ from typing import Optional, List, Union
 from ..themes import HEROUI_COLORS, RADIUS, TABS_SIZES, FONT_FAMILY
 from ..utils import load_svg_icon
 from ..animation import tween_value, stop_tween, tween_geometry
+from ..core import ThemeProvider
 
 
 VALID_VARIANTS = ("solid", "bordered", "light", "underlined")
@@ -858,7 +859,7 @@ class Tabs(QWidget):
         size: str = "md",
         radius: Optional[str] = None,
         placement: str = "top",
-        theme: str = "light",
+        theme: str = "auto",
         full_width: bool = False,
         is_disabled: bool = False,
         disable_animation: bool = False,
@@ -875,8 +876,8 @@ class Tabs(QWidget):
             raise ValueError(f"size must be one of {VALID_SIZES}")
         if placement not in VALID_PLACEMENTS:
             raise ValueError(f"placement must be one of {VALID_PLACEMENTS}")
-        if theme not in VALID_THEMES:
-            raise ValueError(f"theme must be one of {VALID_THEMES}")
+        if theme not in ("auto", *VALID_THEMES):
+            raise ValueError(f"theme must be one of ('auto', {VALID_THEMES})")
 
         self._variant = variant
         self._color = color
@@ -887,7 +888,8 @@ class Tabs(QWidget):
         else:
             self._radius = radius if radius is not None else "md"
         self._placement = placement
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
         self._full_width = bool(full_width)
         self._is_disabled = bool(is_disabled)
         self._disable_animation = bool(disable_animation)
@@ -954,6 +956,10 @@ class Tabs(QWidget):
 
         # 自动选中第一个可用 tab
         QTimer.singleShot(0, self._auto_select_first)
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ============================================================
     # Public API
@@ -1134,9 +1140,28 @@ class Tabs(QWidget):
         self._reposition_cursor_async()
 
     def set_theme(self, theme: str):
-        self._validate("theme", theme, VALID_THEMES)
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            self._validate("theme", theme, VALID_THEMES)
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self._apply_styles()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_full_width(self, full: bool):
         self._full_width = bool(full)

@@ -9,6 +9,8 @@ from .progress import Progress, CircularProgress, Spinner
 from .popover import Popover, PopoverContent
 from .tooltip import Tooltip
 from .tabs import Tabs, TabItem
+from .theme_switcher import ThemeSwitcher
+from .text import Title, Subtitle, Caption, Body
 
 __all__ = [
     "Button", "Accordion", "AccordionItem", "Input",
@@ -19,4 +21,6 @@ __all__ = [
     "Popover", "PopoverContent",
     "Tooltip",
     "Tabs", "TabItem",
+    "ThemeSwitcher",
+    "Title", "Subtitle", "Caption", "Body",
 ]

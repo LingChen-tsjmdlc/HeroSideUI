@@ -56,6 +56,7 @@ from ..utils import hex_to_rgba
 from ..animation import (
     IndeterminateBarAnimation, SpinAnimation, StripeFlowAnimation,
 )
+from ..core import ThemeProvider
 
 
 # ============================================================
@@ -268,7 +269,7 @@ class Progress(QWidget):
         is_indeterminate: bool = False,
         is_disabled: bool = False,
         disable_animation: bool = False,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -287,7 +288,8 @@ class Progress(QWidget):
         self._is_indeterminate = is_indeterminate
         self._is_disabled = is_disabled
         self._disable_animation = disable_animation
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
 
         self._setup_ui()
         self._apply_styles()
@@ -305,6 +307,10 @@ class Progress(QWidget):
 
         if is_disabled:
             self._apply_disabled_effect(True)
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ------------------------------------------------------------
     # UI 组装
@@ -459,8 +465,27 @@ class Progress(QWidget):
         self._track.update()
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self._apply_styles()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_is_striped(self, striped: bool):
         self._is_striped = striped
@@ -519,7 +544,7 @@ class CircularProgress(QWidget):
         is_indeterminate: bool = False,
         is_disabled: bool = False,
         disable_animation: bool = False,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -537,7 +562,8 @@ class CircularProgress(QWidget):
         self._is_indeterminate = is_indeterminate
         self._is_disabled = is_disabled
         self._disable_animation = disable_animation
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_cp_theme(theme)
 
         # 确定态动画：从当前 ratio → 目标 ratio
         # 先按 value 计算出初始 ratio，避免 label 初次渲染显示 0%
@@ -558,6 +584,10 @@ class CircularProgress(QWidget):
 
         if is_disabled:
             self._apply_disabled_effect(True)
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ----- Qt properties -----
     def _get_ratio(self) -> float:
@@ -703,8 +733,27 @@ class CircularProgress(QWidget):
         self._apply_styles()
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_cp_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self._apply_styles()
+
+    @staticmethod
+    def _resolve_cp_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_is_indeterminate(self, indet: bool):
         self._is_indeterminate = indet
@@ -810,7 +859,7 @@ class Spinner(CircularProgress):
         size: str = "md",
         label: str = "",
         stroke_width: Optional[float] = None,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(
