@@ -1,6 +1,6 @@
 [project]
 name = "herosideui"
-version = "0.0.22"
+version = "0.0.23"
 description = "PySide6 component library inspired by HeroUI v2 design system"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
@@ -41,12 +41,10 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
+# hatchling 会递归打包 hero_side_ui/ 下所有文件（包括 resources/ 里的 svg）
+# 不要额外加 force-include，否则会导致 wheel 里出现重复文件条目，
+# PyPI 会以 "Duplicate filename in local headers" 拒绝上传。
 packages = ["hero_side_ui"]
-
-# 显式声明把 resources 下的静态文件打进 wheel（svg/png/ttf/otf/qss）
-# 其实 hatchling 默认就会打包 packages 下的所有文件，这里只是防御式显式化
-[tool.hatch.build.targets.wheel.force-include]
-"hero_side_ui/resources" = "hero_side_ui/resources"
 
 [tool.hatch.build.targets.sdist]
 include = [
