@@ -112,8 +112,10 @@ HeroSideUI/
 │   ├── animation/               # 动画效果
 │   │   ├── ripple.py            #   水波纹
 │   │   └── press_scale.py       #   按压缩放
-│   └── utils/                   # 工具函数
-│       └── color_utils.py       #   颜色转换 (hex→rgba)
+│   ├── utils/                   # 工具函数
+│   │   └── color_utils.py       #   颜色转换 (hex→rgba)
+│   └── resources/               # 随包分发的静态资源
+│       └── icons/               #   内置 SVG 图标（打进 wheel）
 ├── docs/                        # 组件 API 文档
 │   ├── button.md                #   Button 详细文档
 │   └── ......                   #   更多组件详细文档
@@ -122,9 +124,6 @@ HeroSideUI/
 │   │   ├── light_mode.py        #   亮色模式全展示
 │   │   └── dark_mode.py         #   暗色模式全展示
 │   └── ....../                  #   更多组件示例
-├── resources/                   # 静态资源
-│   ├── fonts/                   #   字体文件
-│   └── icons/                   #   图标文件
 ├── tests/                       # 测试
 ├── pyproject.toml               # 项目配置
 ├── LICENSE                      # MIT
@@ -171,6 +170,25 @@ uv run python -m pytest tests/test_accordion.py -v
 ```
 
 测试覆盖构造参数、颜色/变体/尺寸遍历、动态 API、展开收起逻辑、信号触发等。视觉效果和动画通过 `examples/` 目录的示例人工验证。
+
+---
+
+## 发布新版本
+
+本仓库已接入 **GitHub Actions + PyPI Trusted Publisher (OIDC)**，发包零 Token、任何电脑都能触发。
+
+最简流程：
+
+```bash
+# 1. bump 版本号（pyproject.toml + hero_side_ui/__init__.py）
+# 2. commit + push
+git commit -am "chore: release v0.0.22"
+git tag v0.0.22 && git push origin main --tags
+# 3. 在 GitHub 网页 Releases → Draft a new release → 选 tag → Publish
+# 4. 等 Actions 绿勾 → PyPI 有新版
+```
+
+首次配置、TestPyPI 试水、故障排查等完整文档见 **[docs/PUBLISHING.md](docs/PUBLISHING.md)**。
 
 ---
 

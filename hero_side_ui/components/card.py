@@ -38,7 +38,7 @@ from PySide6.QtCore import (
     Property,
     QRectF,
 )
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
+from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPalette
 from typing import Optional
 
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CARD_SHADOWS
@@ -316,6 +316,14 @@ class Card(QWidget):
             self._get_normal_bg(), self._get_hover_bg(), self._hover_progress
         )
 
+    def current_bg_color(self) -> QColor:
+        """返回 Card 当前实际底色(主题/hover 状态解析后)。
+
+        供需要与 Card 融合的子组件(如 ScrollShadow)读取使用,
+        避免在外部硬编码色值。
+        """
+        return QColor(self._current_bg())
+
     def _refresh_qss(self):
         """刷新内层 _content 的 QSS 背景色（每帧回调）"""
         # 初次构造阶段 _content 可能还没创建
@@ -339,6 +347,15 @@ class Card(QWidget):
                 {border}
             }}
         """)
+
+        # 同步 _content 的 palette.Window = QSS 实际画的底色。
+        # QSS 自身不触达 palette,但子孙 widget 通过 Qt palette propagation
+        # 会继承到这里,从而可以通过 self.palette().color(Window) 读到 Card 的
+        # 实际底色(如 ScrollShadow 的 _fade_color 用来与背景融合)。
+        # 仅改 Window——严禁动 Base/Text(MEMORY 22/23 Input 挖空坑)。
+        pal = self._content.palette()
+        pal.setColor(QPalette.ColorRole.Window, QColor(bg))
+        self._content.setPalette(pal)
 
     # ============================================================
     # 三层装配

@@ -48,7 +48,7 @@ docs/_static/
 Thumbs.db
 
 # Project specific
-resources/temp/
+hero_side_ui/resources/temp/
 *.qss.user
 *.ui.user
 

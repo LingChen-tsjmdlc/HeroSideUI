@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.0.21"
+__version__ = "0.0.22"
 
 from .core import ThemeProvider
 
@@ -17,6 +17,7 @@ from .components import (
     ThemeSwitcher,
     Title, Subtitle, Caption, Body,
     Switch,
+    ScrollShadow,
 )
 
 __all__ = [
@@ -32,4 +33,5 @@ __all__ = [
     "ThemeSwitcher",
     "Title", "Subtitle", "Caption", "Body",
     "Switch",
+    "ScrollShadow",
 ]
