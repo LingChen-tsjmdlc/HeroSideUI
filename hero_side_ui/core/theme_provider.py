@@ -236,13 +236,17 @@ class ThemeProvider(QObject):
 
         self._current_theme = new_theme
 
+        # 先同步 QApplication 全局 palette,再广播给组件。
+        # 原因: 部分组件(如 ScrollShadow 的 _fade_color)在 _apply_provider_theme
+        # 里会读 self.palette().color(Window) —— 它会继承自 QApplication palette,
+        # 必须先把 QApplication palette 设成新主题的值,组件读到才是正确的。
+        # 顺序反了会导致组件读到旧主题色一帧。
+        if self._auto_app_palette:
+            self._sync_app_palette()
+
         # 广播给所有已注册组件
         for widget in list(self._widgets):
             self._push_theme_to_widget(widget, new_theme)
-
-        # 自动同步 QApplication 全局 palette（让用户写普通 Qt 窗口也能开箱即用）
-        if self._auto_app_palette:
-            self._sync_app_palette()
 
         self.theme_changed.emit(new_theme)
 

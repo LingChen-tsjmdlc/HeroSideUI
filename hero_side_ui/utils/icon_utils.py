@@ -34,9 +34,9 @@ from PySide6.QtCore import QByteArray, Qt
 from PySide6.QtGui import QPixmap, QColor, QPainter, QImage
 from PySide6.QtSvg import QSvgRenderer
 
-# 库内置图标目录
+# 库内置图标目录（随包安装，位于 hero_side_ui/resources/icons/）
 _BUILTIN_ICONS_DIR = (
-    Path(__file__).resolve().parent.parent.parent / "resources" / "icons"
+    Path(__file__).resolve().parent.parent / "resources" / "icons"
 )
 
 # 主题感知的默认对比色

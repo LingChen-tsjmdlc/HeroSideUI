@@ -12,6 +12,7 @@ from .tabs import Tabs, TabItem
 from .theme_switcher import ThemeSwitcher
 from .text import Title, Subtitle, Caption, Body
 from .switch import Switch
+from .scroll_shadow import ScrollShadow
 
 __all__ = [
     "Button", "Accordion", "AccordionItem", "Input",
@@ -25,4 +26,5 @@ __all__ = [
     "ThemeSwitcher",
     "Title", "Subtitle", "Caption", "Body",
     "Switch",
+    "ScrollShadow",
 ]
