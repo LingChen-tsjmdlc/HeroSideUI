@@ -9,6 +9,7 @@ from .component_presets import (
     POPOVER_SHADOWS,
     TOOLTIP_SIZES,
     TABS_SIZES,
+    SWITCH_SIZES,
 )
 
 __all__ = [
@@ -26,4 +27,5 @@ __all__ = [
     "POPOVER_SHADOWS",
     "TOOLTIP_SIZES",
     "TABS_SIZES",
+    "SWITCH_SIZES",
 ]
