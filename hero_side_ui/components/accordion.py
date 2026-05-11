@@ -37,6 +37,7 @@ from typing import Optional
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, ACCORDION_SIZES
 from ..utils import hex_to_rgba
 from ..animation import CollapseAnimation
+from ..core import ThemeProvider
 
 
 class AccordionItem(QWidget):
@@ -489,7 +490,7 @@ class Accordion(QWidget):
         allow_multiple: bool = False,
         size: str = "md",
         radius: str = "md",
-        theme: str = "light",
+        theme: str = "auto",
         show_divider: bool = True,
         parent: Optional[QWidget] = None,
     ):
@@ -498,7 +499,8 @@ class Accordion(QWidget):
         self._allow_multiple = allow_multiple
         self._size = size
         self._radius = radius
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
         self._show_divider = show_divider
         self._items: list[AccordionItem] = []
 
@@ -509,6 +511,10 @@ class Accordion(QWidget):
         self.setObjectName("heroAccordion")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._apply_container_styles()
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     def _apply_container_styles(self):
         """应用容器级别样式
@@ -596,10 +602,31 @@ class Accordion(QWidget):
     # ---- 公共 API ----
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_container_styles()
+        for item in self._items:
+            item._apply_styles(self._theme, self._variant, self._size, self._show_divider, self._radius)
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self._apply_container_styles()
         for item in self._items:
             item._apply_styles(theme, self._variant, self._size, self._show_divider, self._radius)
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_variant(self, variant: str):
         self._variant = variant

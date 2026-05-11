@@ -22,7 +22,7 @@ class TestCheckboxInit:
         assert cb._is_disabled is False
         assert cb._is_invalid is False
         assert cb._is_indeterminate is False
-        assert cb._theme == "light"
+        assert cb._theme_mode == "auto"
 
     def test_initial_selected(self, qtbot):
         cb = Checkbox("On", is_selected=True)

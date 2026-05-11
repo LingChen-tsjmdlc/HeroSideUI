@@ -15,7 +15,7 @@ class TestDividerInit:
         qtbot.addWidget(d)
 
         assert d._orientation == "horizontal"
-        assert d._theme == "light"
+        assert d._theme_mode == "auto"
         assert d._custom_color is None
 
     def test_horizontal_size_policy(self, qtbot):

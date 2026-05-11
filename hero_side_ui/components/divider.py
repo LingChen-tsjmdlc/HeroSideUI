@@ -25,6 +25,7 @@ from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QPen
 from typing import Optional
 
 from ..themes import HEROUI_COLORS, FONT_FAMILY, DIVIDER_SIZES
+from ..core import ThemeProvider
 
 
 class Divider(QFrame):
@@ -54,7 +55,7 @@ class Divider(QFrame):
     def __init__(
         self,
         orientation: str = "horizontal",
-        theme: str = "light",
+        theme: str = "auto",
         color: Optional[str] = None,
         text: Optional[str] = None,
         text_size: int = 12,
@@ -62,7 +63,8 @@ class Divider(QFrame):
     ):
         super().__init__(parent)
         self._orientation = orientation
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
         self._custom_color = color
         self._text = text or ""
         self._text_size = int(text_size)
@@ -72,6 +74,10 @@ class Divider(QFrame):
         self.setFrameShadow(QFrame.Shadow.Plain)
 
         self._apply_styles()
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ============================================================
     # 内部：解析颜色
@@ -204,9 +210,28 @@ class Divider(QFrame):
         self._apply_styles()
 
     def set_theme(self, theme: str):
-        """设置主题 ("light" / "dark")"""
+        """设置主题 ("auto" / "light" / "dark")"""
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self._apply_styles()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_color(self, color: Optional[str]):
         """设置自定义颜色 (十六进制字符串或 None 恢复默认)"""

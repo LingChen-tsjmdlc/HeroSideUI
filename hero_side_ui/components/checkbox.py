@@ -60,6 +60,7 @@ from typing import Optional, List
 
 from ..themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CHECKBOX_SIZES
 from ..utils import hex_to_rgba
+from ..core import ThemeProvider
 
 # ============================================================
 # 内部资源：check / minus (indeterminate) svg
@@ -120,7 +121,7 @@ class Checkbox(QCheckBox):
         is_invalid: bool = False,
         is_indeterminate: bool = False,
         disable_animation: bool = False,
-        theme: str = "light",
+        theme: str = "auto",
         value: Optional[str] = None,
         parent: Optional[QWidget] = None,
     ):
@@ -134,7 +135,8 @@ class Checkbox(QCheckBox):
         self._is_invalid = is_invalid
         self._is_indeterminate = is_indeterminate
         self._disable_animation = disable_animation
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
         self._value = value if value is not None else text
 
         # 动画驱动值
@@ -183,6 +185,10 @@ class Checkbox(QCheckBox):
 
         # 初次尺寸
         self._refresh_geometry()
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ============================================================
     # Qt 属性（供 QPropertyAnimation 驱动）
@@ -656,8 +662,27 @@ class Checkbox(QCheckBox):
         self.update()
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self.update()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self.update()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_line_through(self, enabled: bool):
         self._line_through = enabled
@@ -731,7 +756,7 @@ class CheckboxGroup(QWidget):
         is_invalid: bool = False,
         is_required: bool = False,
         default_value: Optional[List[str]] = None,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -747,13 +772,18 @@ class CheckboxGroup(QWidget):
         self._is_disabled = is_disabled
         self._is_invalid = is_invalid
         self._is_required = is_required
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = Checkbox._resolve_theme(theme)
         self._default_value = default_value or []
 
         self._checkboxes: List[Checkbox] = []
 
         self._setup_ui()
         self._apply_styles()
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     def _setup_ui(self):
         self._root = QVBoxLayout(self)
@@ -890,8 +920,22 @@ class CheckboxGroup(QWidget):
         self._broadcast(lambda c: c.set_radius(radius))
 
     def set_theme(self, theme: str):
-        self._theme = theme
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = Checkbox._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
         self._broadcast(lambda c: c.set_theme(theme))
+        self._apply_styles()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
+        self._theme = theme
+        self._broadcast(lambda c: c._apply_provider_theme(theme))
         self._apply_styles()
 
     def set_line_through(self, enabled: bool):

@@ -30,7 +30,7 @@ class TestTabsInit:
         assert t._size == "md"
         assert t._radius == "md"
         assert t._placement == "top"
-        assert t._theme == "light"
+        assert t._theme_mode == "auto"
         assert t._full_width is False
         assert t._is_disabled is False
         assert t._disable_animation is False
@@ -303,7 +303,7 @@ class TestDynamicSetters:
         with pytest.raises(ValueError):
             t.set_placement("???")
         with pytest.raises(ValueError):
-            t.set_theme("auto")
+            t.set_theme("invalid_theme")
 
 
 # ============================================================

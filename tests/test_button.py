@@ -19,7 +19,7 @@ class TestButtonInit:
         assert btn._variant == "solid"
         assert btn._size == "md"
         assert btn._radius is None
-        assert btn._theme == "light"
+        assert btn._theme_mode == "auto"
         assert btn.isEnabled()
 
     def test_custom_params(self, qtbot):
@@ -136,6 +136,56 @@ class TestButtonDynamicAPI:
 
         btn.set_radius("full")
         assert btn._radius == "full"
+
+
+class TestButtonIconOnly:
+    """icon_only 模式"""
+
+    def test_icon_only_is_square(self, qtbot):
+        btn = Button(icon_only=True, size="md")
+        qtbot.addWidget(btn)
+        assert btn._icon_only is True
+        # 正方形：宽 == 高
+        assert btn.size().width() == btn.size().height()
+
+    def test_icon_only_sm_size(self, qtbot):
+        btn = Button(icon_only=True, size="sm")
+        qtbot.addWidget(btn)
+        # sm height 18 + padding_y 6*2 = 30
+        assert btn.size().width() == 30
+
+    def test_icon_only_md_size(self, qtbot):
+        btn = Button(icon_only=True, size="md")
+        qtbot.addWidget(btn)
+        # md height 26 + padding_y 10*2 = 46
+        assert btn.size().width() == 46
+
+    def test_icon_only_lg_size(self, qtbot):
+        btn = Button(icon_only=True, size="lg")
+        qtbot.addWidget(btn)
+        # lg height 33 + padding_y 14*2 = 61
+        assert btn.size().width() == 61
+
+    def test_icon_only_default_false(self, qtbot):
+        btn = Button("Hello")
+        qtbot.addWidget(btn)
+        assert btn._icon_only is False
+
+    def test_set_icon_only_dynamic(self, qtbot):
+        btn = Button("Test")
+        qtbot.addWidget(btn)
+
+        # 先开启
+        btn.set_icon_only(True)
+        assert btn._icon_only is True
+        assert btn.size().width() == btn.size().height()
+
+        # 再关闭 — 应该不再被锁定尺寸
+        btn.set_icon_only(False)
+        assert btn._icon_only is False
+        # 关闭后 sizeHint 应该是常规（宽 > 高）
+        hint = btn.sizeHint()
+        assert hint.width() > hint.height()
 
 
 class TestButtonSignals:

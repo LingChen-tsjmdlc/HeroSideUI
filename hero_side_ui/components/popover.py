@@ -49,6 +49,7 @@ from typing import Optional
 
 from ..themes import HEROUI_COLORS, POPOVER_SHADOWS
 from ..animation import FadeScaleAnimation, BackdropFade, PixmapScaleProxy
+from ..core import ThemeProvider
 
 ARROW_SIZE = 5  # 箭头一半边长（视觉像 5~6px 的小箭头）
 ARROW_INSET = 2  # 箭头底边相对 content_rect 向内偏移，避免圆角缝隙
@@ -266,7 +267,7 @@ class Popover(QWidget):
         trigger_variant: str = "flat",
         is_disabled: bool = False,
         disable_animation: bool = False,
-        theme: str = "light",
+        theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
         super().__init__(parent)
@@ -286,7 +287,8 @@ class Popover(QWidget):
         self._trigger_variant = trigger_variant
         self._is_disabled = is_disabled
         self._disable_animation = disable_animation
-        self._theme = theme
+        self._theme_mode = theme
+        self._theme = self._resolve_theme(theme)
 
         self._trigger: Optional[QWidget] = None
         self._backdrop: Optional[_Backdrop] = None
@@ -359,6 +361,10 @@ class Popover(QWidget):
 
         # 默认隐藏
         self.hide()
+
+        # auto 模式：注册到 ThemeProvider
+        if self._theme_mode == "auto":
+            ThemeProvider.instance().register(self)
 
     # ============================================================
     # 内容插槽
@@ -1121,8 +1127,27 @@ class Popover(QWidget):
         self._backdrop_kind = kind
 
     def set_theme(self, theme: str):
+        if theme == "auto":
+            self._theme_mode = "auto"
+            self._theme = self._resolve_theme("auto")
+            ThemeProvider.instance().register(self)
+        else:
+            if self._theme_mode == "auto":
+                ThemeProvider.instance().unregister(self)
+            self._theme_mode = theme
+            self._theme = theme
+        self.update()
+
+    def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 广播专用"""
         self._theme = theme
         self.update()
+
+    @staticmethod
+    def _resolve_theme(mode: str) -> str:
+        if mode in ("light", "dark"):
+            return mode
+        return ThemeProvider.instance().current_theme
 
     def set_is_disabled(self, disabled: bool):
         self._is_disabled = disabled
