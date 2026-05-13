@@ -2,6 +2,7 @@
 from .button import Button
 from .accordion import Accordion, AccordionItem
 from .input import Input
+from .textarea import Textarea
 from .divider import Divider
 from .card import Card, CardHeader, CardBody, CardFooter
 from .checkbox import Checkbox, CheckboxGroup
@@ -17,7 +18,7 @@ from .listbox import Listbox, ListboxItem, ListboxSection
 from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 
 __all__ = [
-    "Button", "Accordion", "AccordionItem", "Input",
+    "Button", "Accordion", "AccordionItem", "Input", "Textarea",
     "Divider",
     "Card", "CardHeader", "CardBody", "CardFooter",
     "Checkbox", "CheckboxGroup",

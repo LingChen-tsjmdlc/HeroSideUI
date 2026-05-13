@@ -21,6 +21,7 @@ HeroUI v2 组件级主题预设 (Component Presets)
 from .button import BUTTON_SIZES
 from .accordion import ACCORDION_SIZES
 from .input import INPUT_SIZES
+from .textarea import TEXTAREA_SIZES
 from .divider import DIVIDER_SIZES
 from .card import CARD_SHADOWS
 from .checkbox import CHECKBOX_SIZES
@@ -36,6 +37,7 @@ __all__ = [
     "BUTTON_SIZES",
     "ACCORDION_SIZES",
     "INPUT_SIZES",
+    "TEXTAREA_SIZES",
     "DIVIDER_SIZES",
     "CARD_SHADOWS",
     "CHECKBOX_SIZES",
