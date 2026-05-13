@@ -9,6 +9,7 @@ from .indeterminate import IndeterminateBarAnimation, SpinAnimation
 from .stripe_flow import StripeFlowAnimation
 from .backdrop_fade import BackdropFade
 from .pixmap_scale_proxy import PixmapScaleProxy
+from .padding_squeeze import PaddingSqueezeAnimation
 from .tween import tween_value, stop_tween, tween_geometry
 from .check_draw import paint_animated_check, CheckDrawAnimation
 
@@ -24,6 +25,7 @@ __all__ = [
     "StripeFlowAnimation",
     "BackdropFade",
     "PixmapScaleProxy",
+    "PaddingSqueezeAnimation",
     "tween_value",
     "stop_tween",
     "tween_geometry",

@@ -11,6 +11,7 @@ from .component_presets import (
     TABS_SIZES,
     SWITCH_SIZES,
     LISTBOX_SIZES,
+    AUTOCOMPLETE_SIZES,
 )
 
 __all__ = [
@@ -30,4 +31,5 @@ __all__ = [
     "TABS_SIZES",
     "SWITCH_SIZES",
     "LISTBOX_SIZES",
+    "AUTOCOMPLETE_SIZES",
 ]

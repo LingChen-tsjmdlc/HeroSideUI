@@ -39,6 +39,7 @@ from PySide6.QtCore import (
     QSize,
     QTimer,
     QElapsedTimer,
+    QEasingCurve,
 )
 from PySide6.QtGui import (
     QPainter,
@@ -48,7 +49,7 @@ from PySide6.QtGui import (
 from typing import Optional
 
 from ..themes import HEROUI_COLORS, POPOVER_SHADOWS
-from ..animation import FadeScaleAnimation, BackdropFade, PixmapScaleProxy
+from ..animation import FadeScaleAnimation, BackdropFade, PixmapScaleProxy, PaddingSqueezeAnimation
 from ..core import ThemeProvider
 
 ARROW_SIZE = 5  # 箭头一半边长（视觉像 5~6px 的小箭头）
@@ -359,6 +360,32 @@ class Popover(QWidget):
             enable_predicate=self._content_is_text_only,
         )
 
+        # padding 挤压扩张动画(复合组件场景下 transform-scale 的轻量替代):
+        #   - 复合组件(Listbox/Input/...)走 pixmap_scale 会让子组件糊掉,只 fade
+        #     缺乏"展开感";额外动画 _outer 的 contentsMargins 让内容"从锚点
+        #     向外铺开",视觉补强
+        #   - 纯文字仍走 pixmap scale(更整体感),不启用此动画
+        # 启用与否在 open() 时根据 _content_is_text_only 决定。
+        self._squeeze = PaddingSqueezeAnimation(
+            layout=self._outer,
+            base_margins=self._frame_margins(),
+            # delta 20 + duration 280: 挤压幅度加大 20px,时长与 fade 对齐,
+            # 视觉"展开"感明显。用 OutQuart(比 OutCubic 更有减速感,无过冲
+            # 风险 —— OutBack 会 progress > 1.0 让 squeeze_extra 变负,
+            # content_rect 反而超出 popover 外框,可能穿帮)
+            delta=20,
+            duration=280,
+            easing=QEasingCurve.Type.OutQuart,
+            easing_out=QEasingCurve.Type.InQuart,
+            origin="center",  # open 时根据 placement 动态调,默认 center
+            parent=self,
+        )
+        # 每帧 progress 变化触发重绘:paintEvent 会读 squeeze_extra() 让外框
+        # 圆角/阴影跟着缩,实现"整个 popover(含底色)整体挤压"的效果,而不只是
+        # 内容 layout 几何。否则边框不动只内容缩,视觉是"内容从中心铺开",
+        # 不是"组件整体出现"。
+        self._squeeze.progress_changed.connect(lambda _: self.update())
+
         # 默认隐藏
         self.hide()
 
@@ -587,12 +614,22 @@ class Popover(QWidget):
         self._is_open = True
         self.opened.emit()
 
+        # 动画分支:
+        #   - 纯文字 popover: pixmap_scale + fade(整体感更强,字会被光栅化但短暂可接受)
+        #   - 自定义插槽 / 复合组件: 只 fade,不做任何缩放/挤压(用户明确指定:
+        #     使用透明度变化,不使用缩放或 padding squeeze。padding squeeze 在
+        #     popover 含阴影 + 与 input 等宽的场景里视觉张力有限,且对子组件
+        #     hover/ripple 没增益,fade 已足够)
         if self._disable_animation:
             self._fade.play_in(instant=True)
         else:
-            # 抓取整窗 pixmap 作为缩放代理，隐藏真实内容
-            self._scale_proxy.begin()
-            self._fade.play_in()
+            if self._content_is_text_only():
+                # 纯文字:抓取整窗 pixmap 作为缩放代理,隐藏真实内容
+                self._scale_proxy.begin()
+                self._fade.play_in()
+            else:
+                # 自定义插槽:只 fade
+                self._fade.play_in()
 
     def close(self):
         if not self._is_open:
@@ -614,14 +651,21 @@ class Popover(QWidget):
             self._fade.play_out(instant=True)
             self._finalize_close()
         else:
-            # 关闭前也抓一次快照（内容可能变了），然后隐藏真实内容播 scale
-            self._scale_proxy.begin()
-            self._fade.play_out()
+            if self._content_is_text_only():
+                # 纯文字:关闭前也抓一次快照(内容可能变了),隐藏真实内容播 scale
+                self._scale_proxy.begin()
+                self._fade.play_out()
+            else:
+                # 自定义插槽:只 fade out
+                self._fade.play_out()
 
     def _finalize_close(self):
         if not self._is_open:
             return
         self.hide()
+        # squeeze 复位到展开(base margins),避免 popover 再次被 set_content/
+        # adjustSize 时 layout 残留收起态影响 sizeHint 计算。
+        self._squeeze.set_immediate(True)
         # backdrop 的 hide 已由它自己的 fade 动画完成触发，这里只需 delete
         if self._backdrop is not None:
             self._backdrop.deleteLater()
@@ -734,6 +778,25 @@ class Popover(QWidget):
             m[0] += arrow
         return tuple(m)
 
+    def _effective_frame_margins(self) -> tuple:
+        """paint 用的 frame margins = base + 当前 squeeze 增量。
+
+        让 paintEvent 画的圆角 + 阴影 + 箭头位置都跟着 squeeze 动画走 ——
+        实现"整个 popover(含底色)整体挤压扩张"的视觉,不只是内容 layout 几何。
+        非动画期间 squeeze 处于完全展开态(extra 全 0),返回值 == _frame_margins。
+        """
+        base = self._frame_margins()
+        try:
+            extra = self._squeeze.squeeze_extra()
+        except Exception:
+            return base
+        return (
+            base[0] + extra[0],
+            base[1] + extra[1],
+            base[2] + extra[2],
+            base[3] + extra[3],
+        )
+
     def _calc_position(self, trigger: QWidget) -> QPoint:
         """计算 popover 在屏幕坐标下的左上角位置（含 auto-flip）。"""
         tr_pos = trigger.mapToGlobal(QPoint(0, 0))
@@ -837,6 +900,30 @@ class Popover(QWidget):
         c = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
         return QColor(c[500])
 
+    def current_bg_color(self) -> QColor:
+        """公共 getter：返回 popover 当前实际底色 (含 color/theme 解析)。
+
+        供子组件（如 ScrollShadow / Autocomplete 列表容器）需要"与 popover 底色严丝
+        合缝融合" 时使用——遍历 parent 链 duck-typing 查找 ``current_bg_color`` 同名
+        方法即可。
+
+        与 Card 的 :meth:`current_bg_color` 同语义、同签名。
+        """
+        return self._bg_color()
+
+    def current_corner_radius(self) -> float:
+        """公共 getter：返回 popover 当前实际圆角半径 (px)。
+
+        供 ScrollShadow 这类需要"把渐变阴影裁剪到圆角矩形内"的子组件使用：
+        阴影 overlay 是矩形 widget，paintEvent 里画的是矩形渐变；当滚到中间时
+        顶/底两条阴影都显示，会把 popover 圆角内的 4 个角染色（看起来像直角）。
+        通过 duck-typing 沿父链找到这个 API → overlay 用 QPainterPath 裁剪到
+        圆角矩形 → 阴影自然跟随圆角内收。
+
+        约定与 ``current_bg_color`` 一致：duck-typing 范式（MEMORY 第 32 条）。
+        """
+        return float(self._resolve_radius())
+
     def _text_color(self) -> QColor:
         is_dark = self._theme == "dark"
         if self._color == "default":
@@ -892,7 +979,7 @@ class Popover(QWidget):
             self._scale_proxy.draw(painter, self.rect(), anchor=(cx, cy))
             return
 
-        m = self._frame_margins()
+        m = self._effective_frame_margins()
         cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
         bg = self._bg_color()
         radius = self._resolve_radius()
@@ -1136,11 +1223,19 @@ class Popover(QWidget):
                 ThemeProvider.instance().unregister(self)
             self._theme_mode = theme
             self._theme = theme
+        # 主题变化后:内容里的"裸 QLabel"文字色是我们 setStyleSheet 写死的 hex,
+        # 不会自动跟主题切换 → 必须显式重刷。
+        # 注意:不在这里 _sync_trigger_style() —— trigger(Button) 自己订阅了
+        # ThemeProvider,会自治刷新 theme;popover 在 attach 时已做过一次性
+        # color/variant 默认同步,主题切换不该再插手覆盖 trigger 状态。
+        self._apply_content_text_color()
         self.update()
 
     def _apply_provider_theme(self, theme: str):
         """ThemeProvider 广播专用"""
         self._theme = theme
+        # 同 set_theme:只刷自家裸 QLabel,trigger 由它自己处理。
+        self._apply_content_text_color()
         self.update()
 
     @staticmethod

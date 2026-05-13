@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.0.24"
+__version__ = "0.0.25"
 
 from .core import ThemeProvider
 
@@ -19,6 +19,7 @@ from .components import (
     Switch,
     ScrollShadow,
     Listbox, ListboxItem, ListboxSection,
+    Autocomplete, AutocompleteItem, AutocompleteSection,
 )
 
 __all__ = [
@@ -36,4 +37,5 @@ __all__ = [
     "Switch",
     "ScrollShadow",
     "Listbox", "ListboxItem", "ListboxSection",
+    "Autocomplete", "AutocompleteItem", "AutocompleteSection",
 ]

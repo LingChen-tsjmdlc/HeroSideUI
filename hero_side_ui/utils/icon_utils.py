@@ -12,6 +12,11 @@ SVG 图标渲染工具
       * 暗色模式 → 浅色 icon（#fafafa）
   - 传 "original" → 保留 SVG 原始颜色（不做任何替换）
 
+线宽处理（stroke_width 参数）:
+  - None（默认）→ 保留 SVG 原始 stroke-width
+  - 数值（如 2.0 / 2.5）→ 替换 SVG 中所有 stroke-width 属性,
+    用于 outline 类 heroicons 调粗细（默认 1.5,常见加粗用 2.0/2.25/2.5）
+
 用法:
     from hero_side_ui.utils import load_svg_icon
 
@@ -26,9 +31,14 @@ SVG 图标渲染工具
 
     # 方式4: 保留原始 SVG 颜色
     pixmap = load_svg_icon("my_colorful_logo.svg", size=24, color="original")
+
+    # 方式5: 加粗 outline 图标的描边
+    pixmap = load_svg_icon("heroicons--chevron-down", size=24, stroke_width=2.5)
 """
 
+import re
 from pathlib import Path
+from typing import Optional, Union
 
 from PySide6.QtCore import QByteArray, Qt
 from PySide6.QtGui import QPixmap, QColor, QPainter, QImage
@@ -42,6 +52,11 @@ _BUILTIN_ICONS_DIR = (
 # 主题感知的默认对比色
 _DEFAULT_LIGHT_ICON = "#18181b"  # 亮色背景下用深色 icon（zinc-900）
 _DEFAULT_DARK_ICON = "#fafafa"   # 暗色背景下用浅色 icon（zinc-50）
+
+# 匹配 SVG 中的 stroke-width="..." 或 stroke-width='...' 属性
+# (兼容数值带小数、带单位等情况;不匹配 CSS style 中的 stroke-width 因为
+# heroicons 内置 SVG 用的都是 attribute 形式)
+_STROKE_WIDTH_RE = re.compile(r'stroke-width\s*=\s*"[^"]*"|stroke-width\s*=\s*\'[^\']*\'')
 
 
 def _resolve_theme_aware_color() -> str:
@@ -64,6 +79,7 @@ def load_svg_icon(
     name_or_path: str,
     size: int = 24,
     color=None,
+    stroke_width: Optional[Union[int, float]] = None,
 ) -> QPixmap:
     """加载 SVG 图标并渲染为 QPixmap
 
@@ -76,6 +92,10 @@ def load_svg_icon(
             - None（默认）：根据 ThemeProvider 当前主题自动选对比色（暗色→浅，亮色→深）
             - QColor 对象或 HEX 字符串（如 "#006FEE"）：使用这个颜色
             - "original"：保留 SVG 原始颜色，不做替换
+        stroke_width: 描边粗细。
+            - None（默认）：保留 SVG 原始 stroke-width
+            - 数值：替换所有 stroke-width="..." 属性,适合给 outline 类 heroicons
+              加粗（默认 1.5,常用 2.0/2.25/2.5）
 
     Returns:
         渲染好的 QPixmap。路径不存在时返回空的透明 pixmap。
@@ -104,6 +124,13 @@ def load_svg_icon(
 
     if color_str is not None:
         svg_data = svg_data.replace("currentColor", color_str)
+
+    # 描边粗细：用正则替换所有 stroke-width="..." 属性
+    if stroke_width is not None:
+        # 格式化:整数去小数点(2 而非 2.0),小数保留(2.5)
+        sw = float(stroke_width)
+        sw_str = str(int(sw)) if sw.is_integer() else str(sw)
+        svg_data = _STROKE_WIDTH_RE.sub(f'stroke-width="{sw_str}"', svg_data)
 
     # 渲染
     renderer = QSvgRenderer(QByteArray(svg_data.encode("utf-8")))

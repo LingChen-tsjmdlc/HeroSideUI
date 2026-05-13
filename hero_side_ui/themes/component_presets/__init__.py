@@ -30,6 +30,7 @@ from .tooltip import TOOLTIP_SIZES
 from .tabs import TABS_SIZES
 from .switch import SWITCH_SIZES
 from .listbox import LISTBOX_SIZES
+from .autocomplete import AUTOCOMPLETE_SIZES
 
 __all__ = [
     "BUTTON_SIZES",
@@ -45,4 +46,5 @@ __all__ = [
     "TABS_SIZES",
     "SWITCH_SIZES",
     "LISTBOX_SIZES",
+    "AUTOCOMPLETE_SIZES",
 ]

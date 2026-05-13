@@ -36,7 +36,7 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt, QEvent, QObject, Signal, QTimer
-from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPalette
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPalette, QPainterPath
 from PySide6.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLayout
 
 from ..core import ThemeProvider
@@ -61,6 +61,9 @@ class _ShadowOverlay(QWidget):
         self._show_start: bool = False  # 顶/左
         self._show_end: bool = False    # 底/右
         self._fade_color: QColor = QColor("#FAFBFD")
+        # 裁剪圆角(px)。>0 时 paintEvent 用 QPainterPath 把渐变裁到圆角矩形内,
+        # 让阴影跟随父级 popover/card 的圆角内收,避免"中间滚动时四角变直角"。
+        self._clip_radius: float = 0.0
 
     def configure(
         self,
@@ -69,6 +72,7 @@ class _ShadowOverlay(QWidget):
         show_start: bool,
         show_end: bool,
         fade_color: QColor,
+        clip_radius: float = 0.0,
     ) -> None:
         """由 ScrollShadow 调用,设置本帧要画什么。"""
         self._orientation = orientation
@@ -76,6 +80,7 @@ class _ShadowOverlay(QWidget):
         self._show_start = show_start
         self._show_end = show_end
         self._fade_color = fade_color
+        self._clip_radius = max(0.0, float(clip_radius))
         self.update()
 
     def paintEvent(self, event):
@@ -85,10 +90,19 @@ class _ShadowOverlay(QWidget):
             return
 
         painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setPen(Qt.PenStyle.NoPen)
 
         w, h = self.width(), self.height()
+
+        # 裁剪到圆角矩形(若 clip_radius>0):让阴影跟随父级容器圆角内收。
+        # 用 QPainterPath 而非 setMask —— mask 是 1bit 没抗锯齿,圆角会有锯齿;
+        # path clip 走 QPainter 抗锯齿,边缘平滑。
+        if self._clip_radius > 0.0:
+            path = QPainterPath()
+            path.addRoundedRect(0.0, 0.0, float(w), float(h), self._clip_radius, self._clip_radius)
+            painter.setClipPath(path)
+
         c_solid = QColor(self._fade_color)
         c_solid.setAlpha(255)
         c_trans = QColor(self._fade_color)
@@ -446,10 +460,38 @@ class ScrollShadow(QScrollArea):
             show_start=start,
             show_end=end,
             fade_color=self._fade_color(),
+            clip_radius=self._clip_radius(),
         )
         if label != self._last_effective_vis:
             self._last_effective_vis = label
             self.visibility_changed.emit(label)
+
+    def _clip_radius(self) -> float:
+        """裁剪圆角半径 (px) —— 沿父链 duck-typing 找 ``current_corner_radius()``。
+
+        阴影 overlay 是矩形 widget,默认画的是矩形渐变;若父级是圆角容器
+        (popover/card),overlay 不裁剪就会"咬"进圆角内侧 —— 滚到中间时
+        顶/底两条阴影都显示,把圆角里的 4 个角染色,看起来像直角。
+
+        范式与 :meth:`_fade_color` 一致(MEMORY 第 32 条):
+            1. 沿 parent 链找到第一个 ``current_corner_radius()`` API
+            2. 找不到 → 返回 0 (不裁剪,矩形渐变,与原行为一致)
+
+        ``_fade_color`` + ``_clip_radius`` 合起来让 ScrollShadow 在任何
+        圆角容器内都能"严丝合缝":底色对、形状对。
+        """
+        p = self.parentWidget()
+        while p is not None:
+            getter = getattr(p, "current_corner_radius", None)
+            if callable(getter):
+                try:
+                    r = getter()
+                    if isinstance(r, (int, float)) and r > 0:
+                        return float(r)
+                except Exception:
+                    pass
+            p = p.parentWidget()
+        return 0.0
 
     def _apply_scrollbar_policy(self) -> None:
         if self._hide_scrollbar:
