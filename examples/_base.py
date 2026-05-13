@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import Qt
 
-from hero_side_ui import ThemeProvider, ThemeSwitcher, Title
+from hero_side_ui import ThemeProvider, ScrollStyle, ThemeSwitcher, Title
 
 
 class DemoBase(QMainWindow):
@@ -131,6 +131,8 @@ class DemoBase(QMainWindow):
         app.setStyle("Fusion")
         # 锁 light 模式：保证首屏可预期（不想锁的可去掉此行）
         ThemeProvider.instance().set_mode("light")
+        # 应用全局滚动条样式（细线 + hover 加粗 + 主题色 ramp）
+        ScrollStyle.instance().apply_global()
         win = cls()
         win.show()
         sys.exit(app.exec())

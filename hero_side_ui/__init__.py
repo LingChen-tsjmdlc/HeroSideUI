@@ -2,12 +2,12 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.0.25"
+__version__ = "0.0.26"
 
-from .core import ThemeProvider
+from .core import ThemeProvider, ScrollStyle, SmoothScroll
 
 from .components import (
-    Button, Accordion, AccordionItem, Input, Divider,
+    Button, Accordion, AccordionItem, Input, Textarea, Divider,
     Card, CardHeader, CardBody, CardFooter,
     Checkbox, CheckboxGroup,
     Progress, CircularProgress, Spinner,
@@ -23,8 +23,8 @@ from .components import (
 )
 
 __all__ = [
-    "ThemeProvider",
-    "Button", "Accordion", "AccordionItem", "Input",
+    "ThemeProvider", "ScrollStyle", "SmoothScroll",
+    "Button", "Accordion", "AccordionItem", "Input", "Textarea",
     "Divider",
     "Card", "CardHeader", "CardBody", "CardFooter",
     "Checkbox", "CheckboxGroup",

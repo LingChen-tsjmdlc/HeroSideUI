@@ -332,16 +332,20 @@ class TestAutocompletePopover:
         ac = Autocomplete(items=[("a", "Apple")], disable_animation=True)
         qtbot.addWidget(ac)
         ac.show()
+        qtbot.waitExposed(ac)
         ac.open()
-        assert ac._popover.is_open() is True
+        qtbot.waitUntil(lambda: ac._popover.is_open() is True, timeout=2000)
         ac.close()
-        assert ac._popover.is_open() is False
+        qtbot.waitUntil(lambda: ac._popover.is_open() is False, timeout=2000)
 
     def test_toggle(self, qtbot):
         ac = Autocomplete(items=[("a", "Apple")], disable_animation=True)
         qtbot.addWidget(ac)
         ac.show()
+        qtbot.waitExposed(ac)
         ac.toggle()
-        assert ac._popover.is_open() is True
+        # CI 上 toggle → open → popover.show() 之间可能有 timing 间隙，用 waitUntil 兜底
+        # 取代裸 assert（macOS CI 偶发 flaky；不是逻辑 bug）
+        qtbot.waitUntil(lambda: ac._popover.is_open() is True, timeout=2000)
         ac.toggle()
-        assert ac._popover.is_open() is False
+        qtbot.waitUntil(lambda: ac._popover.is_open() is False, timeout=2000)
