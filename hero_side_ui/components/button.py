@@ -68,6 +68,7 @@ class Button(QPushButton):
         self._icon_src = icon
         self._icon_size_override = icon_size
         self._icon_color_override = icon_color  # 用户显式指定则覆盖自动配色
+        self._icon_only_side_override: Optional[int] = None  # 外部锁 icon_only 边长(px)
         self._is_hovered = False
         self._theme_mode = theme  # 用户设定的模式: "auto"/"light"/"dark"
         self._theme = self._resolve_theme(theme)  # 实际生效: "light"/"dark"
@@ -113,20 +114,28 @@ class Button(QPushButton):
 
         if self._full_width:
             from PySide6.QtWidgets import QSizePolicy
+
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
-        # icon_only: 把按钮锁成正方形（边长 = 高度）
+        # icon_only: 把按钮锁成正方形（边长 = 高度，或外部 override）
         if self._icon_only:
-            size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
-            h = int(size_config["height"].replace("px", ""))
-            padding_y = size_config["padding_y"]
-            side = h + 2 * padding_y  # 总高 = 内容高 + 上下 padding
+            if self._icon_only_side_override is not None:
+                # 外部容器(如 Autocomplete 把 button 嵌进 input row)需要精确控制
+                # 边长来贴合行高 —— 用 override,不走 size_config 自动算的 30/40/...
+                side = int(self._icon_only_side_override)
+            else:
+                size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
+                h = int(size_config["height"].replace("px", ""))
+                padding_y = size_config["padding_y"]
+                side = h + 2 * padding_y  # 总高 = 内容高 + 上下 padding
             from PySide6.QtWidgets import QSizePolicy
+
             self.setFixedSize(side, side)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         self.setMouseTracking(True)
         from PySide6.QtCore import Qt
+
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def _build_qss(self) -> str:
@@ -147,8 +156,7 @@ class Button(QPushButton):
         else:
             min_width = size_config["min_width"]
 
-        normal_colors, hover_colors, disabled_colors = \
-            self._get_variant_styles(colors)
+        normal_colors, hover_colors, disabled_colors = self._get_variant_styles(colors)
 
         return f"""
         QPushButton {{
@@ -250,7 +258,9 @@ class Button(QPushButton):
 
         elif variant == "light":
             if is_dark:
-                normal = f"background-color: transparent; color: {c_text}; border: none;"
+                normal = (
+                    f"background-color: transparent; color: {c_text}; border: none;"
+                )
                 hover = f"background-color: {hex_to_rgba(c500, 0.2)}; color: {c_text_hover};"
             else:
                 normal = f"background-color: transparent; color: {c500}; border: none;"
@@ -471,6 +481,30 @@ class Button(QPushButton):
         self._icon_color_override = color
         self._refresh_icon()
 
+    def set_icon_size(self, size: Optional[int]):
+        """显式指定 icon 渲染尺寸（px）。传 None 恢复"按按钮尺寸自动算"模式。
+
+        默认行为（None）下,Button 会根据自身 size 自动选 icon_size:
+            - icon_only: side * 0.5
+            - 普通带文字: font_size + 2
+        当外部容器（如 Autocomplete）想精确控制 icon size 与 input row 高度
+        匹配时,可以显式传入。
+        """
+        self._icon_size_override = size
+        self._refresh_icon()
+
+    def set_icon_only_side(self, side: Optional[int]):
+        """显式锁定 icon_only 模式下按钮的边长（px）。传 None 恢复自动算。
+
+        默认行为（None）：side = height + 2*padding_y(由 BUTTON_SIZES 决定,
+        sm 是 30,md 40 等)。在像 Autocomplete 这种"按钮嵌入 input row"的场景,
+        autocomplete 的 end_btn_size 是 18/20/22 远小于 Button 自动算的 side,
+        外部 setFixedSize 又会被 _apply_styles(主题切换/setter 触发)冲掉。
+        改用这个 setter 把 override 持久化,_apply_styles 永远尊重它。
+        """
+        self._icon_only_side_override = side
+        self._apply_styles()
+
     def set_icon_only(self, icon_only: bool):
         """切换 icon_only 模式（True 时按钮锁成正方形）"""
         self._icon_only = bool(icon_only)
@@ -479,7 +513,10 @@ class Button(QPushButton):
             self.setMinimumSize(0, 0)
             self.setMaximumSize(16777215, 16777215)
             from PySide6.QtWidgets import QSizePolicy
-            self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
+
+            self.setSizePolicy(
+                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred
+            )
         self._apply_styles()
         self._refresh_icon()
 

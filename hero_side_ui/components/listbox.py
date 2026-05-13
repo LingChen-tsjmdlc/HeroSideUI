@@ -190,7 +190,18 @@ def _text_hover(variant: str, color: str, theme: str) -> QColor:
 
 
 def _desc_color(theme: str) -> QColor:
-    """description 默认色 (text-foreground-500)。"""
+    """description / empty 占位的次级文字色。
+
+    HeroUI 用 `text-foreground-500` 这类语义色,在亮/暗主题下分别落到不同色阶:
+    - light 主题: default-500 (#71717a) —— 中性灰,在白底上清晰可读
+    - dark  主题: default-400 (#a1a1aa) —— 提亮一档,在 #0B0D12 黑底上才看得清
+                                            (default-500 在暗底上几乎不可见)
+
+    之前写死 default-500 不分主题,导致 empty 占位 icon + 双语在 dark 模式
+    几乎"消失"(用户反馈"icon 显示白色"实际是"看不见的暗灰")。
+    """
+    if theme == "dark":
+        return QColor(HEROUI_COLORS["default"][400])
     return QColor(HEROUI_COLORS["default"][500])
 
 
@@ -286,7 +297,9 @@ class ListboxItem(QAbstractButton):
         self._radius = "sm"
         self._theme = "light"
         self._disable_animation = False
-        self._hide_selected_icon = False  # 对齐 HeroUI 源码 hideSelectedIcon=false：默认显示对勾
+        self._hide_selected_icon = (
+            False  # 对齐 HeroUI 源码 hideSelectedIcon=false：默认显示对勾
+        )
         self._highlight_on_focus = False
         # selection 行为
         self._selectable = True
@@ -676,9 +689,11 @@ class ListboxItem(QAbstractButton):
     # ------------------------------------------------------------
     def enterEvent(self, e):
         super().enterEvent(e)
-        if not self._is_disabled:
-            self._is_hover = True
-            self._refresh_palette(animated=not self._disable_animation)
+        # disabled 也记录 hover —— _refresh_palette 会用一个"减弱版"hover bg
+        # 给视觉反馈("我知道你在 hover 我,但我点不动"),观感比完全不响应好。
+        # 字色/对勾仍走 disabled 默认(由 _is_active 拦截)。
+        self._is_hover = True
+        self._refresh_palette(animated=not self._disable_animation)
 
     def leaveEvent(self, e):
         super().leaveEvent(e)
@@ -738,6 +753,16 @@ class ListboxItem(QAbstractButton):
             target_bg = _hover_bg(self._variant, self._color, self._theme)
             target_border = _hover_border(self._variant, self._color, self._theme)
             target_text = _text_hover(self._variant, self._color, self._theme)
+        elif self._is_disabled and self._is_hover:
+            # disabled 但鼠标在上面:给一个"减弱版"hover 背景作为视觉反馈
+            # ——告诉用户"我知道你 hover 我,但我点不动",观感比完全无反应好。
+            # 字色保持 disabled 默认(不染深),对勾不显示(由 _is_active=False 决定)。
+            # alpha 系数 0.75:既明显感知到 hover,又区别于正常 hover 的"可点击"暗示。
+            base = _hover_bg(self._variant, self._color, self._theme)
+            target_bg = QColor(base)
+            target_bg.setAlpha(int(base.alpha() * 0.75))
+            target_border = QColor(0, 0, 0, 0)
+            target_text = _text_default(self._theme)
         else:
             # 未激活：bg/border 透明（保留色相，避免插值经过黑色 → 见 _aligned_pair）
             target_bg = QColor(0, 0, 0, 0)
@@ -1180,11 +1205,17 @@ class Listbox(QWidget):
         # 用户传 str → 单行文字（兼容旧用法）
         # 用户传 None（默认）→ 居中 icon + 中英双语 ("Nothing to show / 暂无内容")
         self._empty_content_text = empty_content  # None / "" 都视为用默认 icon 模式
-        self._empty_widget: QWidget = QWidget()  # 占位，立刻被 _rebuild_empty_widget 替换
+        self._empty_widget: QWidget = (
+            QWidget()
+        )  # 占位，立刻被 _rebuild_empty_widget 替换
         self._list_v.addWidget(self._empty_widget)
         self._empty_label: QLabel = QLabel()  # 占位，立刻被 _rebuild_empty_widget 替换
         self._rebuild_empty_widget()
         self._empty_widget.hide()
+        # 末尾 stretch:让 items 在父容器(如 popover)给的高度大于 items 实际总高度时
+        # 顶部对齐,不被 QVBoxLayout 默认拉伸成"垂直居中的大块"。
+        # 必须始终保持在 list_v 最末尾 —— add_item / add_section 后都要 _ensure_trailing_stretch()。
+        self._list_v.addStretch(1)
 
         # bottomContent
         self._bottom_content: Optional[QWidget] = None
@@ -1220,6 +1251,10 @@ class Listbox(QWidget):
             return
         self._theme = theme
         self._propagate_style()
+        # _empty_widget 内部的 icon pixmap + 文字 stylesheet 是构造时 cache 的,
+        # 主题切换时不会自己刷新,必须显式重建一遍。否则 dark 模式下 icon/文字
+        # 还是 light 模式的色号,看起来"消失"。
+        self._rebuild_empty_widget()
         self.update()
 
     def set_theme(self, theme: str):
@@ -1289,10 +1324,12 @@ class Listbox(QWidget):
                 show_divider=show_divider,
             )
         self._attach_item(it)
-        # 插到 _empty_label 之前
-        idx = self._list_v.indexOf(self._empty_label)
+        # 插到 _empty_widget 之前(_empty_widget 才是 list_v 的直接子项,
+        # _empty_label 是 _empty_widget 内部的 QLabel,indexOf 永远是 -1)。
+        # 这样保证末尾的 stretch 永远在最后,items 顶部对齐不被拉伸。
+        idx = self._list_v.indexOf(self._empty_widget)
         if idx < 0:
-            self._list_v.addWidget(it)
+            self._list_v.insertWidget(self._list_v.count() - 1, it)  # 倒数第二位(stretch 之前)
         else:
             self._list_v.insertWidget(idx, it)
         self._items.append(it)
@@ -1312,9 +1349,9 @@ class Listbox(QWidget):
             self._attach_item(it)
             self._items.append(it)
 
-        idx = self._list_v.indexOf(self._empty_label)
+        idx = self._list_v.indexOf(self._empty_widget)
         if idx < 0:
-            self._list_v.addWidget(sec)
+            self._list_v.insertWidget(self._list_v.count() - 1, sec)  # stretch 之前
         else:
             self._list_v.insertWidget(idx, sec)
         self._sections.append(sec)
@@ -1461,7 +1498,12 @@ class Listbox(QWidget):
     def _rebuild_empty_widget(self):
         """重建 empty 占位 widget —— 在 set_empty_content / size / theme 变化时调用。"""
         idx = self._list_v.indexOf(self._empty_widget)
-        was_visible = self._empty_widget.isVisible()
+        # 用 isHidden() 而不是 isVisible():isVisible 在 parent (popover) 不可见时
+        # 即使我们 setVisible(True) 也会返回 False —— 主题切换时 popover 关闭 +
+        # listbox 隐藏,被骗到这里 was_visible=False,新 empty_widget 跟着 hide,
+        # 下次 popover 打开 empty 内容还是缺,要用户再触发一次 _apply_filter 才出现。
+        # 用 isHidden() 看的是 widget 自己 explicit 的 visible flag,不受 parent 影响。
+        was_visible = not self._empty_widget.isHidden()
         self._list_v.removeWidget(self._empty_widget)
         self._empty_widget.setParent(None)
         self._empty_widget.deleteLater()
@@ -1483,7 +1525,9 @@ class Listbox(QWidget):
             self._list_v.addWidget(self._empty_widget)
         else:
             self._list_v.insertWidget(idx, self._empty_widget)
-        self._empty_label = self._empty_widget.findChild(QLabel, "heroEmptyText") or QLabel()
+        self._empty_label = (
+            self._empty_widget.findChild(QLabel, "heroEmptyText") or QLabel()
+        )
         self._empty_widget.setVisible(was_visible)
 
     def set_hide_selected_icon(self, v: bool):
@@ -1556,8 +1600,12 @@ class Listbox(QWidget):
         if self._empty_content_text:
             # 兼容模式：单行文字
             v = QVBoxLayout(w)
-            v.setContentsMargins(cfg["item_padding_x"], cfg["item_padding_y"],
-                                  cfg["item_padding_x"], cfg["item_padding_y"])
+            v.setContentsMargins(
+                cfg["item_padding_x"],
+                cfg["item_padding_y"],
+                cfg["item_padding_x"],
+                cfg["item_padding_y"],
+            )
             v.setSpacing(0)
             text_label = QLabel(self._empty_content_text, w)
             text_label.setObjectName("heroEmptyText")
@@ -1569,8 +1617,12 @@ class Listbox(QWidget):
 
         # 默认模式：icon + 中英双语
         v = QVBoxLayout(w)
-        v.setContentsMargins(cfg["item_padding_x"], cfg["item_padding_y"] * 2,
-                              cfg["item_padding_x"], cfg["item_padding_y"] * 2)
+        v.setContentsMargins(
+            cfg["item_padding_x"],
+            cfg["item_padding_y"] * 2,
+            cfg["item_padding_x"],
+            cfg["item_padding_y"] * 2,
+        )
         v.setSpacing(8)
         v.setAlignment(Qt.AlignCenter)
 
@@ -1581,7 +1633,9 @@ class Listbox(QWidget):
         icon_label.setObjectName("heroEmptyIcon")
         icon_label.setAttribute(Qt.WA_TranslucentBackground, True)
         icon_label.setAlignment(Qt.AlignCenter)
-        pix = load_svg_icon("mingcute--empty-box-line", size=icon_size, color=icon_color)
+        pix = load_svg_icon(
+            "mingcute--empty-box-line", size=icon_size, color=icon_color
+        )
         icon_label.setPixmap(pix)
         icon_label.setFixedSize(icon_size, icon_size)
         v.addWidget(icon_label, 0, Qt.AlignCenter)

@@ -4,7 +4,7 @@
 
 ## 特性
 
-- **顶层弹出**：`Popover` 是独立的 `QWidget`（`Qt.Popup` 窗口），不进父布局；外部点击自动关闭
+- **顶层弹出**：`Popover` 是独立的 `QWidget`（`Qt.Tool` 窗口），不进父布局；外部点击自动关闭
 - **触发器绑定**：`popover.attach(any_widget)` 即可，自动监听点击
 - **12 种 placement**：top / top-start / top-end / bottom / bottom-start / bottom-end / left / left-start / left-end / right / right-start / right-end
 - **auto-flip**：屏幕边缘溢出时自动反向
@@ -12,8 +12,9 @@
 - **3 种尺寸** / **5 种圆角**（`none/sm/md/lg/full`）/ **4 级阴影**（`none/sm/md/lg`）
 - **backdrop**：`transparent` / `opaque`（黑色 50%）/ `blur`（黑色 30% 近似）
 - **trigger_scale_on_open**：触发器在 popover 打开时透明度 0.7（视觉反馈）
-- **打开/关闭动画**：opacity + scale `0.95↔1`，150ms OutCubic（可关）
+- **打开/关闭动画**：纯文字内容走 pixmap scale + fade；自定义插槽（复合组件）只走 opacity fade
 - **箭头**：自绘 10×10 三角形，跟随 placement 自动定位
+- **主题**：`auto`（跟随 ThemeProvider）/ `light` / `dark`
 
 ## 快速开始
 
@@ -62,9 +63,11 @@ p.attach(my_settings_button)
 | `placement`             | 12 种                                                        | `top`         | 弹出方向                                 |
 | `backdrop`              | `transparent / opaque / blur`                                | `transparent` | 背景遮罩                                 |
 | `trigger_scale_on_open` | `bool`                                                       | `True`        | 打开时触发器变淡                         |
+| `trigger_variant`       | `str`                                                        | `"flat"`      | 绑定 trigger 时同步给 Button 的 variant  |
+| `arrow`                 | `bool`                                                       | `False`       | 是否显示箭头                             |
 | `is_disabled`           | `bool`                                                       | `False`       | 禁用                                     |
 | `disable_animation`     | `bool`                                                       | `False`       | 关闭打开/关闭动画                        |
-| `theme`                 | `light / dark`                                               | `light`       | 主题                                     |
+| `theme`                 | `auto / light / dark`                                        | `"auto"`      | 主题（auto 跟随 ThemeProvider）          |
 
 ## API
 
@@ -82,3 +85,4 @@ p.attach(my_settings_button)
 - 阴影由 `paintEvent` 多层半透明圆角矩形自绘（避免 `QGraphicsDropShadowEffect` 与子控件 `QGraphicsEffect` 嵌套冲突）
 - `trigger_scale_on_open` 只调透明度（0.7），不缩放（避免和 Button 自带的 PressScaleEffect 打架）
 - `attach()` 支持 `event="hover"` / `"manual"`，HeroUI 原版只有 click
+- 自定义插槽（含复合组件如 Listbox/Input 等）只走 opacity fade 动画，不做 scale 或 squeeze（Qt 无 GPU compositor，raster scale 会糊字/冻结子动画）

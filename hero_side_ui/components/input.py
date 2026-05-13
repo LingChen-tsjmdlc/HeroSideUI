@@ -1129,6 +1129,10 @@ class Input(QWidget):
         # content 是 QWidget（用户塞进来的自定义组件）
         if isinstance(content, QWidget):
             slot_layout.addWidget(content, 0, Qt.AlignmentFlag.AlignVCenter)
+            # setParent(None) / reparent 后 widget 默认 hidden，必须显式 show
+            # 否则用户传进来的 QWidget 根本不会显示（这是 QWidget 的默认行为，
+            # 调用方无感知）
+            content.show()
             slot.show()
             return
 

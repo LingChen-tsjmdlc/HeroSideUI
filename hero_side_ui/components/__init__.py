@@ -14,6 +14,7 @@ from .text import Title, Subtitle, Caption, Body
 from .switch import Switch
 from .scroll_shadow import ScrollShadow
 from .listbox import Listbox, ListboxItem, ListboxSection
+from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 
 __all__ = [
     "Button", "Accordion", "AccordionItem", "Input",
@@ -29,4 +30,5 @@ __all__ = [
     "Switch",
     "ScrollShadow",
     "Listbox", "ListboxItem", "ListboxSection",
+    "Autocomplete", "AutocompleteItem", "AutocompleteSection",
 ]
