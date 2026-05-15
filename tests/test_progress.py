@@ -168,6 +168,7 @@ class TestCircularProgressInit:
         cp = CircularProgress(color=color)
         qtbot.addWidget(cp)
         assert cp._color == color
+        assert cp._indicator_color().isValid()
 
     @pytest.mark.parametrize("size", ["sm", "md", "lg"])
     def test_sizes(self, qtbot, size):
@@ -186,6 +187,7 @@ class TestCircularProgressInit:
         cp = CircularProgress(is_indeterminate=True)
         qtbot.addWidget(cp)
         assert cp._is_indeterminate is True
+        assert cp._indicator_color().isValid()
 
     def test_disabled(self, qtbot):
         cp = CircularProgress(is_disabled=True)

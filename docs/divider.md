@@ -28,51 +28,51 @@ divider = Divider(color="#006FEE")
 
 ## 构造参数
 
-| 参数          | 类型             | 默认值         | 说明                                              |
-| ------------- | ---------------- | -------------- | ------------------------------------------------- |
-| `orientation` | `str`            | `"horizontal"` | 方向：`"horizontal"` 水平 / `"vertical"` 垂直     |
-| `theme`       | `str`            | `"light"`      | 主题模式：`"light"` 亮色 / `"dark"` 暗色           |
-| `color`       | `str \| None`    | `None`         | 自定义颜色（十六进制），`None` 时跟随主题默认颜色 |
-| `text`        | `str \| None`    | `None`         | 中间文字（仅水平方向生效，留空/None 则为纯线）    |
-| `text_size`   | `int`            | `12`           | 中间文字字号（像素）                              |
-| `parent`      | `QWidget \| None`| `None`         | Qt 父对象                                          |
+| 参数          | 类型              | 默认值         | 说明                                              |
+| ------------- | ----------------- | -------------- | ------------------------------------------------- |
+| `orientation` | `str`             | `"horizontal"` | 方向：`"horizontal"` 水平 / `"vertical"` 垂直     |
+| `theme`       | `str`             | `"light"`      | 主题模式：`"light"` 亮色 / `"dark"` 暗色          |
+| `color`       | `str \| None`     | `None`         | 自定义颜色（十六进制），`None` 时跟随主题默认颜色 |
+| `text`        | `str \| None`     | `None`         | 中间文字（仅水平方向生效，留空/None 则为纯线）    |
+| `text_size`   | `int`             | `12`           | 中间文字字号（像素）                              |
+| `parent`      | `QWidget \| None` | `None`         | Qt 父对象                                         |
 
 ---
 
 ## orientation 可选值
 
-| 值           | 说明                                   |
-| ------------ | -------------------------------------- |
-| `horizontal` | 水平分割线，宽度 Expanding，高度 1px   |
-| `vertical`   | 垂直分割线，高度 Expanding，宽度 1px   |
+| 值           | 说明                                 |
+| ------------ | ------------------------------------ |
+| `horizontal` | 水平分割线，宽度 Expanding，高度 1px |
+| `vertical`   | 垂直分割线，高度 Expanding，宽度 1px |
 
 ---
 
 ## 主题模式
 
-| 主题    | 默认颜色                    |
-| ------- | --------------------------- |
-| `light` | `default-200` (`#e4e4e7`)  |
-| `dark`  | `default-700` (`#3f3f46`)  |
+| 主题    | 默认颜色                  |
+| ------- | ------------------------- |
+| `light` | `default-200` (`#e4e4e7`) |
+| `dark`  | `default-700` (`#3f3f46`) |
 
 ---
 
 ## 动态方法
 
-| 方法                        | 参数             | 说明                               |
-| --------------------------- | ---------------- | ---------------------------------- |
-| `set_orientation(orient)`   | `str`            | 切换方向                           |
-| `set_theme(theme)`          | `str`            | 切换主题                           |
-| `set_color(color)`          | `str \| None`    | 设置自定义颜色，`None` 恢复默认    |
-| `set_text(text)`            | `str \| None`    | 设置中间文字，`None`/`""` 恢复纯线 |
-| `set_text_size(size)`       | `int`            | 设置中间文字字号（像素）           |
+| 方法                      | 参数          | 说明                               |
+| ------------------------- | ------------- | ---------------------------------- |
+| `set_orientation(orient)` | `str`         | 切换方向                           |
+| `set_theme(theme)`        | `str`         | 切换主题                           |
+| `set_color(color)`        | `str \| None` | 设置自定义颜色，`None` 恢复默认    |
+| `set_text(text)`          | `str \| None` | 设置中间文字，`None`/`""` 恢复纯线 |
+| `set_text_size(size)`     | `int`         | 设置中间文字字号（像素）           |
 
 ### 访问器
 
-| 方法          | 返回类型 | 说明           |
-| ------------- | -------- | -------------- |
-| `text()`      | `str`    | 当前中间文字   |
-| `text_size()` | `int`    | 当前文字字号   |
+| 方法          | 返回类型 | 说明         |
+| ------------- | -------- | ------------ |
+| `text()`      | `str`    | 当前中间文字 |
+| `text_size()` | `int`    | 当前文字字号 |
 
 ---
 
@@ -92,6 +92,7 @@ divider = Divider(text="或", theme="dark", text_size=14)
 ```
 
 实现细节：
+
 - Divider 的高度会自动 = `fontMetrics.height() + 8`，字号越大越高；
 - 文字左右各留 8px `gap` 再接线条；
 - 文字颜色跟随主题（亮色 `default-500`、暗色 `default-400`）；

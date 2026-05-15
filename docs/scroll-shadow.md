@@ -22,13 +22,13 @@ sc.setFixedSize(400, 260)
 
 ### 插槽 API
 
-| 方法 | 作用 |
-| --- | --- |
-| `sc.add_widget(w)` | 追加一个子 widget |
-| `sc.insert_widget(index, w)` | 在指定位置插入 |
-| `sc.add_stretch(stretch=1)` | 追加弹性空间 |
-| `sc.layout()` | 返回内置 layout，可用 `.addLayout(...)` 等 |
-| `sc.content()` | 返回内置 content QWidget（高级用法） |
+| 方法                         | 作用                                       |
+| ---------------------------- | ------------------------------------------ |
+| `sc.add_widget(w)`           | 追加一个子 widget                          |
+| `sc.insert_widget(index, w)` | 在指定位置插入                             |
+| `sc.add_stretch(stretch=1)`  | 追加弹性空间                               |
+| `sc.layout()`                | 返回内置 layout，可用 `.addLayout(...)` 等 |
+| `sc.content()`               | 返回内置 content QWidget（高级用法）       |
 
 ### 高级用法：替换整个内容容器
 
@@ -43,16 +43,16 @@ sc.setWidget(custom)    # 覆盖插槽,add_widget 不再指向原容器
 
 ## Props
 
-| 参数             | 类型                                                                               | 默认         | 说明                                                                                   |
-| ---------------- | ---------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------- |
-| `orientation`    | `"vertical"` \| `"horizontal"`                                                     | `"vertical"` | 滚动方向                                                                               |
-| `size`           | `int`                                                                              | `40`         | 阴影渐变宽度（像素）                                                                   |
-| `offset`         | `int`                                                                              | `0`          | 进入"到顶/到底"判定的容差（像素）                                                      |
-| `visibility`     | `"auto"` \| `"both"` \| `"top"` \| `"bottom"` \| `"left"` \| `"right"` \| `"none"` | `"auto"`     | 显隐模式                                                                               |
-| `is_enabled`     | `bool`                                                                             | `True`       | 是否启用阴影                                                                           |
-| `hide_scrollbar` | `bool`                                                                             | `False`      | 是否隐藏原生滚动条                                                                     |
+| 参数             | 类型                                                                               | 默认         | 说明                                                                                                                                                                       |
+| ---------------- | ---------------------------------------------------------------------------------- | ------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `orientation`    | `"vertical"` \| `"horizontal"`                                                     | `"vertical"` | 滚动方向                                                                                                                                                                   |
+| `size`           | `int`                                                                              | `40`         | 阴影渐变宽度（像素）                                                                                                                                                       |
+| `offset`         | `int`                                                                              | `0`          | 进入"到顶/到底"判定的容差（像素）                                                                                                                                          |
+| `visibility`     | `"auto"` \| `"both"` \| `"top"` \| `"bottom"` \| `"left"` \| `"right"` \| `"none"` | `"auto"`     | 显隐模式                                                                                                                                                                   |
+| `is_enabled`     | `bool`                                                                             | `True`       | 是否启用阴影                                                                                                                                                               |
+| `hide_scrollbar` | `bool`                                                                             | `False`      | 是否隐藏原生滚动条                                                                                                                                                         |
 | `fade_color`     | `str` \| `None`                                                                    | `None`       | 淡出渐变目标色（hex 字符串）。**同时**把 ScrollShadow 自身+viewport 背景填为同色，保证阴影与底色严丝合缝；`None` 时回到"跟随 palette 自动决策"模式（背景透明让父容器穿透） |
-| `theme`          | `"auto"` \| `"light"` \| `"dark"`                                                  | `"auto"`     | 主题模式                                                                               |
+| `theme`          | `"auto"` \| `"light"` \| `"dark"`                                                  | `"auto"`     | 主题模式                                                                                                                                                                   |
 
 ### `visibility` 语义
 
@@ -111,4 +111,3 @@ card.add_body(cb)           # 放进 Card 即完成
 切换主题、Card hover 期间，ScrollShadow 的阴影淡出色自动跟 Card 底色同步。
 
 覆盖层设置 `WA_TransparentForMouseEvents`，不会干扰内部内容的点击/滚动。
-
