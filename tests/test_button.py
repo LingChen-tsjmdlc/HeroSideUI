@@ -74,6 +74,17 @@ class TestButtonColors:
         # 不应崩溃，样式能正常应用
         assert btn._color == "nonexistent"
 
+    def test_dark_flat_primary_text_is_bright(self, qtbot):
+        """暗色 flat 按钮文字应使用更亮色阶，避免在深色背景上发灰看不清。"""
+        btn = Button("Primary", color="primary", variant="flat", theme="dark")
+        qtbot.addWidget(btn)
+        assert "color: #99c7fb" in btn.styleSheet().lower()
+
+    def test_dark_flat_default_text_is_bright(self, qtbot):
+        btn = Button("Default", color="default", variant="flat", theme="dark")
+        qtbot.addWidget(btn)
+        assert "color: #d4d4d8" in btn.styleSheet().lower()
+
 
 class TestButtonVariants:
     """变体测试"""

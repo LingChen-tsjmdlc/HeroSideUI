@@ -51,6 +51,22 @@ class TestCardBodyInit:
         b.layout().addWidget(label)
         assert b.layout().count() == 1
 
+    def test_word_wrap_label_not_clipped(self, qtbot):
+        """窄 Card 内 wordWrap QLabel 应按 heightForWidth 拿到足够高度。"""
+        card = Card(shadow="none")
+        qtbot.addWidget(card)
+        body = CardBody()
+        label = QLabel("Make beautiful websites regardless of your design experience.")
+        label.setWordWrap(True)
+        body.layout().addWidget(label)
+        card.add_body(body)
+        card.setFixedWidth(200)
+        card.show()
+        qtbot.waitExposed(card)
+
+        required = label.heightForWidth(label.width())
+        assert label.height() >= required
+
 
 # ============================================================
 # CardFooter 测试

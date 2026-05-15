@@ -3,7 +3,7 @@
 import pytest
 from PySide6.QtWidgets import QPushButton, QLabel
 
-from hero_side_ui import Popover, PopoverContent
+from hero_side_ui import Button, Popover, PopoverContent, ThemeProvider
 
 
 class TestPopoverInit:
@@ -97,6 +97,28 @@ class TestPopoverAttach:
         qtbot.addWidget(btn)
         p.attach(btn, event="manual")
         assert p._trigger is btn
+
+    def test_attach_does_not_lock_auto_trigger_theme(self, qtbot):
+        """Popover 同步 trigger color/variant 时不能把 Button 从 auto 主题注销。"""
+        ThemeProvider._reset_for_test()
+        provider = ThemeProvider.instance()
+        provider.set_mode("light")
+
+        p = Popover(color="primary")
+        qtbot.addWidget(p)
+        btn = Button("trigger", color="primary", variant="flat")
+        qtbot.addWidget(btn)
+        assert btn._theme_mode == "auto"
+        assert provider.is_registered(btn)
+
+        p.attach(btn)
+        assert btn._theme_mode == "auto"
+        assert provider.is_registered(btn)
+
+        provider.set_mode("dark")
+        assert btn._theme == "dark"
+        assert "color: #99c7fb" in btn.styleSheet().lower()
+        ThemeProvider._reset_for_test()
 
 
 class TestPopoverDynamicAPI:

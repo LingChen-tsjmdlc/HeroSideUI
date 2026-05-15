@@ -66,29 +66,29 @@ switcher = ThemeSwitcher(
 
 ### 构造参数
 
-| 参数 | 类型 | 默认 | 说明 |
-|------|------|------|------|
-| `sun_icon` | `str` | `"flowbite--sun-solid"` | 亮色模式 icon（内置图标名或 SVG 路径） |
-| `moon_icon` | `str` | `"ri--moon-clear-fill"` | 暗色模式 icon |
-| `sun_color` | `str \| QColor` | `"#F5A524"` | 太阳 icon 颜色 |
-| `moon_color` | `str \| QColor` | `"#7DD3FC"` | 月亮 icon 颜色 |
-| `icon_size` | `int \| None` | None（按 size 自动） | icon 像素尺寸 |
-| `variant` | `str` | `"flat"` | Button 变体 |
-| `color` | `str` | `"default"` | Button 色调 |
-| `size` | `str` | `"md"` | Button 尺寸 |
-| `radius` | `str` | `"full"` | Button 圆角 |
+| 参数         | 类型            | 默认                    | 说明                                   |
+| ------------ | --------------- | ----------------------- | -------------------------------------- |
+| `sun_icon`   | `str`           | `"flowbite--sun-solid"` | 亮色模式 icon（内置图标名或 SVG 路径） |
+| `moon_icon`  | `str`           | `"ri--moon-clear-fill"` | 暗色模式 icon                          |
+| `sun_color`  | `str \| QColor` | `"#F5A524"`             | 太阳 icon 颜色                         |
+| `moon_color` | `str \| QColor` | `"#7DD3FC"`             | 月亮 icon 颜色                         |
+| `icon_size`  | `int \| None`   | None（按 size 自动）    | icon 像素尺寸                          |
+| `variant`    | `str`           | `"flat"`                | Button 变体                            |
+| `color`      | `str`           | `"default"`             | Button 色调                            |
+| `size`       | `str`           | `"md"`                  | Button 尺寸                            |
+| `radius`     | `str`           | `"full"`                | Button 圆角                            |
 
 注：`icon_only` 被 ThemeSwitcher 强制设为 `True`（正方形按钮），不允许用户覆盖。
 
 ### 动态 API
 
-| 方法 | 说明 |
-|------|------|
-| `set_sun_icon(name_or_path)` | 切换亮色 icon |
+| 方法                          | 说明          |
+| ----------------------------- | ------------- |
+| `set_sun_icon(name_or_path)`  | 切换亮色 icon |
 | `set_moon_icon(name_or_path)` | 切换暗色 icon |
-| `set_sun_color(color)` | 改太阳颜色 |
-| `set_moon_color(color)` | 改月亮颜色 |
-| `set_icon_size(px)` | 改 icon 尺寸 |
+| `set_sun_color(color)`        | 改太阳颜色    |
+| `set_moon_color(color)`       | 改月亮颜色    |
+| `set_icon_size(px)`           | 改 icon 尺寸  |
 
 ### 行为说明
 

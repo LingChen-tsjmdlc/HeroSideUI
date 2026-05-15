@@ -48,11 +48,11 @@ ta.height_changed.connect(lambda h, r: print(f"new height={h}, row_h={r}"))
 
 Textarea 提供三个独立的内容槽用于摆放图标/按钮/计数器等附加 widget，每个槽对应一种位置语义：
 
-| slot                    | 位置                                                                | 实现       | 典型用途                                  |
-| ----------------------- | ------------------------------------------------------------------- | ---------- | ----------------------------------------- |
-| `top_right_content`     | wrapper **右上角**（layout 内部 AlignTop，inside 模式下避开浮起 label） | layout 排版 | 字数徽章、关闭/清除自定义按钮             |
-| `center_right_content`  | wrapper **垂直居中**（绝对定位，随 wrapper 高度变化实时居中）        | 绝对定位    | 始终居中的 Send 按钮                      |
-| `bottom_right_content`  | wrapper **右下角**（绝对定位，距右/底偏移可配）                      | 绝对定位    | Chat 风格右下角 Send 按钮                 |
+| slot                   | 位置                                                                    | 实现        | 典型用途                      |
+| ---------------------- | ----------------------------------------------------------------------- | ----------- | ----------------------------- |
+| `top_right_content`    | wrapper **右上角**（layout 内部 AlignTop，inside 模式下避开浮起 label） | layout 排版 | 字数徽章、关闭/清除自定义按钮 |
+| `center_right_content` | wrapper **垂直居中**（绝对定位，随 wrapper 高度变化实时居中）           | 绝对定位    | 始终居中的 Send 按钮          |
+| `bottom_right_content` | wrapper **右下角**（绝对定位，距右/底偏移可配）                         | 绝对定位    | Chat 风格右下角 Send 按钮     |
 
 槽的内容支持三种值：
 
@@ -103,49 +103,49 @@ Textarea(label="Tweet",
 
 ## 构造参数
 
-| 参数                     | 类型                     | 默认值      | 说明                                                                                  |
-| ------------------------ | ------------------------ | ----------- | ------------------------------------------------------------------------------------- |
-| `label`                  | `str`                    | `""`        | 标签文字                                                                              |
-| `value`                  | `str`                    | `""`        | 初始文本值                                                                            |
-| `placeholder`            | `str`                    | `""`        | 占位符                                                                                |
-| `variant`                | `str`                    | `"flat"`    | 样式变体，见 [variant 可选值](#variant-可选值)。**Textarea 不支持 `underlined`**      |
-| `color`                  | `str`                    | `"default"` | 颜色主题                                                                              |
-| `size`                   | `str`                    | `"md"`      | 尺寸：`sm` / `md` / `lg`                                                              |
-| `radius`                 | `str \| None`            | `None`      | 圆角，`None` 时跟随尺寸默认值                                                         |
-| `label_placement`        | `str`                    | `"inside"`  | label 位置：`inside` / `outside` / `outside-top` / `outside-left`                     |
-| `min_rows`               | `int`                    | `3`         | 最小行数（auto-resize 的下界，也是 disable_autosize=True 时的固定行数）              |
-| `max_rows`               | `int`                    | `8`         | 最大行数。超过此行数时出现垂直滚动条                                                  |
-| `disable_autosize`       | `bool`                   | `False`     | 关闭 auto-resize。固定高度为 `min_rows` 行                                            |
-| `is_disabled`            | `bool`                   | `False`     | 禁用状态                                                                              |
-| `is_invalid`             | `bool`                   | `False`     | 无效状态，边框/文字切换为 `danger` 色                                                 |
-| `is_required`            | `bool`                   | `False`     | 必填，label 末尾追加红色 `*`                                                          |
-| `is_readonly`            | `bool`                   | `False`     | 只读                                                                                  |
-| `is_clearable`           | `bool`                   | `False`     | 显示清除按钮                                                                          |
-| `full_width`             | `bool`                   | `True`      | 是否撑满父容器宽度                                                                    |
-| `description`            | `str`                    | `""`        | 辅助说明文字                                                                          |
-| `error_message`          | `str`                    | `""`        | 错误消息，`is_invalid=True` 时替代 description                                        |
-| `resizable`              | `bool \| str`            | `False`     | 用户能否手动拖动右下角小手柄改变高度。默认 `False`（保持简洁）；可选值：`True`（=`"vertical"`，仅垂直）/ `"vertical"` / `"horizontal"` / `"both"`。bottom_right_content 存在时自动隐藏手柄避免重叠 |
-| `start_content` 等老 API | — | — | **已移除** —— 替换为下方三槽 API                                                      |
-| `top_right_content`      | `str \| QWidget \| None` | `None`      | wrapper 右上角内容（layout 内 AlignTop）                                              |
-| `center_right_content`   | `str \| QWidget \| None` | `None`      | wrapper 垂直居中（右侧）内容（绝对定位，随高度实时居中）                              |
-| `bottom_right_content`   | `str \| QWidget \| None` | `None`      | wrapper 右下角内容（绝对定位，类似 Tailwind absolute right-X bottom-X）              |
-| `on_top_right_content_click`     | `Callable \| None` | `None`  | 字符串图标 + 此回调 → 自动变成可点击按钮                                              |
-| `on_center_right_content_click`  | `Callable \| None` | `None`  | 同上                                                                                  |
-| `on_bottom_right_content_click`  | `Callable \| None` | `None`  | 同上                                                                                  |
-| `bottom_right_offset`    | `(int, int)`             | `(8, 8)`    | 右下角槽距 wrapper 右/底的偏移像素（`right_px, bottom_px`）                          |
-| `center_right_offset`    | `int`                    | `8`         | 垂直居中槽距 wrapper 右边的偏移像素                                                   |
-| `theme`                  | `str`                    | `"auto"`    | 主题模式：`"auto"`（跟随 ThemeProvider）/ `"light"` / `"dark"`                        |
-| `parent`                 | `QObject \| None`        | `None`      | Qt 父对象                                                                             |
+| 参数                            | 类型                     | 默认值      | 说明                                                                                                                                                                                               |
+| ------------------------------- | ------------------------ | ----------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `label`                         | `str`                    | `""`        | 标签文字                                                                                                                                                                                           |
+| `value`                         | `str`                    | `""`        | 初始文本值                                                                                                                                                                                         |
+| `placeholder`                   | `str`                    | `""`        | 占位符                                                                                                                                                                                             |
+| `variant`                       | `str`                    | `"flat"`    | 样式变体，见 [variant 可选值](#variant-可选值)。**Textarea 不支持 `underlined`**                                                                                                                   |
+| `color`                         | `str`                    | `"default"` | 颜色主题                                                                                                                                                                                           |
+| `size`                          | `str`                    | `"md"`      | 尺寸：`sm` / `md` / `lg`                                                                                                                                                                           |
+| `radius`                        | `str \| None`            | `None`      | 圆角，`None` 时跟随尺寸默认值                                                                                                                                                                      |
+| `label_placement`               | `str`                    | `"inside"`  | label 位置：`inside` / `outside` / `outside-top` / `outside-left`                                                                                                                                  |
+| `min_rows`                      | `int`                    | `3`         | 最小行数（auto-resize 的下界，也是 disable_autosize=True 时的固定行数）                                                                                                                            |
+| `max_rows`                      | `int`                    | `8`         | 最大行数。超过此行数时出现垂直滚动条                                                                                                                                                               |
+| `disable_autosize`              | `bool`                   | `False`     | 关闭 auto-resize。固定高度为 `min_rows` 行                                                                                                                                                         |
+| `is_disabled`                   | `bool`                   | `False`     | 禁用状态                                                                                                                                                                                           |
+| `is_invalid`                    | `bool`                   | `False`     | 无效状态，边框/文字切换为 `danger` 色                                                                                                                                                              |
+| `is_required`                   | `bool`                   | `False`     | 必填，label 末尾追加红色 `*`                                                                                                                                                                       |
+| `is_readonly`                   | `bool`                   | `False`     | 只读                                                                                                                                                                                               |
+| `is_clearable`                  | `bool`                   | `False`     | 显示清除按钮                                                                                                                                                                                       |
+| `full_width`                    | `bool`                   | `True`      | 是否撑满父容器宽度                                                                                                                                                                                 |
+| `description`                   | `str`                    | `""`        | 辅助说明文字                                                                                                                                                                                       |
+| `error_message`                 | `str`                    | `""`        | 错误消息，`is_invalid=True` 时替代 description                                                                                                                                                     |
+| `resizable`                     | `bool \| str`            | `False`     | 用户能否手动拖动右下角小手柄改变高度。默认 `False`（保持简洁）；可选值：`True`（=`"vertical"`，仅垂直）/ `"vertical"` / `"horizontal"` / `"both"`。bottom_right_content 存在时自动隐藏手柄避免重叠 |
+| `start_content` 等老 API        | —                        | —           | **已移除** —— 替换为下方三槽 API                                                                                                                                                                   |
+| `top_right_content`             | `str \| QWidget \| None` | `None`      | wrapper 右上角内容（layout 内 AlignTop）                                                                                                                                                           |
+| `center_right_content`          | `str \| QWidget \| None` | `None`      | wrapper 垂直居中（右侧）内容（绝对定位，随高度实时居中）                                                                                                                                           |
+| `bottom_right_content`          | `str \| QWidget \| None` | `None`      | wrapper 右下角内容（绝对定位，类似 Tailwind absolute right-X bottom-X）                                                                                                                            |
+| `on_top_right_content_click`    | `Callable \| None`       | `None`      | 字符串图标 + 此回调 → 自动变成可点击按钮                                                                                                                                                           |
+| `on_center_right_content_click` | `Callable \| None`       | `None`      | 同上                                                                                                                                                                                               |
+| `on_bottom_right_content_click` | `Callable \| None`       | `None`      | 同上                                                                                                                                                                                               |
+| `bottom_right_offset`           | `(int, int)`             | `(8, 8)`    | 右下角槽距 wrapper 右/底的偏移像素（`right_px, bottom_px`）                                                                                                                                        |
+| `center_right_offset`           | `int`                    | `8`         | 垂直居中槽距 wrapper 右边的偏移像素                                                                                                                                                                |
+| `theme`                         | `str`                    | `"auto"`    | 主题模式：`"auto"`（跟随 ThemeProvider）/ `"light"` / `"dark"`                                                                                                                                     |
+| `parent`                        | `QObject \| None`        | `None`      | Qt 父对象                                                                                                                                                                                          |
 
 ### variant 可选值
 
 > 与 Input 一致的样式规则。**注意 Textarea 没有 `underlined`**——传入 `underlined` 会静默降级为 `flat`。
 
-| 值         | 外观                                                                                                                                  |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------- |
-| `flat`     | 浅色填充，无边框；亮色 hover 压暗，暗色 hover 提亮                                                                                    |
-| `faded`    | 底色与 flat 一致 + 2px 边框；默认边框比底色深一档；hover/focus 边框变主色                                                             |
-| `bordered` | 透明背景 + 2px 边框；默认边框 = flat 底色；hover/focus 渐变到主色                                                                     |
+| 值         | 外观                                                                      |
+| ---------- | ------------------------------------------------------------------------- |
+| `flat`     | 浅色填充，无边框；亮色 hover 压暗，暗色 hover 提亮                        |
+| `faded`    | 底色与 flat 一致 + 2px 边框；默认边框比底色深一档；hover/focus 边框变主色 |
+| `bordered` | 透明背景 + 2px 边框；默认边框 = flat 底色；hover/focus 渐变到主色         |
 
 ### color 可选值
 
@@ -153,12 +153,12 @@ Textarea(label="Tweet",
 
 ### label_placement 可选值
 
-| 值             | 行为                                                                                       |
-| -------------- | ------------------------------------------------------------------------------------------ |
-| `inside`       | label **始终浮起**在输入框顶部（详见下方"Textarea 与 Input 的 label 差异"）                |
-| `outside`      | label **始终浮起**在输入框上方外部                                                         |
-| `outside-top`  | label 始终**固定在输入框上方外部**                                                         |
-| `outside-left` | label 在输入框**左侧顶部对齐**（多行场景下顶对齐而非垂直居中）                             |
+| 值             | 行为                                                                        |
+| -------------- | --------------------------------------------------------------------------- |
+| `inside`       | label **始终浮起**在输入框顶部（详见下方"Textarea 与 Input 的 label 差异"） |
+| `outside`      | label **始终浮起**在输入框上方外部                                          |
+| `outside-top`  | label 始终**固定在输入框上方外部**                                          |
+| `outside-left` | label 在输入框**左侧顶部对齐**（多行场景下顶对齐而非垂直居中）              |
 
 #### Textarea 与 Input 的 label 差异
 
@@ -176,13 +176,13 @@ Textarea(label="Tweet",
 
 ## 信号
 
-| 信号             | 载荷             | 说明                                              |
-| ---------------- | ---------------- | ------------------------------------------------- |
-| `text_changed`   | `str`            | 文字变化时触发（代理 `QTextEdit.textChanged`）|
-| `cleared`        | 无               | 点击清除按钮后触发                                |
-| `height_changed` | `int, int`       | auto-resize 引发高度变化时触发：`(total_height, row_height)` |
-| `focus_in`       | 无               | 输入框获得焦点                                    |
-| `focus_out`      | 无               | 输入框失去焦点                                    |
+| 信号             | 载荷       | 说明                                                         |
+| ---------------- | ---------- | ------------------------------------------------------------ |
+| `text_changed`   | `str`      | 文字变化时触发（代理 `QTextEdit.textChanged`）               |
+| `cleared`        | 无         | 点击清除按钮后触发                                           |
+| `height_changed` | `int, int` | auto-resize 引发高度变化时触发：`(total_height, row_height)` |
+| `focus_in`       | 无         | 输入框获得焦点                                               |
+| `focus_out`      | 无         | 输入框失去焦点                                               |
 
 也可以直接使用 Qt 原生信号，通过 `textarea.text_edit.xxx` 访问（如 `cursorPositionChanged`、`selectionChanged` 等）。
 
@@ -190,32 +190,32 @@ Textarea(label="Tweet",
 
 ## 公共 API
 
-| 方法                                        | 说明                                              |
-| ------------------------------------------- | ------------------------------------------------- |
-| `text()` / `set_text(text)`                 | 获取/设置当前文本                                 |
-| `clear()`                                   | 清空文本                                          |
-| `set_value(value)`                          | `set_text` 的别名                                 |
-| `set_placeholder(text)`                     | 设置占位符                                        |
-| `set_label(text)`                           | 设置 label                                        |
-| `set_color(color)`                          | 动态切换颜色                                      |
-| `set_variant(variant)`                      | 动态切换变体（`underlined` 会降级为 `flat`）      |
-| `set_size(size)`                            | 动态切换尺寸                                      |
-| `set_radius(radius)`                        | 动态切换圆角                                      |
-| `set_label_placement(plc)`                  | 动态切换 label 位置                               |
-| `set_min_rows(n)` / `set_max_rows(n)`       | 动态调整 auto-resize 范围（自动重算高度）         |
-| `set_disable_autosize(bool)`                | 动态开关 auto-resize                              |
-| `set_resizable(value)`                      | 动态开关/切换手动 grip 拖动（True/False/"vertical"/"horizontal"/"both"）|
-| `reset_manual_height()`                     | 清除用户手动拖动设的高度，恢复 auto-resize 行为   |
-| `set_theme(theme)`                          | 动态切换 `auto` / `light` / `dark` 主题           |
-| `set_is_disabled/invalid/required/readonly/clearable(bool)` | 动态切换对应状态                  |
-| `set_description(text)` / `set_error_message(text)`         | 设置描述/错误文字                  |
-| `set_top_right_content(content, on_click=None)`    | 设置右上角内容                              |
-| `set_center_right_content(content, on_click=None)` | 设置垂直居中（右侧）内容                    |
-| `set_bottom_right_content(content, on_click=None)` | 设置右下角内容                              |
-| `set_on_top_right_content_click(cb)` / `set_on_center_right_content_click(cb)` / `set_on_bottom_right_content_click(cb)` | 仅更新对应槽的点击回调 |
-| `set_bottom_right_offset(right_px, bottom_px)`     | 动态调整右下角槽的偏移                      |
-| `set_center_right_offset(right_px)`                | 动态调整垂直居中槽距右边的偏移              |
-| `text_edit`                                 | 属性：内部 `QTextEdit` 实例                       |
+| 方法                                                                                                                     | 说明                                                                     |
+| ------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------------------------------------ |
+| `text()` / `set_text(text)`                                                                                              | 获取/设置当前文本                                                        |
+| `clear()`                                                                                                                | 清空文本                                                                 |
+| `set_value(value)`                                                                                                       | `set_text` 的别名                                                        |
+| `set_placeholder(text)`                                                                                                  | 设置占位符                                                               |
+| `set_label(text)`                                                                                                        | 设置 label                                                               |
+| `set_color(color)`                                                                                                       | 动态切换颜色                                                             |
+| `set_variant(variant)`                                                                                                   | 动态切换变体（`underlined` 会降级为 `flat`）                             |
+| `set_size(size)`                                                                                                         | 动态切换尺寸                                                             |
+| `set_radius(radius)`                                                                                                     | 动态切换圆角                                                             |
+| `set_label_placement(plc)`                                                                                               | 动态切换 label 位置                                                      |
+| `set_min_rows(n)` / `set_max_rows(n)`                                                                                    | 动态调整 auto-resize 范围（自动重算高度）                                |
+| `set_disable_autosize(bool)`                                                                                             | 动态开关 auto-resize                                                     |
+| `set_resizable(value)`                                                                                                   | 动态开关/切换手动 grip 拖动（True/False/"vertical"/"horizontal"/"both"） |
+| `reset_manual_height()`                                                                                                  | 清除用户手动拖动设的高度，恢复 auto-resize 行为                          |
+| `set_theme(theme)`                                                                                                       | 动态切换 `auto` / `light` / `dark` 主题                                  |
+| `set_is_disabled/invalid/required/readonly/clearable(bool)`                                                              | 动态切换对应状态                                                         |
+| `set_description(text)` / `set_error_message(text)`                                                                      | 设置描述/错误文字                                                        |
+| `set_top_right_content(content, on_click=None)`                                                                          | 设置右上角内容                                                           |
+| `set_center_right_content(content, on_click=None)`                                                                       | 设置垂直居中（右侧）内容                                                 |
+| `set_bottom_right_content(content, on_click=None)`                                                                       | 设置右下角内容                                                           |
+| `set_on_top_right_content_click(cb)` / `set_on_center_right_content_click(cb)` / `set_on_bottom_right_content_click(cb)` | 仅更新对应槽的点击回调                                                   |
+| `set_bottom_right_offset(right_px, bottom_px)`                                                                           | 动态调整右下角槽的偏移                                                   |
+| `set_center_right_offset(right_px)`                                                                                      | 动态调整垂直居中槽距右边的偏移                                           |
+| `text_edit`                                                                                                              | 属性：内部 `QTextEdit` 实例                                              |
 
 ---
 

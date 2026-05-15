@@ -3,6 +3,7 @@
 `ScrollStyle` 是一个 **core 单例**，为整个应用提供统一的细线条滚动条外观（HeroUI 风格），并在 [`ThemeProvider`](./theme_provider.md) 切换主题时自动跟随。
 
 效果：
+
 - 默认细 6px，鼠标进入时变粗到 8px（可配）
 - 默认色用 `default` 色阶 300（亮）/ 700（暗），hover 加深到 500
 - 支持切换其它颜色（primary / secondary / success / warning / danger）
@@ -111,8 +112,8 @@ ScrollStyle.instance().remove_global()
 
 ## 颜色规则
 
-| 主题 | normal handle | hover handle |
-| --- | --- | --- |
+| 主题 | normal handle | hover handle  |
+| ---- | ------------- | ------------- |
 | 亮色 | `<color>-300` | `<color>-400` |
 | 暗色 | `<color>-700` | `<color>-600` |
 
@@ -124,24 +125,24 @@ ScrollStyle.instance().remove_global()
 
 ## API 一览
 
-| 方法 / 属性                    | 说明                                                |
-| ------------------------------ | --------------------------------------------------- |
-| `ScrollStyle.instance()`       | 单例入口                                            |
-| `apply_global()`               | 把样式注入 `QApplication.styleSheet()`              |
-| `remove_global()`              | 卸载样式                                            |
-| `build_qss(color=, is_dark=)`  | 生成 QSS 片段，便于组件局部使用                     |
-| `set_bar_color(bar, color)`    | 给单条 QScrollBar 注册颜色覆盖，hover 动画也用该色  |
-| `set_thickness(px)`            | 设置正常厚度                                        |
-| `set_hover_thickness_delta(d)` | 设置 hover 时增加的厚度                             |
-| `set_color(color)`             | 设置主题色                                          |
-| `set_min_handle_length(px)`    | 设置 handle 最小长度                                |
-| `set_track_padding(px)`        | 设置轨道两端 margin                                 |
-| `set_duration(ms)`             | 设置 hover 进出过渡时长（默认 150ms，0=无动画）     |
-| `set_easing(curve)`            | 设置过渡曲线（默认 `QEasingCurve.OutCubic`）        |
+| 方法 / 属性                       | 说明                                                          |
+| --------------------------------- | ------------------------------------------------------------- |
+| `ScrollStyle.instance()`          | 单例入口                                                      |
+| `apply_global()`                  | 把样式注入 `QApplication.styleSheet()`                        |
+| `remove_global()`                 | 卸载样式                                                      |
+| `build_qss(color=, is_dark=)`     | 生成 QSS 片段，便于组件局部使用                               |
+| `set_bar_color(bar, color)`       | 给单条 QScrollBar 注册颜色覆盖，hover 动画也用该色            |
+| `set_thickness(px)`               | 设置正常厚度                                                  |
+| `set_hover_thickness_delta(d)`    | 设置 hover 时增加的厚度                                       |
+| `set_color(color)`                | 设置主题色                                                    |
+| `set_min_handle_length(px)`       | 设置 handle 最小长度                                          |
+| `set_track_padding(px)`           | 设置轨道两端 margin                                           |
+| `set_duration(ms)`                | 设置 hover 进出过渡时长（默认 150ms，0=无动画）               |
+| `set_easing(curve)`               | 设置过渡曲线（默认 `QEasingCurve.OutCubic`）                  |
 | `set_shadow_alpha(light=, dark=)` | 设置 normal 状态 handle 阴影 alpha（0-255）。hover 时渐变到 0 |
-| `thickness` (property)         | 当前正常厚度                                        |
-| `hover_thickness` (property)   | 当前 hover 厚度（= thickness + hover_delta）        |
-| `color` (property)             | 当前主题色                                          |
+| `thickness` (property)            | 当前正常厚度                                                  |
+| `hover_thickness` (property)      | 当前 hover 厚度（= thickness + hover_delta）                  |
+| `color` (property)                | 当前主题色                                                    |
 
 ## 实现细节
 

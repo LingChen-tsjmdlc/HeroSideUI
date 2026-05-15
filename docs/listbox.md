@@ -18,23 +18,23 @@ lb.action.connect(lambda key: print(f"activated: {key}"))
 
 ### Listbox
 
-| 参数                             | 类型 / 取值                                                            | 默认          | 说明                                                                                     |
-| -------------------------------- | ---------------------------------------------------------------------- | ------------- | ---------------------------------------------------------------------------------------- |
-| `variant`                        | `solid` / `shadow` / `bordered` / `flat` / `faded` / `light`           | `solid`       | item hover/选中外观                                                                      |
-| `color`                          | `default` / `primary` / `secondary` / `success` / `warning` / `danger` | `default`     | item 高亮配色                                                                            |
-| `size`                           | `sm` / `md` / `lg`                                                     | `md`          | 字号 + padding 三档预设                                                                  |
-| `radius`                         | `none` / `sm` / `md` / `lg` / `full`                                   | `sm`          | item 自身圆角                                                                            |
-| `selection_mode`                 | `none` / `single` / `multiple`                                         | `none`        | 选择模式                                                                                 |
+| 参数                             | 类型 / 取值                                                            | 默认      | 说明                                                                                                    |
+| -------------------------------- | ---------------------------------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------- |
+| `variant`                        | `solid` / `shadow` / `bordered` / `flat` / `faded` / `light`           | `solid`   | item hover/选中外观                                                                                     |
+| `color`                          | `default` / `primary` / `secondary` / `success` / `warning` / `danger` | `default` | item 高亮配色                                                                                           |
+| `size`                           | `sm` / `md` / `lg`                                                     | `md`      | 字号 + padding 三档预设                                                                                 |
+| `radius`                         | `none` / `sm` / `md` / `lg` / `full`                                   | `sm`      | item 自身圆角                                                                                           |
+| `selection_mode`                 | `none` / `single` / `multiple`                                         | `none`    | 选择模式                                                                                                |
 | `selected_keys`                  | `Iterable[str]`                                                        |
 | `None`                           | 初始选中 key 集合                                                      |
-| `disabled_keys`                  | `Iterable[str]`                                                        | `None`        | 禁用 key 集合                                                                            |
-| `empty_content`                  | `Optional[str]`                                                        | `None`        | 空集合时显示文案。`None`（默认）→ icon + 中英双语 (`Nothing to show / 暂无内容`)；非空 `str` → 单行文字 |
-| `hide_selected_icon`             | `bool`                                                                 | `False`       | 隐藏选中态右侧勾标（默认显示；显示时会在右侧预留槽位，避免与 shortcut/end_content 重叠） |
-| `should_highlight_on_focus`      | `bool`                                                                 | `False`       | 键盘聚焦时是否使用 hover 视觉                                                            |
-| `disable_animation`              | `bool`                                                                 | `False`       | 关闭过渡动画                                                                             |
-| `is_disabled`                    | `bool`                                                                 | `False`       | 整体禁用                                                                                 |
-| `top_content` / `bottom_content` | `QWidget`                                                              | `None`        | 上 / 下方插入额外内容                                                                    |
-| `theme`                          | `auto` / `light` / `dark`                                              | `auto`        | 主题；`auto` 跟随系统                                                                    |
+| `disabled_keys`                  | `Iterable[str]`                                                        | `None`    | 禁用 key 集合                                                                                           |
+| `empty_content`                  | `Optional[str]`                                                        | `None`    | 空集合时显示文案。`None`（默认）→ icon + 中英双语 (`Nothing to show / 暂无内容`)；非空 `str` → 单行文字 |
+| `hide_selected_icon`             | `bool`                                                                 | `False`   | 隐藏选中态右侧勾标（默认显示；显示时会在右侧预留槽位，避免与 shortcut/end_content 重叠）                |
+| `should_highlight_on_focus`      | `bool`                                                                 | `False`   | 键盘聚焦时是否使用 hover 视觉                                                                           |
+| `disable_animation`              | `bool`                                                                 | `False`   | 关闭过渡动画                                                                                            |
+| `is_disabled`                    | `bool`                                                                 | `False`   | 整体禁用                                                                                                |
+| `top_content` / `bottom_content` | `QWidget`                                                              | `None`    | 上 / 下方插入额外内容                                                                                   |
+| `theme`                          | `auto` / `light` / `dark`                                              | `auto`    | 主题；`auto` 跟随系统                                                                                   |
 
 #### 装配 API（插槽）
 

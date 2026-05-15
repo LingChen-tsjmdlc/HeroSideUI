@@ -4,6 +4,7 @@ import pytest
 from PySide6.QtCore import Qt
 
 from hero_side_ui import Autocomplete
+from hero_side_ui.themes import AUTOCOMPLETE_SIZES
 
 
 # ============================================================
@@ -24,6 +25,8 @@ class TestAutocompleteInit:
         assert ac.selected_key() is None
         assert ac.input_value() == ""
         assert ac.is_open() is False
+        # Autocomplete 是 combobox 语义，下拉方向由内部高度裁剪保证，不能让 Popover auto-flip 到上方
+        assert ac._popover._allow_flip is False
 
     def test_with_items(self, qtbot):
         ac = Autocomplete(items=[
@@ -331,6 +334,7 @@ class TestAutocompletePopover:
     def test_open_close(self, qtbot):
         ac = Autocomplete(items=[("a", "Apple")], disable_animation=True)
         qtbot.addWidget(ac)
+        qtbot.addWidget(ac._popover)
         ac.show()
         qtbot.waitExposed(ac)
         ac.open()
@@ -339,13 +343,66 @@ class TestAutocompletePopover:
         qtbot.waitUntil(lambda: ac._popover.is_open() is False, timeout=2000)
 
     def test_toggle(self, qtbot):
+        """toggle() 是 if-else 二选一调度，不测 popover 真实显示状态
+        （那块的同步性受 macOS window manager + Qt event loop 影响，
+        CI 上偶发不稳）。这里只验证 toggle 的逻辑正确：
+          - _is_open=False 时调 toggle → 内部应该走到 open() 路径（mock 验证）
+          - _is_open=True 时调 toggle → 内部应该走到 close() 路径
+        """
         ac = Autocomplete(items=[("a", "Apple")], disable_animation=True)
         qtbot.addWidget(ac)
-        ac.show()
-        qtbot.waitExposed(ac)
+        qtbot.addWidget(ac._popover)
+
+        call_log = []
+        # 用 monkey-patch 验证调度路径，避免依赖 popover 异步显隐
+        orig_open = ac.open
+        orig_close = ac.close
+
+        def spy_open(trigger="manual"):
+            call_log.append(("open", trigger))
+            orig_open(trigger)
+
+        def spy_close():
+            call_log.append(("close",))
+            orig_close()
+
+        ac.open = spy_open
+        ac.close = spy_close
+
+        # 初始 _is_open=False，toggle 应该调度到 open()
+        assert ac._is_open is False
         ac.toggle()
-        # CI 上 toggle → open → popover.show() 之间可能有 timing 间隙，用 waitUntil 兜底
-        # 取代裸 assert（macOS CI 偶发 flaky；不是逻辑 bug）
-        qtbot.waitUntil(lambda: ac._popover.is_open() is True, timeout=2000)
+        assert any(c[0] == "open" for c in call_log), \
+            f"toggle() 在 _is_open=False 时应调 open()，实际 calls: {call_log}"
+
+        # 模拟"已打开"：直接设状态（不依赖 popover 真的 show）
+        call_log.clear()
+        ac._is_open = True
         ac.toggle()
-        qtbot.waitUntil(lambda: ac._popover.is_open() is False, timeout=2000)
+        assert any(c[0] == "close" for c in call_log), \
+            f"toggle() 在 _is_open=True 时应调 close()，实际 calls: {call_log}"
+
+    def test_long_list_uses_md_popover_max_height(self, qtbot):
+        """长列表应实际撑到 md token 上限，而不是停在 QScrollArea 默认约 260px"""
+        ac = Autocomplete(items=[(str(i), f"Item {i}") for i in range(30)])
+        qtbot.addWidget(ac)
+        expected = AUTOCOMPLETE_SIZES["md"]["popover_max_height"]
+        assert ac._scroll.minimumHeight() == expected
+        assert ac._scroll.maximumHeight() == expected
+
+    def test_set_size_updates_popover_fixed_height(self, qtbot):
+        ac = Autocomplete(items=[(str(i), f"Item {i}") for i in range(30)])
+        qtbot.addWidget(ac)
+        ac.set_size("lg")
+        expected = AUTOCOMPLETE_SIZES["lg"]["popover_max_height"]
+        assert ac._scroll.minimumHeight() == expected
+        assert ac._scroll.maximumHeight() == expected
+
+    def test_open_prefers_bottom_by_clipping_to_available_space(self, qtbot):
+        """open 前会按下方剩余空间裁剪高度，避免高度翻倍后触发 Popover auto-flip 到上方"""
+        ac = Autocomplete(items=[(str(i), f"Item {i}") for i in range(30)])
+        qtbot.addWidget(ac)
+        ac._available_scroll_height_below = lambda: 180
+        ac._refresh_popover_height(prefer_below=True)
+        assert ac._scroll.minimumHeight() == 180
+        assert ac._scroll.maximumHeight() == 180

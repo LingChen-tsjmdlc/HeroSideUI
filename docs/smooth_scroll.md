@@ -32,13 +32,14 @@ SmoothScroll.detach(edit)
 
 ## 参数
 
-| 参数              | 类型               | 默认值       | 说明                                                                  |
-| ----------------- | ------------------ | ------------ | --------------------------------------------------------------------- |
-| `lines_per_step`  | `int`              | `3`          | 滚轮一格滚多少个 `singleStep`（适配各种 widget 的单位语义）           |
-| `duration`        | `int`              | `300`        | 动画时长 ms。0 = 关闭动画                                             |
-| `easing`          | `QEasingCurve.Type`| `OutCubic`   | 缓动曲线                                                              |
+| 参数             | 类型                | 默认值     | 说明                                                        |
+| ---------------- | ------------------- | ---------- | ----------------------------------------------------------- |
+| `lines_per_step` | `int`               | `3`        | 滚轮一格滚多少个 `singleStep`（适配各种 widget 的单位语义） |
+| `duration`       | `int`               | `300`      | 动画时长 ms。0 = 关闭动画                                   |
+| `easing`         | `QEasingCurve.Type` | `OutCubic` | 缓动曲线                                                    |
 
 > ⚠️ `lines_per_step` 不是像素！QScrollBar 的 value 单位由 widget 自己定义：
+>
 > - `QPlainTextEdit / QTextEdit / QListView`：value 是行号/项目编号，`singleStep = 1`，所以 `lines_per_step = 3` ≈ 3 行
 > - `QScrollArea / QGraphicsView`：value 是像素，`singleStep ≈ 20`，所以 `lines_per_step = 3` ≈ 60 像素
 >
