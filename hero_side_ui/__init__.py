@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.1.1"
+__version__ = "0.1.2"
 
 from .core import ThemeProvider, ScrollStyle, SmoothScroll, StatePalette
 
@@ -15,7 +15,7 @@ from .components import (
     Tooltip,
     Tabs, TabItem,
     ThemeSwitcher,
-    Title, Subtitle, Caption, Body,
+    Text, Title, Subtitle, Caption, Body,
     Switch,
     ScrollShadow,
     Listbox, ListboxItem, ListboxSection,
@@ -33,7 +33,7 @@ __all__ = [
     "Tooltip",
     "Tabs", "TabItem",
     "ThemeSwitcher",
-    "Title", "Subtitle", "Caption", "Body",
+    "Text", "Title", "Subtitle", "Caption", "Body",
     "Switch",
     "ScrollShadow",
     "Listbox", "ListboxItem", "ListboxSection",
