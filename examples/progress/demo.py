@@ -1,5 +1,5 @@
 """
-Progress 组件示例 — Linear / Circular / Spinner，全部主题感知
+Progress 组件示例 — Linear / Circular，全部主题感知
 """
 
 import os, sys
@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QVBoxLayout
 
-from hero_side_ui import Progress, CircularProgress, Spinner
+from hero_side_ui import Progress, CircularProgress
 from _base import DemoBase
 
 
@@ -70,17 +70,11 @@ class ProgressDemo(DemoBase):
         ], labels_bag, spacing=24)
 
         # Circular · indeterminate
-        self.add_section(layout, "Circular · indeterminate (spinner)", [
+        self.add_section(layout, "Circular · indeterminate", [
             CircularProgress(is_indeterminate=True, color=c, size="md", label=c.capitalize())
             for c in ["primary", "secondary", "success", "warning", "danger"]
         ], labels_bag, spacing=24)
 
-        # Spinner
-        self.add_section(layout, "Spinner (零配置加载)", [
-            Spinner(),
-            Spinner(color="secondary", size="lg"),
-            Spinner(color="success", label="Loading..."),
-        ], labels_bag, spacing=24)
 
         # Dynamic
         dyn_p = Progress(value=0, label="Downloading...", show_value_label=True,

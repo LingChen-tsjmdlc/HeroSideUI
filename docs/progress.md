@@ -98,20 +98,9 @@ spinner = CircularProgress(is_indeterminate=True, size="md", color="primary")
 
 ## 便捷别名：Spinner
 
-圆形加载场景下用别名，**不需要传任何参数**即可转圈：
-
-```python
-from hero_side_ui import Spinner
-
-# 最简用法 —— 默认 primary / md / indeterminate
-loading = Spinner()
-
-# 带配置
-Spinner(color="secondary", size="lg")
-Spinner(color="success", label="Loading...")
-```
-
-`Spinner` == `CircularProgress(is_indeterminate=True, ...)`
+> **已迁移**：Spinner 现在是独立组件，提供 `default / simple / gradient / spinner / wave / dots` 6 种 variant，详见 [`docs/spinner.md`](./spinner.md)。
+>
+> 仍想要"环形 indeterminate"的视觉？直接用 `CircularProgress(is_indeterminate=True)` 即可。
 
 ## 与 HeroUI 的差异
 

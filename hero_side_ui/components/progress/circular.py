@@ -1,7 +1,7 @@
-"""CircularProgress / Spinner — 环形进度与旋转加载指示器。
+"""CircularProgress — 环形进度指示器。
 
-CircularProgress：显示 0-100% 的环形进度。
-Spinner：CircularProgress 的"不确定模式"快捷封装，无限旋转作为 loading 指示。
+显示 0-100% 的环形进度。`is_indeterminate=True` 时整圈以 30% 长度的弧
+持续旋转，作为加载指示。
 """
 
 import math
@@ -358,38 +358,4 @@ class _CircularSvg(QWidget):
                 int(start_deg * 16),
                 int(span_deg * 16),
             )
-
-
-# ============================================================
-# 便捷别名：Spinner
-# ============================================================
-class Spinner(CircularProgress):
-    """CircularProgress 的 loading 别名。
-
-    默认 `is_indeterminate=True`，无需传参即可作为加载转圈使用::
-
-        from hero_side_ui import Spinner
-        spinner = Spinner()                        # primary / md
-        spinner2 = Spinner(color="secondary", size="lg")
-        spinner3 = Spinner(label="Loading...")     # 带下方文字
-    """
-
-    def __init__(
-        self,
-        color: str = "primary",
-        size: str = "md",
-        label: str = "",
-        stroke_width: Optional[float] = None,
-        theme: str = "auto",
-        parent: Optional[QWidget] = None,
-    ):
-        super().__init__(
-            is_indeterminate=True,
-            color=color,
-            size=size,
-            label=label,
-            stroke_width=stroke_width,
-            theme=theme,
-            parent=parent,
-        )
 

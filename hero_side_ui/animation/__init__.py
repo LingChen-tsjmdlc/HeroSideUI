@@ -6,6 +6,7 @@ from .label_float import LabelFloatAnimation
 from .underline_expand import UnderlineBar
 from .fade_scale import FadeScaleAnimation
 from .indeterminate import IndeterminateBarAnimation, SpinAnimation
+from .spinner_loops import PhaseDriver
 from .stripe_flow import StripeFlowAnimation
 from .backdrop_fade import BackdropFade
 from .pixmap_scale_proxy import PixmapScaleProxy
@@ -22,6 +23,7 @@ __all__ = [
     "FadeScaleAnimation",
     "IndeterminateBarAnimation",
     "SpinAnimation",
+    "PhaseDriver",
     "StripeFlowAnimation",
     "BackdropFade",
     "PixmapScaleProxy",
