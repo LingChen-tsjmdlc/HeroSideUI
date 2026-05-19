@@ -116,22 +116,24 @@ class Button(QPushButton):
             from PySide6.QtWidgets import QSizePolicy
 
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-
-        # icon_only: 把按钮锁成正方形（边长 = 高度，或外部 override）
-        if self._icon_only:
+        elif self._icon_only:
+            # icon_only: 把按钮锁成正方形（边长 = 高度，或外部 override）
             if self._icon_only_side_override is not None:
-                # 外部容器(如 Autocomplete 把 button 嵌进 input row)需要精确控制
-                # 边长来贴合行高 —— 用 override,不走 size_config 自动算的 30/40/...
                 side = int(self._icon_only_side_override)
             else:
                 size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
                 h = int(size_config["height"].replace("px", ""))
                 padding_y = size_config["padding_y"]
-                side = h + 2 * padding_y  # 总高 = 内容高 + 上下 padding
+                side = h + 2 * padding_y
             from PySide6.QtWidgets import QSizePolicy
 
             self.setFixedSize(side, side)
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        else:
+            # 普通按钮：宽度按内容自适应，绝不允许弹性缩小，允许弹性增大
+            from PySide6.QtWidgets import QSizePolicy
+
+            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
 
         self.setMouseTracking(True)
         from PySide6.QtCore import Qt
@@ -515,7 +517,7 @@ class Button(QPushButton):
             from PySide6.QtWidgets import QSizePolicy
 
             self.setSizePolicy(
-                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred
+                QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
             )
         self._apply_styles()
         self._refresh_icon()

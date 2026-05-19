@@ -90,7 +90,8 @@ class DemoBase(QMainWindow):
     @classmethod
     def add_section(cls, layout, title, widgets, labels_bag=None, spacing=10):
         layout.addWidget(cls._section_title(title))
-        row = QHBoxLayout()
+        row_widget = QWidget()
+        row = QHBoxLayout(row_widget)
         row.setSpacing(spacing)
         row.setAlignment(Qt.AlignmentFlag.AlignLeft)
         for w in widgets:
@@ -99,7 +100,10 @@ class DemoBase(QMainWindow):
             else:
                 from hero_side_ui import Button
                 row.addWidget(Button(**w))
-        layout.addLayout(row)
+        # 行容器宽度由内部按钮决定，绝不允许被父 layout 拉伸压缩
+        from PySide6.QtWidgets import QSizePolicy
+        row_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        layout.addWidget(row_widget)
 
     @classmethod
     def add_section_grid(cls, layout, title, widgets, labels_bag=None,
@@ -107,12 +111,16 @@ class DemoBase(QMainWindow):
         layout.addWidget(cls._section_title(title))
         widgets_list = list(widgets)
         for i in range(0, len(widgets_list), cols):
-            row = QHBoxLayout()
+            row_widget = QWidget()
+            row = QHBoxLayout(row_widget)
             row.setSpacing(spacing)
             row.setAlignment(Qt.AlignmentFlag.AlignLeft)
             for w in widgets_list[i:i + cols]:
                 row.addWidget(w)
-            layout.addLayout(row)
+            # 行容器宽度由内部按钮决定，绝不允许被父 layout 拉伸压缩
+            from PySide6.QtWidgets import QSizePolicy
+            row_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            layout.addWidget(row_widget)
 
     @classmethod
     def add_section_vertical(cls, layout, title, widgets, labels_bag=None, spacing=8):
