@@ -55,3 +55,4 @@ hero_side_ui/resources/temp/
 # workbuddy 和 codebuddy 使用的工作日志目录
 .workbuddy/
 .codebuddy/
+.codebuddyignore

@@ -1,3 +1,11 @@
-from .text import Title, Subtitle, Caption, Body
+from .text import Text, Title, Subtitle, Caption, Body, SIZE_MAP, WEIGHT_MAP
 
-__all__ = ["Title", "Subtitle", "Caption", "Body"]
+__all__ = [
+    "Text",
+    "Title",
+    "Subtitle",
+    "Caption",
+    "Body",
+    "SIZE_MAP",
+    "WEIGHT_MAP",
+]
