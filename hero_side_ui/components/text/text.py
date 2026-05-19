@@ -284,8 +284,8 @@ def _selection_palette(
     force_selection_text_color: bool = True,
     selection_adapts_color: bool = False,
     text_color: Optional[QColor] = None,
-) -> Tuple[str, str]:
-    """返回 (selection-background-color, selection-color) 的 CSS 字符串。
+) -> Tuple[QColor, QColor]:
+    """返回 (选区底色 QColor, 选中文字色 QColor)，含 alpha。
 
     - force_selection_text_color=True（默认）：选中文字强制暗色/亮色，与原文字色无关。
     - force_selection_text_color=False：选中文字色 = 原文字色（"不做任何改变"）。
@@ -303,8 +303,6 @@ def _selection_palette(
             bg.setAlphaF(0.35)
         else:
             bg.setAlphaF(0.22)
-    bg_css = f"rgba({bg.red()}, {bg.green()}, {bg.blue()}, {bg.alphaF():.4f})"
-
     # ---- 选中文字色 ----
     if force_selection_text_color:
         fg = QColor("#18181b" if theme == "light" else "#fafafa")
@@ -314,8 +312,7 @@ def _selection_palette(
         else:
             default_hex = _DEFAULT_TEXT_COLORS.get(theme, "#27272a")
             fg = QColor(default_hex)
-    fg_css = f"rgba({fg.red()}, {fg.green()}, {fg.blue()}, {fg.alphaF():.4f})"
-    return bg_css, fg_css
+    return bg, fg
 
 
 # ============================================================
@@ -418,19 +415,27 @@ class Text(QLabel):
         """根据当前主题 / color override / transparency / selection_* 参数刷新文字色与选区底色。"""
         c = self._current_color()
         rgba_str = f"rgba({c.red()}, {c.green()}, {c.blue()}, {c.alphaF():.4f})"
-        # 选区色：传入所有相关参数
-        sel_bg_css, sel_fg_css = _selection_palette(
+        # 选区色：返回 QColor 对象（含 alpha）
+        bg, fg = _selection_palette(
             self._theme,
             force_selection_text_color=self._force_selection_text_color,
             selection_adapts_color=self._selection_adapts_color,
             text_color=c,
         )
+        # 1) 写 QPalette（测试 + 无障碍 读取）
+        pal = self.palette()
+        pal.setColor(QPalette.ColorRole.Highlight, bg)
+        pal.setColor(QPalette.ColorRole.HighlightedText, fg)
+        self.setPalette(pal)
+        # 2) 写 QSS（视觉渲染）
+        bg_css = f"rgba({bg.red()}, {bg.green()}, {bg.blue()}, {bg.alphaF():.4f})"
+        fg_css = f"rgba({fg.red()}, {fg.green()}, {fg.blue()}, {fg.alphaF():.4f})"
         self.setStyleSheet(
             f"QLabel {{ "
             f"color: {rgba_str}; "
             f"background: transparent; "
-            f"selection-color: {sel_fg_css}; "
-            f"selection-background-color: {sel_bg_css}; "
+            f"selection-color: {fg_css}; "
+            f"selection-background-color: {bg_css}; "
             f"}}"
         )
 

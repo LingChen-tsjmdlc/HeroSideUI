@@ -425,6 +425,5 @@ class TextDemo(DemoBase):
             labels_bag,
             spacing=6,
         )
-
-
+if __name__ == "__main__":
     TextDemo.run()
