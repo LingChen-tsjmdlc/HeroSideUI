@@ -7,12 +7,13 @@
 core 是组件库的"地基"，是所有组件共享的全局服务和静态规则集。
 特点：**没有视觉**、**没有动画**、**主要是状态机和纯计算**。
 
-| 文件                     | 被测对象                      | 关注点                                                                                                                                      |
-| ------------------------ | ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `test_theme_provider.py` | `ThemeProvider` 单例          | 单例、`set_mode/toggle`、register/unregister/weakref 清理、`theme_changed/mode_changed` 信号广播                                            |
-| `test_state_palette.py`  | `StatePalette` 静态色板       | bg/border/text 在 variant × color × theme × state 笛卡尔积下的精确返回值；resting/disabled 透明；focus≡hover；未知 color 静默降级到 default |
-| `test_scroll_style.py`   | `ScrollStyle` 滚动条 QSS 工厂 | 不同 variant/theme/size 下 QSS 拼接正确、QScrollBar 实例属性挂载                                                                            |
-| `test_smooth_scroll.py`  | `SmoothScroll` 滚轮平滑包装   | wheel event 入参合并、tick 速度衰减、target 在边界处 clamp                                                                                  |
+| 文件                     | 被测对象                                | 关注点                                                                                                                                                                                                                                                                                                             |
+| ------------------------ | --------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `test_theme_provider.py` | `ThemeProvider` 单例                    | 单例、`set_mode/toggle`、register/unregister/weakref 清理、`theme_changed/mode_changed` 信号广播                                                                                                                                                                                                                   |
+| `test_font_provider.py`  | `FontProvider` 单例 + `make_qfont` 工厂 | 单例幂等、`ensure_loaded` 失败回退、`font_family_css` 字体栈拼接、思源 9→3 字重塌缩（≤400→400 / ≤600→500 / ≤1000→700）、按字重选 family（`family_for_weight`，应对 OTF Subset family 分裂）、`set_family/set_base_size_px` 广播、`register/weakref`、`make_qfont` 默认值与按字重选 family、`dump_diagnostics` 输出 |
+| `test_state_palette.py`  | `StatePalette` 静态色板                 | bg/border/text 在 variant × color × theme × state 笛卡尔积下的精确返回值；resting/disabled 透明；focus≡hover；未知 color 静默降级到 default                                                                                                                                                                        |
+| `test_scroll_style.py`   | `ScrollStyle` 滚动条 QSS 工厂           | 不同 variant/theme/size 下 QSS 拼接正确、QScrollBar 实例属性挂载                                                                                                                                                                                                                                                   |
+| `test_smooth_scroll.py`  | `SmoothScroll` 滚轮平滑包装             | wheel event 入参合并、tick 速度衰减、target 在边界处 clamp                                                                                                                                                                                                                                                         |
 
 ## 这层 _不_ 测什么
 

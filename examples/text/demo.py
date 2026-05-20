@@ -1,5 +1,5 @@
 """
-Text 组件示例 — 全 13 档字号 / 9 档字重 / HeroUI 颜色 / HEX / RGBA / 透明度 / 选区高亮
+Text 组件示例 — 全 13 档字号 / 6 档物理字重 / HeroUI 颜色 / HEX / RGBA / 透明度 / 选区高亮
 """
 
 import os, sys
@@ -45,17 +45,16 @@ class TextDemo(DemoBase):
         )
 
         # ============================================================
-        # 2) 9 档字重 (thin ~ black)
+        # 2) 6 档物理字重（思源 VF 原生 instance）
+        #    思源 VF 物理上只有 ExtraLight/Light/Regular/Medium/Bold/Heavy 6 档独立
+        #    粗细，API 也只暴露这 6 个 token，绝不假装更多档位。
         # ============================================================
         weights = [
-            "thin",
             "extralight",
             "light",
             "normal",
             "medium",
-            "semibold",
             "bold",
-            "extrabold",
             "black",
         ]
         weight_widgets = [
@@ -68,7 +67,7 @@ class TextDemo(DemoBase):
         ]
         self.add_section_vertical(
             layout,
-            "9 档字重 (thin / extralight / light / normal / medium / semibold / bold / extrabold / black)",
+            "6 档物理字重 (extralight / light / normal / medium / bold / black) — 思源 VF 原生 instance",
             weight_widgets,
             labels_bag,
             spacing=4,
@@ -87,7 +86,7 @@ class TextDemo(DemoBase):
             "neutral",
         ]
         token_widgets = [
-            Text(f"color={n!r}", size="lg", weight="semibold", color=n)
+            Text(f"color={n!r}", size="lg", weight="medium", color=n)
             for n in token_names
         ]
         self.add_section_grid(
@@ -150,7 +149,7 @@ class TextDemo(DemoBase):
             Text(
                 f"transparency = {a:.1f}",
                 size="lg",
-                weight="semibold",
+                weight="medium",
                 color="primary",
                 transparency=a,
             )
@@ -181,7 +180,7 @@ class TextDemo(DemoBase):
                 "自定义橙色文字也能正确显示选区高亮",
                 size="md",
                 color="#FF8800",
-                weight="semibold",
+                weight="medium",
             ),
             Text(
                 "带透明度的文字框选时会自动提到 0.85+ 保证可读",
@@ -346,7 +345,7 @@ class TextDemo(DemoBase):
         # 10) 动态 setter 演示
         # ============================================================
         dyn = Text(
-            "Click buttons to mutate me", size="2xl", weight="semibold", color="default"
+            "Click buttons to mutate me", size="2xl", weight="medium", color="default"
         )
         from hero_side_ui import Button
 
@@ -368,8 +367,8 @@ class TextDemo(DemoBase):
         btn_weight = Button("weight=black", size="sm", variant="flat")
         btn_weight.clicked.connect(lambda: dyn.set_weight("black"))
 
-        btn_weight_thin = Button("weight=thin", size="sm", variant="flat")
-        btn_weight_thin.clicked.connect(lambda: dyn.set_weight("thin"))
+        btn_weight_extralight = Button("weight=extralight", size="sm", variant="flat")
+        btn_weight_extralight.clicked.connect(lambda: dyn.set_weight("extralight"))
 
         btn_alpha = Button("transparency=0.4", size="sm", variant="flat")
         btn_alpha.clicked.connect(lambda: dyn.set_transparency(0.4))
@@ -392,7 +391,7 @@ class TextDemo(DemoBase):
             btn_size,
             btn_size_md,
             btn_weight,
-            btn_weight_thin,
+            btn_weight_extralight,
             btn_alpha,
             btn_alpha_full,
             btn_reset,
@@ -400,6 +399,7 @@ class TextDemo(DemoBase):
             bl.addWidget(b)
         # 行容器宽度由内部按钮决定，拒绝被父 layout 拉伸压缩
         from PySide6.QtWidgets import QSizePolicy
+
         btns.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
 
         self.add_section_vertical(
@@ -416,7 +416,11 @@ class TextDemo(DemoBase):
         non_selectable = [
             Text("这段文字不允许框选（selectable=False）", size="md", selectable=False),
             Text("primary 色 + 不可框选", size="md", color="primary", selectable=False),
-            Text("可以框选的正常文字（selectable=True，默认）", size="md", color="secondary"),
+            Text(
+                "可以框选的正常文字（selectable=True，默认）",
+                size="md",
+                color="secondary",
+            ),
         ]
         self.add_section_vertical(
             layout,
@@ -425,5 +429,33 @@ class TextDemo(DemoBase):
             labels_bag,
             spacing=6,
         )
+
+
+def _diagnose():
+    """在事件循环启动后 dump FontProvider 状态。
+
+    必须用 QTimer.singleShot(0, ...) 把诊断推迟到 ``TextDemo.run()`` 内部
+    创建好 QApplication 之后再执行，否则会和 ``_base.run()`` 里的
+    ``QApplication(sys.argv)`` 冲突报 "Please destroy the QApplication
+    singleton before creating a new QApplication instance."
+    """
+    from hero_side_ui.core import FontProvider
+    from hero_side_ui import Text
+
+    p = FontProvider.instance()
+    print(f"[FontProvider] builtin_loaded = {p.builtin_loaded}")
+    print(f"[FontProvider] family         = {p.family!r}")
+    print(f"[FontProvider] base_size_px   = {p.base_size_px}")
+    print(f"[FontProvider] font_family_css= {p.font_family_css()}")
+
+    t = Text("Hi")
+    print(f"[Text] font().family() = {t.font().family()!r}")
+    print(f"[Text] font().pixelSize() = {t.font().pixelSize()}")
+
+
 if __name__ == "__main__":
+    from PySide6.QtCore import QTimer
+
+    # 把诊断挂到事件循环上：TextDemo.run() 起 app 后立即触发
+    QTimer.singleShot(0, _diagnose)
     TextDemo.run()

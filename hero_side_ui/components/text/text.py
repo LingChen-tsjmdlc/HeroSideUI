@@ -1,79 +1,10 @@
-"""
-HeroSideUI 主题感知文字组件（Text）
-====================================
+"""主题感知的文字组件 ``Text``。完整 API / 示例见 ``docs/text.md``。
 
-提供一个统一的、主题感知的文字组件 :class:`Text`（继承 ``QLabel``），
-所有组件库内部 / demo / 用户代码都应该用它来渲染文字，从而：
-
-- 自动跟随 ``ThemeProvider`` 切换亮暗色（``theme="auto"``）。
-- 颜色 token 统一走 ``hero_side_ui.themes.colors.HEROUI_COLORS``，避免 hex 散落。
-- 字号 / 字重的语义化命名对齐 Tailwind 体系（``text-xs ~ text-9xl``、``font-thin ~ font-black``）。
-- 鼠标框选时高亮底色根据主题 + 文字色 + 主品牌蓝自动算合理对比度，亮暗模式都好看。
-
-为了向后兼容，旧的语义化别名 ``Title / Subtitle / Caption / Body`` 仍然导出，
-全部基于新的 :class:`Text` 实现。
-
-API 速览
---------
-.. code-block:: python
-
-    Text("Hello")                                         # 默认 md / normal / 主题字色
-    Text("Big", size="3xl", weight="bold")                # 30px Bold
-    Text("Brand", color="primary")                        # HeroUI primary-500
-    Text("Brand 700", color="primary-700")                # HeroUI primary-700
-    Text("Custom", color="#FF8800")                       # HEX
-    Text("RGBA", color=(255, 0, 0, 128))                  # RGBA tuple
-    Text("Half opacity", color="primary", transparency=0.5)
-    Text("Forced dark", theme="dark")                     # 硬锁暗色（不受 ThemeProvider 影响）
-    # 框选文字色控制
-    Text("Keep color", color="danger", force_selection_text_color=False)  # 框选后文字色不变
-    # 选区底色适配文字色
-    Text("Adaptive bg", color="danger", selection_adapts_color=True)   # 底色随文字色变化
-
-参数
-----
-- ``size``: ``"xs"`` / ``"sm"`` / ``"md"`` / ``"lg"`` / ``"xl"`` / ``"2xl"`` ~ ``"9xl"``，
-  也支持直接传 ``int`` / ``float``（像素）。
-- ``weight``: ``"thin"`` / ``"extralight"`` / ``"light"`` / ``"normal"`` / ``"medium"`` /
-  ``"semibold"`` / ``"bold"`` / ``"extrabold"`` / ``"black"``，也支持 ``QFont.Weight`` 或
-  ``int`` (1-1000)。
-- ``color``: 见 "颜色解析" 一节。``None`` → 跟随主题默认正文色。
-- ``transparency``: ``0.0 ~ 1.0`` 透明度，会乘到最终颜色 alpha 上（``0`` 完全透明、
-  ``1`` 完全不透明，默认 ``1.0``）。
-- ``force_selection_text_color``: ``bool``（默认 ``True``）。
-  ``True``：框选文字色强制为暗色（亮色模式）/ 亮色（暗色模式）；
-  ``False``：框选文字色与原文字色保持一致（不做任何改变）。
-- ``selection_adapts_color``: ``bool``（默认 ``False``）。
-  ``False``：选区底色永远用主品牌蓝（``primary-500``）；
-  ``True``：选区底色根据文字颜色自动生成（HSL 算法，亮暗模式都适配）。
-- ``theme``: ``"auto"`` (默认) / ``"light"`` / ``"dark"``。``auto`` 会自动注册到
-  ``ThemeProvider``，主题切换时自动刷新文字色 / 选区底色。
-
-颜色解析
---------
-``color`` 接受以下任意一种：
-
-1. HeroUI token 字符串，如 ``"primary"``、``"danger-700"``、``"default-300"``。
-   不带数字时默认走 500 档；和 ``Button``/``Input`` 等其他组件的 ``color=`` 同语义。
-2. HEX 字符串，如 ``"#FF8800"`` (6 位)，或 Qt 风格 ``"#80FF8800"`` (8 位 ``#AARRGGBB``)。
-3. RGB / RGBA tuple，如 ``(255, 136, 0)`` 或 ``(255, 136, 0, 200)``。
-4. CSS 风格 ``"rgba(r, g, b, a)"`` / ``"rgb(r, g, b)"`` 字符串。
-5. ``QColor`` 对象。
-
-不传 / 传 ``None`` 时使用主题感知的默认正文色（亮色 ``#27272a``、暗色 ``#e4e4e7``）。
-
-选区底色（鼠标框选）
---------------------
-- ``force_selection_text_color=True``（默认）：选中文字色强制为暗色（亮色模式）/
-  亮色（暗色模式），与原文字色无关。
-- ``force_selection_text_color=False``：选中文字色与原文字色保持一致。
-- ``selection_adapts_color=False``（默认）：选区底色永远用主品牌蓝
-  ``primary-500``（亮色 @22% / 暗色 @35% alpha）。
-- ``selection_adapts_color=True``：选区底色根据文字颜色自动生成
-  （HSL 算法：亮色模式生成淡色，暗色模式生成暗色）。
-
-实现细节：通过 QSS ``selection-color`` / ``selection-background-color`` 设置
-选区颜色，每个实例独立 QSS，不污染父级。支持 Ctrl+点击多选不同 Text 实例。
+本文件只负责：
+- token 解析（size / weight / color）
+- 选区底色的 HSL 适配算法
+- 主题广播接入 + selection 清除等 QLabel 行为调整
+“为什么这样写”的坑记在各函数内联。
 """
 
 from __future__ import annotations
@@ -85,21 +16,20 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFocusEvent, QFont, QMouseEvent, QPalette
 from PySide6.QtWidgets import QLabel, QWidget
 
-from ...core import ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS
-
+from ...core import FontProvider, ThemeProvider, make_qfont
+from ...themes import HEROUI_COLORS
 
 # ============================================================
 # 常量映射
 # ============================================================
 
-#: Tailwind 风格字号映射（像素）
+# Tailwind text-xs ~ text-9xl 对齐；md=16px=1rem。
 SIZE_MAP: dict = {
-    "xs":  12,
-    "sm":  13,
-    "md":  14,
-    "lg":  16,
-    "xl":  18,
+    "xs": 12,
+    "sm": 14,
+    "md": 16,
+    "lg": 18,
+    "xl": 20,
     "2xl": 24,
     "3xl": 30,
     "4xl": 36,
@@ -110,26 +40,23 @@ SIZE_MAP: dict = {
     "9xl": 128,
 }
 
-#: Tailwind 风格字重映射 → Qt weight 整数
+# 6 档物理字重 token，与思源 VF 原生 instance 一一对应。
+# regular / heavy 是 normal / black 的 alias。其他 token 在 _resolve_weight() 报错。
 WEIGHT_MAP: dict = {
-    "thin":       QFont.Weight.Thin,        # 100
     "extralight": QFont.Weight.ExtraLight,  # 200
-    "light":      QFont.Weight.Light,       # 300
-    "normal":     QFont.Weight.Normal,      # 400
-    "regular":    QFont.Weight.Normal,      # 400 (alias)
-    "medium":     QFont.Weight.Medium,      # 500
-    "semibold":   QFont.Weight.DemiBold,    # 600
-    "demibold":   QFont.Weight.DemiBold,    # 600 (alias)
-    "bold":       QFont.Weight.Bold,        # 700
-    "extrabold":  QFont.Weight.ExtraBold,   # 800
-    "black":      QFont.Weight.Black,       # 900
-    "heavy":      QFont.Weight.Black,       # 900 (alias)
+    "light": QFont.Weight.Light,  # 300
+    "normal": QFont.Weight.Normal,  # 400
+    "regular": QFont.Weight.Normal,  # 400 (alias)
+    "medium": QFont.Weight.Medium,  # 500
+    "bold": QFont.Weight.Bold,  # 700
+    "black": QFont.Weight.Black,  # 900
+    "heavy": QFont.Weight.Black,  # 900 (alias)
 }
 
-#: 默认正文色（不传 color 时使用）
+# 默认正文色（不传 color 时使用）
 _DEFAULT_TEXT_COLORS: dict = {
     "light": "#27272a",  # default-800
-    "dark":  "#e4e4e7",  # default-200
+    "dark": "#e4e4e7",  # default-200
 }
 
 
@@ -152,10 +79,7 @@ _RGBA_RE = re.compile(
 
 
 def _parse_token(token: str) -> Optional[QColor]:
-    """解析 HeroUI token 字符串，如 ``"primary"``、``"danger-700"``。
-
-    返回 None 表示这不是 HeroUI token，调用方应继续走 HEX/QColor 解析。
-    """
+    """HeroUI token → QColor；不匹配返 None 交给调用方继续走 HEX/QColor。"""
     parts = token.strip().split("-")
     name = parts[0].lower()
     if name not in HEROUI_COLORS:
@@ -174,10 +98,7 @@ def _parse_token(token: str) -> Optional[QColor]:
 
 
 def _resolve_color(color: ColorInput, theme: str) -> QColor:
-    """把任意支持的颜色输入归一化为 ``QColor``。
-
-    传 ``None`` 时返回主题默认正文色。
-    """
+    """任意颜色输入 → QColor；None 走主题默认正文色。"""
     if color is None:
         return QColor(_DEFAULT_TEXT_COLORS.get(theme, _DEFAULT_TEXT_COLORS["light"]))
 
@@ -225,6 +146,7 @@ def _resolve_color(color: ColorInput, theme: str) -> QColor:
 # 尺寸 / 字重解析
 # ============================================================
 
+
 def _resolve_size(size: SizeInput) -> int:
     if isinstance(size, (int, float)):
         return max(1, int(size))
@@ -236,30 +158,37 @@ def _resolve_size(size: SizeInput) -> int:
 
 
 def _resolve_weight(weight: WeightInput) -> int:
+    """字重 → Qt weight (1~1000)；未知字符串抛 ValueError（不静默兜底）。"""
     if isinstance(weight, QFont.Weight):
         return int(weight)
     if isinstance(weight, int):
-        # Qt weight 范围 1~1000
         return max(1, min(1000, weight))
     if isinstance(weight, str):
         s = weight.strip().lower().replace("-", "").replace("_", "")
         if s in WEIGHT_MAP:
             return int(WEIGHT_MAP[s])
-    return int(QFont.Weight.Normal)
+        raise ValueError(
+            f"Unsupported weight token {weight!r}; "
+            f"expected one of {sorted(WEIGHT_MAP.keys())} "
+            "or QFont.Weight / int(1~1000)."
+        )
+    raise TypeError(
+        f"weight must be str / int / QFont.Weight, got {type(weight).__name__}."
+    )
 
 
 # ============================================================
 # 选区底色计算
 # ============================================================
 
-def _adapt_selection_bg(text_color: QColor, theme: str) -> QColor:
-    """根据文字色生成适配的选区底色（HSL 算法，适配亮/暗色模式）。
 
-    - 亮色模式：生成淡色（pastel 风格，高亮度、低饱和度）
-    - 暗色模式：生成暗色（低亮度、中等饱和度）
+def _adapt_selection_bg(text_color: QColor, theme: str) -> QColor:
+    """文字色 → 适配的选区底色（亮色出pastel 淡色 / 暗色出低亮度色）。
+
+    用 HSL 而非 RGB：才能同时压饱和度又反转亮度，避免品牌色深色背景出现高饱和药丸色。
     """
-    h = text_color.hueF()          # 0–1，灰色时为 -1（设为 0）
-    s = text_color.saturationF()   # 0–1
+    h = text_color.hueF()  # 0–1，灰色时为 -1（设为 0）
+    s = text_color.saturationF()  # 0–1
     # 灰色（无 hue）处理：h 设为 0，s 保持 0
     if h < 0:
         h = 0.0
@@ -285,13 +214,7 @@ def _selection_palette(
     selection_adapts_color: bool = False,
     text_color: Optional[QColor] = None,
 ) -> Tuple[QColor, QColor]:
-    """返回 (选区底色 QColor, 选中文字色 QColor)，含 alpha。
-
-    - force_selection_text_color=True（默认）：选中文字强制暗色/亮色，与原文字色无关。
-    - force_selection_text_color=False：选中文字色 = 原文字色（"不做任何改变"）。
-    - selection_adapts_color=True：选区底色适配文字色（HeroUI token / 自定义均走 HSL 算法）。
-    - selection_adapts_color=False（默认）：底色永远用主品牌蓝。
-    """
+    """返 (选区底色, 选中文字色)；语义参考 docs/text.md 中 Selection 一节。"""
     # ---- 选区底色 ----
     if selection_adapts_color and text_color is not None:
         bg = _adapt_selection_bg(text_color, theme)
@@ -319,15 +242,9 @@ def _selection_palette(
 # Text 组件
 # ============================================================
 
+
 class Text(QLabel):
-    """主题感知的统一文字组件。
-
-    所有 HeroSideUI 内部以及上层应用都应该用 ``Text`` 来渲染文字内容，
-    而不是直接 ``QLabel + setStyleSheet("color: #...")``。这样可以保证
-    主题切换时文字色自动跟随，HEX 色不再散落在业务代码里。
-
-    详见模块顶部 docstring。
-    """
+    """主题感知的统一文字组件。API/示例见 ``docs/text.md``。"""
 
     def __init__(
         self,
@@ -370,6 +287,9 @@ class Text(QLabel):
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
 
+        # 任何主题模式都注册到 FontProvider，这样全局字体切换时能同步刷新。
+        FontProvider.instance().register(self)
+
     # ============================================================
     # 静态工具
     # ============================================================
@@ -395,9 +315,11 @@ class Text(QLabel):
     # 字体
     # ============================================================
     def _apply_font(self) -> None:
-        font = QFont(FONT_FAMILY)
-        font.setPixelSize(_resolve_size(self._size))
-        font.setWeight(QFont.Weight(_resolve_weight(self._weight)))
+        # FontProvider 会走 setStyleName 精确选 VF 原生 instance。
+        font = make_qfont(
+            size_px=_resolve_size(self._size),
+            weight=_resolve_weight(self._weight),
+        )
         self.setFont(font)
 
     # ============================================================
@@ -412,7 +334,8 @@ class Text(QLabel):
         return c
 
     def _apply_color(self) -> None:
-        """根据当前主题 / color override / transparency / selection_* 参数刷新文字色与选区底色。"""
+        # 同时写 QPalette（a11y/测试读取）和 QSS（实际渲染）——
+        # QSS 颜色是创建时快照，主题切换必须重写。
         c = self._current_color()
         rgba_str = f"rgba({c.red()}, {c.green()}, {c.blue()}, {c.alphaF():.4f})"
         # 选区色：返回 QColor 对象（含 alpha）
@@ -443,7 +366,6 @@ class Text(QLabel):
     # 主题切换
     # ============================================================
     def set_theme(self, theme: str) -> None:
-        """切换主题模式: ``"auto"`` / ``"light"`` / ``"dark"``。"""
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -456,7 +378,7 @@ class Text(QLabel):
         self._apply_color()
 
     def _apply_provider_theme(self, theme: str) -> None:
-        """ThemeProvider 广播专用入口（不触发注册逻辑）。"""
+        # ThemeProvider 广播专用入口：不重新 register/unregister。
         self._theme = theme
         self._apply_color()
 
@@ -465,11 +387,8 @@ class Text(QLabel):
     # ============================================================
 
     def _clear_selection(self) -> None:
-        """强制清除当前文本选区。
-
-        QLabel 没有暴露 ``clearSelection()`` API；通过临时置空文本再恢复
-        来重置内部 ``QTextControl`` 的选区状态。关闭 updates 避免闪烁。
-        """
+        # QLabel 无 clearSelection() API；重置内部 QTextControl 的唯一手段是
+        # “置空文本再赋回”，顺便关 updates 避免闪烁。
         text = self.text()
         if not text:
             return
@@ -479,13 +398,12 @@ class Text(QLabel):
         self.setUpdatesEnabled(True)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
-        """点击时：非 Shift 点击清除自身选区（单选行为）。"""
+        # 非 Shift 点击 → 单选行为，先清自己的选区。
         if not (event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
             self._clear_selection()
         super().mousePressEvent(event)
 
     def focusOutEvent(self, event: QFocusEvent) -> None:
-        """失去焦点时清除自身选区。"""
         self._clear_selection()
         super().focusOutEvent(event)
 
@@ -493,44 +411,26 @@ class Text(QLabel):
     # 公共动态 setter
     # ============================================================
     def set_size(self, size: SizeInput) -> None:
-        """切换字号（接受 ``"xs" ~ "9xl"`` 或像素 int/float）。"""
         self._size = size
         self._apply_font()
 
     def set_weight(self, weight: WeightInput) -> None:
-        """切换字重（接受 ``"thin" ~ "black"`` / ``QFont.Weight`` / int）。"""
         self._weight = weight
         self._apply_font()
 
     def set_color(self, color: ColorInput) -> None:
-        """切换文字色。
-
-        - 传 ``None`` 恢复主题默认正文色。
-        - 传 HeroUI token / HEX / RGB(A) tuple / ``QColor`` / ``rgba(...)`` 字符串。
-        """
         self._color_input = color
         self._apply_color()
 
     def set_transparency(self, transparency: float) -> None:
-        """切换整体透明度（0.0 ~ 1.0）。"""
         self._transparency = self._clamp01(transparency)
         self._apply_color()
 
     def set_force_selection_text_color(self, force: bool) -> None:
-        """控制框选文字色是否强制为暗色/亮色。
-
-        - ``True``（默认）：框选文字强制暗色（亮色模式）/ 亮色（暗色模式）。
-        - ``False``：框选文字色与原文字色保持一致（"不做任何改变"）。
-        """
         self._force_selection_text_color = bool(force)
         self._apply_color()
 
     def set_selection_adapts_color(self, enabled: bool) -> None:
-        """控制选区底色是否适配文字颜色。
-
-        - ``False``（默认）：底色永远用主品牌蓝（primary-500）。
-        - ``True``：底色根据文字颜色自动生成（HeroUI token / 自定义颜色均走 HSL 算法）。
-        """
         self._selection_adapts_color = bool(enabled)
         self._apply_color()
 
@@ -538,7 +438,6 @@ class Text(QLabel):
     # selectable
     # ============================================================
     def _apply_selectable(self) -> None:
-        """根据 ``self._selectable`` 刷新文本交互标志与焦点策略。"""
         if self._selectable:
             self.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
             self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -547,11 +446,6 @@ class Text(QLabel):
             self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
     def set_selectable(self, selectable: bool) -> None:
-        """设置是否允许鼠标框选/复制文字。
-
-        - ``True``（默认）：允许框选、复制，点击获得焦点。
-        - ``False``：禁止框选，文字只读渲染，不可交互。
-        """
         self._selectable = bool(selectable)
         self._apply_selectable()
 
@@ -560,12 +454,11 @@ class Text(QLabel):
     # ============================================================
     @property
     def text_color(self) -> QColor:
-        """当前实际渲染的文字色（已叠加 transparency）。"""
+        # 已叠加 transparency 的实际渲染色。
         return self._current_color()
 
     @property
     def theme(self) -> str:
-        """当前实际生效的主题: ``"light"`` / ``"dark"``。"""
         return self._theme
 
 
@@ -573,21 +466,11 @@ class Text(QLabel):
 # 向后兼容：Title / Subtitle / Caption / Body
 # ============================================================
 
+
 class Title(Text):
-    """主标题 — 高对比度。
+    """主标题 — level=1/2/3 → 2xl/xl/lg Bold。"""
 
-    用法::
-
-        Title("Welcome back")              # level=1 → 2xl Bold (24px)
-        Title("Section title", level=2)    # 18px Bold
-        Title("Card title", level=3)       # 16px Bold
-
-    Args:
-        level: ``1`` (24px) / ``2`` (18px) / ``3`` (16px)
-        selectable: 是否允许框选/复制（默认 True）
-    """
-
-    _LEVEL_SIZE = {1: "2xl", 2: "xl", 3: "lg"}  # 24 / 18 / 16
+    _LEVEL_SIZE = {1: "2xl", 2: "xl", 3: "lg"}
 
     def __init__(
         self,
@@ -614,11 +497,7 @@ class Title(Text):
 
 
 class Subtitle(Text):
-    """副标题 — 中性灰（亮色 ``default-500`` / 暗色 ``default-400``）。
-
-    Args:
-        selectable: 是否允许框选/复制（默认 True）
-    """
+    """副标题 — sm + 主题感知灰色。"""
 
     def __init__(
         self,
@@ -630,13 +509,12 @@ class Subtitle(Text):
         parent: Optional[QWidget] = None,
         **kwargs,
     ):
-        # 默认色: 跟随主题的副标题灰
         if color is None:
             theme_now = self._resolve_theme(theme)
             color = "#71717a" if theme_now == "light" else "#a1a1aa"
         super().__init__(
             text,
-            size="sm",          # 13px
+            size="sm",  # 14px
             weight="normal",
             color=color,
             selectable=selectable,
@@ -647,11 +525,7 @@ class Subtitle(Text):
 
 
 class Caption(Text):
-    """辅助提示 — 浅灰（亮色 ``default-400`` / 暗色 ``default-500``），最低对比度。
-
-    Args:
-        selectable: 是否允许框选/复制（默认 True）
-    """
+    """辅助提示 — xs + 最低对比度灰色。"""
 
     def __init__(
         self,
@@ -668,7 +542,7 @@ class Caption(Text):
             color = "#a1a1aa" if theme_now == "light" else "#71717a"
         super().__init__(
             text,
-            size="xs",          # 12px
+            size="xs",  # 12px
             weight="normal",
             color=color,
             selectable=selectable,
@@ -679,13 +553,7 @@ class Caption(Text):
 
 
 class Body(Text):
-    """正文 — 接近窗口前景色（亮色 ``#27272a`` / 暗色 ``#e4e4e7``）。
-
-    本质就是 ``Text(..., size="md")``，提供语义化别名。
-
-    Args:
-        selectable: 是否允许框选/复制（默认 True）
-    """
+    """正文 — 语义化 alias，等价 ``Text(size='md')``。"""
 
     def __init__(
         self,
@@ -699,7 +567,7 @@ class Body(Text):
     ):
         super().__init__(
             text,
-            size="md",          # 14px
+            size="md",
             weight="normal",
             color=color,
             selectable=selectable,

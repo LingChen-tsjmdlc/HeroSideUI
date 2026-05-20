@@ -43,15 +43,15 @@ Text("Always dark",  theme="dark")
 
 ## 构造参数
 
-| 参数           | 类型                                                     | 默认       | 说明                                                          |
-| -------------- | -------------------------------------------------------- | ---------- | ------------------------------------------------------------- |
-| `text`         | `str`                                                    | `""`       | 文字内容                                                      |
-| `size`         | `str` (`xs`~`9xl`) / `int` / `float`                     | `"md"`     | 字号；接受 Tailwind token 或像素数值                          |
-| `weight`       | `str` (`thin`~`black`) / `QFont.Weight` / `int` (1~1000) | `"normal"` | 字重；接受 Tailwind token 或 Qt weight                        |
-| `color`        | `str` / `QColor` / `tuple` / `None`                      | `None`     | 文字颜色；`None` 跟随主题默认正文色。详见下文                 |
-| `transparency` | `float` `0.0~1.0`                                        | `1.0`      | 整体透明度；与 color 自身 alpha 相乘                          |
-| `theme`        | `"auto"` / `"light"` / `"dark"`                          | `"auto"`   | 主题模式；`auto` 自动跟随 `ThemeProvider`，硬锁不参与全局切换 |
-| `parent`       | `QWidget \| None`                                        | `None`     | Qt 父对象                                                     |
+| 参数           | 类型                                                           | 默认       | 说明                                                                                 |
+| -------------- | -------------------------------------------------------------- | ---------- | ------------------------------------------------------------------------------------ |
+| `text`         | `str`                                                          | `""`       | 文字内容                                                                             |
+| `size`         | `str` (`xs`~`9xl`) / `int` / `float`                           | `"md"`     | 字号；接受 Tailwind token 或像素数值                                                 |
+| `weight`       | `str` (`extralight`~`black`) / `QFont.Weight` / `int` (1~1000) | `"normal"` | 字重；只接受与 VF 原生 instance 一一对应的 6 个 token，传未知字符串会抛 `ValueError` |
+| `color`        | `str` / `QColor` / `tuple` / `None`                            | `None`     | 文字颜色；`None` 跟随主题默认正文色。详见下文                                        |
+| `transparency` | `float` `0.0~1.0`                                              | `1.0`      | 整体透明度；与 color 自身 alpha 相乘                                                 |
+| `theme`        | `"auto"` / `"light"` / `"dark"`                                | `"auto"`   | 主题模式；`auto` 自动跟随 `ThemeProvider`，硬锁不参与全局切换                        |
+| `parent`       | `QWidget \| None`                                              | `None`     | Qt 父对象                                                                            |
 
 ### `size` 值表（参考 Tailwind `text-*`）
 
@@ -67,17 +67,18 @@ Text("Always dark",  theme="dark")
 
 也可以直接传整数像素：`Text("Custom", size=22)`。
 
-### `weight` 值表（参考 Tailwind `font-*`）
+### `weight` 值表（6 档物理字重）
 
-| token        | Qt Weight | token       | Qt Weight |
-| ------------ | --------: | ----------- | --------: |
-| `thin`       |       100 | `medium`    |       500 |
-| `extralight` |       200 | `semibold`  |       600 |
-| `light`      |       300 | `bold`      |       700 |
-| `normal`     |       400 | `extrabold` |       800 |
-| `regular`    |       400 | `black`     |       900 |
+HeroSideUI 内置 VF 思源黑体只有 6 个原生 instance，只提供下面 6 个 token。**不接受** `thin`/`semibold`/`extrabold` 等伪档位（传了会抛 `ValueError`）；想要 9 档独立粗细请换 Latin VF（如 Inter VF）。
 
-也接受 `QFont.Weight.Bold`、`int` (1-1000)。
+| token        |                 Qt Weight | token    |                Qt Weight |
+| ------------ | ------------------------: | -------- | -----------------------: |
+| `extralight` |                       200 | `medium` |                      500 |
+| `light`      |                       300 | `bold`   |                      700 |
+| `normal`     |                       400 | `black`  |                      900 |
+| `regular`    | 400 （alias of `normal`） | `heavy`  | 900 （alias of `black`） |
+
+也接受 `QFont.Weight.Bold`、`int` (1-1000)；传任意 int 会按区间兜底到 6 档之一（详见《font_provider.md》）。
 
 ### `color` 解析规则
 
@@ -207,7 +208,7 @@ Text("Hi", size="2xl", weight="bold", color="primary")
 参见 [`examples/text/demo.py`](../examples/text/demo.py)：
 
 - 全 13 档字号
-- 全 9 档字重
+- 6 档物理字重（与 VF 原生 instance 一一对应）
 - HeroUI 7 套语义色 × 10 色阶
 - HEX / RGBA / 自定义色
 - 透明度滑梯
