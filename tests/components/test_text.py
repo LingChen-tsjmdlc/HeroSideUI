@@ -21,7 +21,12 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QPalette
 
 from hero_side_ui import (
-    ThemeProvider, Text, Title, Subtitle, Caption, Body,
+    ThemeProvider,
+    Text,
+    Title,
+    Subtitle,
+    Caption,
+    Body,
 )
 
 
@@ -79,7 +84,8 @@ class TestTextBasics:
     def test_default_size_md(self, qtbot):
         t = Text("Hi")
         qtbot.addWidget(t)
-        assert t.font().pixelSize() == 14
+        # md = 16px (1rem，与网页基准一致)
+        assert t.font().pixelSize() == 16
         assert t.font().weight() == QFont.Weight.Normal
 
     def test_default_color_light(self, qtbot):
@@ -97,11 +103,25 @@ class TestTextBasics:
 # Text - size 映射
 # ============================================================
 class TestTextSize:
-    @pytest.mark.parametrize("token,expected", [
-        ("xs", 12), ("sm", 13), ("md", 14), ("lg", 16), ("xl", 18),
-        ("2xl", 24), ("3xl", 30), ("4xl", 36), ("5xl", 48),
-        ("6xl", 60), ("7xl", 72), ("8xl", 96), ("9xl", 128),
-    ])
+    # SIZE_MAP 对齐 Tailwind/网页基准：md=16px=1rem
+    @pytest.mark.parametrize(
+        "token,expected",
+        [
+            ("xs", 12),
+            ("sm", 14),
+            ("md", 16),
+            ("lg", 18),
+            ("xl", 20),
+            ("2xl", 24),
+            ("3xl", 30),
+            ("4xl", 36),
+            ("5xl", 48),
+            ("6xl", 60),
+            ("7xl", 72),
+            ("8xl", 96),
+            ("9xl", 128),
+        ],
+    )
     def test_size_tokens(self, qtbot, token, expected):
         t = Text("Hi", size=token)
         qtbot.addWidget(t)
@@ -115,7 +135,8 @@ class TestTextSize:
     def test_size_unknown_falls_back_to_md(self, qtbot):
         t = Text("Hi", size="unknown_token")
         qtbot.addWidget(t)
-        assert t.font().pixelSize() == 14
+        # 未知 token 回退到 md = 16px
+        assert t.font().pixelSize() == 16
 
     def test_set_size_dynamic(self, qtbot):
         t = Text("Hi", size="md")
@@ -125,19 +146,42 @@ class TestTextSize:
 
 
 # ============================================================
-# Text - weight 映射
+# Text - weight 映射（6 档物理字重）
 # ============================================================
 class TestTextWeight:
-    @pytest.mark.parametrize("token,expected", [
-        ("thin", 100), ("extralight", 200), ("light", 300),
-        ("normal", 400), ("regular", 400),
-        ("medium", 500), ("semibold", 600), ("bold", 700),
-        ("extrabold", 800), ("black", 900),
-    ])
+    @pytest.mark.parametrize(
+        "token,expected",
+        [
+            ("extralight", 200),
+            ("light", 300),
+            ("normal", 400),
+            ("regular", 400),  # alias of normal
+            ("medium", 500),
+            ("bold", 700),
+            ("black", 900),
+            ("heavy", 900),  # alias of black
+        ],
+    )
     def test_weight_tokens(self, qtbot, token, expected):
         t = Text("Hi", weight=token)
         qtbot.addWidget(t)
         assert int(t.font().weight()) == expected
+
+    @pytest.mark.parametrize(
+        "token",
+        [
+            "thin",
+            "semibold",
+            "demibold",
+            "extrabold",
+            "ultrabold",
+            "unknown_token",
+        ],
+    )
+    def test_weight_unknown_token_raises(self, qtbot, token):
+        """废弃伪档位与未知 token 一律抛 ValueError，不静默兜底。"""
+        with pytest.raises(ValueError):
+            Text("Hi", weight=token)
 
     def test_weight_qfont_enum(self, qtbot):
         t = Text("Hi", weight=QFont.Weight.Bold)
@@ -324,7 +368,7 @@ class TestTextSelectionPalette:
         t = Text("Hi", theme="light")
         qtbot.addWidget(t)
         fg = t.palette().color(QPalette.ColorRole.HighlightedText)
-        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1b
+        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1B
 
     def test_dark_highlighted_text_is_light(self, qtbot):
         """暗色模式：无论原文字色是什么，选中文字永远是亮色 #fafafa"""
@@ -339,7 +383,7 @@ class TestTextSelectionPalette:
         qtbot.addWidget(t)
         fg = t.palette().color(QPalette.ColorRole.HighlightedText)
         # 仍然是 #18181b，不是 #FF8800
-        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1b
+        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1B
 
 
 # ============================================================
@@ -396,7 +440,8 @@ class TestTitle:
         assert t.font().pixelSize() == 24
         assert t.font().weight() == QFont.Weight.Bold
 
-    @pytest.mark.parametrize("level,expected_size", [(1, 24), (2, 18), (3, 16)])
+    # Title level → SIZE_MAP token：1=2xl(24) / 2=xl(20) / 3=lg(18)
+    @pytest.mark.parametrize("level,expected_size", [(1, 24), (2, 20), (3, 18)])
     def test_level_sizes(self, qtbot, level, expected_size):
         t = Title("Hi", level=level)
         qtbot.addWidget(t)
@@ -426,7 +471,8 @@ class TestLegacyAliases:
     def test_subtitle_default(self, qtbot):
         s = Subtitle("Sub", theme="light")
         qtbot.addWidget(s)
-        assert s.font().pixelSize() == 13
+        # Subtitle 走 sm = 14px
+        assert s.font().pixelSize() == 14
         assert s.font().weight() == QFont.Weight.Normal
         assert _stylesheet_color(s) == "#71717a"
 
@@ -449,7 +495,8 @@ class TestLegacyAliases:
     def test_body_default(self, qtbot):
         b = Body("Body", theme="light")
         qtbot.addWidget(b)
-        assert b.font().pixelSize() == 14
+        # Body 走 md = 16px (1rem)
+        assert b.font().pixelSize() == 16
         assert _stylesheet_color(b) == "#27272a"
 
     def test_body_dark(self, qtbot):
@@ -533,5 +580,5 @@ class TestTextSelection:
 
     def test_last_selection_owner_class_var_exists(self, qtbot):
         """类变量 _last_selection_owner 存在且初始为 None"""
-        assert hasattr(Text, '_last_selection_owner')
+        assert hasattr(Text, "_last_selection_owner")
         assert Text._last_selection_owner is None
