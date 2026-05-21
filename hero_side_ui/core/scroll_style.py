@@ -49,8 +49,15 @@ from ..themes import HEROUI_COLORS
 from ..animation.tween import tween_value, stop_tween
 from .theme_provider import ThemeProvider
 
-
-VALID_COLORS = ("neutral", "default", "primary", "secondary", "success", "warning", "danger")
+VALID_COLORS = (
+    "neutral",
+    "default",
+    "primary",
+    "secondary",
+    "success",
+    "warning",
+    "danger",
+)
 
 
 class ScrollStyle(QObject):
@@ -65,7 +72,24 @@ class ScrollStyle(QObject):
     def instance(cls) -> "ScrollStyle":
         if cls._instance is None:
             cls._instance = cls()
+        # 幂等自动激活（仿 FontProvider.ensure_loaded 模式）：
+        # 只要 QApplication 在，调用 instance() 就会自动 apply_global，
+        # 用户不需要手动调 apply_global。
+        cls._instance.ensure_applied()
         return cls._instance
+
+    def ensure_applied(self) -> bool:
+        """幂等激活：已装则跳、QApplication 不在则跳（不标志位，等 app 起来再试）。
+
+        设计参考 FontProvider.ensure_loaded。core 内部以及任何 instance() 调用者都
+        会隔空触发这个函数；ThemeProvider 初始化时也会调一次。
+        """
+        if self._applied:
+            return True
+        if QApplication.instance() is None:
+            return False  # 不标志，等下次调用再试
+        self.apply_global()
+        return True
 
     def __init__(self):
         super().__init__()
@@ -77,12 +101,12 @@ class ScrollStyle(QObject):
         self._color: str = "neutral"
         self._min_handle_length: int = 24
         self._track_padding: int = 4
-        self._duration: int = 150           # hover 过渡时长 (ms)
+        self._duration: int = 150  # hover 过渡时长 (ms)
         self._easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic
         # handle 阴影（用 1px border 模拟）：normal alpha=满，hover alpha 渐变到 0
         # 当前默认是"轻量阴影"——视觉上若隐若现，不喧宾夺主
-        self._shadow_alpha_light: int = 15    # 亮色：约 6%（之前 30 偏重，减半到 15）
-        self._shadow_alpha_dark: int = 50     # 暗色：约 20%（之前 100 偏重，减半到 50）
+        self._shadow_alpha_light: int = 15  # 亮色：约 6%（之前 30 偏重，减半到 15）
+        self._shadow_alpha_dark: int = 50  # 暗色：约 20%（之前 100 偏重，减半到 50）
 
         self._applied: bool = False
         self._app_filter_installed: bool = False
@@ -125,7 +149,9 @@ class ScrollStyle(QObject):
     def set_easing(self, easing: QEasingCurve.Type):
         self._easing = easing
 
-    def set_shadow_alpha(self, *, light: Optional[int] = None, dark: Optional[int] = None):
+    def set_shadow_alpha(
+        self, *, light: Optional[int] = None, dark: Optional[int] = None
+    ):
         """设置 handle 阴影（border 模拟）的 alpha 强度（0-255）
 
         normal 状态用此 alpha；hover 时渐变到 0（border 消失）。
@@ -216,7 +242,9 @@ class ScrollStyle(QObject):
     # ============================================================
     # 颜色 ramp：亮色 300→400，暗色 700→600
     # ============================================================
-    def _resolve_handle_colors(self, color: str, is_dark: bool) -> Tuple[QColor, QColor]:
+    def _resolve_handle_colors(
+        self, color: str, is_dark: bool
+    ) -> Tuple[QColor, QColor]:
         ramp = HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
         if is_dark:
             return QColor(ramp[700]), QColor(ramp[600])
@@ -231,9 +259,14 @@ class ScrollStyle(QObject):
     # ============================================================
     # QSS 构造（用于全局静态层 + 每条 bar 的动画层）
     # ============================================================
-    def _build_bar_qss(self, *, thickness: int, handle_color: QColor,
-                       border_color: Optional[QColor] = None,
-                       color: Optional[str] = None) -> str:
+    def _build_bar_qss(
+        self,
+        *,
+        thickness: int,
+        handle_color: QColor,
+        border_color: Optional[QColor] = None,
+        color: Optional[str] = None,
+    ) -> str:
         """根据当前 thickness（瞬时插值值）和 handle 颜色生成单条 QScrollBar 的 QSS
 
         被动画层每帧调用 —— 进度变化 → thickness 与 color 各自插值 → 重生成 QSS。
@@ -254,7 +287,11 @@ class ScrollStyle(QObject):
         m = self._track_padding
         min_len = self._min_handle_length
 
-        c = handle_color.name(QColor.NameFormat.HexArgb) if handle_color.alpha() < 255 else handle_color.name()
+        c = (
+            handle_color.name(QColor.NameFormat.HexArgb)
+            if handle_color.alpha() < 255
+            else handle_color.name()
+        )
 
         # border 段（仅当 border_color 有效且 alpha > 0 时画）
         if border_color is not None and border_color.alpha() > 0:
@@ -302,7 +339,9 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
 }}
         """.strip()
 
-    def build_qss(self, color: Optional[str] = None, is_dark: Optional[bool] = None) -> str:
+    def build_qss(
+        self, color: Optional[str] = None, is_dark: Optional[bool] = None
+    ) -> str:
         """对外公开的 QSS 生成方法（默认 normal 状态，无 hover 信息）
 
         组件想要把这套样式应用到自己的 widget 上时调用此方法。例如：
@@ -322,8 +361,9 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             border = QColor(0, 0, 0, max_alpha) if max_alpha > 0 else None
         else:
             border = None
-        return self._build_bar_qss(thickness=self._thickness, handle_color=normal,
-                                   border_color=border)
+        return self._build_bar_qss(
+            thickness=self._thickness, handle_color=normal, border_color=border
+        )
 
     # ============================================================
     # 全局应用 / 取消
@@ -346,7 +386,9 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
 
         normal_color, _hover = self._resolve_handle_colors(self._color, self._is_dark())
         # 静态层（normal 状态）：handle 带满 alpha 的 border 阴影
-        max_alpha = self._shadow_alpha_dark if self._is_dark() else self._shadow_alpha_light
+        max_alpha = (
+            self._shadow_alpha_dark if self._is_dark() else self._shadow_alpha_light
+        )
         static_border = QColor(0, 0, 0, max_alpha) if max_alpha > 0 else None
         static_qss = self._build_bar_qss(
             thickness=self._thickness,
@@ -429,8 +471,13 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             easing=self._easing,
         )
 
-    def _apply_progress_to_bar(self, bar: QScrollBar, progress: float,
-                               normal_color: QColor, hover_color: QColor):
+    def _apply_progress_to_bar(
+        self,
+        bar: QScrollBar,
+        progress: float,
+        normal_color: QColor,
+        hover_color: QColor,
+    ):
         """根据进度 0..1 给该 bar 重新 setStyleSheet"""
         t = self._thickness
         ht = self.hover_thickness
@@ -438,9 +485,17 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
         thickness_now = t + (ht - t) * progress
         # 颜色插值（QColor 线性混合）
         c = QColor(
-            int(normal_color.red() + (hover_color.red() - normal_color.red()) * progress),
-            int(normal_color.green() + (hover_color.green() - normal_color.green()) * progress),
-            int(normal_color.blue() + (hover_color.blue() - normal_color.blue()) * progress),
+            int(
+                normal_color.red() + (hover_color.red() - normal_color.red()) * progress
+            ),
+            int(
+                normal_color.green()
+                + (hover_color.green() - normal_color.green()) * progress
+            ),
+            int(
+                normal_color.blue()
+                + (hover_color.blue() - normal_color.blue()) * progress
+            ),
         )
         # border 阴影：仅在 bar **使用全局色**（neutral）时才有，
         # 自定义语义色（primary/success/...）色阶本身鲜明，不需要描边
@@ -453,11 +508,13 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             border_alpha = int(round(max_alpha * (1.0 - progress)))
             border_color = QColor(0, 0, 0, border_alpha) if border_alpha > 0 else None
 
-        bar.setStyleSheet(self._build_bar_qss(
-            thickness=int(round(thickness_now)),
-            handle_color=c,
-            border_color=border_color,
-        ))
+        bar.setStyleSheet(
+            self._build_bar_qss(
+                thickness=int(round(thickness_now)),
+                handle_color=c,
+                border_color=border_color,
+            )
+        )
 
     def _reset_bar_to_normal(self, bar: QScrollBar, *, animate: bool):
         """把单条 bar 重置回 normal 状态（清除局部 stylesheet 让全局生效）"""

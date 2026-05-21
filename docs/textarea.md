@@ -151,6 +151,36 @@ Textarea(label="Tweet",
 
 `default` / `primary` / `secondary` / `success` / `warning` / `danger`
 
+### variant × color 配色规则
+
+> 与 [Input](./input.md#variant--color-配色规则) 完全一致——只是 Textarea 没有 `underlined` 变体。
+> "容器形态"由 variant 决定，"色相身份"由 color 决定，文字色与选区色都跟身份走。
+
+#### 文字色
+
+```
+color == "default":    黑/白（亮色 default-900，暗色 default-100）
+color == "primary":    亮色 primary-500，暗色 primary-400
+color == "secondary":  亮色 secondary-500，暗色 secondary-400
+color == "success":    亮色 success-600，暗色 success-500
+color == "warning":    亮色 warning-600，暗色 warning-500
+color == "danger":     固定 danger-500
+```
+
+**规则不区分 variant**——bordered 的彩色变体也跟主色走，与彩色边框/选区同色相自洽。`is_invalid=True` 时强制 `danger-500`。
+
+#### 选区色（框选高亮）
+
+> 走 `core.selection_palette()` 唯一入口，与 `Text` / `Input` 同源。
+
+| variant    | default                 | 彩色（primary/secondary/...）            |
+| ---------- | ----------------------- | ---------------------------------------- |
+| `flat`     | 半透明 `primary-500` 蓝 | 半透明 `primary-500` 蓝（靠 hue 差跳出） |
+| `faded`    | 半透明 `primary-500` 蓝 | 半透明 `primary-500` 蓝                  |
+| `bordered` | 浅灰 adapt（同灰边框）  | pastel 同色相 adapt（彩色边框同源）      |
+
+判定口诀：**有底色 → 半透明蓝；无底色 → adapt 跟 `colors[500]`**。选中文字前景由调色板自动给到对比色（亮色模式深近黑、暗色模式浅近白），永远清晰可见。
+
 ### label_placement 可选值
 
 | 值             | 行为                                                                        |

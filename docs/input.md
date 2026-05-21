@@ -119,7 +119,65 @@ Input(label="Query", end_content=go_btn)
 
 `default` / `primary` / `secondary` / `success` / `warning` / `danger`
 
-### size 可选值
+### variant × color 配色规则
+
+> 这部分是 HeroSideUI 在 Input/Textarea 上沉淀出的一套自洽规则——
+> **"容器形态"由 variant 决定，"色相身份"由 color 决定，文字色与选区色都跟身份走**。
+> 其它 variant + color 双轴的组件（Tabs / Listbox 等）各自有不同的语义场景（菜单 hover、选中态等），不强行套用本节规则。
+
+#### 一句话总览
+
+| 维度         | 谁决定                                                     |
+| ------------ | ---------------------------------------------------------- |
+| 容器底/边/线 | `variant`（flat/faded 有底色，bordered/underlined 无底色） |
+| 文字主色相   | `color`（`default` 走黑/白，其它跟主色）                   |
+| 选区底色     | `variant` × `color` 协同，见下表                           |
+
+#### 文字色
+
+```
+color == "default":    黑/白（亮色 default-900，暗色 default-100）
+color == "primary":    亮色 primary-500，暗色 primary-400
+color == "secondary":  亮色 secondary-500，暗色 secondary-400
+color == "success":    亮色 success-600，暗色 success-500
+color == "warning":    亮色 warning-600，暗色 warning-500
+color == "danger":     success/warning 同款规则的浓度——固定 danger-500
+```
+
+**规则不区分 variant**——bordered/underlined 的彩色变体也跟主色走，与彩色边框/下划线同色相自洽。
+
+> ⚠️ `is_invalid=True` 时，文字一律强制 `danger-500`，覆盖上面所有规则。
+
+#### 选区色（框选高亮）
+
+> 走 `core.selection_palette()` 唯一入口，与 `Text` 组件同源。
+
+| variant      | default                  | 彩色（primary/secondary/...）            |
+| ------------ | ------------------------ | ---------------------------------------- |
+| `flat`       | 半透明 `primary-500` 蓝  | 半透明 `primary-500` 蓝（靠 hue 差跳出） |
+| `faded`      | 半透明 `primary-500` 蓝  | 半透明 `primary-500` 蓝                  |
+| `bordered`   | 浅灰 adapt（同灰边框）   | pastel 同色相 adapt（彩色边框同源）      |
+| `underlined` | 浅灰 adapt（同灰下划线） | pastel 同色相 adapt                      |
+
+**判定口诀**：
+
+- **有底色变体（flat/faded）** → 全部走默认半透明蓝。
+  - 彩色 variant：浅彩底 + 半透明蓝选区，hue 差让选区跳出来；
+  - default：浅灰底 + 半透明蓝选区，蓝色在浅灰上最跳。
+- **无底色变体（bordered/underlined）** → 走 adapt（选区色相跟随 `colors[500]`）。
+  - 彩色 variant：pastel 浅色块，与彩色边框/下划线/文字四件套同色相；
+  - default：`default-500` 是中性灰，HSL adapt 出来是 88% 亮度浅灰，与灰边框同源。
+
+选中文字的前景色由调色板自动给到——亮色模式下接近 `#18181b` 深近黑，暗色模式下接近 `#fafafa` 浅近白，**选中后的文字永远清晰可见**。
+
+#### 设计自洽矩阵（Cheat Sheet）
+
+| variant      | default 视觉                           | 彩色（以 secondary 紫为例）                     |
+| ------------ | -------------------------------------- | ----------------------------------------------- |
+| `flat`       | 浅灰底 + 黑/白文字 + 半透明蓝选区      | 浅紫底 + 紫文字 + 半透明蓝选区                  |
+| `faded`      | 近白底 + 灰边 + 黑/白文字 + 蓝选区     | 近白底 + 紫边 + 紫文字 + 蓝选区                 |
+| `bordered`   | 透明 + 灰边 + 黑/白文字 + 浅灰选区     | 透明 + 紫边 + 紫文字 + 浅紫选区（四件套同色相） |
+| `underlined` | 透明 + 灰下划线 + 黑/白文字 + 浅灰选区 | 透明 + 紫下划线 + 紫文字 + 浅紫选区             |
 
 | 值   | outside 高度 | inside 高度 | 说明         |
 | ---- | ------------ | ----------- | ------------ |

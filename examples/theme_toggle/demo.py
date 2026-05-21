@@ -9,13 +9,28 @@ ThemeProvider 示例 — 一键切换全局亮暗色
 
 import sys
 from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
+    QApplication,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
 )
 from PySide6.QtCore import Qt
 
 from hero_side_ui import (
-    ThemeProvider, Button, Input, Card, CardHeader, CardBody,
-    Checkbox, Progress, Divider, Tabs, ThemeSwitcher, Title,
+    ThemeProvider,
+    Button,
+    Input,
+    Card,
+    CardHeader,
+    CardBody,
+    Checkbox,
+    Progress,
+    Divider,
+    Tabs,
+    ThemeSwitcher,
+    Title,
+    Body,
+    Caption,
 )
 
 
@@ -36,8 +51,8 @@ class DemoWindow(QWidget):
         title = Title("ThemeProvider 示例", level=1)
         header.addWidget(title)
 
-        # 状态标签
-        self._status = QLabel(f"当前模式: {provider.mode} → {provider.current_theme}")
+        # 状态标签：用 Caption（小号字，主题感知）
+        self._status = Caption(f"当前模式: {provider.mode} → {provider.current_theme}")
         header.addStretch()
         header.addWidget(self._status)
         root.addLayout(header)
@@ -69,7 +84,7 @@ class DemoWindow(QWidget):
         root.addWidget(Divider())
 
         # --- 组件展示区 (theme="auto"，跟随切换) ---
-        root.addWidget(QLabel("以下组件 theme=\"auto\"，跟随全局切换："))
+        root.addWidget(Body('以下组件 theme="auto"，跟随全局切换：'))
 
         row1 = QHBoxLayout()
         row1.addWidget(Button("Primary Solid", color="primary"))
@@ -80,7 +95,9 @@ class DemoWindow(QWidget):
         root.addLayout(row1)
 
         root.addWidget(Input(label="邮箱", placeholder="请输入邮箱", color="primary"))
-        root.addWidget(Progress(value=65, label="下载进度", color="success", show_value_label=True))
+        root.addWidget(
+            Progress(value=65, label="下载进度", color="success", show_value_label=True)
+        )
 
         cb_row = QHBoxLayout()
         cb_row.addWidget(Checkbox("React", is_selected=True, color="primary"))
@@ -94,10 +111,12 @@ class DemoWindow(QWidget):
         root.addWidget(Divider())
 
         # --- 硬锁组件 (不受影响) ---
-        root.addWidget(QLabel("以下组件 theme=\"dark\" 硬锁，不跟随切换："))
+        root.addWidget(Body('以下组件 theme="dark" 硬锁，不跟随切换：'))
         fixed_row = QHBoxLayout()
         fixed_row.addWidget(Button("固定暗色", color="primary", theme="dark"))
-        fixed_row.addWidget(Button("固定暗色 Flat", color="secondary", variant="flat", theme="dark"))
+        fixed_row.addWidget(
+            Button("固定暗色 Flat", color="secondary", variant="flat", theme="dark")
+        )
         fixed_row.addStretch()
         root.addLayout(fixed_row)
 

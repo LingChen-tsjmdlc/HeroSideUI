@@ -83,9 +83,24 @@ class ThemeProvider(QObject):
 
     @classmethod
     def instance(cls) -> "ThemeProvider":
-        """获取全局单例。第一次调用时懒初始化。"""
+        """获取全局单例。第一次调用时懒初始化。
+
+        单例首次创建后会触发 core 全局基础设施启动钩子（``_boot.ensure_core_ready``），
+        它统一激活 FontProvider / ScrollStyle / SmoothScroll 等兄弟模块——
+        组件 ``__init__`` 注册到 ``ThemeProvider.instance()`` 即获全套就绪，零样板。
+
+        ThemeProvider 自身只管主题，不直接知道兄弟模块名字（职责单一）。
+        激活顺序与具体模块名集中在 ``core/_boot.py``，新增 core 模块时改那里即可。
+
+        注意：钩子必须在 ``cls._instance`` 赋值**之后**调用——兄弟模块的
+        ``__init__`` 可能反过来调 ``ThemeProvider.instance()``，赋值早一步
+        才能直接命中已 cache 的单例，避免无限递归。
+        """
         if cls._instance is None:
             cls._instance = ThemeProvider()
+            from ._boot import ensure_core_ready
+
+            ensure_core_ready()
         return cls._instance
 
     # ============================================================

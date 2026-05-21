@@ -189,13 +189,34 @@ class _InputStylingMixin:
         fg_color, placeholder_color = self._resolve_input_text_color(
             is_dark, colors, dc
         )
+        # 选区调色板走 core.selection_palette——与 Text 组件同源。
+        # 规则：
+        #   - bordered/underlined（无底色）：走 adapt，让选区色相跟 colors[500]
+        #     走（彩色出 pastel 同色相，default 出浅灰，与边框/下划线同源）。
+        #   - flat/faded（有底色）：一律走默认半透明 primary 蓝。
+        #     彩色 variant 靠 hue 差从同色相浅底跳出来；default 也走蓝（flat 浅灰底/
+        #     faded 近白底，叠浅灰 adapt 会和底色混淆，蓝色刚好跳出来）。
+        from ...core import selection_palette
+
+        theme_str = "dark" if is_dark else "light"
+        if self._variant in ("bordered", "underlined"):
+            sel_bg, sel_fg = selection_palette(
+                theme_str,
+                selection_adapts_color=True,
+                text_color=QColor(colors[500]),
+            )
+        else:
+            sel_bg, sel_fg = selection_palette(theme_str)
+        sel_bg_css = f"rgba({sel_bg.red()}, {sel_bg.green()}, {sel_bg.blue()}, {sel_bg.alphaF():.4f})"
+        sel_fg_css = sel_fg.name()
         self.line_edit.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
                 border: none;
                 color: {fg_color};
                 font-size: {size_config['input_font_size']}px;
-                selection-background-color: {colors[200]};
+                selection-background-color: {sel_bg_css};
+                selection-color: {sel_fg_css};
                 padding: 0;
             }}
             """)
@@ -443,8 +464,11 @@ class _InputStylingMixin:
                 d[400] if is_dark else d[500],
             )
 
-        # flat 有色变体：文字跟随主色（HeroUI: text-{color}-600 / dark:text-{color}）
-        if self._variant == "flat" and self._color != "default":
+        # 文字色跟随 color 主色（不区分 variant）：
+        # - flat/faded 有底色：文字跟主色，与浅彩底同色相
+        # - bordered/underlined 无底色：文字也跟主色，与彩色边框/下划线/选区同源
+        # 仅 default 走默认黑/白（中性灰语义，没有"主色"概念）
+        if self._color != "default":
             if self._color in ("success", "warning"):
                 fg = colors[500] if is_dark else colors[600]
                 ph = colors[500] if is_dark else colors[600]

@@ -28,8 +28,7 @@ HeroSideUI - StatePalette
 设计要点
 --------
 - **纯静态方法 + 纯函数**：无状态、无单例。完全无副作用，可被任何组件直接调。
-- **返回 QColor**：组件自绘场景（``QPainter``）天然适用；走 QSS 的组件（如 button）
-  自己 ``QColor.name(QColor.HexArgb)`` 转字符串。
+- **返回 QColor**：组件自绘场景（``QPainter``）天然适用；走 QSS 的组件（如 button）自己 ``QColor.name(QColor.HexArgb)`` 转字符串。
 - **覆盖 6 variants × 6 colors × 2 themes × 5 states**：和 HeroUI menu/listbox token 一致。
 
 States
