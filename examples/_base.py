@@ -10,12 +10,16 @@ import sys
 from typing import Iterable
 
 from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget,
-    QVBoxLayout, QHBoxLayout, QScrollArea,
+    QApplication,
+    QMainWindow,
+    QWidget,
+    QVBoxLayout,
+    QHBoxLayout,
+    QScrollArea,
 )
 from PySide6.QtCore import Qt
 
-from hero_side_ui import ThemeProvider, ScrollStyle, ThemeSwitcher, Title
+from hero_side_ui import HeroSideUIProvider, ThemeSwitcher, Title
 
 
 class DemoBase(QMainWindow):
@@ -27,8 +31,8 @@ class DemoBase(QMainWindow):
     子类要做：
     1. 设 `component_name`
     2. 重写 `build_content(layout, labels_bag)` 添加内容
-       - 用 Title/Subtitle/Caption/Body 等主题感知文字组件
-       - labels_bag 已废弃，保留参数向后兼容
+        - 用 Title/Subtitle/Caption/Body 等主题感知文字组件
+        - labels_bag 已废弃，保留参数向后兼容
     """
 
     component_name: str = "Component"
@@ -99,15 +103,18 @@ class DemoBase(QMainWindow):
                 row.addWidget(w)
             else:
                 from hero_side_ui import Button
+
                 row.addWidget(Button(**w))
         # 行容器宽度由内部按钮决定，绝不允许被父 layout 拉伸压缩
         from PySide6.QtWidgets import QSizePolicy
+
         row_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         layout.addWidget(row_widget)
 
     @classmethod
-    def add_section_grid(cls, layout, title, widgets, labels_bag=None,
-                         cols=4, spacing=10):
+    def add_section_grid(
+        cls, layout, title, widgets, labels_bag=None, cols=4, spacing=10
+    ):
         layout.addWidget(cls._section_title(title))
         widgets_list = list(widgets)
         for i in range(0, len(widgets_list), cols):
@@ -115,11 +122,14 @@ class DemoBase(QMainWindow):
             row = QHBoxLayout(row_widget)
             row.setSpacing(spacing)
             row.setAlignment(Qt.AlignmentFlag.AlignLeft)
-            for w in widgets_list[i:i + cols]:
+            for w in widgets_list[i : i + cols]:
                 row.addWidget(w)
             # 行容器宽度由内部按钮决定，绝不允许被父 layout 拉伸压缩
             from PySide6.QtWidgets import QSizePolicy
-            row_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+
+            row_widget.setSizePolicy(
+                QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
+            )
             layout.addWidget(row_widget)
 
     @classmethod
@@ -137,10 +147,11 @@ class DemoBase(QMainWindow):
     def run(cls):
         app = QApplication(sys.argv)
         app.setStyle("Fusion")
-        # 锁 light 模式：保证首屏可预期（不想锁的可去掉此行）
-        ThemeProvider.instance().set_mode("light")
-        # 应用全局滚动条样式（细线 + hover 加粗 + 主题色 ramp）
-        ScrollStyle.instance().apply_global()
+        # 推荐写法：用 HeroSideUIProvider.setup() 显式初始化全套 core 基础设施。
+        # 这里顺手 theme="light" 锁亮色，保证首屏可预期（不想锁可去掉 theme= 参数）。
+        # 不调 setup() 也能用——任何组件构造都会触发 _boot 钩子降级激活，
+        # 但会发一次双语 warning 提示存在显式入口。
+        HeroSideUIProvider.setup(app, theme="light")
         win = cls()
         win.show()
         sys.exit(app.exec())

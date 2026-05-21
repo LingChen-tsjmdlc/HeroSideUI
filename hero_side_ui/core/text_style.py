@@ -187,6 +187,70 @@ def make_text_qfont(size: SizeInput = "md", weight: WeightInput = "normal") -> Q
     )
 
 
+# ============================================================
+# 选区调色板（全局唯一来源）
+# ============================================================
+#
+# 整个组件库的"框选反馈"必须从这里取色，保证：
+#   1. 选中底 = 半透明 primary（不挑文字色，不挑 wrapper 底色）
+#   2. 选中文字色 = 强制深色（亮）/ 浅色（暗），独立于文字本色
+# 任何让 selection 与"组件状态色（hover/focus/variant）"耦合的写法都是错的，
+# 早期 Input/Textarea 写死 colors[200] 与 hover 撞色就是教训。
+
+
+def _adapt_selection_bg(text_color: QColor, theme: str) -> QColor:
+    """文字色 → 适配的选区底色（亮色出 pastel 淡色 / 暗色出低亮度色）。
+
+    HSL 而非 RGB：同时压饱和度又反转亮度，避免品牌色深色背景出现高饱和药丸色。
+    仅在 selection_adapts_color=True 时启用。
+    """
+    h = text_color.hueF()
+    s = text_color.saturationF()
+    if h < 0:
+        h = 0.0
+    if theme == "light":
+        new_l = 0.88
+        new_s = s * 0.65
+    else:
+        new_l = 0.15
+        new_s = s * 0.60
+    result = QColor()
+    result.setHslF(h, new_s, new_l)
+    result.setAlphaF(1.0)
+    return result
+
+
+def selection_palette(
+    theme: str,
+    *,
+    force_selection_text_color: bool = True,
+    selection_adapts_color: bool = False,
+    text_color: Optional[QColor] = None,
+) -> Tuple[QColor, QColor]:
+    """返回 (选区底色, 选中文字色)。Text/Input/Textarea 等所有可选中文字组件共用。
+
+    默认行为（force_selection_text_color=True 且 selection_adapts_color=False）：
+        - 选中底：半透明 primary-500（亮色 alpha=0.22 / 暗色 alpha=0.35）
+        - 选中字：亮色一律 #18181b / 暗色一律 #fafafa
+    """
+    # ---- 选中底色 ----
+    if selection_adapts_color and text_color is not None:
+        bg = _adapt_selection_bg(text_color, theme)
+    else:
+        primary = QColor(HEROUI_COLORS["primary"][500])
+        bg = QColor(primary)
+        bg.setAlphaF(0.35 if theme == "dark" else 0.22)
+    # ---- 选中文字色 ----
+    if force_selection_text_color:
+        fg = QColor("#18181b" if theme == "light" else "#fafafa")
+    else:
+        if text_color is not None:
+            fg = QColor(text_color)
+        else:
+            fg = QColor(DEFAULT_TEXT_COLORS.get(theme, "#27272a"))
+    return bg, fg
+
+
 __all__ = [
     "ColorInput",
     "SizeInput",
@@ -198,4 +262,5 @@ __all__ = [
     "resolve_text_size",
     "resolve_text_weight",
     "make_text_qfont",
+    "selection_palette",
 ]

@@ -154,13 +154,32 @@ class _TextareaStylingMixin:
         fg_color, placeholder_color = self._resolve_input_text_color(
             is_dark, colors, dc
         )
+        # 选区调色板走 core.selection_palette——与 Text 组件同源。
+        # bordered/underlined（无底色）：走 adapt，跟 colors[500] 同色相
+        # （彩色出 pastel，default 出浅灰，与边框/下划线同源）。
+        # flat/faded（有底色）：一律走默认半透明 primary 蓝——彩色靠 hue 差跳出来，
+        # default 浅底叠浅灰 adapt 会混淆，蓝色刚好。
+        from ...core import selection_palette
+
+        theme_str = "dark" if is_dark else "light"
+        if self._variant in ("bordered", "underlined"):
+            sel_bg, sel_fg = selection_palette(
+                theme_str,
+                selection_adapts_color=True,
+                text_color=QColor(colors[500]),
+            )
+        else:
+            sel_bg, sel_fg = selection_palette(theme_str)
+        sel_bg_css = f"rgba({sel_bg.red()}, {sel_bg.green()}, {sel_bg.blue()}, {sel_bg.alphaF():.4f})"
+        sel_fg_css = sel_fg.name()
         self.text_edit.setStyleSheet(f"""
             QTextEdit {{
                 background: transparent;
                 border: none;
                 color: {fg_color};
                 font-size: {size_config['input_font_size']}px;
-                selection-background-color: {colors[200]};
+                selection-background-color: {sel_bg_css};
+                selection-color: {sel_fg_css};
                 padding: 0;
             }}
             """)
@@ -393,7 +412,10 @@ class _TextareaStylingMixin:
                 d[400] if is_dark else d[500],
                 d[400] if is_dark else d[500],
             )
-        if self._variant == "flat" and self._color != "default":
+        # 文字色跟随 color 主色（不区分 variant）。
+        # bordered/underlined 无底色变体的文字也跟主色走，
+        # 与彩色边框/下划线/选区同色相自洽。仅 default 走黑/白。
+        if self._color != "default":
             if self._color in ("success", "warning"):
                 fg = colors[500] if is_dark else colors[600]
                 ph = colors[500] if is_dark else colors[600]

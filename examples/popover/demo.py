@@ -4,15 +4,24 @@ Popover 组件示例 — 12 placement / 7 colors / shadow / radius / backdrop /
 """
 
 import os, sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QWidget
 
 from hero_side_ui import (
-    Popover, PopoverContent,
-    Button, Input, Checkbox, Spinner,
-    Card, CardHeader, CardBody,
+    Popover,
+    PopoverContent,
+    Button,
+    Input,
+    Checkbox,
+    Spinner,
+    Card,
+    CardHeader,
+    CardBody,
+    Body,
+    Subtitle,
 )
 from _base import DemoBase
 
@@ -20,7 +29,8 @@ from _base import DemoBase
 def make_popover(text: str, **kwargs) -> Popover:
     p = Popover(**kwargs)
     c = PopoverContent()
-    c.layout().addWidget(QLabel(text))
+    # 用 Body：跟随 ThemeProvider 自动配色 + 走 FontProvider 思源黑体
+    c.layout().addWidget(Body(text))
     p.set_content(c)
     return p
 
@@ -40,10 +50,18 @@ class PopoverDemo(DemoBase):
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(12)
         placements = [
-            "top-start", "top", "top-end",
-            "bottom-start", "bottom", "bottom-end",
-            "right-start", "right", "right-end",
-            "left-start", "left", "left-end",
+            "top-start",
+            "top",
+            "top-end",
+            "bottom-start",
+            "bottom",
+            "bottom-end",
+            "right-start",
+            "right",
+            "right-end",
+            "left-start",
+            "left",
+            "left-end",
         ]
         for i, place in enumerate(placements):
             btn = Button(place, color="primary", variant="flat")
@@ -87,8 +105,11 @@ class PopoverDemo(DemoBase):
         bd_btns = []
         for kind in ["transparent", "opaque", "blur"]:
             b = Button(f"backdrop={kind}", variant="flat", color="warning")
-            p = make_popover(f"backdrop = {kind} (click outside to close)",
-                            backdrop=kind, placement="bottom")
+            p = make_popover(
+                f"backdrop = {kind} (click outside to close)",
+                backdrop=kind,
+                placement="bottom",
+            )
             p.attach(b)
             self._popovers.append(p)
             bd_btns.append(b)
@@ -101,11 +122,16 @@ class PopoverDemo(DemoBase):
         form = PopoverContent()
         form.setMinimumWidth(240)
         form.layout().setSpacing(10)
-        form.layout().addWidget(QLabel("Account Settings"))
+        # 表单小标题用 Subtitle
+        form.layout().addWidget(Subtitle("Account Settings"))
         form.layout().addWidget(Input(label="Username", placeholder="@you", size="sm"))
-        form.layout().addWidget(Input(label="Email", placeholder="you@example.com", size="sm"))
+        form.layout().addWidget(
+            Input(label="Email", placeholder="you@example.com", size="sm")
+        )
         form.layout().addWidget(Checkbox("Receive emails", color="primary", size="sm"))
-        form.layout().addWidget(Button("Save", color="primary", variant="solid", size="sm"))
+        form.layout().addWidget(
+            Button("Save", color="primary", variant="solid", size="sm")
+        )
         form_pop.set_content(form)
         form_pop.attach(form_btn)
         self._popovers.append(form_pop)
@@ -128,22 +154,32 @@ class PopoverDemo(DemoBase):
         inner_card = Card(shadow="none", radius="md")
         inner_card.setFixedWidth(260)
         h = CardHeader()
-        h.layout().addWidget(QLabel("Jerry Lu"))
+        # Card 头/正文：Subtitle + Body 语义化
+        h.layout().addWidget(Subtitle("Jerry Lu"))
         inner_card.add_header(h)
         bb = CardBody()
-        bb.layout().addWidget(QLabel("Senior Tech Artist @ Tencent\nWorking on HeroSideUI"))
+        bb.layout().addWidget(
+            Body("Senior Tech Artist @ Tencent\nWorking on HeroSideUI")
+        )
         inner_card.add_body(bb)
         cc.layout().addWidget(inner_card)
         card_pop.set_content(cc)
         card_pop.attach(card_btn)
         self._popovers.append(card_pop)
 
-        self.add_section(layout, "插槽：什么都能放（Form / Spinner / Card）",
-                         [form_btn, spin_btn, card_btn], labels_bag, spacing=12)
+        self.add_section(
+            layout,
+            "插槽：什么都能放（Form / Spinner / Card）",
+            [form_btn, spin_btn, card_btn],
+            labels_bag,
+            spacing=12,
+        )
 
         # hover trigger
         hover_btn = Button("Hover me", color="danger", variant="flat")
-        hover_pop = make_popover("Triggered by hover", placement="bottom", color="danger")
+        hover_pop = make_popover(
+            "Triggered by hover", placement="bottom", color="danger"
+        )
         hover_pop.attach(hover_btn, event="hover")
         self._popovers.append(hover_pop)
         self.add_section(layout, "hover 触发", [hover_btn], labels_bag, spacing=12)
@@ -152,18 +188,23 @@ class PopoverDemo(DemoBase):
         arrow_btns = []
         for place in ["top", "bottom", "left", "right"]:
             b = Button(f"{place} + arrow", color="primary", variant="flat")
-            p = make_popover(f"arrow @ {place}", placement=place, color="default", arrow=True)
+            p = make_popover(
+                f"arrow @ {place}", placement=place, color="default", arrow=True
+            )
             p.attach(b)
             self._popovers.append(p)
             arrow_btns.append(b)
-        self.add_section(layout, "arrow=True（显示箭头）", arrow_btns, labels_bag, spacing=12)
+        self.add_section(
+            layout, "arrow=True（显示箭头）", arrow_btns, labels_bag, spacing=12
+        )
 
         # 彩色 arrow
         color_arrow_btns = []
         for c in ["primary", "success", "warning", "danger"]:
             b = Button(f"arrow {c}", color=c, variant="flat")
-            p = make_popover(f"{c} popover with arrow",
-                            placement="bottom", color=c, arrow=True)
+            p = make_popover(
+                f"{c} popover with arrow", placement="bottom", color=c, arrow=True
+            )
             p.attach(b)
             self._popovers.append(p)
             color_arrow_btns.append(b)

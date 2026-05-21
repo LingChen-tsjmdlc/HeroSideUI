@@ -2,9 +2,10 @@
 
 本文件只负责：
 - token 解析（size / weight / color）
-- 选区底色的 HSL 适配算法
 - 主题广播接入 + selection 清除等 QLabel 行为调整
-“为什么这样写”的坑记在各函数内联。
+- 选区调色板从 ``core.selection_palette`` 取，全项目共用
+
+"为什么这样写"的坑记在各函数内联。
 """
 
 from __future__ import annotations
@@ -20,77 +21,15 @@ from ...core import (
     ThemeProvider,
     make_text_qfont,
     resolve_text_color,
+    selection_palette,
 )
 from ...core.text_style import (
-    DEFAULT_TEXT_COLORS as _DEFAULT_TEXT_COLORS,
     SIZE_MAP,
     WEIGHT_MAP,
     ColorInput,
     SizeInput,
     WeightInput,
 )
-from ...themes import HEROUI_COLORS
-
-# ============================================================
-# 选区底色计算
-# ============================================================
-
-
-def _adapt_selection_bg(text_color: QColor, theme: str) -> QColor:
-    """文字色 → 适配的选区底色（亮色出pastel 淡色 / 暗色出低亮度色）。
-
-    用 HSL 而非 RGB：才能同时压饱和度又反转亮度，避免品牌色深色背景出现高饱和药丸色。
-    """
-    h = text_color.hueF()  # 0–1，灰色时为 -1（设为 0）
-    s = text_color.saturationF()  # 0–1
-    # 灰色（无 hue）处理：h 设为 0，s 保持 0
-    if h < 0:
-        h = 0.0
-    if theme == "light":
-        # 淡色：亮度 88%，饱和度降到原来的 65%（更鲜艳，不脏）
-        new_l = 0.88
-        new_s = s * 0.65
-        alpha = 1.0
-    else:
-        # 暗色：亮度 15%，饱和度降到原来的 60%
-        new_l = 0.15
-        new_s = s * 0.60
-        alpha = 1.0
-    result = QColor()
-    result.setHslF(h, new_s, new_l)
-    result.setAlphaF(alpha)
-    return result
-
-
-def _selection_palette(
-    theme: str,
-    force_selection_text_color: bool = True,
-    selection_adapts_color: bool = False,
-    text_color: Optional[QColor] = None,
-) -> tuple[QColor, QColor]:
-    """返 (选区底色, 选中文字色)；语义参考 docs/text.md 中 Selection 一节。"""
-    # ---- 选区底色 ----
-    if selection_adapts_color and text_color is not None:
-        bg = _adapt_selection_bg(text_color, theme)
-    else:
-        # 默认：主品牌蓝 + 透明度
-        primary = QColor(HEROUI_COLORS["primary"][500])
-        bg = QColor(primary)
-        if theme == "dark":
-            bg.setAlphaF(0.35)
-        else:
-            bg.setAlphaF(0.22)
-    # ---- 选中文字色 ----
-    if force_selection_text_color:
-        fg = QColor("#18181b" if theme == "light" else "#fafafa")
-    else:
-        if text_color is not None:
-            fg = QColor(text_color)
-        else:
-            default_hex = _DEFAULT_TEXT_COLORS.get(theme, "#27272a")
-            fg = QColor(default_hex)
-    return bg, fg
-
 
 # ============================================================
 # Text 组件
@@ -189,8 +128,8 @@ class Text(QLabel):
         # QSS 颜色是创建时快照，主题切换必须重写。
         c = self._current_color()
         rgba_str = f"rgba({c.red()}, {c.green()}, {c.blue()}, {c.alphaF():.4f})"
-        # 选区色：返回 QColor 对象（含 alpha）
-        bg, fg = _selection_palette(
+        # 选区色：走 core.selection_palette——全项目唯一来源。
+        bg, fg = selection_palette(
             self._theme,
             force_selection_text_color=self._force_selection_text_color,
             selection_adapts_color=self._selection_adapts_color,
