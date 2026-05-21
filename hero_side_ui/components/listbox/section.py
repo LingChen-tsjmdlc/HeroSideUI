@@ -5,16 +5,14 @@ from __future__ import annotations
 from typing import Iterable, Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont, QPainter, QPalette, QPen
-from PySide6.QtWidgets import QLabel, QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtGui import QPainter, QPen
+from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
-from ...core import StatePalette, ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, LISTBOX_SIZES
+from ...core import StatePalette
+from ...themes import LISTBOX_SIZES
 
+from ..text import Text
 from .item import ListboxItem
-
-
-
 
 # ============================================================
 # ListboxSection
@@ -53,9 +51,8 @@ class ListboxSection(QWidget):
         self._v.setSpacing(0)
 
         # heading
-        self._heading = QLabel(title, self)
+        self._heading = Text(title, parent=self, selectable=False)
         self._heading.setAttribute(Qt.WA_TranslucentBackground, True)
-        self._heading.setForegroundRole(QPalette.WindowText)
         self._v.addWidget(self._heading)
         if not title:
             self._heading.hide()
@@ -122,14 +119,11 @@ class ListboxSection(QWidget):
         self._group_v.setSpacing(cfg["list_gap"])
 
         # heading 样式：text-tiny + text-foreground-500
-        f = QFont(FONT_FAMILY)
-        f.setPixelSize(cfg["desc_font_size"])
-        self._heading.setFont(f)
-        self._heading.setStyleSheet(
-            f"color: {StatePalette.text_description(theme).name()};"
-            f" padding: 0 {cfg['item_padding_x'] // 2}px;"
-            f" background: transparent;"
-        )
+        self._heading.set_size(cfg["desc_font_size"])
+        self._heading.set_color(StatePalette.text_description(theme).name())
+        # 原 QSS padding: 0 Xpx → 走 contentsMargins。
+        pad = cfg["item_padding_x"] // 2
+        self._heading.setContentsMargins(pad, 0, pad, 0)
         # 顶部 padding：has-title=true:pt-1
         if self._title:
             self._group.setContentsMargins(0, 4, 0, 0)

@@ -7,18 +7,16 @@ selection_changed(List[str]) 信号，适合表单多选场景。
 from typing import List, Optional
 
 from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QFont
 from PySide6.QtWidgets import (
     QHBoxLayout,
-    QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...core import ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS
+from ...themes import HEROUI_COLORS
 
+from ..text import Text
 from .checkbox import Checkbox
 
 
@@ -90,7 +88,12 @@ class CheckboxGroup(QWidget):
         self._root.setSpacing(8)
 
         # label
-        self._label = QLabel(self._label_text)
+        self._label = Text(
+            self._label_text,
+            size="sm",
+            weight="medium",
+            selectable=False,
+        )
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._label, 0, Qt.AlignmentFlag.AlignLeft)
@@ -106,7 +109,12 @@ class CheckboxGroup(QWidget):
         self._root.addWidget(self._wrapper)
 
         # helper (desc / error)
-        self._helper = QLabel("")
+        self._helper = Text(
+            "",
+            size="xs",
+            weight="normal",
+            selectable=False,
+        )
         self._helper.setWordWrap(True)
         self._helper.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._helper.hide()
@@ -123,27 +131,18 @@ class CheckboxGroup(QWidget):
             req_mark = f" <span style='color:{HEROUI_COLORS['danger'][500]};'>*</span>"
         display = self._label_text + req_mark if self._label_text else ""
         self._label.setText(display)
-        self._label.setStyleSheet(
-            f"QLabel {{ color: {label_color}; font-family: {FONT_FAMILY}; "
-            f"font-size: 14px; font-weight: 500; }}"
-        )
+        self._label.set_color(label_color)
         self._label.setVisible(bool(self._label_text))
 
         # helper
         if self._is_invalid and self._error_message:
             self._helper.setText(self._error_message)
-            self._helper.setStyleSheet(
-                f"QLabel {{ color: {HEROUI_COLORS['danger'][500]}; "
-                f"font-family: {FONT_FAMILY}; font-size: 12px; }}"
-            )
+            self._helper.set_color(HEROUI_COLORS["danger"][500])
             self._helper.show()
         elif self._description:
             desc_color = dc[400] if is_dark else dc[500]
             self._helper.setText(self._description)
-            self._helper.setStyleSheet(
-                f"QLabel {{ color: {desc_color}; "
-                f"font-family: {FONT_FAMILY}; font-size: 12px; }}"
-            )
+            self._helper.set_color(desc_color)
             self._helper.show()
         else:
             self._helper.hide()

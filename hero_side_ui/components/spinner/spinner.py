@@ -22,10 +22,8 @@ from __future__ import annotations
 from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFont, QPainter
+from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
-    QHBoxLayout,
-    QLabel,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -33,7 +31,8 @@ from PySide6.QtWidgets import (
 
 from ...animation import PhaseDriver
 from ...core import ThemeProvider
-from ...themes import FONT_FAMILY, SPINNER_SIZES
+from ...themes import SPINNER_SIZES
+from ..text import Text
 from ._colors import (
     VALID_COLORS,
     VALID_VARIANTS,
@@ -74,39 +73,57 @@ class _SpinnerCanvas(QWidget):
 
         if variant == "default":
             paint_default(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 border=cfg["border_width"],
                 phase_ease=owner._driver_a.value(),
                 phase_linear=owner._driver_b.value(),
             )
         elif variant == "simple":
             paint_simple(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 border=cfg["border_width"],
                 phase=owner._driver_a.value(),
             )
         elif variant == "gradient":
             paint_gradient(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 border=cfg["border_width"],
                 phase=owner._driver_a.value(),
             )
         elif variant == "spinner":
             paint_spinner(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 bar_length=cfg["bar_length"],
                 bar_width=cfg["bar_width"],
                 phase=owner._driver_a.value(),
             )
         elif variant == "wave":
             paint_wave(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 dot_size=cfg["dot_size"],
                 phase=owner._driver_a.value(),
             )
         elif variant == "dots":
             paint_dots(
-                painter, w, h, indicator,
+                painter,
+                w,
+                h,
+                indicator,
                 dot_size=cfg["dot_size"],
                 phase=owner._driver_a.value(),
             )
@@ -156,10 +173,8 @@ class Spinner(QWidget):
     # ----- 组装 UI -----
     def _setup_ui(self):
         self._canvas = _SpinnerCanvas(owner=self)
-        self._label = QLabel("")
-        self._label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._label = Text("", selectable=False)
+        self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout = QVBoxLayout(self)
@@ -193,18 +208,9 @@ class Spinner(QWidget):
         d = self._canvas_diameter()
         self._canvas.setFixedSize(d, d)
         cfg = self._size_cfg()
-        # label
-        c = self._label_qcolor()
-        self._label.setStyleSheet(
-            f"QLabel {{ color: {c.name(QColor.NameFormat.HexArgb)}; "
-            f"font-family: {FONT_FAMILY}; "
-            f"font-size: {cfg['label_font_size']}px; "
-            f"background: transparent; }}"
-        )
-        f: QFont = self._label.font()
-        f.setFamily(FONT_FAMILY)
-        f.setPixelSize(cfg["label_font_size"])
-        self._label.setFont(f)
+        # label 走统一 Text：set_size + set_color
+        self._label.set_size(cfg["label_font_size"])
+        self._label.set_color(self._label_qcolor())
         self._canvas.update()
 
     def _refresh_label(self):

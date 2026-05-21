@@ -51,14 +51,13 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QPainter,
     QColor,
-    QFont,
     QPen,
     QFontMetrics,
 )
 from PySide6.QtSvg import QSvgRenderer
 from typing import Optional, List
 
-from ...themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CHECKBOX_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, CHECKBOX_SIZES
 from ...utils import hex_to_rgba
 from ...animation import paint_animated_check
 from ...core import ThemeProvider
@@ -318,8 +317,9 @@ class Checkbox(QCheckBox):
 
     def _refresh_geometry(self):
         cfg = self._size_config()
-        font = QFont(FONT_FAMILY.split(",")[0].strip().strip("'\""))
-        font.setPixelSize(cfg["label_font_size"])
+        from ...core import make_text_qfont
+
+        font = make_text_qfont(cfg["label_font_size"], "normal")
         self.setFont(font)
 
         # 让 QCheckBox 的 sizeHint 足够容纳 box + gap + text
@@ -657,5 +657,3 @@ class Checkbox(QCheckBox):
 
     def set_value(self, value: str):
         self._value = value
-
-

@@ -37,7 +37,15 @@ from __future__ import annotations
 from typing import Iterable, Optional, Union
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPainterPath, QPalette, QPen
+from PySide6.QtGui import (
+    QColor,
+    QFont,
+    QFontMetrics,
+    QPainter,
+    QPainterPath,
+    QPalette,
+    QPen,
+)
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -54,14 +62,12 @@ from ...animation import (
     tween_value,
 )
 from ...core import StatePalette, ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, LISTBOX_SIZES, RADIUS
+from ...themes import HEROUI_COLORS, LISTBOX_SIZES, RADIUS
 from ...utils import aligned_color_pair, load_svg_icon
 
+from ..text import Text
 from .item import ListboxItem
 from .section import ListboxSection
-
-
-
 
 # ============================================================
 # Listbox
@@ -175,7 +181,7 @@ class Listbox(QWidget):
             QWidget()
         )  # 占位，立刻被 _rebuild_empty_widget 替换
         self._list_v.addWidget(self._empty_widget)
-        self._empty_label: QLabel = QLabel()  # 占位，立刻被 _rebuild_empty_widget 替换
+        self._empty_label: "Text" = Text("")  # 占位，立刻被 _rebuild_empty_widget 替换
         self._rebuild_empty_widget()
         self._empty_widget.hide()
         # 末尾 stretch:让 items 在父容器(如 popover)给的高度大于 items 实际总高度时
@@ -295,7 +301,9 @@ class Listbox(QWidget):
         # 这样保证末尾的 stretch 永远在最后,items 顶部对齐不被拉伸。
         idx = self._list_v.indexOf(self._empty_widget)
         if idx < 0:
-            self._list_v.insertWidget(self._list_v.count() - 1, it)  # 倒数第二位(stretch 之前)
+            self._list_v.insertWidget(
+                self._list_v.count() - 1, it
+            )  # 倒数第二位(stretch 之前)
         else:
             self._list_v.insertWidget(idx, it)
         self._items.append(it)
@@ -491,9 +499,9 @@ class Listbox(QWidget):
             self._list_v.addWidget(self._empty_widget)
         else:
             self._list_v.insertWidget(idx, self._empty_widget)
-        self._empty_label = (
-            self._empty_widget.findChild(QLabel, "heroEmptyText") or QLabel()
-        )
+        self._empty_label = self._empty_widget.findChild(
+            QLabel, "heroEmptyText"
+        ) or Text("")
         self._empty_widget.setVisible(was_visible)
 
     def set_hide_selected_icon(self, v: bool):
@@ -573,10 +581,14 @@ class Listbox(QWidget):
                 cfg["item_padding_y"],
             )
             v.setSpacing(0)
-            text_label = QLabel(self._empty_content_text, w)
+            text_label = Text(
+                self._empty_content_text,
+                parent=w,
+                color=StatePalette.text_description(self._theme).name(),
+                selectable=False,
+            )
             text_label.setObjectName("heroEmptyText")
             text_label.setAttribute(Qt.WA_TranslucentBackground, True)
-            text_label.setForegroundRole(QPalette.WindowText)
             text_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
             v.addWidget(text_label)
             return w
@@ -607,28 +619,28 @@ class Listbox(QWidget):
         v.addWidget(icon_label, 0, Qt.AlignCenter)
 
         # 双语文字（en 在上，cn 在下，cn 字号略小）
-        en_label = QLabel("Nothing to show", w)
+        en_label = Text(
+            "Nothing to show",
+            parent=w,
+            size=cfg["title_font_size"],
+            color=StatePalette.text_description(self._theme).name(),
+            selectable=False,
+        )
         en_label.setObjectName("heroEmptyText")  # 主文本对外暴露给 _empty_label
         en_label.setAttribute(Qt.WA_TranslucentBackground, True)
         en_label.setAlignment(Qt.AlignCenter)
-        en_f = QFont(FONT_FAMILY)
-        en_f.setPixelSize(cfg["title_font_size"])
-        en_label.setFont(en_f)
-        en_label.setStyleSheet(
-            f"color: {StatePalette.text_description(self._theme).name()}; background: transparent;"
-        )
         v.addWidget(en_label, 0, Qt.AlignCenter)
 
-        cn_label = QLabel("暂无内容", w)
+        cn_label = Text(
+            "暂无内容",
+            parent=w,
+            size=cfg["desc_font_size"],
+            color=StatePalette.text_description(self._theme).name(),
+            selectable=False,
+        )
         cn_label.setObjectName("heroEmptyTextCn")
         cn_label.setAttribute(Qt.WA_TranslucentBackground, True)
         cn_label.setAlignment(Qt.AlignCenter)
-        cn_f = QFont(FONT_FAMILY)
-        cn_f.setPixelSize(cfg["desc_font_size"])
-        cn_label.setFont(cn_f)
-        cn_label.setStyleSheet(
-            f"color: {StatePalette.text_description(self._theme).name()}; background: transparent;"
-        )
         v.addWidget(cn_label, 0, Qt.AlignCenter)
 
         return w

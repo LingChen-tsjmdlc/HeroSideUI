@@ -14,7 +14,7 @@ from PySide6.QtCore import QPoint, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPalette
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QSizePolicy, QWidget
 
-from ...themes import FONT_FAMILY, HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -31,10 +31,11 @@ class _TextareaStylingMixin:
         dc = HEROUI_COLORS["default"]
 
         # ---- 提前给 QTextEdit 直接 setFont，让 fontMetrics.lineSpacing()
-        #      在 row_h 计算之前就拿到正确字号；后面 setStyleSheet 还会再设一次
-        #      字号是同一个值，不会冲突。
-        font_for_metrics = QFont(FONT_FAMILY.split(",")[0].strip().strip("'\""))
-        font_for_metrics.setPixelSize(size_config["input_font_size"])
+        #      在 row_h 计算之前就拿到正确字号；后面走 Text/FontProvider 同源的字体
+        #      也使用同一个字号，不会冲突。
+        from ...core import make_text_qfont
+
+        font_for_metrics = make_text_qfont(size_config["input_font_size"], "normal")
         self.text_edit.setFont(font_for_metrics)
 
         if self._full_width:
@@ -62,7 +63,11 @@ class _TextareaStylingMixin:
 
         # ---- inputWrapper padding ----
         pad_x = size_config["padding_x"]
-        pad_y = size_config["padding_y"] if not is_inside else size_config["inside_padding_y"]
+        pad_y = (
+            size_config["padding_y"]
+            if not is_inside
+            else size_config["inside_padding_y"]
+        )
         if self._radius == "full":
             pad_x += 4
         self._wrapper.layout().setContentsMargins(pad_x, pad_y, pad_x, pad_y)
@@ -84,15 +89,26 @@ class _TextareaStylingMixin:
             self._clear_btn.setContentsMargins(0, 0, 0, 0)
 
         # ---- inputWrapper 颜色（复用 Input 的颜色决策逻辑）----
-        bg, border, border_color, bg_hover, bg_focus, border_hover, border_focus, main_color = \
-            self._resolve_wrapper_colors(is_dark, colors, dc)
+        (
+            bg,
+            border,
+            border_color,
+            bg_hover,
+            bg_focus,
+            border_hover,
+            border_focus,
+            main_color,
+        ) = self._resolve_wrapper_colors(is_dark, colors, dc)
 
         if self._is_focused:
-            cur_bg = bg_focus; cur_border = border_focus
+            cur_bg = bg_focus
+            cur_border = border_focus
         elif self._is_hover:
-            cur_bg = bg_hover; cur_border = border_hover
+            cur_bg = bg_hover
+            cur_border = border_hover
         else:
-            cur_bg = bg; cur_border = border_color
+            cur_bg = bg
+            cur_border = border_color
 
         radius_px_str = self._resolve_radius(size_config)
         try:
@@ -104,42 +120,55 @@ class _TextareaStylingMixin:
         animate = getattr(self, "_styles_applied_once", False)
 
         if self._variant == "flat":
-            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=0, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         elif self._variant == "faded":
-            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=bw, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         elif self._variant == "bordered":
-            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=bw, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         else:
             # fallback to flat
-            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=0, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
 
         self._styles_applied_once = True
 
         # ---- text_edit 样式 ----
-        fg_color, placeholder_color = self._resolve_input_text_color(is_dark, colors, dc)
-        self.text_edit.setStyleSheet(
-            f"""
+        fg_color, placeholder_color = self._resolve_input_text_color(
+            is_dark, colors, dc
+        )
+        self.text_edit.setStyleSheet(f"""
             QTextEdit {{
                 background: transparent;
                 border: none;
                 color: {fg_color};
-                font-family: {FONT_FAMILY};
                 font-size: {size_config['input_font_size']}px;
                 selection-background-color: {colors[200]};
                 padding: 0;
             }}
-            """
+            """)
+        # 字体不走 QSS，走 Text/FontProvider 同源：
+        from ...core import make_text_qfont
+
+        self.text_edit.setFont(
+            make_text_qfont(size_config["input_font_size"], "normal")
         )
         # 注：QScrollBar 样式由 ScrollStyle 单例统一管理（apply_global），
         # 这里不再写局部 QSS。如果需要某个 textarea 用不同色滚动条，
@@ -176,24 +205,18 @@ class _TextareaStylingMixin:
 
         # ---- outside label ----
         outside_label_font = size_config["outside_label_font_size"]
-        outside_qss = (
-            f"QLabel {{ color: {self._label_color_floated.name()}; "
-            f"font-family: {FONT_FAMILY}; font-size: {outside_label_font}px; "
-            f"font-weight: 500; }}"
-        )
         req_mark = ""
         if self._is_required and self._label_text:
             req_mark = f" <span style='color:{HEROUI_COLORS['danger'][500]};'>*</span>"
         display_label = self._label_text + req_mark if self._label_text else ""
-        self._outside_label.setText(display_label)
-        self._outside_label.setStyleSheet(outside_qss)
-        self._outside_left_label.setText(display_label)
-        self._outside_left_label.setStyleSheet(outside_qss)
+        for lbl in (self._outside_label, self._outside_left_label):
+            lbl.setText(display_label)
+            lbl.set_size(outside_label_font)
+            lbl.set_color(self._label_color_floated.name())
 
-        # ---- 内部 label 样式 ----
-        self._inside_label.setStyleSheet(
-            f"QLabel {{ background: transparent; font-family: {FONT_FAMILY}; }}"
-        )
+        # ---- 内部 label 字号 ----
+        # 颜色由动画插值后用 RichText <span> 写入；这里只调字号。
+        self._inside_label.set_size(size_config["label_font_size"])
 
         # ---- start/end icon ----
         self._render_adornment_icons(is_dark, colors, dc, size_config)
@@ -202,7 +225,9 @@ class _TextareaStylingMixin:
         if self._is_clearable:
             ic_size = size_config["clear_icon_size"]
             ic_color = QColor(dc[400] if is_dark else dc[500])
-            pix = load_svg_icon("heroicons--x-circle-solid", size=ic_size, color=ic_color)
+            pix = load_svg_icon(
+                "heroicons--x-circle-solid", size=ic_size, color=ic_color
+            )
             self._clear_btn.setIcon(pix)
             self._clear_btn.setIconSize(QSize(ic_size, ic_size))
             self._clear_btn.setFixedSize(ic_size + 4, ic_size + 4)
@@ -214,18 +239,14 @@ class _TextareaStylingMixin:
         helper_font = size_config["helper_font_size"]
         if self._is_invalid and self._error_message:
             self._helper_label.setText(self._error_message)
-            self._helper_label.setStyleSheet(
-                f"QLabel {{ color: {HEROUI_COLORS['danger'][500]}; "
-                f"font-family: {FONT_FAMILY}; font-size: {helper_font}px; }}"
-            )
+            self._helper_label.set_size(helper_font)
+            self._helper_label.set_color(HEROUI_COLORS["danger"][500])
             self._helper_label.show()
         elif self._description:
             self._helper_label.setText(self._description)
             desc_color = dc[400] if is_dark else dc[500]
-            self._helper_label.setStyleSheet(
-                f"QLabel {{ color: {desc_color}; "
-                f"font-family: {FONT_FAMILY}; font-size: {helper_font}px; }}"
-            )
+            self._helper_label.set_size(helper_font)
+            self._helper_label.set_color(desc_color)
             self._helper_label.show()
         else:
             self._helper_label.hide()
@@ -240,6 +261,7 @@ class _TextareaStylingMixin:
         # Textarea(color="default") 滚动条用 neutral（更纯灰、更中性）。
         try:
             from ...core import ScrollStyle
+
             v_bar = self.text_edit.verticalScrollBar()
             h_bar = self.text_edit.horizontalScrollBar()
             override = self._color if self._color != "default" else None
@@ -250,7 +272,11 @@ class _TextareaStylingMixin:
 
         # ---- grip 颜色跟随主题（亮色 neutral-400，暗色 neutral-500）----
         if hasattr(self, "_resize_grip"):
-            grip_color = HEROUI_COLORS["neutral"][500] if is_dark else HEROUI_COLORS["neutral"][400]
+            grip_color = (
+                HEROUI_COLORS["neutral"][500]
+                if is_dark
+                else HEROUI_COLORS["neutral"][400]
+            )
             self._resize_grip.set_line_color(QColor(grip_color))
 
     # ------------------------------------------------------------
@@ -260,16 +286,22 @@ class _TextareaStylingMixin:
         is_default = self._color == "default"
         if is_default:
             if is_dark:
-                bg = dc[800]; bg_hover = dc[700]; bg_focus = dc[700]
+                bg = dc[800]
+                bg_hover = dc[700]
+                bg_focus = dc[700]
             else:
-                bg = dc[100]; bg_hover = dc[200]; bg_focus = dc[200]
+                bg = dc[100]
+                bg_hover = dc[200]
+                bg_focus = dc[200]
         else:
             if is_dark:
                 bg = hex_to_rgba(colors[500], 0.15)
                 bg_hover = hex_to_rgba(colors[500], 0.25)
                 bg_focus = hex_to_rgba(colors[500], 0.25)
             else:
-                bg = colors[100]; bg_hover = colors[200]; bg_focus = colors[200]
+                bg = colors[100]
+                bg_hover = colors[200]
+                bg_focus = colors[200]
         return bg, bg_hover, bg_focus
 
     def _resolve_wrapper_colors(self, is_dark: bool, colors: dict, dc: dict):
@@ -278,8 +310,10 @@ class _TextareaStylingMixin:
 
         if self._variant == "flat":
             bg, bg_hover, bg_focus = self._flat_bg_colors(is_dark, colors, dc)
-            border = "transparent"; border_color = "transparent"
-            border_hover = "transparent"; border_focus = "transparent"
+            border = "transparent"
+            border_color = "transparent"
+            border_hover = "transparent"
+            border_focus = "transparent"
 
         elif self._variant == "faded":
             bg, bg_hover, bg_focus = self._flat_bg_colors(is_dark, colors, dc)
@@ -288,28 +322,40 @@ class _TextareaStylingMixin:
             else:
                 default_border = colors[700] if is_dark else colors[200]
             default_border_hover = dc[500] if is_dark else dc[400]
-            border = default_border; border_color = default_border
+            border = default_border
+            border_color = default_border
             if is_default:
                 border_hover = default_border_hover
                 border_focus = default_border_hover
             else:
-                border_hover = colors[500]; border_focus = colors[500]
+                border_hover = colors[500]
+                border_focus = colors[500]
 
         elif self._variant == "bordered":
             flat_bg, _, _ = self._flat_bg_colors(is_dark, colors, dc)
-            bg = "transparent"; bg_hover = "transparent"; bg_focus = "transparent"
-            border = flat_bg; border_color = flat_bg
+            bg = "transparent"
+            bg_hover = "transparent"
+            bg_focus = "transparent"
+            border = flat_bg
+            border_color = flat_bg
             if is_default:
-                border_hover = dc[400]; border_focus = dc[500]
+                border_hover = dc[400]
+                border_focus = dc[500]
             else:
                 if is_dark:
-                    border_hover = colors[600]; border_focus = colors[500]
+                    border_hover = colors[600]
+                    border_focus = colors[500]
                 else:
-                    border_hover = colors[400]; border_focus = colors[500]
+                    border_hover = colors[400]
+                    border_focus = colors[500]
         else:
-            bg = "transparent"; bg_hover = "transparent"; bg_focus = "transparent"
-            border = "transparent"; border_color = "transparent"
-            border_hover = "transparent"; border_focus = "transparent"
+            bg = "transparent"
+            bg_hover = "transparent"
+            bg_focus = "transparent"
+            border = "transparent"
+            border_color = "transparent"
+            border_hover = "transparent"
+            border_focus = "transparent"
 
         if self._is_invalid:
             d = HEROUI_COLORS["danger"]
@@ -319,13 +365,26 @@ class _TextareaStylingMixin:
                 bg_hover = hex_to_rgba(d[500], 0.25) if is_dark else d[100]
                 bg_focus = hex_to_rgba(d[500], 0.15) if is_dark else d[50]
             elif self._variant == "bordered":
-                border = d[500]; border_color = d[500]
-                border_hover = d[500]; border_focus = d[500]
+                border = d[500]
+                border_color = d[500]
+                border_hover = d[500]
+                border_focus = d[500]
             elif self._variant == "faded":
-                border = d[500]; border_color = d[500]
-                border_hover = d[500]; border_focus = d[500]
+                border = d[500]
+                border_color = d[500]
+                border_hover = d[500]
+                border_focus = d[500]
 
-        return bg, border, border_color, bg_hover, bg_focus, border_hover, border_focus, main_color
+        return (
+            bg,
+            border,
+            border_color,
+            bg_hover,
+            bg_focus,
+            border_hover,
+            border_focus,
+            main_color,
+        )
 
     def _resolve_input_text_color(self, is_dark: bool, colors: dict, dc: dict):
         if self._is_invalid:
@@ -381,7 +440,8 @@ class _TextareaStylingMixin:
             content=self._top_right_content,
             on_click=self._on_top_right_click,
             icon_size=size_config["end_icon_size"],
-            is_dark=is_dark, dc=dc,
+            is_dark=is_dark,
+            dc=dc,
         )
         # center_right / bottom_right：绝对定位 holder
         self._fill_slot(
@@ -390,7 +450,8 @@ class _TextareaStylingMixin:
             content=self._center_right_content,
             on_click=self._on_center_right_click,
             icon_size=size_config["end_icon_size"],
-            is_dark=is_dark, dc=dc,
+            is_dark=is_dark,
+            dc=dc,
         )
         self._fill_slot(
             slot=self._bottom_right_holder,
@@ -398,7 +459,8 @@ class _TextareaStylingMixin:
             content=self._bottom_right_content,
             on_click=self._on_bottom_right_click,
             icon_size=size_config["end_icon_size"],
-            is_dark=is_dark, dc=dc,
+            is_dark=is_dark,
+            dc=dc,
         )
         # 绝对定位的 holder 渲染完后，sizeHint 可能变了，重摆位置
         self._reposition_absolute_holders()
@@ -479,13 +541,15 @@ class _TextareaStylingMixin:
         f_float = size_config["label_float_font_size"]
         font_size = f_rest + (f_float - f_rest) * progress
 
-        font = QFont(FONT_FAMILY.split(",")[0].strip().strip("'\""))
-        font.setPixelSize(int(round(font_size)))
-        font.setWeight(QFont.Weight.Medium if progress > 0.5 else QFont.Weight.Normal)
+        from ...core import make_text_qfont
+
+        weight = "medium" if progress > 0.5 else "normal"
+        font = make_text_qfont(int(round(font_size)), weight)
         self._inside_label.setFont(font)
         self._inside_label.adjustSize()
 
         from PySide6.QtCore import QPoint
+
         wrapper_pos_in_self = self._wrapper.mapTo(self, QPoint(0, 0))
         wrapper_x = wrapper_pos_in_self.x()
         wrapper_y = wrapper_pos_in_self.y()
@@ -498,9 +562,11 @@ class _TextareaStylingMixin:
         # 而不是 wrapper 垂直中心（否则 textarea 越高 label 越居中越奇怪）。
         # 第一行文字的近似 y = wrapper 顶 + 当前 wrapper padding_top
         is_inside = self._label_placement == "inside"
-        cur_pad_y = (size_config["inside_padding_y"]
-                     if is_inside and self._has_label()
-                     else size_config["padding_y"])
+        cur_pad_y = (
+            size_config["inside_padding_y"]
+            if is_inside and self._has_label()
+            else size_config["padding_y"]
+        )
         # 把 label 垂直居中在第一行高度内
         row_h = self._cached_row_height or self._calc_row_height()
         first_row_top = wrapper_y + cur_pad_y
@@ -541,4 +607,3 @@ class _TextareaStylingMixin:
 
     def _on_label_progress(self, progress: float):
         self._apply_label_progress(progress)
-

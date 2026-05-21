@@ -24,7 +24,6 @@ from ...animation import stop_tween, tween_value
 from ...core import ThemeProvider
 from ...themes import (
     AUTOCOMPLETE_SIZES,
-    FONT_FAMILY,
     HEROUI_COLORS,
     INPUT_SIZES,
     RADIUS,
@@ -478,7 +477,9 @@ class Autocomplete(
         # 因此 scroll_height 不能超过 screen_bottom - input_bottom - gap - bottom_margin。
         gap = 6
         _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin)
+        return int(
+            rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin
+        )
 
     def _visible_listbox_content_height(self) -> int:
         """计算 Listbox 当前可见内容高度。
@@ -496,8 +497,7 @@ class Autocomplete(
                 for i in range(self._listbox._list_v.count())
             ]
             visible_widgets = [
-                w for w in visible_widgets
-                if w is not None and not w.isHidden()
+                w for w in visible_widgets if w is not None and not w.isHidden()
             ]
             if not visible_widgets:
                 visible_widgets = [self._listbox._empty_widget]
@@ -686,6 +686,7 @@ class Autocomplete(
         self._listbox._empty_widget.setVisible(visible_count == 0)
         self._listbox.updateGeometry()
         self._refresh_popover_height(prefer_below=self._is_open)
+
 
 # ============================================================
 # Aliases — 对齐 HeroUI 文档的 `<AutocompleteItem>` / `<AutocompleteSection>`

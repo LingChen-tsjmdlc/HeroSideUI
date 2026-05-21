@@ -19,11 +19,9 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPalette
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QGraphicsOpacityEffect,
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -31,16 +29,14 @@ from PySide6.QtWidgets import (
 
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, INPUT_SIZES, RADIUS
-from ...utils import hex_to_rgba, load_svg_icon
+from ...themes import INPUT_SIZES
 
+from ..text import Text
 from ._clear_button import _ClearButton
 from ._layout import _InputLayoutMixin
 from ._line_edit import _LineEdit
 from ._styling import _InputStylingMixin
 from ._wrapper import _InputWrapper
-
-
 
 
 # ============================================================
@@ -162,10 +158,14 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         self._root.setSpacing(4)
 
         # --- outside label (仅 outside / outside-top 模式显示) ---
-        self._outside_label = QLabel(self._label_text)
-        self._outside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._outside_label = Text(self._label_text, weight="medium", selectable=False)
+        self._outside_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
         self._outside_label.setContentsMargins(0, 0, 0, 0)
-        self._outside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self._outside_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         self._outside_label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._outside_label, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -176,17 +176,25 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         _row.setSpacing(8)
 
         # outside-left label
-        self._outside_left_label = QLabel(self._label_text)
+        self._outside_left_label = Text(
+            self._label_text, weight="medium", selectable=False
+        )
         self._outside_left_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
         )
         self._outside_left_label.setContentsMargins(0, 0, 0, 0)
         self._outside_left_label.setTextFormat(Qt.TextFormat.RichText)
-        _row.addWidget(self._outside_left_label, 0, Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft)
+        _row.addWidget(
+            self._outside_left_label,
+            0,
+            Qt.AlignmentFlag.AlignVCenter | Qt.AlignmentFlag.AlignLeft,
+        )
 
         # --- inputWrapper (背景容器) ---
         self._wrapper = _InputWrapper()
-        self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._wrapper.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
 
         wrap_layout = QHBoxLayout(self._wrapper)
         wrap_layout.setContentsMargins(12, 6, 12, 6)
@@ -210,12 +218,16 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
         # 浮动 label（覆盖在 line_edit 上方，手动定位）
         # parent 设为 self（Input 根），这样在 outside 模式下可以飞出 inputWrapper 到达 Input 顶部
-        self._inside_label = QLabel(self._label_text, self)
+        # 文字颜色由 _layout._apply_label_progress() 动画插值后用 RichText <span> 覆写，
+        # Text 本身的 set_color 不介入 inside-label 的动画路径。
+        self._inside_label = Text(self._label_text, parent=self, selectable=False)
         self._inside_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
         )
         self._inside_label.setContentsMargins(0, 0, 0, 0)
-        self._inside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self._inside_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        )
         self._inside_label.raise_()
 
         # 真正的输入框
@@ -250,7 +262,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         self._root.addWidget(self._outside_left_row)
 
         # --- helper 区域 ---
-        self._helper_label = QLabel("")
+        self._helper_label = Text("", weight="normal", selectable=False)
         self._helper_label.setWordWrap(True)
         self._helper_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
@@ -394,7 +406,6 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
         should_float = self._filled_within()
         self._label_anim.set_state(should_float, animate=animate)
-
 
     # ============================================================
     # 公共 API
