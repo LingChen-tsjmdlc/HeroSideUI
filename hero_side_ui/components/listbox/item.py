@@ -31,10 +31,10 @@ from ...animation import (
     tween_value,
 )
 from ...core import StatePalette, ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, LISTBOX_SIZES, RADIUS
+from ...themes import HEROUI_COLORS, LISTBOX_SIZES, RADIUS
 from ...utils import aligned_color_pair, load_svg_icon
 
-
+from ..text import Text
 
 # ============================================================
 # 颜色解析
@@ -186,12 +186,10 @@ class ListboxItem(QAbstractButton):
         self._wrap_v = QVBoxLayout(self._wrap)
         self._wrap_v.setContentsMargins(0, 0, 0, 0)
         self._wrap_v.setSpacing(0)
-        self._title_label = QLabel(self._title, self._wrap)
+        self._title_label = Text(self._title, parent=self._wrap, selectable=False)
         self._title_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        self._title_label.setForegroundRole(QPalette.WindowText)
-        self._desc_label = QLabel(self._description, self._wrap)
+        self._desc_label = Text(self._description, parent=self._wrap, selectable=False)
         self._desc_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        self._desc_label.setForegroundRole(QPalette.WindowText)
         self._wrap_v.addWidget(self._title_label)
         self._wrap_v.addWidget(self._desc_label)
         if not self._description:
@@ -199,9 +197,8 @@ class ListboxItem(QAbstractButton):
         self._h.addWidget(self._wrap, 1)
 
         # shortcut 标记
-        self._shortcut_label = QLabel(self._shortcut, self)
+        self._shortcut_label = Text(self._shortcut, parent=self, selectable=False)
         self._shortcut_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        self._shortcut_label.setForegroundRole(QPalette.WindowText)
         if not self._shortcut:
             self._shortcut_label.hide()
         self._h.addWidget(self._shortcut_label, 0, Qt.AlignVCenter)
@@ -412,22 +409,25 @@ class ListboxItem(QAbstractButton):
         )
         self._h.setSpacing(cfg["item_gap"])
 
-        # 字体
-        title_f = QFont(FONT_FAMILY)
-        title_f.setPixelSize(cfg["title_font_size"])
-        title_f.setWeight(QFont.Normal)
-        self._title_label.setFont(title_f)
+        # 字体：Text 统一 set_size，走 FontProvider 同源
+        self._title_label.set_size(cfg["title_font_size"])
+        self._title_label.set_weight("normal")
 
-        desc_f = QFont(FONT_FAMILY)
-        desc_f.setPixelSize(cfg["desc_font_size"])
-        self._desc_label.setFont(desc_f)
-        self._desc_label.setStyleSheet(
-            f"color: {StatePalette.text_description(self._theme).name()}; background: transparent;"
+        self._desc_label.set_size(cfg["desc_font_size"])
+        self._desc_label.set_color(StatePalette.text_description(self._theme).name())
+
+        # shortcut：Text 负责字号/颜色；border/padding 仍走 QSS
+        # （Text.set_color 会重写整个 stylesheet，所以 border 要走 contentsMargins+另外 paint，
+        # 但这里为了保持 1px 边框观感不变，后续用 setProperty 传递 ——
+        # 最简单的做法是在 set_color 之后追加 styleSheet。）
+        self._shortcut_label.set_size(cfg["shortcut_font_size"])
+        self._shortcut_label.set_color(
+            StatePalette.text_description(self._theme).name()
         )
-
-        sc_f = QFont(FONT_FAMILY)
-        sc_f.setPixelSize(cfg["shortcut_font_size"])
-        self._shortcut_label.setFont(sc_f)
+        # set_color 以后 Text 的 styleSheet 存下了 color/background/selection-*，
+        # 另外追加一个外部 QSS（同个 QLabel 只能 setStyleSheet 一次，
+        # 所以干脆在这里完整重写 —— Text 下一次 _apply_color 会覆写，
+        # 为了避免折腰这里不走 set_color 而是直接 setStyleSheet 手制全套）
         self._shortcut_label.setStyleSheet(
             f"color: {StatePalette.text_description(self._theme).name()};"
             f" border: 1px solid {StatePalette.shortcut_border(self._theme).name()};"
@@ -500,7 +500,11 @@ class ListboxItem(QAbstractButton):
             return
         cfg = self._size_cfg()
         size = cfg["title_font_size"] + 2
-        c = self._cur_text if self._cur_text.isValid() else StatePalette.text_default(self._theme)
+        c = (
+            self._cur_text
+            if self._cur_text.isValid()
+            else StatePalette.text_default(self._theme)
+        )
         pix = load_svg_icon(self._start_src, size=size, color=c)
         self._start_label.setPixmap(pix)
         self._start_label.setFixedSize(size, size)
@@ -510,7 +514,11 @@ class ListboxItem(QAbstractButton):
             return
         cfg = self._size_cfg()
         size = cfg["title_font_size"] + 2
-        c = self._cur_text if self._cur_text.isValid() else StatePalette.text_default(self._theme)
+        c = (
+            self._cur_text
+            if self._cur_text.isValid()
+            else StatePalette.text_default(self._theme)
+        )
         pix = load_svg_icon(self._end_src, size=size, color=c)
         self._end_label.setPixmap(pix)
         self._end_label.setFixedSize(size, size)
@@ -581,9 +589,15 @@ class ListboxItem(QAbstractButton):
         active = self._is_active()
         # 目标色
         if active:
-            target_bg = StatePalette.bg(self._variant, self._color, self._theme, "hover")
-            target_border = StatePalette.border(self._variant, self._color, self._theme, "hover")
-            target_text = StatePalette.text(self._variant, self._color, self._theme, "hover")
+            target_bg = StatePalette.bg(
+                self._variant, self._color, self._theme, "hover"
+            )
+            target_border = StatePalette.border(
+                self._variant, self._color, self._theme, "hover"
+            )
+            target_text = StatePalette.text(
+                self._variant, self._color, self._theme, "hover"
+            )
         elif self._is_disabled and self._is_hover:
             # disabled 但鼠标在上面:给一个"减弱版"hover 背景作为视觉反馈
             # ——告诉用户"我知道你 hover 我,但我点不动",观感比完全无反应好。
@@ -677,9 +691,7 @@ class ListboxItem(QAbstractButton):
 
     def _apply_text_color(self):
         # title 用当前过渡色，description 总是 default-500（HeroUI menu 行为）
-        self._title_label.setStyleSheet(
-            f"color: {self._cur_text.name()}; background: transparent;"
-        )
+        self._title_label.set_color(self._cur_text.name())
 
     # ------------------------------------------------------------
     # 绘制
@@ -763,7 +775,9 @@ class ListboxItem(QAbstractButton):
             return
 
         slot = self._check_slot.geometry()
-        c = QColor(StatePalette.selected_indicator(self._variant, self._color, self._theme))
+        c = QColor(
+            StatePalette.selected_indicator(self._variant, self._color, self._theme)
+        )
         paint_animated_check(
             p,
             slot,

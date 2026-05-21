@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QLabel, QSizePolicy
 
-from ...themes import FONT_FAMILY, HEROUI_COLORS, INPUT_SIZES, RADIUS
+from ...themes import HEROUI_COLORS, INPUT_SIZES, RADIUS
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -62,7 +62,11 @@ class _InputStylingMixin:
 
         # ---- inputWrapper padding ----
         pad_x = size_config["padding_x"]
-        pad_y = size_config["padding_y"] if not is_inside else size_config["inside_padding_y"]
+        pad_y = (
+            size_config["padding_y"]
+            if not is_inside
+            else size_config["inside_padding_y"]
+        )
         if self._radius == "full":
             pad_x += 4
         # underlined 特殊 padding
@@ -90,8 +94,16 @@ class _InputStylingMixin:
             self._clear_btn.setContentsMargins(0, 0, 0, 0)
 
         # ---- inputWrapper 背景/边框/圆角 (手绘 + 150ms 过渡) ----
-        bg, border, border_color, bg_hover, bg_focus, border_hover, border_focus, main_color = \
-            self._resolve_wrapper_colors(is_dark, colors, dc)
+        (
+            bg,
+            border,
+            border_color,
+            bg_hover,
+            bg_focus,
+            border_hover,
+            border_focus,
+            main_color,
+        ) = self._resolve_wrapper_colors(is_dark, colors, dc)
 
         # 根据当前 hover/focus 状态选色
         if self._is_focused:
@@ -126,28 +138,36 @@ class _InputStylingMixin:
             self._wrapper.set_static(border_width=0, radius_px=0, show_bottom_line=True)
             self._wrapper.set_bg_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
-            self._wrapper.set_bottom_line_color(self._qcolor(cur_bottom), animate=animate)
+            self._wrapper.set_bottom_line_color(
+                self._qcolor(cur_bottom), animate=animate
+            )
 
             # 聚焦色的下划线由 UnderlineBar 覆盖绘制
             self._underline.set_color(QColor(main_color))
             self._underline.show()
 
         elif self._variant == "flat":
-            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=0, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
             self._underline.hide()
 
         elif self._variant == "faded":
-            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=bw, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
             self._underline.hide()
 
         elif self._variant == "bordered":
-            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=bw, radius_px=radius_px, show_bottom_line=False
+            )
             # bordered 背景透明
             self._wrapper.set_bg_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
@@ -155,7 +175,9 @@ class _InputStylingMixin:
             self._underline.hide()
 
         else:
-            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
+            self._wrapper.set_static(
+                border_width=0, radius_px=radius_px, show_bottom_line=False
+            )
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
             self._underline.hide()
@@ -164,19 +186,24 @@ class _InputStylingMixin:
         self._styles_applied_once = True
 
         # ---- line_edit 样式 ----
-        fg_color, placeholder_color = self._resolve_input_text_color(is_dark, colors, dc)
-        self.line_edit.setStyleSheet(
-            f"""
+        fg_color, placeholder_color = self._resolve_input_text_color(
+            is_dark, colors, dc
+        )
+        self.line_edit.setStyleSheet(f"""
             QLineEdit {{
                 background: transparent;
                 border: none;
                 color: {fg_color};
-                font-family: {FONT_FAMILY};
                 font-size: {size_config['input_font_size']}px;
                 selection-background-color: {colors[200]};
                 padding: 0;
             }}
-            """
+            """)
+        # 字体走 Text 同源：font-family 不再在 QSS 写，避免二元源。
+        from ...core import make_text_qfont
+
+        self.line_edit.setFont(
+            make_text_qfont(size_config["input_font_size"], "normal")
         )
         # 占位符颜色 + 保持 Base 透明（防止 Fusion 覆盖画白色背景）
         pal = self.line_edit.palette()
@@ -206,25 +233,20 @@ class _InputStylingMixin:
 
         # ---- outside label ----
         outside_label_font = size_config["outside_label_font_size"]
-        outside_qss = (
-            f"QLabel {{ color: {self._label_color_floated.name()}; "
-            f"font-family: {FONT_FAMILY}; font-size: {outside_label_font}px; "
-            f"font-weight: 500; }}"
-        )
         req_mark = ""
         if self._is_required and self._label_text:
             req_mark = f" <span style='color:{HEROUI_COLORS['danger'][500]};'>*</span>"
 
         display_label = self._label_text + req_mark if self._label_text else ""
-        self._outside_label.setText(display_label)
-        self._outside_label.setStyleSheet(outside_qss)
-        self._outside_left_label.setText(display_label)
-        self._outside_left_label.setStyleSheet(outside_qss)
+        for lbl in (self._outside_label, self._outside_left_label):
+            lbl.setText(display_label)
+            lbl.set_size(outside_label_font)
+            lbl.set_color(self._label_color_floated.name())
 
         # ---- 内部 label 字号 ----
-        self._inside_label.setStyleSheet(
-            f"QLabel {{ background: transparent; font-family: {FONT_FAMILY}; }}"
-        )
+        # 颜色由 _layout._apply_label_progress() 插值后以 RichText <span> 写入；
+        # 这里只需保证字体/字号不被 Text 默认覆写即可。
+        self._inside_label.set_size(size_config["label_font_size"])
 
         # ---- start/end icon ----
         self._render_adornment_icons(is_dark, colors, dc, size_config)
@@ -247,18 +269,14 @@ class _InputStylingMixin:
         helper_font = size_config["helper_font_size"]
         if self._is_invalid and self._error_message:
             self._helper_label.setText(self._error_message)
-            self._helper_label.setStyleSheet(
-                f"QLabel {{ color: {HEROUI_COLORS['danger'][500]}; "
-                f"font-family: {FONT_FAMILY}; font-size: {helper_font}px; }}"
-            )
+            self._helper_label.set_size(helper_font)
+            self._helper_label.set_color(HEROUI_COLORS["danger"][500])
             self._helper_label.show()
         elif self._description:
             self._helper_label.setText(self._description)
             desc_color = dc[400] if is_dark else dc[500]
-            self._helper_label.setStyleSheet(
-                f"QLabel {{ color: {desc_color}; "
-                f"font-family: {FONT_FAMILY}; font-size: {helper_font}px; }}"
-            )
+            self._helper_label.set_size(helper_font)
+            self._helper_label.set_color(desc_color)
             self._helper_label.show()
         else:
             self._helper_label.hide()
@@ -363,7 +381,7 @@ class _InputStylingMixin:
             bg = "transparent"
             bg_hover = "transparent"
             bg_focus = "transparent"
-            border = flat_bg           # 默认: flat 底色
+            border = flat_bg  # 默认: flat 底色
             border_color = flat_bg
             if is_default:
                 # default 色: hover default-400, focus default-500
@@ -405,7 +423,16 @@ class _InputStylingMixin:
                 border_hover = d[500]
                 border_focus = d[500]
 
-        return bg, border, border_color, bg_hover, bg_focus, border_hover, border_focus, main_color
+        return (
+            bg,
+            border,
+            border_color,
+            bg_hover,
+            bg_focus,
+            border_hover,
+            border_focus,
+            main_color,
+        )
 
     def _resolve_input_text_color(self, is_dark: bool, colors: dict, dc: dict):
         """返回 (fg_color, placeholder_color)"""
@@ -434,13 +461,17 @@ class _InputStylingMixin:
         ph = dc[400] if is_dark else dc[500]
         return fg, ph
 
-    def _resolve_label_resting_color(self, is_dark: bool, colors: dict, dc: dict) -> str:
+    def _resolve_label_resting_color(
+        self, is_dark: bool, colors: dict, dc: dict
+    ) -> str:
         """未浮动时 label 颜色 — HeroUI 默认 text-foreground-500"""
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
         return dc[400] if is_dark else dc[500]
 
-    def _resolve_label_floated_color(self, is_dark: bool, colors: dict, dc: dict) -> str:
+    def _resolve_label_floated_color(
+        self, is_dark: bool, colors: dict, dc: dict
+    ) -> str:
         """浮动后（聚焦/有值）label 颜色"""
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
@@ -549,4 +580,3 @@ class _InputStylingMixin:
             slot_layout.addWidget(lbl, 0, Qt.AlignmentFlag.AlignVCenter)
 
         slot.show()
-

@@ -24,7 +24,6 @@ from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
     QGraphicsOpacityEffect,
 )
@@ -49,14 +48,19 @@ from PySide6.QtGui import (
 from typing import Optional
 
 from ...themes import (
-    HEROUI_COLORS, RADIUS, FONT_FAMILY,
-    PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES,
+    HEROUI_COLORS,
+    RADIUS,
+    PROGRESS_SIZES,
+    CIRCULAR_PROGRESS_SIZES,
 )
 from ...utils import hex_to_rgba
 from ...animation import (
-    IndeterminateBarAnimation, SpinAnimation, StripeFlowAnimation,
+    IndeterminateBarAnimation,
+    SpinAnimation,
+    StripeFlowAnimation,
 )
 from ...core import ThemeProvider
+from ..text import Text
 
 
 # ============================================================
@@ -87,7 +91,9 @@ class _LinearTrack(QWidget):
 
         # indeterminate 滑块动画（复用 IndeterminateBarAnimation）
         self._indet_loop = IndeterminateBarAnimation(
-            owner=self, duration=1500, bar_ratio=0.4,
+            owner=self,
+            duration=1500,
+            bar_ratio=0.4,
         )
 
         # 确定态：progress_px 动画（跟随 owner 宽度 * ratio）
@@ -98,7 +104,9 @@ class _LinearTrack(QWidget):
 
         # striped 条带流动（复用 StripeFlowAnimation）
         self._stripe_flow = StripeFlowAnimation(
-            owner=self, period=32.0, duration=1000,
+            owner=self,
+            period=32.0,
+            duration=1000,
         )
 
     # ----- Qt Properties -----
@@ -299,8 +307,7 @@ class Progress(QWidget):
         if is_indeterminate:
             self._track.start_indeterminate()
         else:
-            self._track.animate_to(self._progress_ratio(),
-                                   disable_animation=True)
+            self._track.animate_to(self._progress_ratio(), disable_animation=True)
 
         if is_striped and not disable_animation:
             self._track.start_stripe_flow()
@@ -324,11 +331,15 @@ class Progress(QWidget):
         self._label_row = QHBoxLayout()
         self._label_row.setContentsMargins(0, 0, 0, 0)
         self._label_row.setSpacing(8)
-        self._label = QLabel("")
+        self._label = Text("", selectable=False)
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        self._value_label = QLabel("")
-        self._value_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-        self._value_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        self._value_label = Text("", selectable=False)
+        self._value_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
+        self._value_label.setAlignment(
+            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
+        )
         self._label_row.addWidget(self._label, 0, Qt.AlignmentFlag.AlignLeft)
         self._label_row.addStretch()
         self._label_row.addWidget(self._value_label, 0, Qt.AlignmentFlag.AlignRight)
@@ -346,14 +357,10 @@ class Progress(QWidget):
         cfg = PROGRESS_SIZES.get(self._size, PROGRESS_SIZES["md"])
         text_color = self._text_color()
 
-        self._label.setStyleSheet(
-            f"QLabel {{ color: {text_color}; font-family: {FONT_FAMILY}; "
-            f"font-size: {cfg['label_font_size']}px; }}"
-        )
-        self._value_label.setStyleSheet(
-            f"QLabel {{ color: {text_color}; font-family: {FONT_FAMILY}; "
-            f"font-size: {cfg['value_font_size']}px; }}"
-        )
+        self._label.set_size(cfg["label_font_size"])
+        self._label.set_color(text_color)
+        self._value_label.set_size(cfg["value_font_size"])
+        self._value_label.set_color(text_color)
         # 让 track 重新跑 sizeHint
         self._track.updateGeometry()
         self._track.setFixedHeight(self._track_height())
@@ -441,8 +448,9 @@ class Progress(QWidget):
         self._value = max(self._min, min(self._max, v))
         self._refresh_text_labels()
         if not self._is_indeterminate:
-            self._track.animate_to(self._progress_ratio(),
-                                   disable_animation=self._disable_animation)
+            self._track.animate_to(
+                self._progress_ratio(), disable_animation=self._disable_animation
+            )
 
     def set_range(self, min_value: float, max_value: float):
         self._min = min_value
@@ -501,8 +509,9 @@ class Progress(QWidget):
             self._track.start_indeterminate()
         else:
             self._track.stop_indeterminate()
-            self._track.animate_to(self._progress_ratio(),
-                                   disable_animation=self._disable_animation)
+            self._track.animate_to(
+                self._progress_ratio(), disable_animation=self._disable_animation
+            )
         self._refresh_text_labels()
 
     def set_is_disabled(self, disabled: bool):
@@ -516,5 +525,3 @@ class Progress(QWidget):
     def set_show_value_label(self, show: bool):
         self._show_value = show
         self._refresh_text_labels()
-
-

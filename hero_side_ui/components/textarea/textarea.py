@@ -28,19 +28,18 @@ from PySide6.QtWidgets import (
 
 from ...animation import LabelFloatAnimation
 from ...core import ScrollStyle, SmoothScroll, ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
 from ...utils import hex_to_rgba, load_svg_icon
 
 from ..input._clear_button import _ClearButton
 from ..input._wrapper import _InputWrapper
+from ..text import Text
 
 from ._autosize import _TextareaAutosizeMixin
 from ._layout import _TextareaLayoutMixin
 from ._resize_grip import _ResizeGrip
 from ._styling import _TextareaStylingMixin
 from ._text_edit import _TextEdit
-
-
 
 
 # ============================================================
@@ -76,8 +75,8 @@ class Textarea(
     """
 
     # 信号（与 HeroUI Textarea 对齐）
-    text_changed = Signal(str)        # onValueChange
-    cleared = Signal()                 # onClear
+    text_changed = Signal(str)  # onValueChange
+    cleared = Signal()  # onClear
     height_changed = Signal(int, int)  # onHeightChange(height, row_height)
     focus_in = Signal()
     focus_out = Signal()
@@ -101,7 +100,7 @@ class Textarea(
         is_readonly: bool = False,
         is_clearable: bool = False,
         full_width: bool = True,
-        resizable=False,    # 用户能否手动拖动 grip 改变高度。默认 False（与 HeroUI 风格保持简洁）；可选: True/"vertical"/"horizontal"/"both"
+        resizable=False,  # 用户能否手动拖动 grip 改变高度。默认 False（与 HeroUI 风格保持简洁）；可选: True/"vertical"/"horizontal"/"both"
         description: str = "",
         error_message: str = "",
         # ---- 三槽内容 API（绝对定位 + layout 混合实现）----
@@ -114,8 +113,11 @@ class Textarea(
         on_top_right_content_click=None,
         on_center_right_content_click=None,
         on_bottom_right_content_click=None,
-        bottom_right_offset=(8, 8),   # (right_px, bottom_px) —— 类似 Tailwind absolute right-X bottom-X
-        center_right_offset=8,         # 距 wrapper 右边的像素
+        bottom_right_offset=(
+            8,
+            8,
+        ),  # (right_px, bottom_px) —— 类似 Tailwind absolute right-X bottom-X
+        center_right_offset=8,  # 距 wrapper 右边的像素
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -146,7 +148,9 @@ class Textarea(
         # ---- 手动 resize ----
         # resizable: True/False/"vertical"/"horizontal"/"both"
         self._resize_mode = self._normalize_resize(resizable)
-        self._manual_height: Optional[int] = None  # 用户拖动设置的目标高度（None = 走 auto-resize）
+        self._manual_height: Optional[int] = (
+            None  # 用户拖动设置的目标高度（None = 走 auto-resize）
+        )
         self._description = description
         self._error_message = error_message
         self._top_right_content = top_right_content
@@ -186,6 +190,7 @@ class Textarea(
         # 平滑滚动 —— Qt 默认整行跳跃太生硬，attach 后变成丝滑过渡
         try:
             from ...core import SmoothScroll
+
             SmoothScroll.attach(self.text_edit)
         except Exception:
             pass
@@ -227,10 +232,14 @@ class Textarea(
         self._root.setSpacing(4)
 
         # --- outside-top label ---
-        self._outside_label = QLabel(self._label_text)
-        self._outside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._outside_label = Text(self._label_text, weight="medium", selectable=False)
+        self._outside_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
         self._outside_label.setContentsMargins(0, 0, 0, 0)
-        self._outside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        self._outside_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
+        )
         self._outside_label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._outside_label, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -240,18 +249,26 @@ class Textarea(
         _row.setContentsMargins(0, 0, 0, 0)
         _row.setSpacing(8)
 
-        self._outside_left_label = QLabel(self._label_text)
+        self._outside_left_label = Text(
+            self._label_text, weight="medium", selectable=False
+        )
         self._outside_left_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
         )
         self._outside_left_label.setContentsMargins(0, 0, 0, 0)
         self._outside_left_label.setTextFormat(Qt.TextFormat.RichText)
         # outside-left 时，label 与 textarea 顶部对齐（多行场景）
-        _row.addWidget(self._outside_left_label, 0, Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft)
+        _row.addWidget(
+            self._outside_left_label,
+            0,
+            Qt.AlignmentFlag.AlignTop | Qt.AlignmentFlag.AlignLeft,
+        )
 
         # --- inputWrapper ---
         self._wrapper = _InputWrapper()
-        self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self._wrapper.setSizePolicy(
+            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
+        )
 
         wrap_layout = QHBoxLayout(self._wrapper)
         wrap_layout.setContentsMargins(12, 8, 12, 8)
@@ -264,12 +281,15 @@ class Textarea(
         self._inner_layout.setSpacing(0)
 
         # 浮动 label —— parent 是 self（Input 根），手动定位
-        self._inside_label = QLabel(self._label_text, self)
+        # 颜色由动画插值后用 RichText <span> 覆写，同 input/_layout 策略。
+        self._inside_label = Text(self._label_text, parent=self, selectable=False)
         self._inside_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
         )
         self._inside_label.setContentsMargins(0, 0, 0, 0)
-        self._inside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
+        self._inside_label.setAlignment(
+            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
+        )
         self._inside_label.raise_()
 
         # 真正的多行输入控件
@@ -287,7 +307,9 @@ class Textarea(
         # 宽度由 _apply_styles → _refresh_abs_spacer_width() 动态计算
         # ============================================================
         self._abs_spacer = QWidget()
-        self._abs_spacer.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._abs_spacer.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
         self._abs_spacer.setFixedWidth(0)  # 默认 0，无内容时不占位
         wrap_layout.addWidget(self._abs_spacer, 0)
 
@@ -352,7 +374,7 @@ class Textarea(
         self._root.addWidget(self._outside_left_row)
 
         # --- helper ---
-        self._helper_label = QLabel("")
+        self._helper_label = Text("", weight="normal", selectable=False)
         self._helper_label.setWordWrap(True)
         self._helper_label.setAttribute(
             Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
@@ -446,7 +468,9 @@ class Textarea(
         if s.startswith("rgba"):
             inner = s[s.index("(") + 1 : s.rindex(")")]
             parts = [p.strip() for p in inner.split(",")]
-            r = int(float(parts[0])); g = int(float(parts[1])); b = int(float(parts[2]))
+            r = int(float(parts[0]))
+            g = int(float(parts[1]))
+            b = int(float(parts[2]))
             a = int(float(parts[3]) * 255) if len(parts) == 4 else 255
             return QColor(r, g, b, a)
         c = QColor(s)

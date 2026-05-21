@@ -38,13 +38,12 @@ from PySide6.QtCore import (
 from PySide6.QtGui import (
     QPainter,
     QColor,
-    QFont,
     QFontMetrics,
 )
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QAbstractButton, QWidget
 
-from ...themes import HEROUI_COLORS, FONT_FAMILY, SWITCH_SIZES
+from ...themes import HEROUI_COLORS, SWITCH_SIZES
 from ...core import ThemeProvider
 from ...animation.tween import tween_value, stop_tween
 
@@ -155,9 +154,9 @@ class Switch(QAbstractButton):
 
     def _refresh_font(self):
         cfg = self._cfg()
-        font = QFont(FONT_FAMILY.split(",")[0].strip().strip("'\""))
-        font.setPixelSize(cfg["label_font_size"])
-        self.setFont(font)
+        from ...core import make_text_qfont
+
+        self.setFont(make_text_qfont(cfg["label_font_size"], "normal"))
 
     def setText(self, text: str):
         super().setText(text)
@@ -355,9 +354,7 @@ class Switch(QAbstractButton):
         painter.save()
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(self._bg_color)
-        painter.drawRoundedRect(
-            QRectF(wrap_x, wrap_y, wrap_w, wrap_h), radius, radius
-        )
+        painter.drawRoundedRect(QRectF(wrap_x, wrap_y, wrap_w, wrap_h), radius, radius)
         painter.restore()
 
         # ---- 2) startContent / endContent (wrapper 内) ----
@@ -405,11 +402,7 @@ class Switch(QAbstractButton):
         # 按压拉伸用 _press_t 插值 (0 → 1),100ms 过渡,视觉不突兀
         # 禁用态/只读态:强制 _press_t=0 (不拉伸)
         effective_press = self._press_t
-        if (
-            self._disable_animation
-            or not self.isEnabled()
-            or self._is_read_only
-        ):
+        if self._disable_animation or not self.isEnabled() or self._is_read_only:
             effective_press = 0.0
         thumb_w = thumb_base + (thumb_pressed_w - thumb_base) * effective_press
         thumb_h = thumb_base  # 高度始终 = thumb_base (→ 按压时变椭圆)
@@ -488,7 +481,9 @@ class Switch(QAbstractButton):
             return
         self._color = color
         # 重新计算目标 bg(如果当前选中要立即变色)
-        self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
+        self._target_bg = (
+            self._checked_bg() if self.isChecked() else self._unchecked_bg()
+        )
         if self._disable_animation:
             self._bg_color = QColor(self._target_bg)
         else:

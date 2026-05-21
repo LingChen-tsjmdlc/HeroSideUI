@@ -24,7 +24,7 @@ from PySide6.QtCore import Qt, QRectF
 from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QPen
 from typing import Optional
 
-from ...themes import HEROUI_COLORS, FONT_FAMILY, DIVIDER_SIZES
+from ...themes import HEROUI_COLORS, DIVIDER_SIZES
 from ...core import ThemeProvider
 
 
@@ -114,9 +114,7 @@ class Divider(QFrame):
             self.setFixedWidth(thickness)
             self.setMaximumHeight(16777215)  # 清理可能的 setFixedHeight 残留
             self.setMinimumHeight(0)
-            self.setSizePolicy(
-                QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
-            )
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
             self.setStyleSheet(
                 f"#heroDivider {{ background-color: {self._line_color()}; border: none; }}"
             )
@@ -128,9 +126,7 @@ class Divider(QFrame):
             self.setFixedHeight(h)
             self.setMaximumWidth(16777215)
             self.setMinimumWidth(0)
-            self.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-            )
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.setStyleSheet("")  # 清空 QSS，交给 paintEvent
             self.update()
         else:
@@ -139,17 +135,15 @@ class Divider(QFrame):
             self.setFixedHeight(thickness)
             self.setMaximumWidth(16777215)
             self.setMinimumWidth(0)
-            self.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-            )
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
             self.setStyleSheet(
                 f"#heroDivider {{ background-color: {self._line_color()}; border: none; }}"
             )
 
     def _build_font(self) -> QFont:
-        f = QFont(FONT_FAMILY)
-        f.setPixelSize(self._text_size)
-        return f
+        from ...core import make_text_qfont
+
+        return make_text_qfont(self._text_size, "normal")
 
     # ============================================================
     # 自绘 (仅水平 + 带文字时)

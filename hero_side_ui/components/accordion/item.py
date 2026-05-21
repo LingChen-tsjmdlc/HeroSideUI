@@ -7,28 +7,24 @@
 from typing import Optional
 
 from PySide6.QtCore import (
-    Property,
     QEasingCurve,
-    QPointF,
     QPropertyAnimation,
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QFont, QPainter
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFrame,
     QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...animation import CollapseAnimation
-from ...core import ThemeProvider
-from ...themes import ACCORDION_SIZES, FONT_FAMILY, HEROUI_COLORS, RADIUS
-from ...utils import hex_to_rgba
+from ...themes import ACCORDION_SIZES, HEROUI_COLORS, RADIUS
+from ..text import Text
 
 from ._indicator import _IndicatorWidget
 
@@ -110,11 +106,19 @@ class AccordionItem(QWidget):
         title_wrapper = QVBoxLayout()
         title_wrapper.setSpacing(2)
 
-        self._title_label = QLabel(self._title_text)
+        self._title_label = Text(
+            self._title_text,
+            weight="medium",
+            selectable=False,
+        )
         self._title_label.setWordWrap(True)
         title_wrapper.addWidget(self._title_label)
 
-        self._subtitle_label = QLabel(self._subtitle_text)
+        self._subtitle_label = Text(
+            self._subtitle_text,
+            weight="normal",
+            selectable=False,
+        )
         self._subtitle_label.setWordWrap(True)
         if not self._subtitle_text:
             self._subtitle_label.hide()
@@ -146,11 +150,19 @@ class AccordionItem(QWidget):
         if content_widget:
             content_layout.addWidget(content_widget)
         elif content_text:
-            self._content_label = QLabel(content_text)
+            self._content_label = Text(
+                content_text,
+                weight="normal",
+                selectable=False,
+            )
             self._content_label.setWordWrap(True)
             content_layout.addWidget(self._content_label)
         else:
-            self._content_label = QLabel()
+            self._content_label = Text(
+                "",
+                weight="normal",
+                selectable=False,
+            )
             self._content_label.setWordWrap(True)
             content_layout.addWidget(self._content_label)
 
@@ -191,7 +203,14 @@ class AccordionItem(QWidget):
 
     # ---- 样式应用（由 Accordion 调用） ----
 
-    def _apply_styles(self, theme: str, variant: str, size: str, show_divider: bool, radius: str = "md"):
+    def _apply_styles(
+        self,
+        theme: str,
+        variant: str,
+        size: str,
+        show_divider: bool,
+        radius: str = "md",
+    ):
         """应用样式 — 由父级 Accordion 在添加时调用"""
         self._theme = theme
         self._variant = variant
@@ -210,32 +229,21 @@ class AccordionItem(QWidget):
         divider_color = dc[700] if is_dark else dc[200]
         indicator_color = dc[400]
 
-        self._title_label.setStyleSheet(
-            f"""
-            color: {title_color};
-            font-size: {size_config['title_font_size']};
-            font-weight: 500;
-            font-family: {FONT_FAMILY};
-        """
-        )
+        # 字号：ACCORDION_SIZES 里存的是 "14px" 形式的 CSS 字符串，Text 只接受 int 像素。
+        def _px(s: str) -> int:
+            return int(str(s).rstrip("px").strip())
 
-        self._subtitle_label.setStyleSheet(
-            f"""
-            color: {subtitle_color};
-            font-size: {size_config['subtitle_font_size']};
-            font-weight: 400;
-            font-family: {FONT_FAMILY};
-        """
-        )
+        self._title_label.set_size(_px(size_config["title_font_size"]))
+        self._title_label.set_color(title_color)
+
+        self._subtitle_label.set_size(_px(size_config["subtitle_font_size"]))
+        self._subtitle_label.set_color(subtitle_color)
 
         if hasattr(self, "_content_label"):
-            self._content_label.setStyleSheet(
-                f"""
-                color: {content_color};
-                font-size: {size_config['content_font_size']};
-                font-family: {FONT_FAMILY};
-            """
-            )
+            self._content_label.set_size(_px(size_config["content_font_size"]))
+            self._content_label.set_color(content_color)
+            # _content_label 是 Text（theme=auto），set_color 后依然按 ThemeProvider 运作，
+            # 改完颜色不必再锁主题；Accordion 传进来的 theme 只是取色依据。
 
         # 分割线: light/shadow/bordered 有分割线，splitted 无
         if show_divider and variant != "splitted":
@@ -248,11 +256,14 @@ class AccordionItem(QWidget):
 
         # start_icon / end_icon 渲染
         from ...utils import load_svg_icon
+
         icon_color = QColor(dc[400] if is_dark else dc[500])
         icon_size = size_config["indicator_size"]
 
         if self._start_icon_name:
-            pixmap = load_svg_icon(self._start_icon_name, size=icon_size, color=icon_color)
+            pixmap = load_svg_icon(
+                self._start_icon_name, size=icon_size, color=icon_color
+            )
             self._start_icon_label.setFixedSize(icon_size, icon_size)
             self._start_icon_label.setPixmap(pixmap)
             self._start_icon_label.show()
@@ -271,7 +282,11 @@ class AccordionItem(QWidget):
         if variant == "splitted":
             # splitted: 每项独立 Card — 白底 + 圆角
             bg = dc[800] if is_dark else "#ffffff"
-            border_hint = f"border: 1px solid {dc[700]};" if is_dark else "border: 1px solid #f0f0f0;"
+            border_hint = (
+                f"border: 1px solid {dc[700]};"
+                if is_dark
+                else "border: 1px solid #f0f0f0;"
+            )
             r = RADIUS.get(radius, RADIUS["md"])
             self.setStyleSheet(f"""
                 #heroAccordionItem {{
@@ -285,13 +300,17 @@ class AccordionItem(QWidget):
 
         elif variant == "shadow" or variant == "bordered":
             # shadow/bordered: 子项无独立样式，Card 样式在容器上
-            self.setStyleSheet("#heroAccordionItem { background: transparent; border: none; border-radius: 0px; }")
+            self.setStyleSheet(
+                "#heroAccordionItem { background: transparent; border: none; border-radius: 0px; }"
+            )
             self._trigger.layout().setContentsMargins(0, py, 0, py)
             self._content_container.layout().setContentsMargins(0, cy, 0, cy)
 
         else:
             # light: 最简洁，无独立样式，无圆角
-            self.setStyleSheet("#heroAccordionItem { background: transparent; border: none; border-radius: 0px; }")
+            self.setStyleSheet(
+                "#heroAccordionItem { background: transparent; border: none; border-radius: 0px; }"
+            )
             self._trigger.layout().setContentsMargins(0, py, 0, py)
             self._content_container.layout().setContentsMargins(0, cy, 0, cy)
 
@@ -382,6 +401,7 @@ class AccordionItem(QWidget):
         """设置标题左侧图标（SVG 文件名，不含 .svg 后缀）"""
         self._start_icon_name = icon_name
         from ...utils import load_svg_icon
+
         size = self._start_icon_label.width() or 18
         pixmap = load_svg_icon(icon_name, size=size)
         self._start_icon_label.setPixmap(pixmap)
@@ -391,4 +411,3 @@ class AccordionItem(QWidget):
         """替换指示器图标（默认 heroicons--chevron-right-solid，传入内置图标名或 SVG 路径）"""
         self._end_icon_name = icon_name
         self._indicator.set_icon(icon_name)
-

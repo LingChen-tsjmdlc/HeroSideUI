@@ -9,173 +9,27 @@
 
 from __future__ import annotations
 
-import re
-from typing import Optional, Tuple, Union
+from typing import Optional
 
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QFocusEvent, QFont, QMouseEvent, QPalette
+from PySide6.QtGui import QColor, QFocusEvent, QMouseEvent, QPalette
 from PySide6.QtWidgets import QLabel, QWidget
 
-from ...core import FontProvider, ThemeProvider, make_qfont
-from ...themes import HEROUI_COLORS
-
-# ============================================================
-# 常量映射
-# ============================================================
-
-# Tailwind text-xs ~ text-9xl 对齐；md=16px=1rem。
-SIZE_MAP: dict = {
-    "xs": 12,
-    "sm": 14,
-    "md": 16,
-    "lg": 18,
-    "xl": 20,
-    "2xl": 24,
-    "3xl": 30,
-    "4xl": 36,
-    "5xl": 48,
-    "6xl": 60,
-    "7xl": 72,
-    "8xl": 96,
-    "9xl": 128,
-}
-
-# 6 档物理字重 token，与思源 VF 原生 instance 一一对应。
-# regular / heavy 是 normal / black 的 alias。其他 token 在 _resolve_weight() 报错。
-WEIGHT_MAP: dict = {
-    "extralight": QFont.Weight.ExtraLight,  # 200
-    "light": QFont.Weight.Light,  # 300
-    "normal": QFont.Weight.Normal,  # 400
-    "regular": QFont.Weight.Normal,  # 400 (alias)
-    "medium": QFont.Weight.Medium,  # 500
-    "bold": QFont.Weight.Bold,  # 700
-    "black": QFont.Weight.Black,  # 900
-    "heavy": QFont.Weight.Black,  # 900 (alias)
-}
-
-# 默认正文色（不传 color 时使用）
-_DEFAULT_TEXT_COLORS: dict = {
-    "light": "#27272a",  # default-800
-    "dark": "#e4e4e7",  # default-200
-}
-
-
-ColorInput = Union[str, QColor, Tuple[int, int, int], Tuple[int, int, int, int], None]
-SizeInput = Union[str, int, float]
-WeightInput = Union[str, int, "QFont.Weight"]
-
-
-# ============================================================
-# 颜色解析
-# ============================================================
-
-_RGBA_RE = re.compile(
-    r"^\s*rgba?\(\s*"
-    r"(\d+)\s*,\s*(\d+)\s*,\s*(\d+)"
-    r"(?:\s*,\s*([\d.]+))?"
-    r"\s*\)\s*$",
-    re.IGNORECASE,
+from ...core import (
+    FontProvider,
+    ThemeProvider,
+    make_text_qfont,
+    resolve_text_color,
 )
-
-
-def _parse_token(token: str) -> Optional[QColor]:
-    """HeroUI token → QColor；不匹配返 None 交给调用方继续走 HEX/QColor。"""
-    parts = token.strip().split("-")
-    name = parts[0].lower()
-    if name not in HEROUI_COLORS:
-        return None
-    palette = HEROUI_COLORS[name]
-    # 默认走 500（HeroUI 各 color 的"主色"档）
-    shade = 500
-    if len(parts) >= 2:
-        try:
-            shade = int(parts[1])
-        except ValueError:
-            return None
-    if shade not in palette:
-        return None
-    return QColor(palette[shade])
-
-
-def _resolve_color(color: ColorInput, theme: str) -> QColor:
-    """任意颜色输入 → QColor；None 走主题默认正文色。"""
-    if color is None:
-        return QColor(_DEFAULT_TEXT_COLORS.get(theme, _DEFAULT_TEXT_COLORS["light"]))
-
-    if isinstance(color, QColor):
-        return QColor(color)
-
-    if isinstance(color, (tuple, list)):
-        if len(color) == 3:
-            r, g, b = color
-            return QColor(int(r), int(g), int(b))
-        if len(color) == 4:
-            r, g, b, a = color
-            return QColor(int(r), int(g), int(b), int(a))
-        # 长度不对就回退到默认
-        return QColor(_DEFAULT_TEXT_COLORS.get(theme, _DEFAULT_TEXT_COLORS["light"]))
-
-    if isinstance(color, str):
-        s = color.strip()
-        # 1) HeroUI token: "primary" / "primary-500" / ...
-        token = _parse_token(s)
-        if token is not None:
-            return token
-        # 2) rgb()/rgba()
-        m = _RGBA_RE.match(s)
-        if m:
-            r, g, b = int(m.group(1)), int(m.group(2)), int(m.group(3))
-            a_str = m.group(4)
-            if a_str is None:
-                return QColor(r, g, b)
-            a_f = float(a_str)
-            # 若 alpha 是 0~1 浮点，按 CSS 标准 *255；若是 0~255 整数，直接取
-            if 0.0 <= a_f <= 1.0:
-                return QColor(r, g, b, int(round(a_f * 255)))
-            return QColor(r, g, b, int(a_f))
-        # 3) HEX 和 Qt 命名色（如 "red"）：交给 QColor
-        c = QColor(s)
-        if c.isValid():
-            return c
-
-    # 兜底：默认正文色
-    return QColor(_DEFAULT_TEXT_COLORS.get(theme, _DEFAULT_TEXT_COLORS["light"]))
-
-
-# ============================================================
-# 尺寸 / 字重解析
-# ============================================================
-
-
-def _resolve_size(size: SizeInput) -> int:
-    if isinstance(size, (int, float)):
-        return max(1, int(size))
-    if isinstance(size, str):
-        s = size.strip().lower()
-        if s in SIZE_MAP:
-            return SIZE_MAP[s]
-    return SIZE_MAP["md"]
-
-
-def _resolve_weight(weight: WeightInput) -> int:
-    """字重 → Qt weight (1~1000)；未知字符串抛 ValueError（不静默兜底）。"""
-    if isinstance(weight, QFont.Weight):
-        return int(weight)
-    if isinstance(weight, int):
-        return max(1, min(1000, weight))
-    if isinstance(weight, str):
-        s = weight.strip().lower().replace("-", "").replace("_", "")
-        if s in WEIGHT_MAP:
-            return int(WEIGHT_MAP[s])
-        raise ValueError(
-            f"Unsupported weight token {weight!r}; "
-            f"expected one of {sorted(WEIGHT_MAP.keys())} "
-            "or QFont.Weight / int(1~1000)."
-        )
-    raise TypeError(
-        f"weight must be str / int / QFont.Weight, got {type(weight).__name__}."
-    )
-
+from ...core.text_style import (
+    DEFAULT_TEXT_COLORS as _DEFAULT_TEXT_COLORS,
+    SIZE_MAP,
+    WEIGHT_MAP,
+    ColorInput,
+    SizeInput,
+    WeightInput,
+)
+from ...themes import HEROUI_COLORS
 
 # ============================================================
 # 选区底色计算
@@ -213,7 +67,7 @@ def _selection_palette(
     force_selection_text_color: bool = True,
     selection_adapts_color: bool = False,
     text_color: Optional[QColor] = None,
-) -> Tuple[QColor, QColor]:
+) -> tuple[QColor, QColor]:
     """返 (选区底色, 选中文字色)；语义参考 docs/text.md 中 Selection 一节。"""
     # ---- 选区底色 ----
     if selection_adapts_color and text_color is not None:
@@ -316,17 +170,14 @@ class Text(QLabel):
     # ============================================================
     def _apply_font(self) -> None:
         # FontProvider 会走 setStyleName 精确选 VF 原生 instance。
-        font = make_qfont(
-            size_px=_resolve_size(self._size),
-            weight=_resolve_weight(self._weight),
-        )
+        font = make_text_qfont(self._size, self._weight)
         self.setFont(font)
 
     # ============================================================
     # 颜色 / 选区
     # ============================================================
     def _current_color(self) -> QColor:
-        c = _resolve_color(self._color_input, self._theme)
+        c = resolve_text_color(self._color_input, self._theme)
         # 透明度叠加
         if self._transparency < 1.0:
             new_alpha = c.alphaF() * self._transparency

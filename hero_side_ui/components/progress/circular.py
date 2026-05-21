@@ -21,7 +21,6 @@ from PySide6.QtGui import QColor, QFont, QPainter, QPen
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
-    QLabel,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
@@ -29,7 +28,8 @@ from PySide6.QtWidgets import (
 
 from ...animation import SpinAnimation, StripeFlowAnimation
 from ...core import ThemeProvider
-from ...themes import CIRCULAR_PROGRESS_SIZES, FONT_FAMILY, HEROUI_COLORS
+from ...themes import CIRCULAR_PROGRESS_SIZES, HEROUI_COLORS
+from ..text import Text
 
 
 def _indicator_hex(name: str) -> str:
@@ -136,14 +136,16 @@ class CircularProgress(QWidget):
         self._svg = _CircularSvg(owner=self)
 
         # value label 放在 SVG 上方（作为子控件，绝对居中）
-        self._value_label = QLabel(self._svg)
-        self._value_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._value_label = Text("", parent=self._svg, selectable=False)
+        self._value_label.setAttribute(
+            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
+        )
         self._value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(self._svg, 0, Qt.AlignmentFlag.AlignHCenter)
 
         # label 在下方
-        self._label = QLabel("")
+        self._label = Text("", selectable=False)
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._label.setAlignment(Qt.AlignmentFlag.AlignCenter)
         layout.addWidget(self._label, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -155,14 +157,10 @@ class CircularProgress(QWidget):
         d = int(cfg["diameter"])
         self._svg.setFixedSize(d, d)
         self._value_label.setGeometry(0, 0, d, d)
-        self._value_label.setStyleSheet(
-            f"QLabel {{ color: {text_color}; font-family: {FONT_FAMILY}; "
-            f"font-size: {cfg['value_font_size']}px; background: transparent; }}"
-        )
-        self._label.setStyleSheet(
-            f"QLabel {{ color: {text_color}; font-family: {FONT_FAMILY}; "
-            f"font-size: {cfg['label_font_size']}px; }}"
-        )
+        self._value_label.set_size(cfg["value_font_size"])
+        self._value_label.set_color(text_color)
+        self._label.set_size(cfg["label_font_size"])
+        self._label.set_color(text_color)
         self._svg.update()
 
     def _refresh_text_labels(self):
@@ -358,4 +356,3 @@ class _CircularSvg(QWidget):
                 int(start_deg * 16),
                 int(span_deg * 16),
             )
-

@@ -188,10 +188,18 @@ class TestTextWeight:
         qtbot.addWidget(t)
         assert int(t.font().weight()) == 700
 
-    def test_weight_int(self, qtbot):
+    def test_weight_int_bucketed_to_native_instance(self, qtbot):
+        """任意 int weight 按 FontProvider._WEIGHT_BUCKETS 兜底到 VF 6 档之一。
+
+        550 落在 (450, 600] → Medium=500。这是项目铁律，见 docs/font_provider.md。
+        """
         t = Text("Hi", weight=550)
         qtbot.addWidget(t)
-        assert int(t.font().weight()) == 550
+        assert int(t.font().weight()) == 500
+        # 同一区间内任意值都应渲染成同一档，锁住"不做 wght 轴插值"的设计
+        t2 = Text("Hi", weight=500)
+        qtbot.addWidget(t2)
+        assert int(t.font().weight()) == int(t2.font().weight())
 
 
 # ============================================================

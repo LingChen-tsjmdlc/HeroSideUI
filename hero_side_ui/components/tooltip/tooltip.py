@@ -50,6 +50,7 @@ from typing import Optional, Union
 from ...themes import HEROUI_COLORS, POPOVER_SHADOWS, TOOLTIP_SIZES
 from ...animation import FadeScaleAnimation, PixmapScaleProxy
 from ...core import ThemeProvider
+from ..text import Text
 
 ARROW_SIZE = 5  # 箭头一半边长
 ARROW_INSET = 2  # 箭头底边相对 content_rect 向内偏移
@@ -217,11 +218,11 @@ class Tooltip(QWidget):
         layout.setContentsMargins(pad, pad, pad, pad)
         layout.setSpacing(0)
 
-        label = QLabel(text)
-        label.setStyleSheet(
-            f"color: {self._text_color().name()}; "
-            f"background: transparent; "
-            f"font-size: {font_size}px;"
+        label = Text(
+            text,
+            size=font_size,
+            color=self._text_color().name(),
+            selectable=False,
         )
         layout.addWidget(label)
 
@@ -258,11 +259,15 @@ class Tooltip(QWidget):
         self.move(pos)
 
     def _apply_content_text_color(self):
-        """给内容里的裸 QLabel 刷反色。"""
+        """给内容里的裸 QLabel/Text 刷反色。
+
+        Text 是 QLabel 子类，优先走 set_color（不需 setStyleSheet，不会覆盖 padding）；
+        裸 QLabel 仍走 setStyleSheet 兑底。这里是为了兼容用户给 set_content() 传入的
+        自定义 widget 中的裸 QLabel。
+        """
         if self._content is None:
             return
         text_hex = self._text_color().name()
-        self._content.setStyleSheet("")
         layout = self._content.layout()
         if layout is None:
             return
@@ -271,7 +276,11 @@ class Tooltip(QWidget):
             if item is None:
                 continue
             w = item.widget()
-            if isinstance(w, QLabel):
+            if w is None:
+                continue
+            if isinstance(w, Text):
+                w.set_color(text_hex)
+            elif isinstance(w, QLabel):
                 w.setStyleSheet(f"color: {text_hex}; background: transparent;")
 
     # ============================================================

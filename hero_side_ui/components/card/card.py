@@ -42,7 +42,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPalette
 from typing import Optional
 
-from ...themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, CARD_SHADOWS
+from ...themes import HEROUI_COLORS, RADIUS, CARD_SHADOWS
 from ...utils import hex_to_rgba
 from ...animation import RippleOverlay, PressScaleEffect
 from ...core import ThemeProvider
@@ -484,7 +484,7 @@ class Card(QWidget):
                 #heroCardHeader {{
                     background: transparent; border: none;
                     border-top-left-radius: {r}px; border-top-right-radius: {r}px;
-                    color: {tc}; font-family: {FONT_FAMILY};
+                    color: {tc};
                 }}""")
 
         if self._body:
@@ -492,7 +492,7 @@ class Card(QWidget):
             self._body.setStyleSheet(f"""
                 #heroCardBody {{
                     background: transparent; border: none;
-                    color: {tc}; font-family: {FONT_FAMILY};
+                    color: {tc};
                 }}""")
 
         if self._footer:
@@ -509,7 +509,7 @@ class Card(QWidget):
                 #heroCardFooter {{
                     background-color: {fbg}; border: none;
                     border-bottom-left-radius: {r}px; border-bottom-right-radius: {r}px;
-                    color: {stc}; font-family: {FONT_FAMILY}; {fex}
+                    color: {stc}; {fex}
                 }}""")
 
     def _resolve_radius(self) -> int:

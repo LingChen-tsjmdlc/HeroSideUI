@@ -10,7 +10,7 @@ from PySide6.QtCore import QObject, Qt, QSize, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from typing import Optional
 
-from ...themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, BUTTON_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, BUTTON_SIZES
 from ...utils import hex_to_rgba, load_svg_icon
 from ...animation import RippleOverlay, PressScaleEffect
 from ...core import ThemeProvider
@@ -112,6 +112,34 @@ class Button(QPushButton):
         qss = self._build_qss()
         self.setStyleSheet(qss)
 
+        # 字体走 Text/FontProvider 同源：QSS 里不再写 font-family，
+        # 避免与 setFont() 产生二元源。
+        from ...core import make_text_qfont
+
+        size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
+        try:
+            fs = int(str(size_config["font_size"]).rstrip("px"))
+        except Exception:
+            fs = 14
+        try:
+            fw = int(size_config["font_weight"])
+            # QSS font_weight 表达为 100~900，Text 映射为 6 档：取近陫到支持的 token。
+            if fw <= 250:
+                weight_token = "extralight"
+            elif fw <= 350:
+                weight_token = "light"
+            elif fw <= 450:
+                weight_token = "normal"
+            elif fw <= 550:
+                weight_token = "medium"
+            elif fw <= 800:
+                weight_token = "bold"
+            else:
+                weight_token = "black"
+        except Exception:
+            weight_token = "medium"
+        self.setFont(make_text_qfont(fs, weight_token))
+
         if self._full_width:
             from PySide6.QtWidgets import QSizePolicy
 
@@ -169,7 +197,6 @@ class Button(QPushButton):
             padding: {padding_y}px {padding_x}px;
             font-weight: {size_config['font_weight']};
             outline: none;
-            font-family: {FONT_FAMILY};
         }}
         QPushButton:hover {{
             {hover_colors}
@@ -516,9 +543,7 @@ class Button(QPushButton):
             self.setMaximumSize(16777215, 16777215)
             from PySide6.QtWidgets import QSizePolicy
 
-            self.setSizePolicy(
-                QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
-            )
+            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
         self._apply_styles()
         self._refresh_icon()
 

@@ -21,11 +21,9 @@ from PySide6.QtCore import (
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPalette
 from PySide6.QtWidgets import (
     QButtonGroup,
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
@@ -34,7 +32,7 @@ from PySide6.QtWidgets import (
 
 from ...animation import stop_tween, tween_geometry, tween_value
 from ...core import ThemeProvider
-from ...themes import FONT_FAMILY, HEROUI_COLORS, RADIUS, TABS_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, TABS_SIZES
 from ...utils import load_svg_icon
 
 from ._constants import (
@@ -49,9 +47,6 @@ from ._cursor import _CursorWidget
 from ._helpers import _resolve_radius_px
 from ._tab_list import _TabList
 from .item import TabItem
-
-
-
 
 # ============================================================
 # Tabs: 主组件
@@ -183,10 +178,17 @@ class Tabs(QWidget):
     # Public API
     # ============================================================
 
-    def add_tab(self, title: str = "", content: Optional[QWidget] = None,
-                *, key: Optional[str] = None, disabled: bool = False,
-                start_icon=None, end_icon=None,
-                custom: Optional[QWidget] = None) -> TabItem:
+    def add_tab(
+        self,
+        title: str = "",
+        content: Optional[QWidget] = None,
+        *,
+        key: Optional[str] = None,
+        disabled: bool = False,
+        start_icon=None,
+        end_icon=None,
+        custom: Optional[QWidget] = None,
+    ) -> TabItem:
         """添加一个 tab。
 
         三档插槽：
@@ -274,7 +276,9 @@ class Tabs(QWidget):
     def set_selected(self, index_or_key: Union[int, str], *, animate: bool = True):
         """切换到指定 tab。"""
         if isinstance(index_or_key, str):
-            index = next((i for i, t in enumerate(self._tabs) if t.key() == index_or_key), -1)
+            index = next(
+                (i for i, t in enumerate(self._tabs) if t.key() == index_or_key), -1
+            )
         else:
             index = int(index_or_key)
         if not 0 <= index < len(self._tabs):
@@ -292,12 +296,12 @@ class Tabs(QWidget):
         # - 不带动画：用 set_checked_silent，block toggled 信号 + 直接刷颜色，避免开屏闪
         if do_animate:
             for i, t in enumerate(self._tabs):
-                checked = (i == index)
+                checked = i == index
                 if t.isChecked() != checked:
                     t.setChecked(checked)
         else:
             for i, t in enumerate(self._tabs):
-                checked = (i == index)
+                checked = i == index
                 if t.isChecked() != checked:
                     t.set_checked_silent(checked)
 
@@ -399,7 +403,8 @@ class Tabs(QWidget):
         # tabList 内部方向
         # top/bottom -> 水平 list；start/end -> 垂直 list
         self._list_layout.setDirection(
-            QBoxLayout.LeftToRight if self._placement in ("top", "bottom")
+            QBoxLayout.LeftToRight
+            if self._placement in ("top", "bottom")
             else QBoxLayout.TopToBottom
         )
         # wrapper 方向：top -> TopToBottom; bottom -> BottomToTop
@@ -487,13 +492,17 @@ class Tabs(QWidget):
         # panel padding
         if self._placement in ("start", "end"):
             self._stack.setContentsMargins(
-                cfg["panel_padding_h_side"], cfg["panel_padding_v_side"],
-                cfg["panel_padding_h_side"], cfg["panel_padding_v_side"]
+                cfg["panel_padding_h_side"],
+                cfg["panel_padding_v_side"],
+                cfg["panel_padding_h_side"],
+                cfg["panel_padding_v_side"],
             )
         else:
             self._stack.setContentsMargins(
-                cfg["panel_padding_h"], cfg["panel_padding_v"],
-                cfg["panel_padding_h"], cfg["panel_padding_v"]
+                cfg["panel_padding_h"],
+                cfg["panel_padding_v"],
+                cfg["panel_padding_h"],
+                cfg["panel_padding_v"],
             )
 
         # underlined 时 list_layout spacing 略增
@@ -504,6 +513,7 @@ class Tabs(QWidget):
     def _apply_disabled_state(self):
         """tabList 整体禁用 -> 50% 透明 + 屏蔽点击。"""
         from PySide6.QtWidgets import QGraphicsOpacityEffect
+
         if self._is_disabled:
             eff = QGraphicsOpacityEffect(self._list)
             eff.setOpacity(0.5)
@@ -544,7 +554,9 @@ class Tabs(QWidget):
             return
 
         tween_geometry(
-            self._cursor, "_cursor_anim_runner", target_geom,
+            self._cursor,
+            "_cursor_anim_runner",
+            target_geom,
             duration=self.CURSOR_ANIM_DURATION,
         )
         self._cursor.lower()
