@@ -126,6 +126,12 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         self._is_hover = False
         self._is_focused = False
 
+        # 用户是否显式接管了宽度（调用过 setFixedWidth/setMinimumWidth/
+        # setMaximumWidth 或 set_width）。一旦置 True，_apply_styles() 不再
+        # 用 size_config 的 min_width 覆盖用户宽度，避免点击/聚焦/setText 等
+        # 触发的样式重算把 setFixedWidth(80) 这类硬约束悄悄涨破。
+        self._user_width_locked = False
+
         self._setup_ui()
         self._bind_events()
         self._apply_styles()
@@ -447,6 +453,31 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
     def set_radius(self, radius: Optional[str]):
         self._radius = radius
         self._apply_styles()
+
+    # ============================================================
+    # 宽度接管：用户一旦显式设宽，_apply_styles 就不再覆盖
+    # ============================================================
+    def setFixedWidth(self, w: int):  # noqa: N802
+        """拦截 Qt 原生 setFixedWidth：标记用户接管宽度。
+
+        否则 _apply_styles() 每次重跑都会用 size_config[min_width]
+        强行抬高 minimumWidth，把 setFixedWidth(80) 这种硬约束悄悄涨破，
+        造成 "点击 Input 自动变成 240px" 的 bug。
+        """
+        self._user_width_locked = True
+        super().setFixedWidth(w)
+
+    def setMinimumWidth(self, w: int):  # noqa: N802
+        self._user_width_locked = True
+        super().setMinimumWidth(w)
+
+    def setMaximumWidth(self, w: int):  # noqa: N802
+        self._user_width_locked = True
+        super().setMaximumWidth(w)
+
+    def set_width(self, w: int):
+        """高层语义 API：等价于 setFixedWidth，推荐用这个接管 Input 宽度。"""
+        self.setFixedWidth(w)
 
     def set_label_placement(self, placement: str):
         self._label_placement = placement

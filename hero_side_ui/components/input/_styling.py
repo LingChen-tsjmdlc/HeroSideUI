@@ -12,7 +12,7 @@ from typing import Optional
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QLabel, QSizePolicy
+from PySide6.QtWidgets import QLabel, QLayout, QSizePolicy
 
 from ...themes import HEROUI_COLORS, INPUT_SIZES, RADIUS
 from ...utils import hex_to_rgba, load_svg_icon
@@ -49,9 +49,29 @@ class _InputStylingMixin:
         self._wrapper.setFixedHeight(height)
 
         # ---- 最小宽度 ----
-        min_w = size_config.get("min_width", 260)
-        self.setMinimumWidth(min_w)
-        self._wrapper.setMinimumWidth(min_w)
+        # 用户调过 setFixedWidth/setMinimumWidth/setMaximumWidth/set_width
+        # 即视为显式接管，避免 size_config 里的 240/260/300 反复抬高
+        # minimumWidth、把 setFixedWidth(80) 这类硬约束涨破。
+        # ★ 注意必须用 QWidget.setMinimumWidth，不能走 self.setMinimumWidth——
+        #   后者被我们重写为"标记 _user_width_locked=True"，组件内部调用一次
+        #   就会把守卫位污染掉，导致以后真的接管失效。
+        from PySide6.QtWidgets import QWidget
+
+        if not getattr(self, "_user_width_locked", False):
+            min_w = size_config.get("min_width", 260)
+            QWidget.setMinimumWidth(self, min_w)
+            QWidget.setMinimumWidth(self._wrapper, min_w)
+        else:
+            # 用户接管宽度（如 setFixedWidth(80)）：必须把 wrapper 的 min_width
+            # 也释放为 0，并把 wrapper 内部 layout 的 SizeConstraint 设为
+            # SetMinAndMaxSize 之外的宽松值——否则 _wrapper 自己 layout 的
+            # minimumSize（左右 padding 12+12 + spacing + 子控件最小宽 ≈ 100+）
+            # 会让 wrapper 强守那个最小宽度，wrapper 真实宽度 > Input.width()=80，
+            # wrapper 右半边超出 Input 视口被父容器 clip，于是只看到左圆右直。
+            QWidget.setMinimumWidth(self._wrapper, 0)
+            wrap_layout = self._wrapper.layout()
+            if wrap_layout is not None:
+                wrap_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
 
         # ---- Input 根容器: outside 模式下给顶部预留空间作为浮出 label 的落脚处 ----
         if is_outside_float:

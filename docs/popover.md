@@ -54,20 +54,21 @@ p.attach(my_settings_button)
 
 ## 参数
 
-| 参数                    | 类型                                                         | 默认值        | 说明                                     |
-| ----------------------- | ------------------------------------------------------------ | ------------- | ---------------------------------------- |
-| `color`                 | `default / primary / secondary / success / warning / danger` | `default`     | 背景色（default 即白/暗灰，对齐 HeroUI） |
-| `size`                  | `sm / md / lg`                                               | `md`          | 内容字号                                 |
-| `radius`                | `none / sm / md / lg / full`                                 | `md`          | 圆角                                     |
-| `shadow`                | `none / sm / md / lg`                                        | `md`          | 阴影                                     |
-| `placement`             | 12 种                                                        | `top`         | 弹出方向                                 |
-| `backdrop`              | `transparent / opaque / blur`                                | `transparent` | 背景遮罩                                 |
-| `trigger_scale_on_open` | `bool`                                                       | `True`        | 打开时触发器变淡                         |
-| `trigger_variant`       | `str`                                                        | `"flat"`      | 绑定 trigger 时同步给 Button 的 variant  |
-| `arrow`                 | `bool`                                                       | `False`       | 是否显示箭头                             |
-| `is_disabled`           | `bool`                                                       | `False`       | 禁用                                     |
-| `disable_animation`     | `bool`                                                       | `False`       | 关闭打开/关闭动画                        |
-| `theme`                 | `auto / light / dark`                                        | `"auto"`      | 主题（auto 跟随 ThemeProvider）          |
+| 参数                    | 类型                                                         | 默认值        | 说明                                                         |
+| ----------------------- | ------------------------------------------------------------ | ------------- | ------------------------------------------------------------ |
+| `color`                 | `default / primary / secondary / success / warning / danger` | `default`     | 背景色（default 即白/暗灰，对齐 HeroUI）                     |
+| `size`                  | `sm / md / lg`                                               | `md`          | 内容字号                                                     |
+| `radius`                | `none / sm / md / lg / full`                                 | `md`          | 圆角                                                         |
+| `shadow`                | `none / sm / md / lg`                                        | `md`          | 阴影                                                         |
+| `placement`             | 12 种                                                        | `top`         | 弹出方向                                                     |
+| `backdrop`              | `transparent / opaque / blur`                                | `transparent` | 背景遮罩                                                     |
+| `trigger_scale_on_open` | `bool`                                                       | `True`        | 打开时触发器变淡                                             |
+| `trigger_variant`       | `str`                                                        | `"flat"`      | 绑定 trigger 时同步给 Button 的 variant                      |
+| `arrow`                 | `bool`                                                       | `False`       | 是否显示箭头                                                 |
+| `is_disabled`           | `bool`                                                       | `False`       | 禁用                                                         |
+| `disable_animation`     | `bool`                                                       | `False`       | 关闭打开/关闭动画                                            |
+| `close_on_scroll`       | `bool`                                                       | `True`        | 祖先滚动时关闭（带 fade-out）；`False` 则跟随 trigger 重定位 |
+| `theme`                 | `auto / light / dark`                                        | `"auto"`      | 主题（auto 跟随 ThemeProvider）                              |
 
 ## API
 

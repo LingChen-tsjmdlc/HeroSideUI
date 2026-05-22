@@ -66,7 +66,16 @@ class _PopoverGeometryMixin:
         tr_w = trigger.width()
         tr_h = trigger.height()
 
-        screen = QApplication.primaryScreen().availableGeometry()
+        # 用 trigger 实际所在的 screen，而不是 primaryScreen——
+        # 多屏配置下 primaryScreen 的几何范围可能与 trigger 所在屏不同
+        # （副屏 trigger 的全局坐标永远超出主屏 rect → 所有 placement 都被误判越界
+        # → 全部 flip，表现为"top 跑下面、bottom 跑上面"）。
+        win = trigger.window() if hasattr(trigger, "window") else None
+        win_handle = win.windowHandle() if win is not None else None
+        scr = win_handle.screen() if win_handle is not None else None
+        if scr is None:
+            scr = QApplication.screenAt(tr_pos) or QApplication.primaryScreen()
+        screen = scr.availableGeometry()
 
         # 先按用户指定方向算
         place = self._placement
@@ -152,4 +161,3 @@ class _PopoverGeometryMixin:
         if p.startswith("right"):
             return p.replace("right", "left")
         return p
-
