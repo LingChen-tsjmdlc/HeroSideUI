@@ -100,6 +100,7 @@ s.change_end.connect(lambda v: print("released:", v))   # 鼠标抬起/键盘抬
 | `fill_offset`             | `float`                                                         | `None`（=`min`） | filler 起点；设 `0` 可让正负值从 0 开始填充（双向条）                             |
 | `show_tooltip`            | `bool`                                                          | `False`          | 拖拽 thumb 时在上方显示当前值（复用 `Tooltip`）                                   |
 | `tooltip_props`           | `dict`                                                          | `None`           | 透传给底层 `Tooltip` 的额外参数（placement / color / size / offset / show_arrow） |
+| `enable_wheel`            | `bool`                                                          | `False`          | 是否允许鼠标滚轮调整滑块值（默认关闭，避免页面滚动误动）                          |
 | `theme`                   | `auto / light / dark`                                           | `auto`           | 主题；auto 注册 `ThemeProvider`                                                   |
 
 ## 信号
@@ -112,7 +113,7 @@ s.change_end.connect(lambda v: print("released:", v))   # 鼠标抬起/键盘抬
 
 ## 动态 API
 
-`set_value` / `set_range` / `set_step` / `set_label` / `set_color` / `set_size` / `set_radius` / `set_orientation` / `set_is_disabled` / `set_hide_value` / `set_hide_thumb` / `set_show_outline` / `set_disable_thumb_scale` / `set_disable_animation` / `set_show_steps` / `set_marks` / `set_value_formatter` / `set_fill_offset` / `set_show_tooltip` / `set_start_content` / `set_end_content` / `set_theme`
+`set_value` / `set_range` / `set_step` / `set_label` / `set_color` / `set_size` / `set_radius` / `set_orientation` / `set_is_disabled` / `set_hide_value` / `set_hide_thumb` / `set_show_outline` / `set_disable_thumb_scale` / `set_disable_animation` / `set_show_steps` / `set_marks` / `set_value_formatter` / `set_fill_offset` / `set_show_tooltip` / `set_enable_wheel` / `set_start_content` / `set_end_content` / `set_theme`
 
 ## 与 HeroUI 的差异
 
