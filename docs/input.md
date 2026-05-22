@@ -215,31 +215,60 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 
 ## 公共 API
 
-| 方法                                        | 说明                                               |
-| ------------------------------------------- | -------------------------------------------------- |
-| `text()` / `set_text(text)`                 | 获取/设置当前文本                                  |
-| `clear()`                                   | 清空文本                                           |
-| `set_value(value)`                          | 设置值（`set_text` 的别名）                        |
-| `set_placeholder(text)`                     | 设置占位符                                         |
-| `set_label(text)`                           | 设置 label                                         |
-| `set_color(color)`                          | 动态切换颜色                                       |
-| `set_variant(variant)`                      | 动态切换变体                                       |
-| `set_size(size)`                            | 动态切换尺寸                                       |
-| `set_radius(radius)`                        | 动态切换圆角                                       |
-| `set_label_placement(plc)`                  | 动态切换 label 位置                                |
-| `set_theme(theme)`                          | 动态切换亮暗主题                                   |
-| `set_is_disabled(bool)`                     | 动态启用/禁用                                      |
-| `set_is_invalid(bool)`                      | 动态切换无效态                                     |
-| `set_is_required(bool)`                     | 动态切换必填                                       |
-| `set_is_readonly(bool)`                     | 动态切换只读                                       |
-| `set_is_clearable(bool)`                    | 动态切换清除按钮                                   |
-| `set_description(text)`                     | 设置描述文字                                       |
-| `set_error_message(text)`                   | 设置错误消息                                       |
-| `set_start_content(content, on_click=None)` | 设置左侧内容（字符串图标或 QWidget；可选点击回调） |
-| `set_end_content(content, on_click=None)`   | 设置右侧内容，同上                                 |
-| `set_on_start_content_click(cb)`            | 仅更新左侧点击回调                                 |
-| `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                 |
-| `line_edit`                                 | 属性：内部 `QLineEdit` 实例                        |
+| 方法                                        | 说明                                                      |
+| ------------------------------------------- | --------------------------------------------------------- |
+| `text()` / `set_text(text)`                 | 获取/设置当前文本                                         |
+| `clear()`                                   | 清空文本                                                  |
+| `set_value(value)`                          | 设置值（`set_text` 的别名）                               |
+| `set_placeholder(text)`                     | 设置占位符                                                |
+| `set_label(text)`                           | 设置 label                                                |
+| `set_color(color)`                          | 动态切换颜色                                              |
+| `set_variant(variant)`                      | 动态切换变体                                              |
+| `set_size(size)`                            | 动态切换尺寸                                              |
+| `set_radius(radius)`                        | 动态切换圆角                                              |
+| `set_label_placement(plc)`                  | 动态切换 label 位置                                       |
+| `set_theme(theme)`                          | 动态切换亮暗主题                                          |
+| `set_is_disabled(bool)`                     | 动态启用/禁用                                             |
+| `set_is_invalid(bool)`                      | 动态切换无效态                                            |
+| `set_is_required(bool)`                     | 动态切换必填                                              |
+| `set_is_readonly(bool)`                     | 动态切换只读                                              |
+| `set_is_clearable(bool)`                    | 动态切换清除按钮                                          |
+| `set_description(text)`                     | 设置描述文字                                              |
+| `set_error_message(text)`                   | 设置错误消息                                              |
+| `set_start_content(content, on_click=None)` | 设置左侧内容（字符串图标或 QWidget；可选点击回调）        |
+| `set_end_content(content, on_click=None)`   | 设置右侧内容，同上                                        |
+| `set_on_start_content_click(cb)`            | 仅更新左侧点击回调                                        |
+| `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                        |
+| `set_width(w)`                              | 高层语义 API，等价于 `setFixedWidth(w)`，见下文“宽度接管” |
+| `line_edit`                                 | 属性：内部 `QLineEdit` 实例                               |
+
+---
+
+## 宽度接管
+
+Input 默认会按 `size` 注入一个建议最小宽度（`sm=240 / md=260 / lg=300`），用来保证内部 label / icon / 清除按钮等子控件有合适的展示空间。
+
+但当你需要把 Input 嵌进窄槽位（比如 Slider 的 `top_end_content` 数字输入框、表格单元格等），通常希望**强制压窄**。组件提供了透明的接管协议：
+
+- 一旦你显式调用过下列任意方法，组件即视为“用户接管了宽度”，后续 `_apply_styles()`（hover/focus/setText/theme 切换都会重跑）**不会再用 `min_width` 默认值覆盖你的设置**：
+  - `setFixedWidth(w)`
+  - `setMinimumWidth(w)`
+  - `setMaximumWidth(w)`
+  - `set_width(w)`（推荐，语义更清晰）
+
+- 用户接管宽度后，组件还会顺手把内部 `_wrapper` 的 layout 切到 `SizeConstraint.SetNoConstraint`，避免内部 layout 通过 `minimumSize` 反推父 widget 撑破 `setFixedWidth(80)` 这类极小宽度（否则会出现“左圆右直”——右半边超出视口被父级 clip 掉）。
+
+```python
+# 推荐写法
+num_input = Input(value="42", size="sm", radius="md")
+num_input.set_width(64)   # 立即接管，不会被 240 涨破
+
+# 等价写法
+num_input = Input(value="42", size="sm")
+num_input.setFixedWidth(64)
+```
+
+> ⚠️ 注意：一旦显式接管宽度，后续 `set_size("lg")` 也不会再帮你升回 300px 的默认下限——组件认为你的宽度由你负责。如果想恢复跟随 size 的默认行为，需要直接改组件源码或新建实例。
 
 ---
 

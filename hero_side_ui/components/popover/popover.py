@@ -2,10 +2,15 @@
 
 基于 HeroUI v2 popover。trigger 任意 QWidget，浮层自动定位并避让屏幕边界。
 
-子组件：
+子组件 / mixin 拆分：
     - ``_GlobalClickCatcher`` → ``_click_catcher.py``
     - ``PopoverContent``      → ``content.py``
     - ``_Backdrop``           → ``_backdrop.py``
+    - ``_PopoverPaintMixin``    → ``_paint.py``
+    - ``_PopoverGeometryMixin`` → ``_geometry.py``
+    - ``_PopoverTriggerMixin``  → ``_trigger.py``
+    - ``_PopoverScrollMixin``   → ``_scroll.py`` （滚动跟随/关闭/wheel 转发）
+    - ``_PopoverApiMixin``      → ``_api.py``    （动态 setter/theme/状态查询）
 """
 
 from PySide6.QtCore import QElapsedTimer
@@ -44,21 +49,28 @@ from ...animation import (
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
 
+from ._api import _PopoverApiMixin
 from ._backdrop import _Backdrop
 from ._click_catcher import _GlobalClickCatcher
 from ._constants import ARROW_INSET, ARROW_SIZE, DEFAULT_PADDING, VALID_PLACEMENTS
 from ._geometry import _PopoverGeometryMixin
 from ._paint import _PopoverPaintMixin
+from ._scroll import _PopoverScrollMixin
 from ._trigger import _PopoverTriggerMixin
 from .content import PopoverContent
-
-
 
 
 # ============================================================
 # Popover — 主组件
 # ============================================================
-class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, QWidget):
+class Popover(
+    _PopoverApiMixin,
+    _PopoverScrollMixin,
+    _PopoverPaintMixin,
+    _PopoverGeometryMixin,
+    _PopoverTriggerMixin,
+    QWidget,
+):
     """HeroUI 风格 Popover。
 
     用法::
@@ -89,6 +101,8 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
         allow_flip: bool = True,
         is_disabled: bool = False,
         disable_animation: bool = False,
+        close_on_scroll: bool = True,
+        blur_quality: str = "fast",
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -110,6 +124,12 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
         self._allow_flip = bool(allow_flip)
         self._is_disabled = is_disabled
         self._disable_animation = disable_animation
+        self._close_on_scroll = bool(close_on_scroll)
+        # backdrop='blur' 滚动重抓质量档位（4 档）：
+        #   low(2级) / fast(3级,默认) / great(4级) / high(QGraphicsBlurEffect)。
+        # 初始 snapshot 永远是 QGraphicsBlurEffect，不受此参数影响；此值仅控制滚动节流
+        # 帧重抓的路径。非法档位会在 _Backdrop 构造时 raise ValueError。
+        self._blur_quality = blur_quality
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
@@ -141,12 +161,24 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
 
         # 防止 Qt 自动关闭后立刻被 trigger click 重新打开造成"点两次才开"
         self._just_closed = QElapsedTimer()  # 上次 close 完成的时间
+        # 关闭中（fade-out 进行中、_finalize_close 还未触发）。
+        # 用于在 fade-out 中途用户再次 hover/click 时正确"取消关闭并重新打开"，
+        # 而不是 bail（bail 会留下 popover 在旧位置，trigger 可能因滚动变了位）。
+        self._closing = False
 
         # 全局外部点击监听（open 时 install，close 时 remove）
         self._global_filter = _GlobalClickCatcher(self)
 
-        # 滚动监听：open 时连接祖先链的 scrollbar，close 时断开
+        # 滚动监听：open 时连接祖先链的 scrollbar，close 时断开。
+        # 默认 close_on_scroll=True：滚动即关闭（带 fade-out 动画）；
+        # 设 close_on_scroll=False 才切换为"跟随 reposition"。
         self._scroll_bars: list = []
+        # reposition 节流：合并同一帧多个 scrollbar.valueChanged，避免重复 move。
+        self._scroll_reposition_pending = False
+        # popover 相对 trigger 全局坐标的固定偏移（open() 时记录）。
+        # 滚动跟随只做"trigger_global + offset"平移，不再调用 _calc_position
+        # 避免 fade-out 期间 sizeHint() 缩水导致的右下大幅偏移 / auto-flip 突变。
+        self._scroll_anchor_offset: Optional[QPoint] = None
 
         # 内层 layout: 留出 arrow + shadow 边距
         self._outer = QVBoxLayout(self)
@@ -272,67 +304,95 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
                 w.setStyleSheet(f"color: {text_hex}; background: transparent;")
 
     # ============================================================
-    # open / close API
+    # open / close API （is_open / toggle → _api.py，开关核心仍在主类）
     # ============================================================
-    def is_open(self) -> bool:
-        return self._is_open
-
-    def toggle(self):
-        if self._is_open:
-            self.close()
-        else:
-            self.open()
-
     def open(self, near: Optional[QWidget] = None):
-        # 已打开忽略；disabled 忽略
-        if self._is_open or self._is_disabled:
+        # disabled 忽略
+        if self._is_disabled:
             return
         target = near or self._trigger
         if target is None:
             return
 
-        # 1) backdrop —— 作为 trigger 所在 window 的子 widget，
-        # 只覆盖应用客户区，不影响其他屏幕 / 其他应用。
-        if self._backdrop_kind != "transparent":
-            host = target.window() if hasattr(target, "window") else None
-            if host is not None:
-                self._backdrop = _Backdrop(self._backdrop_kind, host=host)
-                self._backdrop.setGeometry(0, 0, host.width(), host.height())
-                if self._backdrop_kind == "blur":
-                    self._backdrop.prepare_blur_snapshot()
-                self._backdrop.clicked.connect(self.close)
-                self._backdrop.raise_()
-                self._backdrop.show()
-                # 渐入
+        # 三种入场情况：
+        #   A) 完全关闭（_is_open=False）→ 标准首次打开
+        #   B) 正在 fade-out（_closing=True）→ 取消关闭 + 重算位置 + play_in 续接
+        #   C) 已稳定 open（_is_open=True 且 _closing=False）→ bail
+        if self._is_open and not self._closing:
+            return  # 情况 C
+
+        reopening = self._is_open and self._closing  # 情况 B
+        # 取消"关闭中"标记；scroll watchers / global filter 在 reopening 路径下仍连着，无需重连
+        self._closing = False
+
+        # reopening 时必须先 end 旧 scale_proxy：_do_close 已 begin 截图 + hide content，
+        # 否则下面 adjustSize / sizeHint 拿不到真实内容尺寸，_calc_position 会用 mini
+        # sizeHint 算出严重错位的位置（向右下大幅偏移）。仅纯文字模式启用了 proxy。
+        if reopening and self._scale_proxy.is_active():
+            self._scale_proxy.end()
+
+        if not reopening:
+            # 1) backdrop —— 作为 trigger 所在 window 的子 widget，
+            # 只覆盖应用客户区，不影响其他屏幕 / 其他应用。
+            if self._backdrop_kind != "transparent":
+                host = target.window() if hasattr(target, "window") else None
+                if host is not None:
+                    self._backdrop = _Backdrop(
+                        self._backdrop_kind,
+                        host=host,
+                        blur_quality=self._blur_quality,
+                    )
+                    self._backdrop.setGeometry(0, 0, host.width(), host.height())
+                    if self._backdrop_kind == "blur":
+                        self._backdrop.prepare_blur_snapshot()
+                    self._backdrop.clicked.connect(self.close)
+                    self._backdrop.wheel_scrolled.connect(self._on_backdrop_wheel)
+                    self._backdrop.raise_()
+                    self._backdrop.show()
+                    # 渐入
+                    self._backdrop.play_in()
+        else:
+            # reopening: backdrop 在 _do_close 里已经 play_out，在这里重新 play_in 续接
+            if self._backdrop is not None:
                 self._backdrop.play_in()
 
-        # 2) 布局 + 位置：严格按内容 sizeHint 撑开，不受 trigger 宽度限制
+        # 2) 布局 + 位置：严格按内容 sizeHint 撅开，不受 trigger 宽度限制
+        # reopening 时也要重算 trigger 位置（可能因滚动而变）
         self.adjustSize()
         # adjustSize 在某些平台上仅采用当前可用宽度，这里显式 resize 到 sizeHint
         self.resize(self.sizeHint())
         pos = self._calc_position(target)
         self.move(pos)
+        # 记录 popover 相对 trigger 全局坐标的偏移量。后续滚动跟随
+        # （_do_scroll_reposition）只需 trigger_global + offset，不再调用
+        # _calc_position / _compute_pos_for —— 否则会用受 _scale_proxy 影响
+        # 后的 mini sizeHint() 算出严重右下偏移的位置。
+        try:
+            self._scroll_anchor_offset = pos - target.mapToGlobal(QPoint(0, 0))
+        except RuntimeError:
+            self._scroll_anchor_offset = QPoint(0, 0)
 
         # 3) trigger 视觉反馈
         if self._trigger_scale and self._trigger is not None:
             self._apply_trigger_open_state(True)
 
-        # 4) 监听 popover 自己的 Enter/Leave（hover 模式用）
-        self.installEventFilter(self)
+        if not reopening:
+            # 4) 监听 popover 自己的 Enter/Leave（hover 模式用）
+            self.installEventFilter(self)
 
-        # 5) 全局点击监听（代替 Qt.Popup 的自动外部关闭）
-        app = QApplication.instance()
-        if app is not None:
-            app.installEventFilter(self._global_filter)
+            # 5) 全局点击监听（代替 Qt.Popup 的自动外部点击关闭）
+            app = QApplication.instance()
+            if app is not None:
+                app.installEventFilter(self._global_filter)
 
-        # 5b) 滚动即关闭：监听 trigger 祖先链上的所有 QAbstractScrollArea
-        self._connect_scroll_watchers(target)
+            # 5b) 滚动跟随：监听 trigger 祖先链上的所有 QAbstractScrollArea
+            self._connect_scroll_watchers(target)
 
-        # 6) 显示
-        self.show()
-        self.raise_()
-        self._is_open = True
-        self.opened.emit()
+            # 6) 显示
+            self.show()
+            self.raise_()
+            self._is_open = True
+            self.opened.emit()
 
         # 动画分支:
         #   - 纯文字 popover: pixmap_scale + fade(整体感更强,字会被光栅化但短暂可接受)
@@ -345,6 +405,8 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
         else:
             if self._content_is_text_only():
                 # 纯文字:抓取整窗 pixmap 作为缩放代理,隐藏真实内容
+                # reopening 时也重新 begin：上面已 end（content 恢复显示），现在用新位置 +
+                # 新尺寸截一张新 pixmap，让 fade.play_in 从当前 progress 续接到 1.0
                 self._scale_proxy.begin()
                 self._fade.play_in()
             else:
@@ -362,6 +424,9 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
         app = QApplication.instance()
         if app is not None:
             app.removeEventFilter(self._global_filter)
+
+        # 标记"关闭中"。fade-out 期间用户再触发 open() 会走"取消关闭"分支。
+        self._closing = True
 
         # backdrop 渐出
         if self._backdrop is not None:
@@ -382,6 +447,11 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
     def _finalize_close(self):
         if not self._is_open:
             return
+        # 如果 _closing 已被 open() 重置为 False（用户中途又触发了打开），
+        # 说明 finished_out 是"已被 play_in 抢占后的尾声"——不该真的关闭
+        if not self._closing:
+            return
+        self._closing = False
         self.hide()
         # squeeze 复位到展开(base margins),避免 popover 再次被 set_content/
         # adjustSize 时 layout 残留收起态影响 sizeHint 计算。
@@ -441,6 +511,7 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
         if self._is_open:
             # 可能是 Qt 自动 hide（如切到其他应用），同步状态
             self._is_open = False
+            self._closing = False
             self._just_closed.start()
             app = QApplication.instance()
             if app is not None:
@@ -453,159 +524,3 @@ class Popover(_PopoverPaintMixin, _PopoverGeometryMixin, _PopoverTriggerMixin, Q
             self._scale_proxy.end()
             self.closed.emit()
         super().hideEvent(event)
-
-    # ============================================================
-    # 公共动态 API
-    # ============================================================
-    def set_color(self, color: str):
-        self._color = color
-        self.update()
-        self._apply_content_text_color()
-        self._sync_trigger_style()
-
-    def set_trigger_variant(self, variant: str):
-        self._trigger_variant = variant
-        self._sync_trigger_style()
-
-    def set_arrow(self, enabled: bool):
-        self._arrow = enabled
-        self._outer.setContentsMargins(*self._frame_margins())
-        self.update()
-
-    def _sync_trigger_style(self):
-        """把 popover 的 color/variant 同步给 trigger。
-
-        6 种色（default / primary / secondary / success / warning / danger）全部透传。
-        但**绝不调用 trigger.set_theme(self._theme)**：如果 trigger 原本是
-        theme="auto" 的 Button，传入实际主题 "light" 会把它注销出 ThemeProvider，
-        后续切 dark 时按钮文字仍停留在亮色规则，暗色背景下会变成低对比灰色。
-        trigger 的主题应由它自己监听 ThemeProvider 自治刷新。
-        """
-        if self._trigger is None:
-            return
-
-        if hasattr(self._trigger, "set_color"):
-            try:
-                self._trigger.set_color(self._color)
-            except Exception:
-                pass
-        if hasattr(self._trigger, "set_variant"):
-            try:
-                self._trigger.set_variant(self._trigger_variant)
-            except Exception:
-                pass
-
-    # 兼容旧名
-    def _sync_trigger_color(self):
-        self._sync_trigger_style()
-
-    # ============================================================
-    # 滚动即关闭
-    # ============================================================
-    def _connect_scroll_watchers(self, trigger: QWidget):
-        """沿 trigger 祖先链找所有 QAbstractScrollArea，监听其滚动条变化，
-        一旦滚动就关闭 popover。"""
-        from PySide6.QtWidgets import QAbstractScrollArea
-
-        self._disconnect_scroll_watchers()
-        w = trigger
-        seen = set()
-        while w is not None:
-            if isinstance(w, QAbstractScrollArea):
-                for bar in (w.verticalScrollBar(), w.horizontalScrollBar()):
-                    if bar is not None and id(bar) not in seen:
-                        seen.add(id(bar))
-                        bar.valueChanged.connect(self._on_scroll_detected)
-                        self._scroll_bars.append(bar)
-            w = w.parentWidget()
-
-    def _disconnect_scroll_watchers(self):
-        for bar in self._scroll_bars:
-            try:
-                bar.valueChanged.disconnect(self._on_scroll_detected)
-            except (RuntimeError, TypeError):
-                pass
-        self._scroll_bars.clear()
-
-    def _on_scroll_detected(self, _value: int):
-        """任何祖先 scroll area 滚动时 → **立即**关闭 popover（跳过淡出动画）。
-
-        如果走正常 fade-out（200ms），popover 会跟着滚动条飘 200ms 才消失，
-        视觉上像是 popover 位置和 trigger 脱钩了。
-        """
-        if not self._is_open:
-            return
-
-        if self._trigger_scale and self._trigger is not None:
-            self._apply_trigger_open_state(False)
-
-        app = QApplication.instance()
-        if app is not None:
-            app.removeEventFilter(self._global_filter)
-
-        # 立即把 fade 动画置 0 + 隐藏
-        self._fade.play_out(instant=True)
-        if self._backdrop is not None:
-            # backdrop 也立即隐藏（无淡出）
-            self._backdrop.hide()
-        self._scale_proxy.end()
-        self._finalize_close()
-
-    def set_size(self, size: str):
-        self._size = size
-        self.update()
-
-    def set_radius(self, radius: str):
-        self._radius = radius
-        self.update()
-
-    def set_shadow(self, shadow: str):
-        self._shadow = shadow
-        self._outer.setContentsMargins(*self._frame_margins())
-        self.update()
-
-    def set_placement(self, placement: str):
-        if placement in VALID_PLACEMENTS:
-            self._placement = placement
-            self._actual_placement = placement
-            self._outer.setContentsMargins(*self._frame_margins())
-            self.update()
-
-    def set_backdrop(self, kind: str):
-        self._backdrop_kind = kind
-
-    def set_theme(self, theme: str):
-        if theme == "auto":
-            self._theme_mode = "auto"
-            self._theme = self._resolve_theme("auto")
-            ThemeProvider.instance().register(self)
-        else:
-            if self._theme_mode == "auto":
-                ThemeProvider.instance().unregister(self)
-            self._theme_mode = theme
-            self._theme = theme
-        # 主题变化后:内容里的"裸 QLabel"文字色是我们 setStyleSheet 写死的 hex,
-        # 不会自动跟主题切换 → 必须显式重刷。
-        # 注意:不在这里 _sync_trigger_style() —— trigger(Button) 自己订阅了
-        # ThemeProvider,会自治刷新 theme;popover 在 attach 时已做过一次性
-        # color/variant 默认同步,主题切换不该再插手覆盖 trigger 状态。
-        self._apply_content_text_color()
-        self.update()
-
-    def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
-        self._theme = theme
-        # 同 set_theme:只刷自家裸 QLabel,trigger 由它自己处理。
-        self._apply_content_text_color()
-        self.update()
-
-    @staticmethod
-    def _resolve_theme(mode: str) -> str:
-        if mode in ("light", "dark"):
-            return mode
-        return ThemeProvider.instance().current_theme
-
-    def set_is_disabled(self, disabled: bool):
-        self._is_disabled = disabled
-        if disabled and self._is_open:
-            self.close()
