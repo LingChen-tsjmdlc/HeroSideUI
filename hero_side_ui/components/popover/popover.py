@@ -3,7 +3,8 @@
 基于 HeroUI v2 popover。trigger 任意 QWidget，浮层自动定位并避让屏幕边界。
 
 子组件 / mixin 拆分：
-    - ``_GlobalClickCatcher`` → ``_click_catcher.py``
+- ``_GlobalClickCatcher`` → ``_click_catcher.py``
+- ``_HostGeometryWatcher`` → ``_host_resize_watcher.py``
     - ``PopoverContent``      → ``content.py``
     - ``_Backdrop``           → ``_backdrop.py``
     - ``_PopoverPaintMixin``    → ``_paint.py``
@@ -52,6 +53,7 @@ from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
 from ._api import _PopoverApiMixin
 from ._backdrop import _Backdrop
 from ._click_catcher import _GlobalClickCatcher
+from ._host_resize_watcher import _HostGeometryWatcher
 from ._constants import ARROW_INSET, ARROW_SIZE, DEFAULT_PADDING, VALID_PLACEMENTS
 from ._geometry import _PopoverGeometryMixin
 from ._paint import _PopoverPaintMixin
@@ -175,10 +177,16 @@ class Popover(
         self._scroll_bars: list = []
         # reposition 节流：合并同一帧多个 scrollbar.valueChanged，避免重复 move。
         self._scroll_reposition_pending = False
+        # 完整重算节流：host Resize 事件频发，同一帧只走一次 _calc_position。
+        self._full_reposition_pending = False
         # popover 相对 trigger 全局坐标的固定偏移（open() 时记录）。
         # 滚动跟随只做"trigger_global + offset"平移，不再调用 _calc_position
         # 避免 fade-out 期间 sizeHint() 缩水导致的右下大幅偏移 / auto-flip 突变。
         self._scroll_anchor_offset: Optional[QPoint] = None
+        # host 窗口 resize 监听器：与 scroll watchers 同生命周期，
+        # 拖拽窗口缩放时复用 _on_scroll_detected 节流路径重定位 popover。
+        self._host_resize_watcher = _HostGeometryWatcher(self)
+        self._watched_host: Optional[QWidget] = None
 
         # 内层 layout: 留出 arrow + shadow 边距
         self._outer = QVBoxLayout(self)

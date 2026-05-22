@@ -27,16 +27,18 @@ class _PopoverScrollMixin:
     依赖宿主类提供：
       - 属性：`_is_open`、`_closing`、`_close_on_scroll`、`_trigger`、
         `_backdrop`、`_backdrop_kind`、`_scroll_bars`、
-        `_scroll_reposition_pending`、`_scroll_anchor_offset`
-      - 方法：`close()`
+        `_scroll_reposition_pending`、`_full_reposition_pending`、
+        `_scroll_anchor_offset`、`_host_resize_watcher`、`_watched_host`
+      - 方法：`close()`、`_calc_position(trigger)`
     """
 
     # ============================================================
     # 滚动监听 connect / disconnect
     # ============================================================
     def _connect_scroll_watchers(self, trigger: QWidget):
-        """沿 trigger 祖先链找所有 QAbstractScrollArea，监听其滚动条变化，
-        一旦滚动就关闭 popover。"""
+        """沿 trigger 祖先链找所有 QAbstractScrollArea，监听其滚动条变化；
+        同时监听 trigger.window() 的 Move/Resize，
+        让整窗拖动 / 缩放 也能触发 popover 跟随。"""
         self._disconnect_scroll_watchers()
         w = trigger
         seen = set()
@@ -49,6 +51,15 @@ class _PopoverScrollMixin:
                         self._scroll_bars.append(bar)
             w = w.parentWidget()
 
+        # 几何变化监听：只挂 host 窗口的 Move/Resize，复用节流路径重定位。
+        # 不挂 trigger 自身：全面介入 trigger 事件路径容易平交导致 click 豌异。
+        watcher = self._host_resize_watcher
+        if watcher is not None:
+            host = trigger.window() if hasattr(trigger, "window") else None
+            if host is not None:
+                host.installEventFilter(watcher)
+                self._watched_host = host
+
     def _disconnect_scroll_watchers(self):
         for bar in self._scroll_bars:
             try:
@@ -56,6 +67,16 @@ class _PopoverScrollMixin:
             except (RuntimeError, TypeError):
                 pass
         self._scroll_bars.clear()
+
+        # 几何 watcher 同步释放，防悬挂引用
+        watcher = self._host_resize_watcher
+        host = getattr(self, "_watched_host", None)
+        if host is not None and watcher is not None:
+            try:
+                host.removeEventFilter(watcher)
+            except RuntimeError:
+                pass
+        self._watched_host = None
 
     # ============================================================
     # backdrop wheel → SmoothScroll 转发
@@ -198,3 +219,36 @@ class _PopoverScrollMixin:
         # 用户也不再滚 → valueChanged 也不再发 → 自动停止刷新。零额外开销。
         if self._backdrop is not None and self._backdrop_kind == "blur":
             self._backdrop.refresh_blur_fast()
+
+    # ============================================================
+    # 完整重算（host Resize 路径专用）
+    # ============================================================
+    def _request_full_reposition(self):
+        """host Resize 时请求一次完整 _calc_position 重算（节流到下一帧合并）。"""
+        if not self._is_open:
+            return
+        if self._full_reposition_pending:
+            return
+        self._full_reposition_pending = True
+        QTimer.singleShot(0, self._do_full_reposition)
+
+    def _do_full_reposition(self):
+        """完整重算路径：走 _calc_position 让 popover 按 placement 重新对齐 trigger。
+
+        与 _do_scroll_reposition 的"纯平移"不同，host Resize 后 layout 整体重排，
+        trigger 在 host 内部相对位置可能变了，平移会脱节；必须重新跑一次 placement
+        计算。同步刷新 _scroll_anchor_offset 以便后续滚动跟随用最新基准。
+        """
+        self._full_reposition_pending = False
+        if not self._is_open or self._trigger is None:
+            return
+        try:
+            self.adjustSize()
+            self.resize(self.sizeHint())
+            pos = self._calc_position(self._trigger)
+            self.move(pos)
+            tr_global = self._trigger.mapToGlobal(QPoint(0, 0))
+            self._scroll_anchor_offset = pos - tr_global
+        except RuntimeError:
+            return
+        # backdrop 几何由它自己的 host eventFilter 同步；blur 快照也由 backdrop 重抓
