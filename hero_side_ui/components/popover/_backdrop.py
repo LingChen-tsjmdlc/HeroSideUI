@@ -90,38 +90,58 @@ class _Backdrop(QWidget):
         # 淡入淡出 —— 复用通用 BackdropFade 动画
         self._fade = BackdropFade(owner=self, duration_in=260, duration_out=200)
 
-        # host resize 监听：window 缩放时如果不同步 backdrop 几何 + blur snapshot，
-        # 会出现“穿帮”——backdrop 还停在旧尺寸（变大露底；变小不致命但 pixmap 拉伸
-        # 视觉糊烂）。装 eventFilter 监听 host Resize → 节流到下一帧统一处理。
-        # _resize_pending 用于合并同一帧多次 Resize 事件，避免重复 grab 浪费 CPU。
-        self._resize_pending = False
+        # host resize 监听：立即同步几何（setGeometry 极轻），blur 重抓走节流 —
+        # 拖动期间每 50ms 刷新一次（20Hz），保证肉眼几乎看不到拉伸畸变；
+        # 落定 120ms 后停止节流并补最后一次精确刷新（确保最终帧准确）。
+        # 不能用纯 debounce（拖动期间整段不刷新→长时间拉伸畸变明显）。
+        from PySide6.QtCore import QTimer
+
+        self._blur_throttle_timer = QTimer(self)
+        self._blur_throttle_timer.setInterval(50)  # 20Hz 节流
+        self._blur_throttle_timer.timeout.connect(self._on_blur_throttle_tick)
+
+        self._blur_settle_timer = QTimer(self)
+        self._blur_settle_timer.setSingleShot(True)
+        self._blur_settle_timer.setInterval(120)
+        self._blur_settle_timer.timeout.connect(self._on_resize_settled)
         if host is not None:
             host.installEventFilter(self)
 
     def eventFilter(self, obj, event):
-        """监听 host 的 Resize：节流 → 同步 backdrop 几何 + blur 重抓。"""
-        from PySide6.QtCore import QEvent, QTimer
+        """监听 host 的 Resize：立即同步几何 + 启动节流刷新 blur。"""
+        from PySide6.QtCore import QEvent
 
         if obj is self._host and event.type() == QEvent.Type.Resize:
-            if not self._resize_pending:
-                self._resize_pending = True
-                QTimer.singleShot(0, self._on_host_resized)
+            try:
+                self.setGeometry(0, 0, self._host.width(), self._host.height())
+            except RuntimeError:
+                return super().eventFilter(obj, event)
+            if self._kind == "blur":
+                # 启动节流：拖动期间每 50ms 刷新一次（已在跑则保持原节奏）。
+                if not self._blur_throttle_timer.isActive():
+                    self._blur_throttle_timer.start()
+                # 重置落定计时：120ms 内无新 Resize 才认为拖动结束。
+                self._blur_settle_timer.start()
         return super().eventFilter(obj, event)
 
-    def _on_host_resized(self):
-        """host 缩放节流帧合并响应：同步 backdrop 几何 + blur 模式重抓 snapshot。"""
-        self._resize_pending = False
-        if self._host is None:
+    def _on_blur_throttle_tick(self):
+        """拖动期间节流帧：刷新 blur 快照，覆盖拉伸畸变。"""
+        if self._host is None or self._kind != "blur":
             return
         try:
-            self.setGeometry(0, 0, self._host.width(), self._host.height())
+            self.refresh_blur_fast()
         except RuntimeError:
             return
-        # blur 模式：旧 pixmap 是按旧尺寸抓的，新尺寸下被拉伸畸变 → 重抓。
-        # 走 refresh_blur_fast 而非 prepare_blur_snapshot：用户当前 blur_quality
-        # 档位的算法保持一致；high 档下走 QGraphicsBlurEffect QualityHint。
-        if self._kind == "blur":
+
+    def _on_resize_settled(self):
+        """拖动落定（120ms 内无新 Resize）：停止节流 + 补最后一次精确刷新。"""
+        self._blur_throttle_timer.stop()
+        if self._host is None or self._kind != "blur":
+            return
+        try:
             self.refresh_blur_fast()
+        except RuntimeError:
+            return
 
     def closeEvent(self, event):
         # host 还活着的话主动 remove，避免 backdrop deleteLater 后 host 仍持悬挂引用。
