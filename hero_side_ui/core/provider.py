@@ -59,6 +59,7 @@ class HeroSideUIProvider:
         font_base_size: Optional[int] = None,
         smooth_scroll: bool = True,
         scroll_style: bool = True,
+        filter_libpng_warnings: bool = True,
     ) -> None:
         """显式初始化全套 HeroSideUI 基础设施。
 
@@ -74,6 +75,9 @@ class HeroSideUIProvider:
                 为 False 时不装全局事件过滤器；后续可手动 ``SmoothScroll.apply_global()``。
             scroll_style: 是否注入全局细线滚动条 QSS。默认 True。
                 为 False 时不修改 QApplication.styleSheet；用户可继续用系统原生滚动条。
+            filter_libpng_warnings: 是否过滤 libpng 直接写到 fd=2 的
+                ``"libpng warning: iCCP: known incorrect sRGB profile"`` 噪声。
+                默认 True。这条警告来自 Qt 内置 PNG 资源，无害但会刷屏。
 
         Raises:
             RuntimeError: 调用前 ``QApplication`` 还没创建。
@@ -94,7 +98,13 @@ class HeroSideUIProvider:
                 "    HeroSideUIProvider.setup(app)"
             )
 
-        # 2) 触发 _boot 显式入口（按开关激活兄弟模块；置 _setup_done=True
+        # 2) 过滤 libpng iCCP 噪声（Qt 内置 PNG 资源已知问题，无害但刷屏）
+        if filter_libpng_warnings:
+            from . import _libpng_filter
+
+            _libpng_filter.install()
+
+        # 3) 触发 _boot 显式入口（按开关激活兄弟模块；置 _setup_done=True
         #    短路后续组件构造路径上的隐式钩子，让 False 开关真生效）
         from ._boot import setup_with_options
 
@@ -103,7 +113,7 @@ class HeroSideUIProvider:
             scroll_style=scroll_style,
         )
 
-        # 3) 应用用户级配置（必须在 _boot 激活之后，确保各 Provider 单例已就绪）
+        # 4) 应用用户级配置（必须在 _boot 激活之后，确保各 Provider 单例已就绪）
         from .theme_provider import ThemeProvider
 
         # ThemeProvider.instance() 内部会再调一次 ensure_core_ready()，但此时

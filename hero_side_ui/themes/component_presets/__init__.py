@@ -33,6 +33,7 @@ from .tabs import TABS_SIZES
 from .switch import SWITCH_SIZES
 from .listbox import LISTBOX_SIZES
 from .autocomplete import AUTOCOMPLETE_SIZES
+from .select import SELECT_SIZES
 from .slider import SLIDER_SIZES
 
 __all__ = [
@@ -52,5 +53,6 @@ __all__ = [
     "SWITCH_SIZES",
     "LISTBOX_SIZES",
     "AUTOCOMPLETE_SIZES",
+    "SELECT_SIZES",
     "SLIDER_SIZES",
 ]

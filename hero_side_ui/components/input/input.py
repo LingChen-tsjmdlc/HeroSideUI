@@ -466,14 +466,19 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         """
         self._user_width_locked = True
         super().setFixedWidth(w)
+        # 立即让 wrapper 的 min_width 守卫释放，否则 wrapper 仍守
+        # 构造期写入的 260，导致 chevron 被推出 Input 视口
+        self._apply_styles()
 
     def setMinimumWidth(self, w: int):  # noqa: N802
         self._user_width_locked = True
         super().setMinimumWidth(w)
+        self._apply_styles()
 
     def setMaximumWidth(self, w: int):  # noqa: N802
         self._user_width_locked = True
         super().setMaximumWidth(w)
+        self._apply_styles()
 
     def set_width(self, w: int):
         """高层语义 API：等价于 setFixedWidth，推荐用这个接管 Input 宽度。"""

@@ -18,6 +18,7 @@ from .component_presets import (
     SWITCH_SIZES,
     LISTBOX_SIZES,
     AUTOCOMPLETE_SIZES,
+    SELECT_SIZES,
     SLIDER_SIZES,
 )
 
@@ -68,5 +69,6 @@ __all__ = [
     "SWITCH_SIZES",
     "LISTBOX_SIZES",
     "AUTOCOMPLETE_SIZES",
+    "SELECT_SIZES",
     "SLIDER_SIZES",
 ]

@@ -112,6 +112,7 @@ class Listbox(QWidget):
         selection_mode: str = "none",
         selected_keys: Optional[Iterable[str]] = None,
         disabled_keys: Optional[Iterable[str]] = None,
+        disallow_empty_selection: bool = False,
         empty_content: Optional[str] = None,
         hide_selected_icon: bool = False,
         should_highlight_on_focus: bool = False,
@@ -138,6 +139,7 @@ class Listbox(QWidget):
         self._size = size
         self._radius = radius
         self._selection_mode = selection_mode
+        self._disallow_empty_selection = bool(disallow_empty_selection)
         self._hide_selected_icon = hide_selected_icon
         self._highlight_on_focus = should_highlight_on_focus
         self._disable_animation = disable_animation
@@ -362,8 +364,22 @@ class Listbox(QWidget):
         # 同步选中 key
         if it.key() in self._selected_keys and self._selection_mode != "none":
             it.set_selected(True)
+        # 注入"点击是否被拒"判定 —— 必选场景下从源头阻断 Qt 内置 toggle
+        it._toggle_guard = self._should_block_item_toggle
         # 监听点击/选中
         it.activated.connect(self._on_item_activated)
+
+    def _should_block_item_toggle(self, it: ListboxItem) -> bool:
+        """点击 it 是否应被拒：必选下点击会让 selection 变空时返回 True。"""
+        if not self._disallow_empty_selection:
+            return False
+        if self._selection_mode == "single":
+            # 单选必选：点击已选项 → 拒（保持选中）
+            return it.key() in self._selected_keys
+        if self._selection_mode == "multiple":
+            # 多选必选：仅剩 1 项且点的就是它 → 拒
+            return it.key() in self._selected_keys and len(self._selected_keys) == 1
+        return False
 
     # ------------------------------------------------------------
     # 选中 / 禁用 API
@@ -381,6 +397,12 @@ class Listbox(QWidget):
             for it in self._items:
                 it.set_selected(False)
         self._propagate_style()
+
+    def disallow_empty_selection(self) -> bool:
+        return self._disallow_empty_selection
+
+    def set_disallow_empty_selection(self, v: bool):
+        self._disallow_empty_selection = bool(v)
 
     def selected_keys(self) -> set[str]:
         return set(self._selected_keys)
@@ -646,6 +668,15 @@ class Listbox(QWidget):
         return w
 
     def _on_item_activated(self, key: str):
+        # 必选语义：禁止把最后一项取消（多选剩 1 + 点的就是它，单选已天然 pass）
+        if (
+            self._disallow_empty_selection
+            and self._selection_mode == "multiple"
+            and key in self._selected_keys
+            and len(self._selected_keys) == 1
+        ):
+            return
+
         # 选中态切换
         if self._selection_mode == "single":
             old = set(self._selected_keys)

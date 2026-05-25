@@ -17,6 +17,7 @@ from .switch import Switch
 from .scroll_shadow import ScrollShadow
 from .listbox import Listbox, ListboxItem, ListboxSection
 from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
+from .select import Select, SelectItem, SelectSection
 from .slider import Slider
 
 __all__ = [
@@ -54,5 +55,8 @@ __all__ = [
     "Autocomplete",
     "AutocompleteItem",
     "AutocompleteSection",
+    "Select",
+    "SelectItem",
+    "SelectSection",
     "Slider",
 ]

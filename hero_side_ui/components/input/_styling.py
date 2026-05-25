@@ -533,7 +533,9 @@ class _InputStylingMixin:
     def _resolve_radius(self, size_config: dict) -> str:
         radius_key = self._radius or size_config.get("default_radius", "md")
         if radius_key == "full":
-            h = size_config["height"]
+            # 按实际生效的 wrapper 高度算半径（inside label 模式下高度更大）
+            is_inside = self._label_placement == "inside" and self._has_label()
+            h = size_config["inside_height"] if is_inside else size_config["height"]
             return f"{h // 2}px"
         return RADIUS.get(radius_key, RADIUS["md"])
 
