@@ -119,6 +119,8 @@ class ListboxItem(QAbstractButton):
         # 状态
         self._is_hover = False
         self._is_focused = False
+        # 仅记录键盘导航(Tab/方向键)进入的 focus,用于无条件给视觉反馈
+        self._is_keyboard_focused = False
         self._is_selected = False
 
         # 由父 Listbox 注入：返回 True 时本次点击不切 checked、不发 activated
@@ -546,13 +548,22 @@ class ListboxItem(QAbstractButton):
     def focusInEvent(self, e):
         super().focusInEvent(e)
         self._is_focused = True
-        if self._highlight_on_focus:
+        # 键盘/Tab 等非鼠标来源进入 focus 时,无条件给 hover 同款视觉,
+        # 让用户用方向键导航能看到"我现在在哪"
+        reason = e.reason()
+        self._is_keyboard_focused = reason not in (
+            Qt.MouseFocusReason,
+            Qt.PopupFocusReason,
+        )
+        if self._highlight_on_focus or self._is_keyboard_focused:
             self._refresh_palette(animated=not self._disable_animation)
 
     def focusOutEvent(self, e):
         super().focusOutEvent(e)
         self._is_focused = False
-        if self._highlight_on_focus:
+        was_kb = self._is_keyboard_focused
+        self._is_keyboard_focused = False
+        if self._highlight_on_focus or was_kb:
             self._refresh_palette(animated=not self._disable_animation)
 
     def _on_toggled(self, checked: bool):
@@ -586,6 +597,30 @@ class ListboxItem(QAbstractButton):
         if not self._is_disabled and in_rect:
             self.activated.emit(self._key)
 
+    def keyPressEvent(self, e):
+        # 方向键 / Home / End 转发给父 Listbox（焦点在 item 上时由这里兜住，
+        # 否则 QAbstractButton 默认会把方向键交给 Qt 焦点链跳走）
+        key = e.key()
+        if key in (Qt.Key_Down, Qt.Key_Up, Qt.Key_Home, Qt.Key_End):
+            lb = self._find_listbox()
+            if lb is not None and hasattr(lb, "handle_nav_key"):
+                if lb.handle_nav_key(key):
+                    e.accept()
+                    return
+        # Enter / Space 让 QAbstractButton 默认处理（自带 click → mouseReleaseEvent → activated）
+        super().keyPressEvent(e)
+
+    def _find_listbox(self):
+        # 顺着父链找最近的 Listbox（可能是直接父，也可能隔着 ListboxSection / 内部容器）
+        from .listbox import Listbox  # 局部 import 防循环
+
+        p = self.parent()
+        while p is not None:
+            if isinstance(p, Listbox):
+                return p
+            p = p.parent()
+        return None
+
     # ------------------------------------------------------------
     # palette 计算（动画）
     # ------------------------------------------------------------
@@ -594,6 +629,9 @@ class ListboxItem(QAbstractButton):
         if self._is_disabled:
             return False
         if self._is_hover:
+            return True
+        # 键盘导航来源的 focus 永远算 active(零配置体验)
+        if self._is_keyboard_focused:
             return True
         if self._highlight_on_focus and self._is_focused:
             return True
