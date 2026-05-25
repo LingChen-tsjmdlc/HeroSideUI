@@ -121,6 +121,10 @@ class ListboxItem(QAbstractButton):
         self._is_focused = False
         self._is_selected = False
 
+        # 由父 Listbox 注入：返回 True 时本次点击不切 checked、不发 activated
+        # （用于必选场景下从源头堵截“取消最后一项”）
+        self._toggle_guard = None
+
         # 父 Listbox 注入的样式
         self._variant = "solid"
         self._color = "default"
@@ -564,10 +568,22 @@ class ListboxItem(QAbstractButton):
         self.selected_changed.emit(checked)
 
     def mouseReleaseEvent(self, e):
-        super().mouseReleaseEvent(e)
-        if not self._is_disabled and self.rect().contains(
+        # 点击进入背错，还原不在本 item rect 内的释放：按默认走
+        in_rect = self.rect().contains(
             e.position().toPoint() if hasattr(e, "position") else e.pos()
+        )
+        # 守卫拦截：起父问“这次点击该不该被拒”
+        if (
+            in_rect
+            and not self._is_disabled
+            and callable(self._toggle_guard)
+            and self._toggle_guard(self)
         ):
+            # 不调 super 避免 QAbstractButton 默认 toggle；也不发 activated
+            e.accept()
+            return
+        super().mouseReleaseEvent(e)
+        if not self._is_disabled and in_rect:
             self.activated.emit(self._key)
 
     # ------------------------------------------------------------
