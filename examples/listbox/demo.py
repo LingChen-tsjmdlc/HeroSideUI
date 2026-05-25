@@ -3,12 +3,22 @@ Listbox 组件示例 — 6 variants × 6 colors × 3 sizes × 状态 × 分组 �
 """
 
 import os, sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QFrame, QWidget
 from PySide6.QtCore import Qt
 
-from hero_side_ui import Listbox, ListboxItem, ListboxSection, Card, CardBody, Body, Caption, Title
+from hero_side_ui import (
+    Listbox,
+    ListboxItem,
+    ListboxSection,
+    Card,
+    CardBody,
+    Body,
+    Caption,
+    Title,
+)
 from _base import DemoBase
 
 
@@ -31,13 +41,32 @@ class ListboxDemo(DemoBase):
         # 1) 基础：默认 (variant=solid, color=default, mode=none)
         # ============================================================
         lb = Listbox()
-        lb.add_item("New file", key="new", description="Create a new file", shortcut="Ctrl+N")
-        lb.add_item("Copy link", key="copy", description="Copy item link to clipboard", shortcut="Ctrl+L")
-        lb.add_item("Edit file", key="edit", description="Allows you to edit the file", shortcut="Ctrl+E")
-        lb.add_item("Delete file", key="delete", description="Permanently delete the file",
-                    shortcut="Ctrl+D", is_disabled=False)
+        lb.add_item(
+            "New file", key="new", description="Create a new file", shortcut="Ctrl+N"
+        )
+        lb.add_item(
+            "Copy link",
+            key="copy",
+            description="Copy item link to clipboard",
+            shortcut="Ctrl+L",
+        )
+        lb.add_item(
+            "Edit file",
+            key="edit",
+            description="Allows you to edit the file",
+            shortcut="Ctrl+E",
+        )
+        lb.add_item(
+            "Delete file",
+            key="delete",
+            description="Permanently delete the file",
+            shortcut="Ctrl+D",
+            is_disabled=False,
+        )
         lb.action.connect(lambda key: print(f"[default] action: {key}"))
-        self.add_section(layout, "默认 (solid / default / no selection)", [_frame(lb)], labels_bag)
+        self.add_section(
+            layout, "默认 (solid / default / no selection)", [_frame(lb)], labels_bag
+        )
 
         # ============================================================
         # 2) 6 种颜色 × variant=flat（最常用组合）
@@ -50,8 +79,14 @@ class ListboxDemo(DemoBase):
             lb.add_item("Third", key="c")
             lb.set_selected_keys({"b"})
             flats.append(_frame(lb, width=200))
-        self.add_section_grid(layout, "6 colors × variant=flat (single 选中第二项)",
-                              flats, labels_bag, cols=3, spacing=12)
+        self.add_section_grid(
+            layout,
+            "6 colors × variant=flat (single 选中第二项)",
+            flats,
+            labels_bag,
+            cols=3,
+            spacing=12,
+        )
 
         # ============================================================
         # 3) 6 种 variant × color=primary
@@ -64,21 +99,31 @@ class ListboxDemo(DemoBase):
             lb.add_item("Item Three", key="3")
             lb.set_selected_keys({"2"})
             variants_grid.append(_frame(lb, width=200))
-        self.add_section_grid(layout, "6 variants × color=primary",
-                              variants_grid, labels_bag, cols=3, spacing=12)
+        self.add_section_grid(
+            layout,
+            "6 variants × color=primary",
+            variants_grid,
+            labels_bag,
+            cols=3,
+            spacing=12,
+        )
 
         # ============================================================
         # 4) 3 种尺寸
         # ============================================================
         sizes = []
         for s in ("sm", "md", "lg"):
-            lb = Listbox(variant="flat", color="primary", size=s, selection_mode="single")
+            lb = Listbox(
+                variant="flat", color="primary", size=s, selection_mode="single"
+            )
             lb.add_item("Tiny", key="t")
             lb.add_item("Medium", key="m")
             lb.add_item("Large", key="l")
             lb.set_selected_keys({"m"})
             sizes.append(_frame(lb, width=220))
-        self.add_section(layout, "3 sizes (sm / md / lg)", sizes, labels_bag, spacing=16)
+        self.add_section(
+            layout, "3 sizes (sm / md / lg)", sizes, labels_bag, spacing=16
+        )
 
         # ============================================================
         # 5) 多选 + 自定义 emptyContent
@@ -90,12 +135,20 @@ class ListboxDemo(DemoBase):
         multi.action.connect(lambda k: print(f"[multi] action: {k}"))
         multi.selection_changed.connect(lambda s: print(f"[multi] selected: {s}"))
 
-        empty_default = Listbox(variant="flat", color="default")  # 默认 emptyContent: icon + 中英双语
-        empty_custom = Listbox(variant="flat", color="default", empty_content="🍂 No items found.")
+        empty_default = Listbox(
+            variant="flat", color="default"
+        )  # 默认 emptyContent: icon + 中英双语
+        empty_custom = Listbox(
+            variant="flat", color="default", empty_content="🍂 No items found."
+        )
 
-        self.add_section(layout, "Multiple selection / 默认 empty / 自定义 empty",
-                         [_frame(multi), _frame(empty_default), _frame(empty_custom)],
-                         labels_bag, spacing=24)
+        self.add_section(
+            layout,
+            "Multiple selection / 默认 empty / 自定义 empty",
+            [_frame(multi), _frame(empty_default), _frame(empty_custom)],
+            labels_bag,
+            spacing=24,
+        )
 
         # ============================================================
         # 6) 分组 + showDivider —— 菜单语义（点完就执行动作，不留选中态）
@@ -111,13 +164,22 @@ class ListboxDemo(DemoBase):
         sec_box.add_section(sec_actions)
 
         sec_danger = ListboxSection("Danger zone")
-        sec_danger.add_item("Delete file", key="del", description="Permanently delete this file",
-                            shortcut="⌫", is_disabled=False)
+        sec_danger.add_item(
+            "Delete file",
+            key="del",
+            description="Permanently delete this file",
+            shortcut="⌫",
+            is_disabled=False,
+        )
         sec_box.add_section(sec_danger)
         sec_box.action.connect(lambda k: print(f"[menu] action: {k}"))
 
-        self.add_section(layout, "菜单语义 (sections + shortcut，点完就执行不留选中)",
-                         [_frame(sec_box, width=300)], labels_bag)
+        self.add_section(
+            layout,
+            "菜单语义 (sections + shortcut，点完就执行不留选中)",
+            [_frame(sec_box, width=300)],
+            labels_bag,
+        )
 
         # ============================================================
         # 7) showDivider per item + disabledKeys
@@ -127,8 +189,47 @@ class ListboxDemo(DemoBase):
         divided.add_item("Write", key="write", show_divider=True)
         divided.add_item("Admin", key="admin")
         divided.set_disabled_keys({"admin"})
-        self.add_section(layout, "Per-item showDivider + disabledKeys",
-                         [_frame(divided, width=240)], labels_bag)
+        self.add_section(
+            layout,
+            "Per-item showDivider + disabledKeys",
+            [_frame(divided, width=240)],
+            labels_bag,
+        )
+
+        # ============================================================
+        # 8) 键盘导航
+        # ============================================================
+        # 先点一项进入焦点,再按 ↑↓ / Home / End 导航;按 Enter / Space 选中
+        # 焦点项会有 hover 同款高亮(键盘焦点默认开视觉反馈,无需配置)
+        # disabled 项会被自动跳过
+        kb = Listbox(
+            variant="flat",
+            color="primary",
+            selection_mode="single",
+        )
+        kb.add_item(
+            "New file", key="new", description="Create a new file", shortcut="Ctrl+N"
+        )
+        kb.add_item(
+            "Copy link", key="copy", description="Copy item link", shortcut="Ctrl+L"
+        )
+        kb.add_item(
+            "Edit file", key="edit", description="Allow editing", shortcut="Ctrl+E"
+        )
+        kb.add_item(
+            "Delete file",
+            key="del",
+            description="Permanently delete",
+            shortcut="Ctrl+D",
+        )
+        kb.set_disabled_keys({"del"})
+        kb.action.connect(lambda k: print(f"[keyboard] action: {k}"))
+        self.add_section(
+            layout,
+            "键盘导航：先点一项，再按 ↑↓ / Home / End / Enter / Space",
+            [_frame(kb, width=320)],
+            labels_bag,
+        )
 
 
 if __name__ == "__main__":

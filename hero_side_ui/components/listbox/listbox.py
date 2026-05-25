@@ -1,96 +1,49 @@
-"""
-HeroSideUI Listbox Component — 主容器
-=====================================
-基于 HeroUI v2 的 menu/listbox 设计风格。
-
-样式来源：
-    https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/menu.ts
-    https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/listbox.ts
-    https://github.com/heroui-inc/heroui/tree/main/packages/components/listbox
+"""HeroSideUI Listbox 主容器。
 
 结构::
 
-    Listbox (QWidget)            ← 本文件
+    Listbox (QWidget)
         ├── topContent     (可选)
-        ├── _list_container (QWidget, list slot)
+        ├── _list (list slot)
         │     ├── ListboxItem / ListboxSection ...
-        │     └── _empty_label (默认隐藏)
+        │     └── _empty_widget (默认隐藏)
         └── bottomContent  (可选)
 
-子组件：
-    - ``ListboxItem``  → ``item.py``
-    - ``ListboxSection`` → ``section.py``
-
-特性对齐 HeroUI:
-    - 6 variants: solid / shadow / bordered / flat / faded / light
-    - 6 colors:   default / primary / secondary / success / warning / danger
-    - 3 sizes:    sm / md / lg
-    - selection_mode: none / single / multiple
-    - showDivider / isDisabled / disable_animation
-    - hide_selected_icon / should_highlight_on_focus
-    - 信号: selection_changed(set[str]) / action(str)
-    - 主题: light / dark / auto
+子模块:
+    item.py / section.py / _empty.py / _keyboard.py / _selection.py
 """
 
 from __future__ import annotations
 
-from typing import Iterable, Optional, Union
+from typing import Iterable, Optional
 
-from PySide6.QtCore import QEvent, QSize, Qt, Signal
-from PySide6.QtGui import (
-    QColor,
-    QFont,
-    QFontMetrics,
-    QPainter,
-    QPainterPath,
-    QPalette,
-    QPen,
-)
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
-    QHBoxLayout,
     QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
-from ...animation import (
-    CheckDrawAnimation,
-    paint_animated_check,
-    stop_tween,
-    tween_value,
-)
-from ...core import StatePalette, ThemeProvider
-from ...themes import HEROUI_COLORS, LISTBOX_SIZES, RADIUS
-from ...utils import aligned_color_pair, load_svg_icon
+from ...core import ThemeProvider
+from ...themes import LISTBOX_SIZES, RADIUS
 
 from ..text import Text
+from ._empty import _EmptyContentMixin
+from ._keyboard import _KeyboardNavMixin
+from ._selection import _SelectionMixin
 from .item import ListboxItem
 from .section import ListboxSection
 
-# ============================================================
-# Listbox
-# ============================================================
 
-
-class Listbox(QWidget):
+class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     """HeroUI 风格列表框。
 
     用法::
 
         lb = Listbox(variant="flat", color="primary", selection_mode="single")
-        lb.add_item("New", key="new", description="Create a new file", shortcut="Ctrl+N")
-        lb.add_item("Copy", key="copy")
-        lb.add_item("Paste", key="paste")
+        lb.add_item("New", key="new", description="Create a new file")
         lb.action.connect(lambda key: print("activated", key))
-        lb.selection_changed.connect(lambda keys: print("selected", keys))
-
-    分组::
-
-        sec = ListboxSection("Actions", show_divider=True)
-        sec.add_item("Copy", key="copy")
-        lb.add_section(sec)
     """
 
     selection_changed = Signal(set)
@@ -147,7 +100,6 @@ class Listbox(QWidget):
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
-        # 选中/禁用 key 状态
         self._selected_keys: set[str] = set(selected_keys or [])
         self._disabled_keys: set[str] = set(disabled_keys or [])
 
@@ -162,12 +114,11 @@ class Listbox(QWidget):
         )
         self._outer.setSpacing(cfg["group_gap"])
 
-        # topContent
         self._top_content: Optional[QWidget] = None
         if top_content is not None:
             self.set_top_content(top_content)
 
-        # list 容器（list slot）
+        # list 容器
         self._list = QWidget(self)
         self._list.setAttribute(Qt.WA_TranslucentBackground, True)
         self._list_v = QVBoxLayout(self._list)
@@ -175,37 +126,29 @@ class Listbox(QWidget):
         self._list_v.setSpacing(cfg["list_gap"])
         self._outer.addWidget(self._list)
 
-        # emptyContent
-        # 用户传 str → 单行文字（兼容旧用法）
-        # 用户传 None（默认）→ 居中 icon + 中英双语 ("Nothing to show / 暂无内容")
-        self._empty_content_text = empty_content  # None / "" 都视为用默认 icon 模式
+        # emptyContent：None/"" 走默认 icon + 中英双语；非空 str 单行文字
+        self._empty_content_text = empty_content
         self._empty_widget: QWidget = (
             QWidget()
         )  # 占位，立刻被 _rebuild_empty_widget 替换
         self._list_v.addWidget(self._empty_widget)
-        self._empty_label: "Text" = Text("")  # 占位，立刻被 _rebuild_empty_widget 替换
+        self._empty_label: "Text" = Text("")
         self._rebuild_empty_widget()
         self._empty_widget.hide()
-        # 末尾 stretch:让 items 在父容器(如 popover)给的高度大于 items 实际总高度时
-        # 顶部对齐,不被 QVBoxLayout 默认拉伸成"垂直居中的大块"。
-        # 必须始终保持在 list_v 最末尾 —— add_item / add_section 后都要 _ensure_trailing_stretch()。
+        # 末尾 stretch：让 items 在父容器给的高度大于实际总高时顶部对齐
         self._list_v.addStretch(1)
 
-        # bottomContent
         self._bottom_content: Optional[QWidget] = None
         if bottom_content is not None:
             self.set_bottom_content(bottom_content)
 
-        # 子项 / 分组
         self._items: list[ListboxItem] = []
         self._sections: list[ListboxSection] = []
 
-        # 焦点项索引（键盘导航用）
-        self._focused_index = -1
+        self._focused_index = -1  # 键盘导航焦点
 
         self.setFocusPolicy(Qt.StrongFocus)
 
-        # 注册主题
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
 
@@ -225,9 +168,8 @@ class Listbox(QWidget):
             return
         self._theme = theme
         self._propagate_style()
-        # _empty_widget 内部的 icon pixmap + 文字 stylesheet 是构造时 cache 的,
-        # 主题切换时不会自己刷新,必须显式重建一遍。否则 dark 模式下 icon/文字
-        # 还是 light 模式的色号,看起来"消失"。
+        # _empty_widget 的 icon pixmap + 文字 stylesheet 是构造时 cache 的，
+        # 主题切换必须显式重建一遍，否则 dark 下还是 light 配色
         self._rebuild_empty_widget()
         self.update()
 
@@ -245,7 +187,7 @@ class Listbox(QWidget):
         self.update()
 
     # ------------------------------------------------------------
-    # 公共 API：装配
+    # 装配 API
     # ------------------------------------------------------------
     def set_top_content(self, w: Optional[QWidget]):
         if self._top_content is not None:
@@ -279,11 +221,7 @@ class Listbox(QWidget):
         is_disabled: bool = False,
         show_divider: bool = False,
     ) -> ListboxItem:
-        """追加一项。
-
-        - 传 ``ListboxItem`` 实例 → 直接挂上
-        - 传 ``str`` (title) + 关键字参数 → 内部构造 ``ListboxItem``
-        """
+        """追加一项；接受 ``ListboxItem`` 或 ``str`` (title)。"""
         if isinstance(item_or_title, ListboxItem):
             it = item_or_title
         else:
@@ -298,14 +236,10 @@ class Listbox(QWidget):
                 show_divider=show_divider,
             )
         self._attach_item(it)
-        # 插到 _empty_widget 之前(_empty_widget 才是 list_v 的直接子项,
-        # _empty_label 是 _empty_widget 内部的 QLabel,indexOf 永远是 -1)。
-        # 这样保证末尾的 stretch 永远在最后,items 顶部对齐不被拉伸。
+        # 插到 _empty_widget 之前；_empty_label 是 _empty_widget 内部子项 indexOf 永远 -1
         idx = self._list_v.indexOf(self._empty_widget)
         if idx < 0:
-            self._list_v.insertWidget(
-                self._list_v.count() - 1, it
-            )  # 倒数第二位(stretch 之前)
+            self._list_v.insertWidget(self._list_v.count() - 1, it)  # stretch 之前
         else:
             self._list_v.insertWidget(idx, it)
         self._items.append(it)
@@ -320,14 +254,13 @@ class Listbox(QWidget):
             sec = sec_or_title
         else:
             sec = ListboxSection(sec_or_title, show_divider=show_divider)
-        # 把分组里现有 item 都注册到 _items 列表（用于键盘导航 / disabled 同步）
         for it in sec.items():
             self._attach_item(it)
             self._items.append(it)
 
         idx = self._list_v.indexOf(self._empty_widget)
         if idx < 0:
-            self._list_v.insertWidget(self._list_v.count() - 1, sec)  # stretch 之前
+            self._list_v.insertWidget(self._list_v.count() - 1, sec)
         else:
             self._list_v.insertWidget(idx, sec)
         self._sections.append(sec)
@@ -348,7 +281,6 @@ class Listbox(QWidget):
         self._refresh_empty()
 
     def items(self) -> list[ListboxItem]:
-        """所有可交互项（包含 section 内）"""
         return list(self._items)
 
     def item_by_key(self, key: str) -> Optional[ListboxItem]:
@@ -358,28 +290,13 @@ class Listbox(QWidget):
         return None
 
     def _attach_item(self, it: ListboxItem):
-        # 同步 disabled key
         if it.key() in self._disabled_keys:
             it.set_disabled(True)
-        # 同步选中 key
         if it.key() in self._selected_keys and self._selection_mode != "none":
             it.set_selected(True)
         # 注入"点击是否被拒"判定 —— 必选场景下从源头阻断 Qt 内置 toggle
         it._toggle_guard = self._should_block_item_toggle
-        # 监听点击/选中
         it.activated.connect(self._on_item_activated)
-
-    def _should_block_item_toggle(self, it: ListboxItem) -> bool:
-        """点击 it 是否应被拒：必选下点击会让 selection 变空时返回 True。"""
-        if not self._disallow_empty_selection:
-            return False
-        if self._selection_mode == "single":
-            # 单选必选：点击已选项 → 拒（保持选中）
-            return it.key() in self._selected_keys
-        if self._selection_mode == "multiple":
-            # 多选必选：仅剩 1 项且点的就是它 → 拒
-            return it.key() in self._selected_keys and len(self._selected_keys) == 1
-        return False
 
     # ------------------------------------------------------------
     # 选中 / 禁用 API
@@ -392,7 +309,6 @@ class Listbox(QWidget):
             return
         self._selection_mode = mode
         if mode == "none":
-            # 清空选中
             self._selected_keys.clear()
             for it in self._items:
                 it.set_selected(False)
@@ -437,7 +353,7 @@ class Listbox(QWidget):
 
     def set_is_disabled(self, v: bool):
         self._is_disabled = bool(v)
-        # 通过 opacity effect 一刀切（不动 enabled，键盘焦点保留语义）
+        # opacity effect 一刀切，不动 enabled 保留键盘焦点语义
         if not hasattr(self, "_disabled_effect"):
             self._disabled_effect = QGraphicsOpacityEffect(self)
         self._disabled_effect.setOpacity(0.5 if self._is_disabled else 1.0)
@@ -482,50 +398,6 @@ class Listbox(QWidget):
         self._radius = r
         self._propagate_style()
 
-    def set_empty_content(self, text: Optional[str]):
-        """设置空状态文案。
-
-        - 传 ``None`` / ``""``：恢复默认（icon + 中英双语）
-        - 传非空 ``str``：单行文字
-        """
-        self._empty_content_text = text
-        self._rebuild_empty_widget()
-
-    def _rebuild_empty_widget(self):
-        """重建 empty 占位 widget —— 在 set_empty_content / size / theme 变化时调用。"""
-        idx = self._list_v.indexOf(self._empty_widget)
-        # 用 isHidden() 而不是 isVisible():isVisible 在 parent (popover) 不可见时
-        # 即使我们 setVisible(True) 也会返回 False —— 主题切换时 popover 关闭 +
-        # listbox 隐藏,被骗到这里 was_visible=False,新 empty_widget 跟着 hide,
-        # 下次 popover 打开 empty 内容还是缺,要用户再触发一次 _apply_filter 才出现。
-        # 用 isHidden() 看的是 widget 自己 explicit 的 visible flag,不受 parent 影响。
-        was_visible = not self._empty_widget.isHidden()
-        self._list_v.removeWidget(self._empty_widget)
-        self._empty_widget.setParent(None)
-        self._empty_widget.deleteLater()
-        self._empty_widget = self._build_empty_widget()
-        cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
-        # 默认模式（icon + 双语）需要更高的占位空间；自定义文字保持原 empty_height
-        if self._empty_content_text:
-            self._empty_widget.setMinimumHeight(cfg["empty_height"])
-        else:
-            # icon (3×title) + 两行文字 + 上下 padding + spacing
-            self._empty_widget.setMinimumHeight(
-                cfg["title_font_size"] * 3
-                + cfg["title_font_size"]
-                + cfg["desc_font_size"]
-                + cfg["item_padding_y"] * 4
-                + 16
-            )
-        if idx < 0:
-            self._list_v.addWidget(self._empty_widget)
-        else:
-            self._list_v.insertWidget(idx, self._empty_widget)
-        self._empty_label = self._empty_widget.findChild(
-            QLabel, "heroEmptyText"
-        ) or Text("")
-        self._empty_widget.setVisible(was_visible)
-
     def set_hide_selected_icon(self, v: bool):
         self._hide_selected_icon = bool(v)
         self._propagate_style()
@@ -539,7 +411,7 @@ class Listbox(QWidget):
         self._propagate_style()
 
     # ------------------------------------------------------------
-    # 内部
+    # 样式下发
     # ------------------------------------------------------------
     def _propagate_style(self):
         cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
@@ -572,196 +444,8 @@ class Listbox(QWidget):
                 selectable=selectable,
             )
 
-        # empty 占位主题/尺寸跟随：直接重建 widget（icon 颜色 / 字号都依赖 theme + size）
+        # empty 占位主题/尺寸跟随
         self._rebuild_empty_widget()
-
-    def _refresh_empty(self):
-        # 如果完全没 item（独立 + section 内部），显示 empty 占位（icon + 双语 / 自定义文字）
-        empty = len(self._items) == 0
-        self._empty_widget.setVisible(empty)
-
-    def _build_empty_widget(self) -> QWidget:
-        """构造空状态占位 widget。
-
-        - ``_empty_content_text`` 为 None 或空：默认模式 → 居中 icon + 中英双语
-        - 非空 str：单行文字（保持原行为兼容）
-        """
-        from PySide6.QtWidgets import QSizePolicy
-        from PySide6.QtCore import Qt
-
-        cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
-        w = QWidget(self._list)
-        w.setAttribute(Qt.WA_TranslucentBackground, True)
-
-        if self._empty_content_text:
-            # 兼容模式：单行文字
-            v = QVBoxLayout(w)
-            v.setContentsMargins(
-                cfg["item_padding_x"],
-                cfg["item_padding_y"],
-                cfg["item_padding_x"],
-                cfg["item_padding_y"],
-            )
-            v.setSpacing(0)
-            text_label = Text(
-                self._empty_content_text,
-                parent=w,
-                color=StatePalette.text_description(self._theme).name(),
-                selectable=False,
-            )
-            text_label.setObjectName("heroEmptyText")
-            text_label.setAttribute(Qt.WA_TranslucentBackground, True)
-            text_label.setAlignment(Qt.AlignVCenter | Qt.AlignLeft)
-            v.addWidget(text_label)
-            return w
-
-        # 默认模式：icon + 中英双语
-        v = QVBoxLayout(w)
-        v.setContentsMargins(
-            cfg["item_padding_x"],
-            cfg["item_padding_y"] * 2,
-            cfg["item_padding_x"],
-            cfg["item_padding_y"] * 2,
-        )
-        v.setSpacing(8)
-        v.setAlignment(Qt.AlignCenter)
-
-        # icon
-        icon_size = cfg["title_font_size"] * 3  # md=42, sm=36, lg=45 视觉适中
-        icon_color = StatePalette.text_description(self._theme)
-        icon_label = QLabel(w)
-        icon_label.setObjectName("heroEmptyIcon")
-        icon_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        icon_label.setAlignment(Qt.AlignCenter)
-        pix = load_svg_icon(
-            "mingcute--empty-box-line", size=icon_size, color=icon_color
-        )
-        icon_label.setPixmap(pix)
-        icon_label.setFixedSize(icon_size, icon_size)
-        v.addWidget(icon_label, 0, Qt.AlignCenter)
-
-        # 双语文字（en 在上，cn 在下，cn 字号略小）
-        en_label = Text(
-            "Nothing to show",
-            parent=w,
-            size=cfg["title_font_size"],
-            color=StatePalette.text_description(self._theme).name(),
-            selectable=False,
-        )
-        en_label.setObjectName("heroEmptyText")  # 主文本对外暴露给 _empty_label
-        en_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        en_label.setAlignment(Qt.AlignCenter)
-        v.addWidget(en_label, 0, Qt.AlignCenter)
-
-        cn_label = Text(
-            "暂无内容",
-            parent=w,
-            size=cfg["desc_font_size"],
-            color=StatePalette.text_description(self._theme).name(),
-            selectable=False,
-        )
-        cn_label.setObjectName("heroEmptyTextCn")
-        cn_label.setAttribute(Qt.WA_TranslucentBackground, True)
-        cn_label.setAlignment(Qt.AlignCenter)
-        v.addWidget(cn_label, 0, Qt.AlignCenter)
-
-        return w
-
-    def _on_item_activated(self, key: str):
-        # 必选语义：禁止把最后一项取消（多选剩 1 + 点的就是它，单选已天然 pass）
-        if (
-            self._disallow_empty_selection
-            and self._selection_mode == "multiple"
-            and key in self._selected_keys
-            and len(self._selected_keys) == 1
-        ):
-            return
-
-        # 选中态切换
-        if self._selection_mode == "single":
-            old = set(self._selected_keys)
-            if key in self._selected_keys:
-                # 单选模式下点击已选项 —— HeroUI 默认仍保持选中（disallowEmptySelection），
-                # 我们对齐：保持选中
-                pass
-            else:
-                self._selected_keys = {key}
-                for it in self._items:
-                    it.set_selected(it.key() == key)
-            if old != self._selected_keys:
-                self.selection_changed.emit(set(self._selected_keys))
-        elif self._selection_mode == "multiple":
-            old = set(self._selected_keys)
-            if key in self._selected_keys:
-                self._selected_keys.remove(key)
-                it = self.item_by_key(key)
-                if it:
-                    it.set_selected(False)
-            else:
-                self._selected_keys.add(key)
-                it = self.item_by_key(key)
-                if it:
-                    it.set_selected(True)
-            if old != self._selected_keys:
-                self.selection_changed.emit(set(self._selected_keys))
-
-        # action 总是在每次点击触发
-        self.action.emit(key)
-
-    # ------------------------------------------------------------
-    # 键盘导航
-    # ------------------------------------------------------------
-    def keyPressEvent(self, e):
-        key = e.key()
-        if key in (Qt.Key_Down, Qt.Key_Up):
-            step = 1 if key == Qt.Key_Down else -1
-            self._move_focus(step)
-            e.accept()
-            return
-        if key == Qt.Key_Home:
-            self._set_focus_index(self._first_enabled_index())
-            e.accept()
-            return
-        if key == Qt.Key_End:
-            self._set_focus_index(self._last_enabled_index())
-            e.accept()
-            return
-        if key in (Qt.Key_Return, Qt.Key_Enter, Qt.Key_Space):
-            if 0 <= self._focused_index < len(self._items):
-                it = self._items[self._focused_index]
-                if not it.is_disabled():
-                    it.activated.emit(it.key())
-                    self._on_item_activated(it.key())
-            e.accept()
-            return
-        super().keyPressEvent(e)
-
-    def _enabled_indices(self) -> list[int]:
-        return [i for i, it in enumerate(self._items) if not it.is_disabled()]
-
-    def _first_enabled_index(self) -> int:
-        idxs = self._enabled_indices()
-        return idxs[0] if idxs else -1
-
-    def _last_enabled_index(self) -> int:
-        idxs = self._enabled_indices()
-        return idxs[-1] if idxs else -1
-
-    def _move_focus(self, step: int):
-        idxs = self._enabled_indices()
-        if not idxs:
-            return
-        if self._focused_index < 0 or self._focused_index not in idxs:
-            self._set_focus_index(idxs[0] if step > 0 else idxs[-1])
-            return
-        cur = idxs.index(self._focused_index)
-        nxt = (cur + step) % len(idxs)
-        self._set_focus_index(idxs[nxt])
-
-    def _set_focus_index(self, idx: int):
-        self._focused_index = idx
-        if 0 <= idx < len(self._items):
-            self._items[idx].setFocus(Qt.TabFocusReason)
 
 
 __all__ = ["Listbox", "ListboxItem", "ListboxSection"]
