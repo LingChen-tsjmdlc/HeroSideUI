@@ -3,6 +3,12 @@
 import pytest
 
 from hero_side_ui import Slider
+from hero_side_ui.components.slider._geometry import (
+    ratio_of,
+    resolve_thumb_radius,
+    value_at_ratio,
+)
+from hero_side_ui.components.slider._palette import filler_color, thumb_color
 
 
 # ============================================================
@@ -72,8 +78,9 @@ class TestSliderVariants:
         s = Slider(color=color)
         qtbot.addWidget(s)
         assert s._color == color
-        assert s._filler_color().isValid()
-        assert s._thumb_color().isValid()
+        # 颜色解析拆到模块级纯函数(_palette.py)
+        assert filler_color(s._color, s._theme).isValid()
+        assert thumb_color(s._color, s._theme).isValid()
 
     @pytest.mark.parametrize("size", ["sm", "md", "lg"])
     def test_sizes(self, qtbot, size):
@@ -90,7 +97,8 @@ class TestSliderVariants:
         qtbot.addWidget(s)
         assert s._radius == radius
         cfg = s._cfg()
-        assert s._resolve_thumb_radius(cfg["thumb"]) >= 0
+        # 圆角解析为模块级纯函数(_geometry.py)
+        assert resolve_thumb_radius(s._radius, cfg["thumb"]) >= 0
 
     @pytest.mark.parametrize("orientation", ["horizontal", "vertical"])
     def test_orientation(self, qtbot, orientation):
@@ -206,23 +214,23 @@ class TestSliderRatio:
     def test_ratio_of_min_max(self, qtbot):
         s = Slider(min_value=0, max_value=100)
         qtbot.addWidget(s)
-        assert s._ratio_of(0) == 0.0
-        assert s._ratio_of(100) == 1.0
-        assert abs(s._ratio_of(50) - 0.5) < 1e-9
+        assert ratio_of(0, s._min, s._max) == 0.0
+        assert ratio_of(100, s._min, s._max) == 1.0
+        assert abs(ratio_of(50, s._min, s._max) - 0.5) < 1e-9
 
     def test_ratio_of_custom_range(self, qtbot):
         s = Slider(min_value=-50, max_value=50)
         qtbot.addWidget(s)
-        assert s._ratio_of(-50) == 0.0
-        assert s._ratio_of(0) == 0.5
-        assert s._ratio_of(50) == 1.0
+        assert ratio_of(-50, s._min, s._max) == 0.0
+        assert ratio_of(0, s._min, s._max) == 0.5
+        assert ratio_of(50, s._min, s._max) == 1.0
 
     def test_value_at_ratio(self, qtbot):
         s = Slider(min_value=0, max_value=200)
         qtbot.addWidget(s)
-        assert s._value_at_ratio(0) == 0
-        assert s._value_at_ratio(0.5) == 100
-        assert s._value_at_ratio(1.0) == 200
+        assert value_at_ratio(0, s._min, s._max) == 0
+        assert value_at_ratio(0.5, s._min, s._max) == 100
+        assert value_at_ratio(1.0, s._min, s._max) == 200
 
 
 # ============================================================

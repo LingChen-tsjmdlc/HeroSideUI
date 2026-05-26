@@ -134,10 +134,12 @@ class TestSelectSelection:
             disallow_empty_selection=True,
             default_selected_keys={"a"},
         )
-        # 模拟用户取消最后一个选中：listbox 状态变空，应该被还原
-        sel._listbox.set_selected_keys(set())
-        sel._on_listbox_action("a")
+        # 必选语义已下沉到 listbox（mouseReleaseEvent 源头堵截）+ Select 公共 API
+        # 这里验证公共 API：set_selected_keys(空集) 在必选下被拒绝
+        sel.set_selected_keys(set())
         assert sel.selected_keys() == {"a"}
+        # listbox 也透传了必选标志
+        assert sel._listbox.disallow_empty_selection() is True
 
 
 # ============================================================
