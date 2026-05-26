@@ -35,6 +35,7 @@ from .listbox import LISTBOX_SIZES
 from .autocomplete import AUTOCOMPLETE_SIZES
 from .select import SELECT_SIZES
 from .slider import SLIDER_SIZES
+from .radio import RADIO_SIZES
 
 __all__ = [
     "BUTTON_SIZES",
@@ -55,4 +56,5 @@ __all__ = [
     "AUTOCOMPLETE_SIZES",
     "SELECT_SIZES",
     "SLIDER_SIZES",
+    "RADIO_SIZES",
 ]
