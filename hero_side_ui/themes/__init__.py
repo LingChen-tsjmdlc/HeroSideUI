@@ -20,6 +20,7 @@ from .component_presets import (
     AUTOCOMPLETE_SIZES,
     SELECT_SIZES,
     SLIDER_SIZES,
+    RADIO_SIZES,
 )
 
 
@@ -71,4 +72,5 @@ __all__ = [
     "AUTOCOMPLETE_SIZES",
     "SELECT_SIZES",
     "SLIDER_SIZES",
+    "RADIO_SIZES",
 ]
