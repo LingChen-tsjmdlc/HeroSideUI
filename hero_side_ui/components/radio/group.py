@@ -17,7 +17,8 @@ from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS
 
 from ..text import Text
-from .radio import Radio, VALID_COLORS, VALID_SIZES
+from .radio import Radio, VALID_COLORS, VALID_SIZES, VALID_VARIANTS
+from ._base import RadioBase
 
 
 class RadioGroup(QWidget):
@@ -44,6 +45,7 @@ class RadioGroup(QWidget):
         orientation: str = "vertical",
         color: str = "primary",
         size: str = "md",
+        variant: str = "default",
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
@@ -58,6 +60,10 @@ class RadioGroup(QWidget):
             raise ValueError(f"color must be one of {VALID_COLORS}, got {color!r}")
         if size not in VALID_SIZES:
             raise ValueError(f"size must be one of {VALID_SIZES}, got {size!r}")
+        if variant not in VALID_VARIANTS:
+            raise ValueError(
+                f"variant must be one of {VALID_VARIANTS}, got {variant!r}"
+            )
         if orientation not in ("vertical", "horizontal"):
             raise ValueError("orientation must be 'vertical' or 'horizontal'")
 
@@ -67,6 +73,7 @@ class RadioGroup(QWidget):
         self._orientation = orientation
         self._color = color
         self._size = size
+        self._variant = variant
         self._is_disabled = is_disabled
         self._is_invalid = is_invalid
         self._is_required = is_required
@@ -75,7 +82,7 @@ class RadioGroup(QWidget):
         self._theme = Radio._resolve_theme(theme)
         self._default_value = default_value
 
-        self._radios: List[Radio] = []
+        self._radios: List[RadioBase] = []
         self._suppress = False  # 互斥时防止 toggled 风暴
 
         self._setup_ui()
@@ -145,10 +152,11 @@ class RadioGroup(QWidget):
     # ============================================================
     # 子 Radio 管理
     # ============================================================
-    def add_radio(self, radio: Radio):
+    def add_radio(self, radio: RadioBase):
         """添加一个 Radio 到 group，继承样式并接入互斥逻辑"""
         radio.set_color(self._color)
         radio.set_size(self._size)
+        radio.set_variant(self._variant)
         radio.set_theme(self._theme)
         radio.set_disable_animation(self._disable_animation)
         if self._is_disabled:
@@ -182,6 +190,7 @@ class RadioGroup(QWidget):
             description=description,
             color=self._color,
             size=self._size,
+            variant=self._variant,
             theme=self._theme,
             disable_animation=self._disable_animation,
         )
@@ -189,10 +198,10 @@ class RadioGroup(QWidget):
         return r
 
     # 互斥守卫：已选中再点忽略
-    def _guard_toggle(self, radio: Radio) -> bool:
+    def _guard_toggle(self, radio: RadioBase) -> bool:
         return radio.isChecked()
 
-    def _on_radio_toggled(self, source: Radio, checked: bool):
+    def _on_radio_toggled(self, source: RadioBase, checked: bool):
         if self._suppress:
             return
         if not checked:
@@ -243,6 +252,15 @@ class RadioGroup(QWidget):
             raise ValueError(f"size must be one of {VALID_SIZES}")
         self._size = size
         self._broadcast(lambda r: r.set_size(size))
+
+    def set_variant(self, variant: str):
+        if variant not in VALID_VARIANTS:
+            raise ValueError(f"variant must be one of {VALID_VARIANTS}")
+        self._variant = variant
+        self._broadcast(lambda r: r.set_variant(variant))
+
+    def variant(self) -> str:
+        return self._variant
 
     def set_theme(self, theme: str):
         if theme == "auto":

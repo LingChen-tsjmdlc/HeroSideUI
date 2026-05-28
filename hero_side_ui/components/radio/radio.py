@@ -1,12 +1,11 @@
-"""
-HeroSideUI Radio Component
+"""HeroSideUI Radio Component
 基于 HeroUI v2 设计风格，保持 PySide 原生 API
 
 样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/radio.ts
 组件来源: https://github.com/heroui-inc/heroui/tree/main/packages/components/radio
 
 结构 (slots):
-    Radio (继承 QAbstractButton)
+    Radio (继承 RadioBase → QAbstractButton)
         ├── wrapper  (外圈圆环，带边框)
         ├── control  (内圆点，选中时缩放+透明度过渡)
         └── labelWrapper
@@ -14,26 +13,13 @@ HeroSideUI Radio Component
             └── description  (副文本)
 
 特性对齐 HeroUI:
-    - 6 种颜色 (default / primary / secondary / success / warning / danger)
-    - 3 种尺寸 (sm / md / lg)
-    - hover 时 wrapper 加 default-100 底色 (group-data-[hover-unselected])
-    - 按压缩放 (scale-95)
-    - 内圆点 scale 0 → 1 + opacity 0 → 1 过渡
-    - isDisabled / isInvalid / disableAnimation
-    - 主题: light / dark / auto
+    - 6 种颜色 / 3 种尺寸 / hover bg / press scale / control 过渡 / disabled / invalid
+    - 双 variant：default（圆点 radio）+ card（卡片选择器，对齐 v2 Custom Styles 示例）
 """
 
 from typing import Optional
 
-from PySide6.QtCore import (
-    Property,
-    QEasingCurve,
-    QPropertyAnimation,
-    QRectF,
-    QSize,
-    Qt,
-    Signal,
-)
+from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import (
     QColor,
     QFont,
@@ -41,23 +27,23 @@ from PySide6.QtGui import (
     QPainter,
     QPen,
 )
-from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
+from PySide6.QtWidgets import QWidget
 
-from ...core import ThemeProvider, make_text_qfont
-from ...themes import HEROUI_COLORS, RADIO_SIZES
-
-VALID_COLORS = tuple(HEROUI_COLORS.keys())
-VALID_SIZES = ("sm", "md", "lg")
+from ...core import make_text_qfont
+from ...themes import HEROUI_COLORS
+from ._base import RadioBase, VALID_COLORS, VALID_SIZES, VALID_VARIANTS
 
 
-class Radio(QAbstractButton):
+class Radio(RadioBase):
     """HeroUI 风格的 Radio 组件
 
     单选 wrapper —— 配合 RadioGroup 使用时由 group 互斥；独立使用时
     setCheckable(True) 即可像普通按钮那样 toggle。
-    """
 
-    selected = Signal(str)
+    variant:
+        "default" — 经典圆点 radio（label 在右）
+        "card"    — 卡片式选择器（label 在左，圆点在右，对齐 HeroUI v2 Custom Styles）
+    """
 
     def __init__(
         self,
@@ -67,148 +53,31 @@ class Radio(QAbstractButton):
         is_selected: bool = False,
         color: str = "primary",
         size: str = "md",
+        variant: str = "default",
         is_disabled: bool = False,
         is_invalid: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
-        super().__init__(parent)
-
-        if color not in VALID_COLORS:
-            raise ValueError(f"color must be one of {VALID_COLORS}, got {color!r}")
-        if size not in VALID_SIZES:
-            raise ValueError(f"size must be one of {VALID_SIZES}, got {size!r}")
-
-        self._color = color
-        self._size = size
-        self._description = description
-        self._is_disabled = is_disabled
-        self._is_invalid = is_invalid
-        self._disable_animation = disable_animation
-        self._theme_mode = theme
-        self._theme = self._resolve_theme(theme)
-        self._value = value if value is not None else text
-
-        # 动画驱动值
-        self._control_progress = 0.0  # 0 = hidden, 1 = full
-        self._press_progress = 0.0  # 0 = 1.0, 1 = 0.95
-        self._hover = False
-
-        self.setText(text)
-        self.setCheckable(True)
-        self.setChecked(is_selected)
-        self.setEnabled(not is_disabled)
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
-        self.setMouseTracking(True)
-        self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
-
-        if is_selected and not disable_animation:
-            self._control_progress = 1.0
-
-        # 动画
-        self._control_anim = QPropertyAnimation(self, b"control_progress")
-        self._control_anim.setDuration(180)
-        self._control_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        self._press_anim = QPropertyAnimation(self, b"press_progress")
-        self._press_anim.setDuration(120)
-        self._press_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        self.toggled.connect(self._on_toggled)
-        self._refresh_geometry()
-
-        if self._theme_mode == "auto":
-            ThemeProvider.instance().register(self)
+        super().__init__(
+            text=text,
+            value=value,
+            description=description,
+            is_selected=is_selected,
+            color=color,
+            size=size,
+            variant=variant,
+            is_disabled=is_disabled,
+            is_invalid=is_invalid,
+            disable_animation=disable_animation,
+            theme=theme,
+            parent=parent,
+        )
 
     # ============================================================
-    # Qt 属性（驱动动画）
+    # 字体
     # ============================================================
-    def _get_control(self) -> float:
-        return self._control_progress
-
-    def _set_control(self, v: float):
-        self._control_progress = v
-        self.update()
-
-    control_progress = Property(float, _get_control, _set_control)
-
-    def _get_press(self) -> float:
-        return self._press_progress
-
-    def _set_press(self, v: float):
-        self._press_progress = v
-        self.update()
-
-    press_progress = Property(float, _get_press, _set_press)
-
-    # ============================================================
-    # 状态变化
-    # ============================================================
-    def _on_toggled(self, checked: bool):
-        if self._disable_animation:
-            self._control_progress = 1.0 if checked else 0.0
-            self.update()
-        else:
-            self._control_anim.stop()
-            self._control_anim.setStartValue(self._control_progress)
-            self._control_anim.setEndValue(1.0 if checked else 0.0)
-            self._control_anim.start()
-        if checked:
-            self.selected.emit(self._value)
-
-    # ============================================================
-    # 鼠标 / 焦点事件
-    # ============================================================
-    def mousePressEvent(self, event):
-        if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(1.0)
-            self._press_anim.setDuration(80)
-            self._press_anim.start()
-        super().mousePressEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(0.0)
-            self._press_anim.setDuration(150)
-            self._press_anim.start()
-        super().mouseReleaseEvent(event)
-
-    def enterEvent(self, event):
-        self._hover = True
-        self.update()
-        super().enterEvent(event)
-
-    def leaveEvent(self, event):
-        self._hover = False
-        self.update()
-        super().leaveEvent(event)
-
-    # 关键：QAbstractButton 默认点击会 toggle，但 radio 语义是
-    # "已选中时再次点击不取消"。RadioGroup 模式下点击其它 radio 才会
-    # 把当前 radio 置回未选中。这里复制 HeroUI 行为：单体使用时仍允许
-    # 反向 toggle（无 group 时无人帮忙取消，反而方便测试/独立用）；
-    # group 模式由 RadioGroup 在 add_radio 时改写为"已选中再点忽略"。
-    def nextCheckState(self):
-        # 由 RadioGroup 注入 hook 控制是否允许反向取消
-        guard = getattr(self, "_toggle_guard", None)
-        if callable(guard) and guard(self):
-            # 守卫返回 True = 拦截：不切状态
-            return
-        super().nextCheckState()
-
-    # ============================================================
-    # 几何
-    # ============================================================
-    def _size_config(self) -> dict:
-        return RADIO_SIZES.get(self._size, RADIO_SIZES["md"])
-
     def _label_font(self) -> QFont:
         cfg = self._size_config()
         return make_text_qfont(cfg["label_font_size"], "normal")
@@ -217,16 +86,19 @@ class Radio(QAbstractButton):
         cfg = self._size_config()
         return make_text_qfont(cfg["desc_font_size"], "normal")
 
+    # ============================================================
+    # 几何
+    # ============================================================
     def _refresh_geometry(self):
         self.setFont(self._label_font())
-        self.updateGeometry()
-        self.update()
-
-    def setText(self, text: str):  # type: ignore[override]
-        super().setText(text)
-        self._refresh_geometry()
+        super()._refresh_geometry()
 
     def sizeHint(self) -> QSize:
+        if self._variant == "card":
+            return self._card_size_hint()
+        return self._default_size_hint()
+
+    def _default_size_hint(self) -> QSize:
         cfg = self._size_config()
         wrapper = cfg["wrapper"]
         gap = cfg["gap"]
@@ -249,8 +121,30 @@ class Radio(QAbstractButton):
         pad = 4
         return QSize(total_w + pad * 2, total_h + pad * 2)
 
-    def minimumSizeHint(self) -> QSize:
-        return self.sizeHint()
+    def _card_size_hint(self) -> QSize:
+        cfg = self._size_config()
+        wrapper = cfg["wrapper"]
+        pad = cfg["card_padding"]
+        gap = cfg["card_gap"]
+        max_w = cfg["card_max_width"]
+
+        label_w = label_h = desc_w = desc_h = 0
+        if self.text():
+            fm = QFontMetrics(self._label_font())
+            label_w = fm.horizontalAdvance(self.text())
+            label_h = fm.height()
+        if self._description:
+            fm = QFontMetrics(self._desc_font())
+            desc_w = fm.horizontalAdvance(self._description)
+            desc_h = fm.height()
+
+        text_w = max(label_w, desc_w)
+        text_h = label_h + desc_h
+        # 卡片宽 = padding + text + gap + wrapper + padding，但不超过 max_width
+        natural_w = pad + text_w + gap + wrapper + pad
+        total_w = min(natural_w, max_w)
+        total_h = pad + max(text_h, wrapper) + pad
+        return QSize(total_w, total_h)
 
     # ============================================================
     # 色彩决策
@@ -289,10 +183,38 @@ class Radio(QAbstractButton):
 
         return border, selected_border, control, hover_bg, label_color, desc_color
 
+    def _card_palette(self):
+        """卡片变体专用：底色 / 边框 / hover 底色"""
+        is_dark = self._theme == "dark"
+        dc = HEROUI_COLORS["default"]
+        colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
+
+        # bg-content1 ≈ default-50（亮）/ default-900（暗）
+        card_bg = QColor("#ffffff" if not is_dark else dc[900])
+        # hover: bg-content2 ≈ default-100 / default-800
+        card_bg_hover = QColor(dc[100] if not is_dark else dc[800])
+        # 透明边框默认；选中时使用主色
+        if self._color == "default":
+            selected_border = QColor(dc[300] if is_dark else dc[500])
+        else:
+            selected_border = QColor(colors[500])
+        if self._is_invalid:
+            selected_border = QColor(HEROUI_COLORS["danger"][500])
+        return card_bg, card_bg_hover, selected_border
+
     # ============================================================
     # paintEvent — 完整自绘
     # ============================================================
     def paintEvent(self, event):
+        if self._variant == "card":
+            self._paint_card()
+        else:
+            self._paint_default()
+
+    # ----------------------------------------------------------------
+    # 默认 variant
+    # ----------------------------------------------------------------
+    def _paint_default(self):
         cfg = self._size_config()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -311,16 +233,14 @@ class Radio(QAbstractButton):
         bw = cfg["border_width"]
         gap = cfg["gap"]
 
-        # 计算 wrapper 与文字布局
         rect = self.rect()
         pad_x = 4
-        # wrapper 整体垂直居中
         box_x = pad_x
         box_y = (rect.height() - wrapper_size) // 2
         cx = box_x + wrapper_size / 2.0
         cy = box_y + wrapper_size / 2.0
 
-        # ---- 按压缩放 (scale-95) ----
+        # 按压缩放 (scale-95)
         press_scale = 1.0 - 0.05 * self._press_progress
         if press_scale < 1.0:
             painter.save()
@@ -330,7 +250,7 @@ class Radio(QAbstractButton):
 
         is_selected = self.isChecked()
 
-        # ---- 1) hover 内底色（仅未选中时显示）----
+        # hover 内底色（仅未选中时显示）
         if self._hover and not is_selected and not self._is_disabled:
             painter.save()
             painter.setPen(Qt.PenStyle.NoPen)
@@ -338,8 +258,7 @@ class Radio(QAbstractButton):
             painter.drawEllipse(QRectF(box_x, box_y, wrapper_size, wrapper_size))
             painter.restore()
 
-        # ---- 2) wrapper 边框（圆环）----
-        # 选中时边框颜色随 control_progress 从 default → 主色 渐变更稳
+        # wrapper 边框（圆环），选中时颜色随 progress 渐变
         cp = self._control_progress
         if is_selected:
             r = self._lerp(border_color.red(), selected_border.red(), cp)
@@ -350,8 +269,7 @@ class Radio(QAbstractButton):
             ring = border_color
 
         painter.save()
-        pen = QPen(ring, bw)
-        painter.setPen(pen)
+        painter.setPen(QPen(ring, bw))
         painter.setBrush(Qt.BrushStyle.NoBrush)
         half = bw / 2.0
         painter.drawEllipse(
@@ -364,7 +282,7 @@ class Radio(QAbstractButton):
         )
         painter.restore()
 
-        # ---- 3) 内圆点 control（scale 0 → 1 + opacity 0 → 1）----
+        # 内圆点 control（scale 0 → 1 + opacity 0 → 1）
         if cp > 0.001:
             painter.save()
             painter.setOpacity(cp)
@@ -380,7 +298,7 @@ class Radio(QAbstractButton):
         if press_scale < 1.0:
             painter.restore()
 
-        # ---- 4) labelWrapper：label + description ----
+        # labelWrapper：label + description
         if self.text() or self._description:
             text_x = box_x + wrapper_size + gap
             label_fm = QFontMetrics(self._label_font())
@@ -390,7 +308,6 @@ class Radio(QAbstractButton):
             block_h = label_h + desc_h
             text_top = (rect.height() - block_h) // 2
 
-            # disabled 整体半透明
             painter.save()
             if self._is_disabled:
                 painter.setOpacity(0.5)
@@ -419,14 +336,159 @@ class Radio(QAbstractButton):
                 )
             painter.restore()
 
-        # ---- 5) disabled 蒙层（wrapper 也半透明）----
-        if self._is_disabled:
-            # 上面文字已带 0.5；wrapper / control 在 paint 时未单独处理，
-            # 通过 setEnabled(False) 失去交互；视觉上给整体一个 0.6 蒙层
+        painter.end()
+
+    # ----------------------------------------------------------------
+    # card variant —— 对齐 HeroUI v2 Custom Styles 示例
+    # 卡片底 + label 左侧（label 上、description 下）+ 圆点右侧；
+    # 选中时边框变主色；hover 时切换底色。
+    # ----------------------------------------------------------------
+    def _paint_card(self):
+        cfg = self._size_config()
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
+
+        (
+            ring_default,
+            ring_selected,
+            control_color,
+            _,
+            label_color,
+            desc_color,
+        ) = self._palette()
+        card_bg, card_bg_hover, card_selected_border = self._card_palette()
+
+        wrapper_size = cfg["wrapper"]
+        control_size = cfg["control"]
+        ring_bw = cfg["border_width"]
+        card_bw = cfg["card_border_width"]
+        radius = cfg["card_radius"]
+        pad = cfg["card_padding"]
+
+        rect = self.rect()
+        cp = self._control_progress
+        is_selected = self.isChecked()
+
+        # 按压缩放
+        press_scale = 1.0 - 0.03 * self._press_progress
+        cx_total = rect.width() / 2.0
+        cy_total = rect.height() / 2.0
+        if press_scale < 1.0:
             painter.save()
-            painter.setOpacity(0.4)
+            painter.translate(cx_total, cy_total)
+            painter.scale(press_scale, press_scale)
+            painter.translate(-cx_total, -cy_total)
+
+        # ---- 1) 卡片底（圆角矩形 + 边框）----
+        painter.save()
+        if self._is_disabled:
+            painter.setOpacity(0.5)
+        bg = card_bg_hover if (self._hover and not self._is_disabled) else card_bg
+        # 边框：未选中=透明（与 bg 同色避免突兀），选中=主色
+        if is_selected:
+            r = self._lerp(bg.red(), card_selected_border.red(), cp)
+            g = self._lerp(bg.green(), card_selected_border.green(), cp)
+            b = self._lerp(bg.blue(), card_selected_border.blue(), cp)
+            border = QColor(r, g, b)
+        else:
+            border = bg
+        painter.setBrush(bg)
+        painter.setPen(QPen(border, card_bw))
+        half = card_bw / 2.0
+        painter.drawRoundedRect(
+            QRectF(
+                half,
+                half,
+                rect.width() - card_bw,
+                rect.height() - card_bw,
+            ),
+            radius,
+            radius,
+        )
+        painter.restore()
+
+        # ---- 2) 圆点 wrapper —— 卡片右侧垂直居中 ----
+        box_x = rect.width() - pad - wrapper_size
+        box_y = (rect.height() - wrapper_size) // 2
+        cx = box_x + wrapper_size / 2.0
+        cy = box_y + wrapper_size / 2.0
+
+        painter.save()
+        if self._is_disabled:
+            painter.setOpacity(0.5)
+        # 圆环
+        if is_selected:
+            r = self._lerp(ring_default.red(), ring_selected.red(), cp)
+            g = self._lerp(ring_default.green(), ring_selected.green(), cp)
+            b = self._lerp(ring_default.blue(), ring_selected.blue(), cp)
+            ring = QColor(r, g, b)
+        else:
+            ring = ring_default
+        painter.setPen(QPen(ring, ring_bw))
+        painter.setBrush(Qt.BrushStyle.NoBrush)
+        rh = ring_bw / 2.0
+        painter.drawEllipse(
+            QRectF(
+                box_x + rh,
+                box_y + rh,
+                wrapper_size - ring_bw,
+                wrapper_size - ring_bw,
+            )
+        )
+        # 内圆点
+        if cp > 0.001:
+            painter.save()
+            painter.setOpacity(cp * (0.5 if self._is_disabled else 1.0))
+            painter.translate(cx, cy)
+            painter.scale(cp, cp)
+            painter.translate(-cx, -cy)
             painter.setPen(Qt.PenStyle.NoPen)
-            painter.setBrush(QColor(127, 127, 127, 0))  # 占位
+            painter.setBrush(control_color)
+            r2 = control_size / 2.0
+            painter.drawEllipse(QRectF(cx - r2, cy - r2, control_size, control_size))
+            painter.restore()
+        painter.restore()
+
+        # ---- 3) label / description —— 卡片左侧 ----
+        if self.text() or self._description:
+            text_x = pad
+            text_right = box_x - pad  # 右边界（不挤到圆点）
+            label_fm = QFontMetrics(self._label_font())
+            desc_fm = QFontMetrics(self._desc_font())
+            label_h = label_fm.height() if self.text() else 0
+            desc_h = desc_fm.height() if self._description else 0
+            block_h = label_h + desc_h
+            text_top = (rect.height() - block_h) // 2
+
+            painter.save()
+            if self._is_disabled:
+                painter.setOpacity(0.5)
+
+            if self.text():
+                painter.setPen(QPen(label_color))
+                painter.setFont(self._label_font())
+                painter.drawText(
+                    QRectF(text_x, text_top, max(0, text_right - text_x), label_h),
+                    int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+                    self.text(),
+                )
+
+            if self._description:
+                painter.setPen(QPen(desc_color))
+                painter.setFont(self._desc_font())
+                painter.drawText(
+                    QRectF(
+                        text_x,
+                        text_top + label_h,
+                        max(0, text_right - text_x),
+                        desc_h,
+                    ),
+                    int(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter),
+                    self._description,
+                )
+            painter.restore()
+
+        if press_scale < 1.0:
             painter.restore()
 
         painter.end()
@@ -438,71 +500,5 @@ class Radio(QAbstractButton):
     def _lerp(a: int, b: int, t: float) -> int:
         return max(0, min(255, int(round(a + (b - a) * t))))
 
-    # ============================================================
-    # 公共 API（运行时切换）
-    # ============================================================
-    def set_color(self, color: str):
-        if color not in VALID_COLORS:
-            raise ValueError(f"color must be one of {VALID_COLORS}")
-        self._color = color
-        self.update()
 
-    def set_size(self, size: str):
-        if size not in VALID_SIZES:
-            raise ValueError(f"size must be one of {VALID_SIZES}")
-        self._size = size
-        self._refresh_geometry()
-
-    def set_description(self, description: str):
-        self._description = description
-        self._refresh_geometry()
-
-    def description(self) -> str:
-        return self._description
-
-    def set_is_disabled(self, disabled: bool):
-        self._is_disabled = disabled
-        self.setEnabled(not disabled)
-        self.update()
-
-    def set_is_invalid(self, invalid: bool):
-        self._is_invalid = invalid
-        self.update()
-
-    def set_disable_animation(self, disable: bool):
-        self._disable_animation = disable
-
-    def set_theme(self, theme: str):
-        if theme == "auto":
-            self._theme_mode = "auto"
-            self._theme = self._resolve_theme("auto")
-            ThemeProvider.instance().register(self)
-        else:
-            if self._theme_mode == "auto":
-                ThemeProvider.instance().unregister(self)
-            self._theme_mode = theme
-            self._theme = theme
-        self.update()
-
-    def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
-        self._theme = theme
-        self.update()
-
-    @staticmethod
-    def _resolve_theme(mode: str) -> str:
-        if mode in ("light", "dark"):
-            return mode
-        return ThemeProvider.instance().current_theme
-
-    def is_selected(self) -> bool:
-        return self.isChecked()
-
-    def set_is_selected(self, selected: bool):
-        self.setChecked(selected)
-
-    def value(self) -> str:
-        return self._value
-
-    def set_value(self, value: str):
-        self._value = value
+__all__ = ["Radio", "RadioBase", "VALID_COLORS", "VALID_SIZES", "VALID_VARIANTS"]
