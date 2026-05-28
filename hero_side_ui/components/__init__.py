@@ -19,7 +19,7 @@ from .listbox import Listbox, ListboxItem, ListboxSection
 from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 from .select import Select, SelectItem, SelectSection
 from .slider import Slider
-from .radio import Radio, RadioGroup
+from .radio import Radio, RadioBase, RadioGroup
 
 __all__ = [
     "Button",
@@ -61,5 +61,6 @@ __all__ = [
     "SelectSection",
     "Slider",
     "Radio",
+    "RadioBase",
     "RadioGroup",
 ]
