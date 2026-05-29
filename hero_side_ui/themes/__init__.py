@@ -21,6 +21,7 @@ from .component_presets import (
     SELECT_SIZES,
     SLIDER_SIZES,
     RADIO_SIZES,
+    PAGINATION_SIZES,
 )
 
 
@@ -73,4 +74,5 @@ __all__ = [
     "SELECT_SIZES",
     "SLIDER_SIZES",
     "RADIO_SIZES",
+    "PAGINATION_SIZES",
 ]

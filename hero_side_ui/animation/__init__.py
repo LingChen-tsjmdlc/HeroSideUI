@@ -12,6 +12,7 @@ from .backdrop_fade import BackdropFade
 from .pixmap_scale_proxy import PixmapScaleProxy
 from .padding_squeeze import PaddingSqueezeAnimation
 from .tween import tween_value, stop_tween, tween_geometry
+from .cursor_slide import start_cursor_slide
 from .check_draw import paint_animated_check, CheckDrawAnimation
 
 __all__ = [
@@ -31,6 +32,7 @@ __all__ = [
     "tween_value",
     "stop_tween",
     "tween_geometry",
+    "start_cursor_slide",
     "paint_animated_check",
     "CheckDrawAnimation",
 ]
