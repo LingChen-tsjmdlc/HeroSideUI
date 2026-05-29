@@ -20,6 +20,7 @@ from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 from .select import Select, SelectItem, SelectSection
 from .slider import Slider
 from .radio import Radio, RadioBase, RadioGroup
+from .pagination import Pagination
 
 __all__ = [
     "Button",
@@ -63,4 +64,5 @@ __all__ = [
     "Radio",
     "RadioBase",
     "RadioGroup",
+    "Pagination",
 ]

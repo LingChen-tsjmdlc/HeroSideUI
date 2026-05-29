@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.2.11"
+__version__ = "0.2.12"
 
 from .core import (
     ThemeProvider,
@@ -54,6 +54,7 @@ from .components import (
     Radio,
     RadioBase,
     RadioGroup,
+    Pagination,
 )
 
 __all__ = [
@@ -103,4 +104,5 @@ __all__ = [
     "Radio",
     "RadioBase",
     "RadioGroup",
+    "Pagination",
 ]
