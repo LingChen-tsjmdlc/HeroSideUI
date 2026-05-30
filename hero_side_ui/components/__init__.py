@@ -21,6 +21,7 @@ from .select import Select, SelectItem, SelectSection
 from .slider import Slider
 from .radio import Radio, RadioBase, RadioGroup
 from .pagination import Pagination
+from .alert import Alert
 
 __all__ = [
     "Button",
@@ -65,4 +66,5 @@ __all__ = [
     "RadioBase",
     "RadioGroup",
     "Pagination",
+    "Alert",
 ]
