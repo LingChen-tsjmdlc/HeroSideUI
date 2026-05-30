@@ -14,6 +14,7 @@ from .padding_squeeze import PaddingSqueezeAnimation
 from .tween import tween_value, stop_tween, tween_geometry
 from .cursor_slide import start_cursor_slide
 from .check_draw import paint_animated_check, CheckDrawAnimation
+from .skeleton_shimmer import SkeletonShimmerAnimation
 
 __all__ = [
     "RippleOverlay",
@@ -35,4 +36,5 @@ __all__ = [
     "start_cursor_slide",
     "paint_animated_check",
     "CheckDrawAnimation",
+    "SkeletonShimmerAnimation",
 ]

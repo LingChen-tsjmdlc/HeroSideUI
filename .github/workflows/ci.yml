@@ -9,12 +9,13 @@ on:
 jobs:
   # ============================================================
   # 测试：按 (group × python-version) 矩阵并行
-  #   group   : core / utils / animation / components 四类并行
+  #   group   : core / utils / animation / components-1..5 共 8 组并行
   #   python  : 3.11 / 3.12 / 3.13 三档并行
-  # 总并行度 = 4 × 3 = 12 个 job 同时跑（受 GitHub Actions runner 配额限制）
+  # 总并行度 = 8 × 3 = 24 个 job 同时跑（受 GitHub Actions runner 配额限制）
+  # components 按字母序动态分片（shard: "N/5"），新增测试文件无需改 CI
   # ============================================================
   test:
-    name: Test | ${{ matrix.group }} (py${{ matrix.python-version }})
+    name: Test | ${{ matrix.group.name }} (py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
     # 桌面 GUI 库在 CI 里只跑 macOS：
     # - macOS runner 原生 GUI 栈稳定，是真正可靠的测试信号。
@@ -27,10 +28,14 @@ jobs:
         os: [macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
         group:
-          - { name: core,       path: tests/core }
-          - { name: utils,      path: tests/utils }
-          - { name: animation,  path: tests/animation }
-          - { name: components, path: tests/components }
+          - { name: core,         path: "tests/core" }
+          - { name: utils,        path: "tests/utils" }
+          - { name: animation,    path: "tests/animation" }
+          - { name: "components-1", path: "tests/components", shard: "1/5" }
+          - { name: "components-2", path: "tests/components", shard: "2/5" }
+          - { name: "components-3", path: "tests/components", shard: "3/5" }
+          - { name: "components-4", path: "tests/components", shard: "4/5" }
+          - { name: "components-5", path: "tests/components", shard: "5/5" }
       fail-fast: false
 
     steps:
@@ -50,7 +55,31 @@ jobs:
         run: uv add --dev pytest pytest-qt
 
       - name: Run ${{ matrix.group.name }} tests | 运行 ${{ matrix.group.name }} 测试
-        run: uv run python -m pytest ${{ matrix.group.path }} -v --tb=short
+        run: |
+          SHARD="${{ matrix.group.shard }}"
+          if [ -n "$SHARD" ]; then
+            # 动态分片：按字母序排列测试文件，取第 IDX 批（每批 PER 个）
+            IDX="${SHARD%%/*}"
+            TOTAL="${SHARD##*/}"
+            ALL_FILES=$(ls ${{ matrix.group.path }}/test_*.py 2>/dev/null | sort)
+            if [ -z "$ALL_FILES" ]; then
+              echo "No test files found, skipping shard $IDX/$TOTAL"
+              exit 0
+            fi
+            COUNT=$(echo "$ALL_FILES" | wc -l | tr -d ' ')
+            PER=$(( (COUNT + TOTAL - 1) / TOTAL ))
+            START=$(( (IDX - 1) * PER + 1 ))
+            END=$(( IDX * PER ))
+            FILES=$(echo "$ALL_FILES" | sed -n "${START},${END}p")
+            if [ -z "$FILES" ]; then
+              echo "Shard $IDX/$TOTAL is empty ($COUNT total files), skipping"
+              exit 0
+            fi
+            echo "Shard $IDX/$TOTAL ($COUNT files, $PER per shard): $FILES"
+            uv run python -m pytest $FILES -v --tb=short
+          else
+            uv run python -m pytest ${{ matrix.group.path }} -v --tb=short
+          fi
 
   # ============================================================
   # 语法检查（与 test 并行）
@@ -115,7 +144,7 @@ jobs:
           print('All imports OK')"
 
   # ============================================================
-  # 构建检查：所有 test (12 个并行 job) + lint 都过后才跑
+  # 构建检查：所有 test (24 个并行 job) + lint 都过后才跑
   # ============================================================
   build:
     name: Build | 构建检查

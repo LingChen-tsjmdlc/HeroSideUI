@@ -56,6 +56,7 @@ from .components import (
     RadioGroup,
     Pagination,
     Alert,
+    Skeleton,
 )
 
 __all__ = [
@@ -107,4 +108,5 @@ __all__ = [
     "RadioGroup",
     "Pagination",
     "Alert",
+    "Skeleton",
 ]
