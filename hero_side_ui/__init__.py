@@ -55,6 +55,7 @@ from .components import (
     RadioBase,
     RadioGroup,
     Pagination,
+    Alert,
 )
 
 __all__ = [
@@ -105,4 +106,5 @@ __all__ = [
     "RadioBase",
     "RadioGroup",
     "Pagination",
+    "Alert",
 ]
