@@ -22,6 +22,7 @@ from .slider import Slider
 from .radio import Radio, RadioBase, RadioGroup
 from .pagination import Pagination
 from .alert import Alert
+from .skeleton import Skeleton
 
 __all__ = [
     "Button",
@@ -67,4 +68,5 @@ __all__ = [
     "RadioGroup",
     "Pagination",
     "Alert",
+    "Skeleton",
 ]
