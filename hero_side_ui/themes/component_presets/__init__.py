@@ -37,6 +37,7 @@ from .select import SELECT_SIZES
 from .slider import SLIDER_SIZES
 from .radio import RADIO_SIZES
 from .pagination import PAGINATION_SIZES
+from .image import IMAGE_SHADOWS
 
 __all__ = [
     "BUTTON_SIZES",
@@ -59,4 +60,5 @@ __all__ = [
     "SLIDER_SIZES",
     "RADIO_SIZES",
     "PAGINATION_SIZES",
+    "IMAGE_SHADOWS",
 ]

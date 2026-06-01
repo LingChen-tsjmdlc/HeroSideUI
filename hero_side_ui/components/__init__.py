@@ -23,6 +23,7 @@ from .radio import Radio, RadioBase, RadioGroup
 from .pagination import Pagination
 from .alert import Alert
 from .skeleton import Skeleton
+from .image import Image
 
 __all__ = [
     "Button",
@@ -69,4 +70,5 @@ __all__ = [
     "Pagination",
     "Alert",
     "Skeleton",
+    "Image",
 ]
