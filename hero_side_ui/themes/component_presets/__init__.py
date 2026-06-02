@@ -38,6 +38,13 @@ from .slider import SLIDER_SIZES
 from .radio import RADIO_SIZES
 from .pagination import PAGINATION_SIZES
 from .image import IMAGE_SHADOWS
+from .kbd import (
+    KBD_SIZES,
+    KBD_SIZE_TABLE,
+    VALID_KBD_SIZES,
+    VALID_KBD_RADII,
+    KBD_SHADOW,
+)
 
 __all__ = [
     "BUTTON_SIZES",
@@ -61,4 +68,9 @@ __all__ = [
     "RADIO_SIZES",
     "PAGINATION_SIZES",
     "IMAGE_SHADOWS",
+    "KBD_SIZES",
+    "KBD_SIZE_TABLE",
+    "VALID_KBD_SIZES",
+    "VALID_KBD_RADII",
+    "KBD_SHADOW",
 ]
