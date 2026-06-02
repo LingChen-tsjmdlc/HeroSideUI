@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+	<path d="M0 0h24v24H0z" fill="none" />
+	<g fill="currentColor" stroke="currentColor" stroke-width="1.5">
+		<path
+			d="M12.807 1.53a.749.749 0 1 0-.114 1.497a9 9 0 1 1-9.668 9.666a.748.748 0 0 0-1.496.114A10.499 10.499 0 1 0 12.807 1.53" />
+		<path
+			d="M10.644 11.742a.751.751 0 0 0 1.06-1.06L4.06 3.037h4.152a.752.752 0 1 0 0-1.503H2.25a.75.75 0 0 0-.75.75V8.249a.753.753 0 0 0 1.5 0V4.098z" />
+	</g>
+</svg>

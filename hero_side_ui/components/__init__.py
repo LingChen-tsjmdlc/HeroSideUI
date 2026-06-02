@@ -24,6 +24,7 @@ from .pagination import Pagination
 from .alert import Alert
 from .skeleton import Skeleton
 from .image import Image
+from .kbd import Kbd
 
 __all__ = [
     "Button",
@@ -71,4 +72,5 @@ __all__ = [
     "Alert",
     "Skeleton",
     "Image",
+    "Kbd",
 ]

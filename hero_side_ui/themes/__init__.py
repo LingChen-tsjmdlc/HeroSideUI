@@ -23,6 +23,11 @@ from .component_presets import (
     RADIO_SIZES,
     PAGINATION_SIZES,
     IMAGE_SHADOWS,
+    KBD_SIZES,
+    KBD_SIZE_TABLE,
+    VALID_KBD_SIZES,
+    VALID_KBD_RADII,
+    KBD_SHADOW,
 )
 
 
@@ -77,4 +82,9 @@ __all__ = [
     "RADIO_SIZES",
     "PAGINATION_SIZES",
     "IMAGE_SHADOWS",
+    "KBD_SIZES",
+    "KBD_SIZE_TABLE",
+    "VALID_KBD_SIZES",
+    "VALID_KBD_RADII",
+    "KBD_SHADOW",
 ]
