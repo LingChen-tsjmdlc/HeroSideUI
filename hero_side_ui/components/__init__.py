@@ -25,6 +25,7 @@ from .alert import Alert
 from .skeleton import Skeleton
 from .image import Image
 from .kbd import Kbd
+from .link import Link
 
 __all__ = [
     "Button",
@@ -73,4 +74,5 @@ __all__ = [
     "Skeleton",
     "Image",
     "Kbd",
+    "Link",
 ]
