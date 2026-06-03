@@ -26,7 +26,7 @@ class _TooltipTriggerMixin:
         embedded 模式下：同时把 tooltip reparent 到 trigger 顶层 ancestor。
         这样 trigger 随父滚动/移动时 tooltip 自动跟随（Qt 原生能力，零代码）。
         """
-        if self._trigger is not None and self._trigger is not trigger:  # type: ignore[attr-defined]
+        if hasattr(self, "_trigger") and self._trigger is not None and self._trigger is not trigger:  # type: ignore[attr-defined]
             self._trigger.removeEventFilter(self)  # type: ignore[attr-defined]
         self._trigger = trigger  # type: ignore[attr-defined]
         trigger.installEventFilter(self)  # type: ignore[arg-type]
@@ -39,31 +39,51 @@ class _TooltipTriggerMixin:
             self._anchor_ancestor = top  # type: ignore[attr-defined]
 
     def eventFilter(self, obj, event):
-        # ---- trigger 的事件 ----
-        if obj is self._trigger:  # type: ignore[attr-defined]
+        # teardown 防御：pytest-qt 在测试 teardown 时会先清 Python __dict__，但 Qt
+        # 仍可能继续向 Tooltip 派发事件（自身 paintEvent、祖先 scroll_style/smooth_scroll
+        # 链路里的 super().eventFilter 都会触发）。此时直接 self._trigger 会抛
+        # AttributeError → 整条事件链炸掉，引发 "previous item was not torn down properly"
+        # 的连锁报错。用 getattr 全面兜底；任何属性缺失都安静放行交给基类。
+        trigger = getattr(self, "_trigger", None)
+        if trigger is not None and obj is trigger:
             if event.type() == QEvent.Type.Enter:
-                if not self._is_disabled:  # type: ignore[attr-defined]
-                    self._close_timer.stop()  # type: ignore[attr-defined]
+                if not getattr(self, "_is_disabled", False):
+                    close_timer = getattr(self, "_close_timer", None)
+                    if close_timer is not None:
+                        close_timer.stop()
                     self._schedule_open()
                 return False
             if event.type() == QEvent.Type.Leave:
-                self._open_timer.stop()  # type: ignore[attr-defined]
+                open_timer = getattr(self, "_open_timer", None)
+                if open_timer is not None:
+                    open_timer.stop()
                 self._schedule_close()
                 return False
             # trigger 几何变化（移动/缩放）→ 已 open 的 tooltip 跟随重定位
-            if event.type() in (QEvent.Type.Move, QEvent.Type.Resize) and self._is_open:  # type: ignore[attr-defined]
+            if event.type() in (QEvent.Type.Move, QEvent.Type.Resize) and getattr(
+                self, "_is_open", False
+            ):
                 self._refresh_geometry()  # type: ignore[attr-defined]
                 return False
 
         # ---- tooltip 自己的 Enter/Leave ----
         if obj is self:
             if event.type() == QEvent.Type.Enter:
-                self._close_timer.stop()  # type: ignore[attr-defined]
-                self._open_timer.stop()  # type: ignore[attr-defined]
+                close_timer = getattr(self, "_close_timer", None)
+                open_timer = getattr(self, "_open_timer", None)
+                if close_timer is not None:
+                    close_timer.stop()
+                if open_timer is not None:
+                    open_timer.stop()
             elif event.type() == QEvent.Type.Leave:
                 self._schedule_close()
 
-        return super().eventFilter(obj, event)  # type: ignore[misc]
+        try:
+            return super().eventFilter(obj, event)  # type: ignore[misc]
+        except (RuntimeError, AttributeError):
+            # 兜底：teardown 链路里 super 链上的 scroll_style / smooth_scroll
+            # 也可能因 C++ 对象/Python 属性已销毁而抛错；返回 False 安静放行。
+            return False
 
     def _schedule_open(self):
         """根据 open_delay 决定立即/延迟打开。
@@ -95,10 +115,11 @@ class _TooltipTriggerMixin:
 
     def _apply_trigger_open_state(self, opened: bool):
         """trigger 视觉反馈（设动态属性 + 重新 polish style）。"""
-        if self._trigger is None:  # type: ignore[attr-defined]
+        trigger = getattr(self, "_trigger", None)
+        if trigger is None:
             return
-        self._trigger.setProperty("tooltipOpen", opened)  # type: ignore[attr-defined]
-        style = self._trigger.style()  # type: ignore[attr-defined]
+        trigger.setProperty("tooltipOpen", opened)
+        style = trigger.style()
         if style is not None:
-            style.unpolish(self._trigger)  # type: ignore[attr-defined]
-            style.polish(self._trigger)  # type: ignore[attr-defined]
+            style.unpolish(trigger)
+            style.polish(trigger)
