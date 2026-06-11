@@ -26,6 +26,7 @@ from .skeleton import Skeleton
 from .image import Image
 from .kbd import Kbd
 from .link import Link
+from .chip import Chip
 
 __all__ = [
     "Button",
@@ -75,4 +76,5 @@ __all__ = [
     "Image",
     "Kbd",
     "Link",
+    "Chip",
 ]

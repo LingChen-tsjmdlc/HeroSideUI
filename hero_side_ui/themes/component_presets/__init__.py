@@ -38,6 +38,13 @@ from .slider import SLIDER_SIZES
 from .radio import RADIO_SIZES
 from .pagination import PAGINATION_SIZES
 from .image import IMAGE_SHADOWS
+from .chip import (
+    CHIP_SIZES,
+    CHIP_DOT_SIZE,
+    VALID_CHIP_SIZES,
+    VALID_CHIP_VARIANTS,
+    VALID_CHIP_RADII,
+)
 from .kbd import (
     KBD_SIZES,
     KBD_SIZE_TABLE,
@@ -77,6 +84,11 @@ __all__ = [
     "RADIO_SIZES",
     "PAGINATION_SIZES",
     "IMAGE_SHADOWS",
+    "CHIP_SIZES",
+    "CHIP_DOT_SIZE",
+    "VALID_CHIP_SIZES",
+    "VALID_CHIP_VARIANTS",
+    "VALID_CHIP_RADII",
     "KBD_SIZES",
     "KBD_SIZE_TABLE",
     "VALID_KBD_SIZES",
