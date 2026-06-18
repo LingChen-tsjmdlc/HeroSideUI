@@ -248,12 +248,8 @@ class Kbd(QFrame):
     # slots 构建
     # ============================================================
     def _clear_slots(self) -> None:
-        while self._layout.count():
-            item = self._layout.takeAt(0)
-            w = item.widget()
-            if w is not None:
-                w.setParent(None)
-                w.deleteLater()
+        from ...utils import clear_layout
+        clear_layout(self._layout)
         self._slots.clear()
 
     def _make_text(self, text: str, title: str = "") -> Text:

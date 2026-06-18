@@ -363,7 +363,7 @@ class Pagination(QWidget):
         # 清掉旧 items (保留 cursor)
         for it in self._items:
             self._items_layout.removeWidget(it)
-            it.setParent(None)
+            it.hide()
             it.deleteLater()
         self._items.clear()
         self._active_item = None

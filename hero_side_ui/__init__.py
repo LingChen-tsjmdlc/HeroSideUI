@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.4.0"
+__version__ = "0.4.1"
 
 from .core import (
     ThemeProvider,
@@ -61,6 +61,7 @@ from .components import (
     Kbd,
     Link,
     Chip,
+    Table,
 )
 
 __all__ = [
@@ -117,4 +118,5 @@ __all__ = [
     "Kbd",
     "Link",
     "Chip",
+    "Table",
 ]

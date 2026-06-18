@@ -150,6 +150,7 @@ class _SliderAPIMixin:
         ):
             ext = getattr(self, attr, None)
             if ext is not None:
+                ext.hide()
                 ext.setParent(None)
         # 把旧 layout 转移到临时 widget 销毁后重新装配
         QWidget().setLayout(self._root)  # type: ignore[attr-defined]
@@ -207,9 +208,11 @@ class _SliderAPIMixin:
         self._show_tooltip = bool(enabled)  # type: ignore[attr-defined]
         # 清掉旧的 anchor 和 tooltip
         for a in getattr(self, "_tip_anchors", []) or []:
+            a.hide()
             a.setParent(None)
         for t in getattr(self, "_tooltips", []) or []:
             t.close()
+            t.hide()
             t.setParent(None)
         self._tip_anchors = []  # type: ignore[attr-defined]
         self._tooltips = []  # type: ignore[attr-defined]
@@ -236,6 +239,7 @@ class _SliderAPIMixin:
         if old is not None:
             if band_layout is not None:
                 band_layout.removeWidget(old)
+            old.hide()
             old.setParent(None)
         self._start_content_widget = w  # type: ignore[attr-defined]
         if w is not None and band_layout is not None:
@@ -265,6 +269,7 @@ class _SliderAPIMixin:
         if old is not None:
             if band_layout is not None:
                 band_layout.removeWidget(old)
+            old.hide()
             old.setParent(None)
         self._end_content_widget = w  # type: ignore[attr-defined]
         if w is not None and band_layout is not None:
@@ -294,6 +299,7 @@ class _SliderAPIMixin:
         if old is not None:
             if row_layout is not None:
                 row_layout.removeWidget(old)
+            old.hide()
             old.setParent(None)
         self._top_end_content_widget = w  # type: ignore[attr-defined]
         # 2) 挂入新 widget（仅水平方向有"行末尾"语义；垂直方向无视）
@@ -311,6 +317,7 @@ class _SliderAPIMixin:
         old = self._bottom_start_content_widget  # type: ignore[attr-defined]
         if old is not None:
             self._root.removeWidget(old)  # type: ignore[attr-defined]
+            old.hide()
             old.setParent(None)
         self._bottom_start_content_widget = w  # type: ignore[attr-defined]
         # 仅水平方向有"轨道下方"语义；垂直方向无视

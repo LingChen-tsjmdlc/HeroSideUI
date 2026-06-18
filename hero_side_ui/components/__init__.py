@@ -27,6 +27,7 @@ from .image import Image
 from .kbd import Kbd
 from .link import Link
 from .chip import Chip
+from .table import Table
 
 __all__ = [
     "Button",
@@ -77,4 +78,5 @@ __all__ = [
     "Kbd",
     "Link",
     "Chip",
+    "Table",
 ]

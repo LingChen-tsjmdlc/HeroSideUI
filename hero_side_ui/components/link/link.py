@@ -293,8 +293,8 @@ class Link(QFrame):
             return
         # 取出 icon
         self._layout.removeWidget(self._icon)
-        self._icon.setParent(None)
-        self._icon.deleteLater()
+        from ...utils import safe_delete
+        safe_delete(self._icon)
         self._icon = None
         # 取出 spacer（layout 最后一项）
         last = self._layout.takeAt(self._layout.count() - 1)

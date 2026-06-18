@@ -581,7 +581,9 @@ class _InputStylingMixin:
             if w.property("_hs_internal") is True:
                 w.deleteLater()
             else:
-                # 用户 widget，只从布局里移除，reparent 到 None
+                # 用户 widget，只从布局里移除，reparent 到 None。
+                # 先 hide 再 setParent(None)，避免 detach 瞬间变顶层窗口闪原生 frame。
+                w.hide()
                 w.setParent(None)
 
         if content is None:

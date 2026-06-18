@@ -496,6 +496,8 @@ class _TextareaStylingMixin:
             if w.property("_hs_internal") is True:
                 w.deleteLater()
             else:
+                # 先 hide 再 detach，避免无父瞬间闪顶层窗口
+                w.hide()
                 w.setParent(None)
 
         if content is None:
