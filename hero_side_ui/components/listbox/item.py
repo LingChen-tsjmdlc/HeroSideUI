@@ -32,7 +32,7 @@ from ...animation import (
 )
 from ...core import StatePalette, ThemeProvider
 from ...themes import HEROUI_COLORS, LISTBOX_SIZES, RADIUS
-from ...utils import aligned_color_pair, load_svg_icon
+from ...utils import aligned_color_pair, load_svg_icon, safe_delete
 
 from ..text import Text
 
@@ -322,8 +322,7 @@ class ListboxItem(QAbstractButton):
             and self._start_widget is not self._start_label
         ):
             self._h.removeWidget(self._start_widget)
-            self._start_widget.setParent(None)
-            self._start_widget.deleteLater()
+            safe_delete(self._start_widget)
             self._start_widget = None
         self._start_src = None
         self._start_label.hide()
@@ -342,8 +341,7 @@ class ListboxItem(QAbstractButton):
     def set_end_content(self, content: Optional[Union[str, QWidget]]):
         if self._end_widget is not None and self._end_widget is not self._end_label:
             self._h.removeWidget(self._end_widget)
-            self._end_widget.setParent(None)
-            self._end_widget.deleteLater()
+            safe_delete(self._end_widget)
             self._end_widget = None
         self._end_src = None
         self._end_label.hide()

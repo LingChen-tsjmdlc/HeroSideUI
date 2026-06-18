@@ -271,8 +271,8 @@ class Popover(
         """替换内容控件。"""
         if self._content is not None:
             self._outer.removeWidget(self._content)
-            self._content.setParent(None)
-            self._content.deleteLater()
+            from ...utils import safe_delete
+            safe_delete(self._content)
         self._content = widget
         self._outer.addWidget(widget)
         self._apply_content_text_color()

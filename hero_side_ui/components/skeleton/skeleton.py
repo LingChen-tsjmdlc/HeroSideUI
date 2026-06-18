@@ -200,10 +200,8 @@ class Skeleton(QWidget):
         self.update()
 
     def set_child(self, child: QWidget):
-        while self._content_layout.count():
-            item = self._content_layout.takeAt(0)
-            if item.widget():
-                item.widget().setParent(None)
+        from ...utils import clear_layout
+        clear_layout(self._content_layout)
         self._content_layout.addWidget(child)
 
     def set_theme(self, theme: str):

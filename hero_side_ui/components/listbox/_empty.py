@@ -30,8 +30,8 @@ class _EmptyContentMixin:
         # 用 isHidden() 而非 isVisible()：popover 关闭时 isVisible 会被父级压成 False
         was_visible = not self._empty_widget.isHidden()
         self._list_v.removeWidget(self._empty_widget)
-        self._empty_widget.setParent(None)
-        self._empty_widget.deleteLater()
+        from ...utils import safe_delete
+        safe_delete(self._empty_widget)
         self._empty_widget = self._build_empty_widget()
         cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
         if self._empty_content_text:

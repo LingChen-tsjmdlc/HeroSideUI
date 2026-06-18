@@ -37,6 +37,7 @@ from .select import SELECT_SIZES
 from .slider import SLIDER_SIZES
 from .radio import RADIO_SIZES
 from .pagination import PAGINATION_SIZES
+from .table import TABLE_SIZES
 from .image import IMAGE_SHADOWS
 from .chip import (
     CHIP_SIZES,
@@ -83,6 +84,7 @@ __all__ = [
     "SLIDER_SIZES",
     "RADIO_SIZES",
     "PAGINATION_SIZES",
+    "TABLE_SIZES",
     "IMAGE_SHADOWS",
     "CHIP_SIZES",
     "CHIP_DOT_SIZE",

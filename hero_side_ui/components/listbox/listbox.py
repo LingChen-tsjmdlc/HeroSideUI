@@ -27,7 +27,7 @@ from PySide6.QtWidgets import (
 
 from ...core import ThemeProvider
 from ...themes import LISTBOX_SIZES, RADIUS
-
+from ...utils import safe_delete
 from ..text import Text
 from ._empty import _EmptyContentMixin
 from ._keyboard import _KeyboardNavMixin
@@ -192,8 +192,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     def set_top_content(self, w: Optional[QWidget]):
         if self._top_content is not None:
             self._outer.removeWidget(self._top_content)
-            self._top_content.setParent(None)
-            self._top_content.deleteLater()
+            safe_delete(self._top_content)
             self._top_content = None
         if w is not None:
             self._top_content = w
@@ -202,8 +201,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     def set_bottom_content(self, w: Optional[QWidget]):
         if self._bottom_content is not None:
             self._outer.removeWidget(self._bottom_content)
-            self._bottom_content.setParent(None)
-            self._bottom_content.deleteLater()
+            safe_delete(self._bottom_content)
             self._bottom_content = None
         if w is not None:
             self._bottom_content = w
@@ -270,12 +268,10 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
 
     def clear(self):
         for it in list(self._items):
-            it.setParent(None)
-            it.deleteLater()
+            safe_delete(it)
         self._items.clear()
         for sec in list(self._sections):
-            sec.setParent(None)
-            sec.deleteLater()
+            safe_delete(sec)
         self._sections.clear()
         self._selected_keys.clear()
         self._refresh_empty()

@@ -190,8 +190,8 @@ class TabItem(QAbstractButton):
         """
         # 清掉旧的
         if self._custom is not None:
-            self._custom.setParent(None)
-            self._custom.deleteLater()
+            from ...utils import safe_delete
+            safe_delete(self._custom)
             self._custom = None
         if self._custom_layout is not None:
             # 清掉布局

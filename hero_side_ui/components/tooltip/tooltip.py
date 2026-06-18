@@ -252,8 +252,8 @@ class Tooltip(
         """替换内容。如果 tooltip 正在显示，自动刷新尺寸和位置。"""
         if self._content is not None:
             self._outer.removeWidget(self._content)
-            self._content.setParent(None)
-            self._content.deleteLater()
+            from ...utils import safe_delete
+            safe_delete(self._content)
         if isinstance(content, str):
             self._set_text_content(content)
         else:

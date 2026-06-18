@@ -316,10 +316,11 @@ class RadioGroup(QWidget):
         if orientation == self._orientation:
             return
         self._orientation = orientation
-        # 重建 wrapper 布局；先解绑 radio 防止旧 layout 销毁链
+        # 重建 wrapper 布局；只从旧 layout 移除（removeWidget 不改父子关系，
+        # radio 仍是 _wrapper 的子 widget），不调 setParent(None) —— 那会让 radio
+        # 瞬间变顶层窗口在 Windows 闪原生 frame。销毁旧 layout 不会波及已 remove 的 widget。
         for r in self._radios:
             self._wrapper_layout.removeWidget(r)
-            r.setParent(None)
         old = self._wrapper_layout
         new_layout = QHBoxLayout() if orientation == "horizontal" else QVBoxLayout()
         new_layout.setContentsMargins(0, 0, 0, 0)

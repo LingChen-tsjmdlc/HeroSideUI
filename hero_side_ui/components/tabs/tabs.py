@@ -236,8 +236,8 @@ class Tabs(QWidget):
         panel = self._panels.pop(index)
         self._group.removeButton(tab)
         self._list_layout.removeWidget(tab)
-        tab.setParent(None)
-        tab.deleteLater()
+        from ...utils import safe_delete
+        safe_delete(tab)
         self._stack.removeWidget(panel)
         # 重新映射 button id
         for i, t in enumerate(self._tabs):
