@@ -47,6 +47,7 @@ class Chip(QWidget):
         is_disabled: bool = False,
         is_closable: bool = False,
         on_close: Optional[Callable[[], None]] = None,
+        is_text_selectable: bool = False,
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -65,6 +66,7 @@ class Chip(QWidget):
         self._is_disabled = is_disabled
         self._is_closable = is_closable
         self._on_close = on_close
+        self._is_text_selectable = is_text_selectable
         self._theme_mode = theme
         self._theme = ThemeProvider.instance().current_theme if theme == "auto" else theme
 
@@ -116,7 +118,7 @@ class Chip(QWidget):
             size=CHIP_SIZES[self._size]["text_size"],
             weight="normal",
             theme=self._theme,
-            selectable=False,
+            selectable=self._is_text_selectable,
         )
         self._label.setContentsMargins(0, 0, 0, 0)
         self._layout.addWidget(self._label, 0, vc)

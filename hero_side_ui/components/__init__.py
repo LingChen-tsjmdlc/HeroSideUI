@@ -28,6 +28,8 @@ from .kbd import Kbd
 from .link import Link
 from .chip import Chip
 from .table import Table
+from .markdown import Markdown
+from .code_block import CodeBlock
 
 __all__ = [
     "Button",
@@ -79,4 +81,6 @@ __all__ = [
     "Link",
     "Chip",
     "Table",
+    "Markdown",
+    "CodeBlock",
 ]

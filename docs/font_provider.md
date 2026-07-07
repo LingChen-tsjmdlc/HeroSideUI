@@ -100,11 +100,16 @@ VF 字体是否成功注册。`False` 时 `style_for_weight` / `resolve_qfont_we
 ```python
 f = QFont("Source Han Sans CN VF")
 f.setPixelSize(size_px or provider.base_size_px)
+f.setHintingPreference(QFont.HintingPreference.PreferNoHinting)  # 见下
 f.setWeight(QFont.Weight(provider.resolve_qfont_weight(weight)))
 f.setStyleName(provider.style_for_weight(weight))   # 精确选档
 ```
 
 切到第三方字体时不会调 `setStyleName`，让 Qt 自己决议。
+
+**关闭 hinting**：所有字体统一 `PreferNoHinting`。Windows 默认 full hinting 会把横向
+笔画吸附到整数像素网格，正文小字号下横笔画显粗、竖/斜笔画正常（粗细不匀）。关掉后
+按几何轮廓 + 抗锯齿渲染，横竖一致。
 
 ## 在自定义组件里使用
 

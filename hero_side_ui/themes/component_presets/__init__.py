@@ -62,6 +62,14 @@ from .link import (
     LINK_BLOCK,
     LINK_OPACITY_DURATION,
 )
+from .markdown import (
+    HEADING_SPEC,
+    MARKDOWN_SPACING,
+    MARKDOWN_LIST,
+    MARKDOWN_QUOTE,
+    MARKDOWN_INLINE_CODE,
+)
+from .code_block import CODE_BLOCK_SPEC, CODE_BLOCK_SYNTAX
 
 __all__ = [
     "BUTTON_SIZES",
@@ -103,4 +111,11 @@ __all__ = [
     "LINK_OPACITY",
     "LINK_BLOCK",
     "LINK_OPACITY_DURATION",
+    "HEADING_SPEC",
+    "MARKDOWN_SPACING",
+    "MARKDOWN_LIST",
+    "MARKDOWN_QUOTE",
+    "MARKDOWN_INLINE_CODE",
+    "CODE_BLOCK_SPEC",
+    "CODE_BLOCK_SYNTAX",
 ]

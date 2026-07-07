@@ -43,6 +43,7 @@ Link("Disabled", is_disabled=True)
 | `show_anchor_icon`  | `bool`                                                                           | `False`     | 文字右侧追加锚点图标                                          |
 | `anchor_icon`       | `str \| QWidget \| None`                                                         | `None`      | 自定义锚点图标；str 为内置 SVG 名 / 文件路径；None 用默认分享 |
 | `disable_animation` | `bool`                                                                           | `False`     | 关闭 hover/active 透明度过渡 + block 背景过渡                 |
+| `is_text_selectable`| `bool`                                                                           | `False`     | 允许框选/复制链接文字（默认不可选，仅点击）                   |
 | `theme`             | `"auto" \| "light" \| "dark"`                                                    | `"auto"`    | 主题模式；auto 跟随 `ThemeProvider`                           |
 | `parent`            | `QWidget`                                                                        | `None`      | 父级                                                          |
 

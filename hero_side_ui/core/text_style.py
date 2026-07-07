@@ -179,11 +179,21 @@ def resolve_text_weight(weight: WeightInput) -> int:
 # ============================================================
 
 
-def make_text_qfont(size: SizeInput = "md", weight: WeightInput = "normal") -> QFont:
-    """统一字体入口：走 FontProvider，自带 setStyleName 精确选 VF instance。"""
+def make_text_qfont(
+    size: SizeInput = "md",
+    weight: WeightInput = "normal",
+    *,
+    style_name: bool = True,
+) -> QFont:
+    """统一字体入口：走 FontProvider，自带 setStyleName 精确选 VF instance。
+
+    style_name=False 供承载富文本（含 <b>/<i>）的 label 用，避免锁死物理档后
+    内联字重被压制。
+    """
     return make_qfont(
         size_px=resolve_text_size(size),
         weight=resolve_text_weight(weight),
+        style_name=style_name,
     )
 
 
