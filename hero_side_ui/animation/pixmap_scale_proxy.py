@@ -92,6 +92,11 @@ class PixmapScaleProxy:
         """启动代理：截图 → 隐藏真实内容。
 
         若 `enable_predicate` 返回 False 或 owner 尺寸非法，直接空操作。
+
+        截图前临时禁用 owner 的 graphicsEffect：``QWidget.render`` 会应用
+        graphics effect，若此刻 QGraphicsOpacityEffect 的 opacity 为 0（embedded
+        淡入起点），快照会整张透明，导致进入动画看不见（"突然出现"）。快照应是
+        完整不透明的原始外观，淡入由 effect 在动画期间作用于画出的 pixmap。
         """
         if self._enable_predicate is not None and not self._enable_predicate():
             return
@@ -104,7 +109,13 @@ class PixmapScaleProxy:
         pm.fill(Qt.GlobalColor.transparent)
         # render 前确保 _pixmap=None，让 owner.paintEvent 走常规绘制
         self._pixmap = None
+        effect = self._owner.graphicsEffect()
+        effect_was_enabled = effect is not None and effect.isEnabled()
+        if effect_was_enabled:
+            effect.setEnabled(False)
         self._owner.render(pm)
+        if effect_was_enabled:
+            effect.setEnabled(True)
 
         self._pixmap = pm
         content = self._get_content()

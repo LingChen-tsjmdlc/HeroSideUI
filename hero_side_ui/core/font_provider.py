@@ -304,18 +304,30 @@ def make_qfont(
     *,
     size_px: Optional[int] = None,
     weight: int = int(QFont.Weight.Normal),
+    style_name: bool = True,
 ) -> QFont:
-    """生成 QFont；VF 模式下走 setStyleName 精确选档，setWeight 仅语义提示。"""
+    """生成 QFont；VF 模式下走 setStyleName 精确选档，setWeight 仅语义提示。
+
+    style_name=False 时不锁 styleName，仅设 weight——供富文本 label 使用：
+    QTextDocument 的 <b>/<i> 需要能自由切换到 VF 的 Bold instance，styleName
+    一旦钉死物理档就会压制富文本内联字重，粗体反而触发异常合成变细。
+    """
     provider = FontProvider.instance()
     f = QFont(provider.family)
     f.setPixelSize(size_px if size_px is not None else provider.base_size_px)
 
+    # 关闭 hinting：Windows 默认 full hinting 会把横向 stem 吸附到整像素网格，
+    # 在正文小字号下横笔画被加权显粗、竖/斜笔画不受影响（视觉粗细不匀）。
+    # 改走几何轮廓 + 抗锯齿，横竖粗细一致。
+    f.setHintingPreference(QFont.HintingPreference.PreferNoHinting)
+
     rendered_weight = provider.resolve_qfont_weight(weight)
     f.setWeight(QFont.Weight(rendered_weight))
 
-    style = provider.style_for_weight(weight)
-    if style:
-        f.setStyleName(style)
+    if style_name:
+        style = provider.style_for_weight(weight)
+        if style:
+            f.setStyleName(style)
     return f
 
 

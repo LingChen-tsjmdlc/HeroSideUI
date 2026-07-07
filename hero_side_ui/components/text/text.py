@@ -50,6 +50,7 @@ class Text(QLabel):
         selectable: bool = True,
         force_selection_text_color: bool = True,
         selection_adapts_color: bool = False,
+        rich_text: bool = False,
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -63,6 +64,7 @@ class Text(QLabel):
         self._selectable: bool = selectable
         self._force_selection_text_color: bool = force_selection_text_color
         self._selection_adapts_color: bool = selection_adapts_color
+        self._rich_text: bool = rich_text
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
@@ -109,7 +111,10 @@ class Text(QLabel):
     # ============================================================
     def _apply_font(self) -> None:
         # FontProvider 会走 setStyleName 精确选 VF 原生 instance。
-        font = make_text_qfont(self._size, self._weight)
+        # 富文本模式关闭 styleName 锁定，让内联 <b>/<i> 能切到 VF 对应物理档。
+        font = make_text_qfont(
+            self._size, self._weight, style_name=not self._rich_text
+        )
         self.setFont(font)
 
     # ============================================================

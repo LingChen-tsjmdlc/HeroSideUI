@@ -129,6 +129,7 @@ class Link(QFrame):
         show_anchor_icon: bool = False,
         anchor_icon: Optional[Union[str, QWidget]] = None,
         disable_animation: bool = False,
+        is_text_selectable: bool = False,
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -148,6 +149,7 @@ class Link(QFrame):
         self._show_anchor_icon = bool(show_anchor_icon)
         self._anchor_icon_input: Optional[Union[str, QWidget]] = anchor_icon
         self._disable_animation = bool(disable_animation)
+        self._is_text_selectable = bool(is_text_selectable)
 
         # 交互状态
         self._is_hovered = False
@@ -262,7 +264,7 @@ class Link(QFrame):
             size=spec["font_size"],
             weight="normal",
             color=c,
-            selectable=False,  # link 不参与文本选区
+            selectable=self._is_text_selectable,
             theme=self._theme,
             parent=self,
         )

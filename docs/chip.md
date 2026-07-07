@@ -34,6 +34,7 @@ Chip("A", color="primary")                            # 单字符 → 圆形
 | `is_disabled`   | `bool`                                     | `False`     | 禁用态（半透明 + 不可交互）            |
 | `is_closable`   | `bool`                                     | `False`     | 显示关闭按钮                           |
 | `on_close`      | `Callable[[], None] \| None`               | `None`      | 关闭回调；传入即视为可关闭             |
+| `is_text_selectable` | `bool`                                | `False`     | 允许框选/复制内部文字（默认不可选）    |
 | `theme`         | `"auto" \| "light" \| "dark"`              | `"auto"`    | 主题模式；auto 跟随 `ThemeProvider`    |
 | `parent`        | `QWidget \| None`                          | `None`      | 父级                                   |
 
