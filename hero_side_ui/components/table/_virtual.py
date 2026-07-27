@@ -39,8 +39,14 @@ class _VirtualMixin:
         base = (vp // per) + 1 if per > 0 else len(self._row_order)
         return base + _VIRTUAL_BUFFER * 2
 
-    def _render_virtual(self, *, keep_scroll: bool = True):
-        """按当前滚动位置渲染可视窗口。"""
+    def _render_virtual(self, *, force: bool = False):
+        """按当前滚动位置渲染可视窗口。
+
+        force=True 时强制重填（数据/列/主题变动后调用）；否则当"应渲染的窗口
+        (first, count, total)"与上次完全一致时跳过——同一行内每像素滚动会触发
+        几十次 valueChanged，但真正需要换行内容的只有跨行那一次，去重后省掉绝大
+        多数无效重填，是虚拟滚动流畅的关键。
+        """
         total = len(self._row_order)
         per = self._virtual_row_height()
         sb = self._scroll.verticalScrollBar() if self._scroll else None
@@ -48,6 +54,10 @@ class _VirtualMixin:
         first = max(0, scroll_val // per - _VIRTUAL_BUFFER)
         count = self._virtual_visible_count()
         first = min(first, max(0, total - 1))
+        window = (first, count, total)
+        if not force and window == getattr(self, "_virtual_window", None):
+            return
+        self._virtual_window = window
         self._renderer.render_window(first, count, total)
         self._apply_row_states(animated=False)
         self._sync_header_sort_state()
