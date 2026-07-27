@@ -112,6 +112,14 @@ class Text(QLabel):
     def _apply_font(self) -> None:
         # FontProvider 会走 setStyleName 精确选 VF 原生 instance。
         # 富文本模式关闭 styleName 锁定，让内联 <b>/<i> 能切到 VF 对应物理档。
+        # 幂等守卫：size/weight/rich_text/全局 family 均未变时跳过 QFont 重建——
+        # 表格虚拟滚动会高频复用同一 Text 且字号不变，重建 QFont（含 QFontDatabase
+        # 查询）是主要掉帧源；family 纳入签名保证全局字体切换仍能刷新。
+        sig = (self._size, self._weight, self._rich_text,
+               FontProvider.instance().family)
+        if sig == getattr(self, "_font_sig", None):
+            return
+        self._font_sig = sig
         font = make_text_qfont(
             self._size, self._weight, style_name=not self._rich_text
         )
@@ -131,7 +139,16 @@ class Text(QLabel):
     def _apply_color(self) -> None:
         # 同时写 QPalette（a11y/测试读取）和 QSS（实际渲染）——
         # QSS 颜色是创建时快照，主题切换必须重写。
+        # 幂等守卫：影响输出的输入维度均未变时跳过 setPalette + setStyleSheet——
+        # 二者都会触发样式重算，表格滚动时高频复用同一 Text 且色值不变，跳过省开销。
         c = self._current_color()
+        sig = (
+            c.rgba(), self._theme,
+            self._force_selection_text_color, self._selection_adapts_color,
+        )
+        if sig == getattr(self, "_color_sig", None):
+            return
+        self._color_sig = sig
         rgba_str = f"rgba({c.red()}, {c.green()}, {c.blue()}, {c.alphaF():.4f})"
         # 选区色：走 core.selection_palette——全项目唯一来源。
         bg, fg = selection_palette(

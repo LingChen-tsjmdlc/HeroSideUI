@@ -394,7 +394,7 @@ class Table(
 
         # --- 数据行：交给行渲染引擎（复用 / 虚拟化） ---
         if self._is_virtualized and self._scroll is not None:
-            self._render_virtual()
+            self._render_virtual(force=True)
         else:
             self._renderer.render()
 

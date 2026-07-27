@@ -231,6 +231,15 @@ class _TableCell(QWidget):
         align: str,
         disable_animation: bool,
     ):
+        # 幂等守卫：样式维度全未变时跳过整段重设——虚拟滚动每帧每格都调本方法，
+        # 但滚动只换内容不换样式（内容走 update_content、行状态走 set_row_state，
+        # 均独立于此）。跳过可省下 margins/sizeHint/height/字体/颜色的高频重算。
+        sig = (color, size, theme, radius, is_striped, is_compact,
+               is_multi, align, disable_animation)
+        if sig == getattr(self, "_style_sig", None):
+            return
+        self._style_sig = sig
+
         self._color = color
         self._size = size
         self._theme = theme
