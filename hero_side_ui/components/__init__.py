@@ -27,6 +27,7 @@ from .image import Image
 from .kbd import Kbd
 from .link import Link
 from .chip import Chip
+from .avatar import Avatar, AvatarGroup
 from .table import Table
 from .markdown import Markdown
 from .code_block import CodeBlock
@@ -80,6 +81,8 @@ __all__ = [
     "Kbd",
     "Link",
     "Chip",
+    "Avatar",
+    "AvatarGroup",
     "Table",
     "Markdown",
     "CodeBlock",
