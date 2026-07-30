@@ -126,12 +126,13 @@ class ImageLoader(QObject):
         # 1) 已是图像对象
         if isinstance(src, QPixmap):
             self._status = "loaded"
-            QTimer.singleShot(0, lambda pm=src: self.loaded.emit(pm))
+            # 绑 self 作 context：loader 若在回调前被销毁则自动跳过，避免 "Signal source deleted"
+            QTimer.singleShot(0, self, lambda pm=src: self.loaded.emit(pm))
             return
         if isinstance(src, QImage):
             self._status = "loaded"
             pm = QPixmap.fromImage(src)
-            QTimer.singleShot(0, lambda pm=pm: self.loaded.emit(pm))
+            QTimer.singleShot(0, self, lambda pm=pm: self.loaded.emit(pm))
             return
 
         # 2) 字符串：URL or 本地路径
@@ -144,7 +145,7 @@ class ImageLoader(QObject):
 
         # 未知类型
         self._status = "failed"
-        QTimer.singleShot(0, self.failed.emit)
+        QTimer.singleShot(0, self, self.failed.emit)
 
     # ============================================================
     # 本地 / Qt 资源
@@ -157,10 +158,10 @@ class ImageLoader(QObject):
             _logger.warning(
                 "Image load failed: %s (本地路径不存在或不是有效图像)", path
             )
-            QTimer.singleShot(0, self.failed.emit)
+            QTimer.singleShot(0, self, self.failed.emit)
             return
         self._status = "loaded"
-        QTimer.singleShot(0, lambda pm=pm: self.loaded.emit(pm))
+        QTimer.singleShot(0, self, lambda pm=pm: self.loaded.emit(pm))
 
     # ============================================================
     # 远程 URL（走全局节流队列）
