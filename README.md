@@ -150,14 +150,79 @@ HeroSideUI/
 
 ## 组件文档
 
-各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录：
+各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录。
 
-| 组件                | 文档                                   | 状态    |
-| ------------------- | -------------------------------------- | ------- |
-| Button 按钮         | [docs/button.md](docs/button.md)       | ✅ 完成 |
-| Accordion 手风琴    | [docs/accordion.md](docs/accordion.md) | ✅ 完成 |
-| Input 输入框        | [docs/input.md](docs/input.md)         | ✅ 完成 |
-| _更多组件开发中..._ |                                        |         |
+### 已完成组件（对标 HeroUI v2）
+
+| 组件                    | 文档                                        | 状态 |
+| ----------------------- | ------------------------------------------- | ---- |
+| Button 按钮             | [button.md](docs/button.md)                 | ✅   |
+| Accordion 手风琴        | [accordion.md](docs/accordion.md)           | ✅   |
+| Input 输入框            | [input.md](docs/input.md)                   | ✅   |
+| Divider 分割线          | [divider.md](docs/divider.md)               | ✅   |
+| Card 卡片               | [card.md](docs/card.md)                     | ✅   |
+| Checkbox 复选框         | [checkbox.md](docs/checkbox.md)             | ✅   |
+| Checkbox Group 复选框组 | [checkbox.md](docs/checkbox.md)             | ✅   |
+| Progress 进度条         | [progress.md](docs/progress.md)             | ✅   |
+| Circular Progress 环形  | [progress.md](docs/progress.md)             | ✅   |
+| Spinner 加载指示器      | [spinner.md](docs/spinner.md)               | ✅   |
+| Popover 弹出层          | [popover.md](docs/popover.md)               | ✅   |
+| Tooltip 工具提示        | [tooltip.md](docs/tooltip.md)               | ✅   |
+| Tabs 标签页             | [tabs.md](docs/tabs.md)                     | ✅   |
+| ThemeSwitcher 主题切换  | [theme_switcher.md](docs/theme_switcher.md) | ✅   |
+| Text 文字系（标题等）   | [text.md](docs/text.md)                     | ✅   |
+| Switch 开关             | [switch.md](docs/switch.md)                 | ✅   |
+| ScrollShadow 滚动阴影   | [scroll-shadow.md](docs/scroll-shadow.md)   | ✅   |
+| Listbox 列表选择框      | [listbox.md](docs/listbox.md)               | ✅   |
+| Autocomplete 自动补全   | [autocomplete.md](docs/autocomplete.md)     | ✅   |
+| Textarea 多行输入框     | [textarea.md](docs/textarea.md)             | ✅   |
+| Slider 滑块             | [slider.md](docs/slider.md)                 | ✅   |
+| Select 下拉选择框       | [select.md](docs/select.md)                 | ✅   |
+| Pagination 分页器       | [pagination.md](docs/pagination.md)         | ✅   |
+| Alert 警告提示          | [alert.md](docs/alert.md)                   | ✅   |
+| Skeleton 骨架屏         | [skeleton.md](docs/skeleton.md)             | ✅   |
+| Image 图片              | [image.md](docs/image.md)                   | ✅   |
+| Kbd 键盘按键            | [kbd.md](docs/kbd.md)                       | ✅   |
+| Link 链接               | [link.md](docs/link.md)                     | ✅   |
+| Chip 标签               | [chip.md](docs/chip.md)                     | ✅   |
+| Table 表格              | [table.md](docs/table.md)                   | ✅   |
+| Avatar 头像             | [avatar.md](docs/avatar.md)                 | ✅   |
+| AvatarGroup 头像组      | [avatar.md](docs/avatar.md)                 | ✅   |
+| Calendar 日历           | [calendar.md](docs/calendar.md)             | ✅   |
+| RangeCalendar 范围日历  | [calendar.md](docs/calendar.md)             | ✅   |
+| DateInput 日期选择器    | [date-input.md](docs/date-input.md)         | ✅   |
+| Radio 单选按钮          | [radio.md](docs/radio.md)                   | ✅   |
+| CodeBlock 代码块        | [code_block.md](docs/code_block.md)         | ✅   |
+| Markdown 渲染器         | [markdown.md](docs/markdown.md)             | ✅   |
+
+### 待开发组件（对标 HeroUI v2）
+
+| 组件                     | 说明                        | 难度       | 必要性     | 状态      |
+| ------------------------ | --------------------------- | ---------- | ---------- | --------- |
+| Dropdown 下拉菜单        | 触发式下拉面板（键盘导航）  | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| Modal 模态对话框         | 居中弹窗 + 焦点陷阱 + Esc   | ⭐⭐⭐     | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| DateRangePicker 范围日期 | 开始~结束日期选择器         | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
+| Drawer 抽屉              | 侧滑面板 + 遮罩 + Esc 关闭  | ⭐⭐⭐⭐   | ❤️❤️❤️     | 🔲 待开发 |
+| TimeInput 时间选择器     | 时:分（秒）段选择输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| NumberInput 数字输入框   | 带步进/步退的数字输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| RadioGroup 单选按钮组    | 多个 Radio 的互斥分组容器   | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
+| Badge 徽章               | 小型状态标签（点/圆角变体） | ⭐         | ❤️❤️❤️     | 🔲 待开发 |
+| Navbar 导航栏            | 顶部导航条（组合型容器）    | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
+| InputOTP 验证码输入框    | 等宽分格 OTP / 验证码输入   | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
+| Breadcrumbs 面包屑导航   | 路径层级指示                | ⭐⭐       | ❤️❤️       | 🔲 待开发 |
+| Spacer 间距填充器        | 弹性空白占位                | ⭐         | ❤️         | 🔲 待开发 |
+
+> **难度 ⭐**（1~5）：⭐ 复用现有组件直接拼装；⭐⭐⭐ 需新交互逻辑但可复用现有基础设施；⭐⭐⭐⭐⭐ 涉及焦点管理 / 键盘导航 / 架构级上下文。
+> **必要性 ❤️**（1~5）：❤️❤️❤️❤️❤️ 表单与弹窗类高频刚需；❤️❤️❤️ 常用但可被现有组件组合替代；❤️ 偏 Web 导航语义、桌面端复用度低。
+
+### 不计划开发
+
+| 组件              | 原因                                                      |
+| ----------------- | --------------------------------------------------------- |
+| Form 表单容器     | 纯组合语义，用 QLayout + 现有输入类组件即可，无需额外抽象 |
+| User 用户信息卡片 | Avatar + Text 的简单组合，使用方自行拼装更灵活            |
+
+> **进度**：已完成 **34** 个组件，待开发 **12** 个，不计划开发 **2** 个。核心表单/数据展示类已基本覆盖，剩余以浮层/导航类为主。建议优先级：**Dropdown / Modal / DateRangePicker** 先行。
 
 ---
 

@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.6.0"
+__version__ = "0.7.0"
 
 from .core import (
     ThemeProvider,
@@ -66,6 +66,14 @@ from .components import (
     Table,
     Calendar,
     RangeCalendar,
+    DateInput,
+    DateTimeValue,
+    now,
+    parse_absolute_to_local,
+    parse_date,
+    parse_datetime,
+    parse_zoned_datetime,
+    today,
     Markdown,
     CodeBlock,
 )
@@ -129,6 +137,14 @@ __all__ = [
     "Table",
     "Calendar",
     "RangeCalendar",
+    "DateInput",
+    "DateTimeValue",
+    "now",
+    "parse_absolute_to_local",
+    "parse_date",
+    "parse_datetime",
+    "parse_zoned_datetime",
+    "today",
     "Markdown",
     "CodeBlock",
 ]

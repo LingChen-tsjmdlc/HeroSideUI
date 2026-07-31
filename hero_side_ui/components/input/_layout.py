@@ -9,6 +9,7 @@
 
 from PySide6.QtCore import QEvent, QPoint, Qt
 from PySide6.QtWidgets import QSizePolicy
+import shiboken6
 
 from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS, INPUT_SIZES
@@ -16,6 +17,14 @@ from ...themes import HEROUI_COLORS, INPUT_SIZES
 
 class _InputLayoutMixin:
     """Input 的 layout / 几何 mixin。"""
+
+    def _size_config(self) -> dict:
+        """当前尺寸档的 token 表。
+
+        DateInput 等复用本 mixin 的组件用自己的尺寸表覆盖这里，
+        避免 label 几何按 Input 的表算、其余按自己的表算而错位。
+        """
+        return INPUT_SIZES.get(self._size, INPUT_SIZES["md"])
 
     # ------------------------------------------------------------
     # label 位置切换
@@ -67,7 +76,12 @@ class _InputLayoutMixin:
             - inside:  label 飞到 inputWrapper 内部左上角
             - outside: label 飞出 inputWrapper 到达 Input 根顶部（在 wrapper 上方外部）
         """
-        size_config = INPUT_SIZES.get(self._size, INPUT_SIZES["md"])
+        # 进程退出 / 组件销毁时动画可能还剩一帧未跑完，此时底层 C++ 对象已析构，
+        # 再访问 self._wrapper 会抛 RuntimeError。守卫掉这一帧。
+        if not shiboken6.isValid(self) or not shiboken6.isValid(self._wrapper):
+            return
+
+        size_config = self._size_config()
 
         f_rest = size_config["label_font_size"]
         f_float = size_config["label_float_font_size"]

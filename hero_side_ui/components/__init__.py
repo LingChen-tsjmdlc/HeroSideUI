@@ -30,6 +30,16 @@ from .chip import Chip
 from .avatar import Avatar, AvatarGroup
 from .table import Table
 from .calendar import Calendar, RangeCalendar
+from .date_input import (
+    DateInput,
+    DateTimeValue,
+    now,
+    parse_absolute_to_local,
+    parse_date,
+    parse_datetime,
+    parse_zoned_datetime,
+    today,
+)
 from .markdown import Markdown
 from .code_block import CodeBlock
 
@@ -87,6 +97,14 @@ __all__ = [
     "Table",
     "Calendar",
     "RangeCalendar",
+    "DateInput",
+    "DateTimeValue",
+    "now",
+    "parse_absolute_to_local",
+    "parse_date",
+    "parse_datetime",
+    "parse_zoned_datetime",
+    "today",
     "Markdown",
     "CodeBlock",
 ]
