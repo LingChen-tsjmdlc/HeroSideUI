@@ -512,6 +512,9 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self._apply_styles()
         self._update_label_animation()
 
+    def is_disabled(self) -> bool:
+        return self._is_disabled
+
     def set_is_disabled(self, disabled: bool):
         self._is_disabled = disabled
         for seg in self._segment_widgets:

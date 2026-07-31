@@ -136,6 +136,7 @@ class Popover(
         self._theme = self._resolve_theme(theme)
 
         self._trigger: Optional[QWidget] = None
+        self._near: Optional[QWidget] = None  # open() 时实际使用的锚点（manual attach 时 != trigger）
         self._backdrop: Optional[_Backdrop] = None
         self._content: Optional[QWidget] = None
         self._is_open = False
@@ -321,6 +322,7 @@ class Popover(
         target = near or self._trigger
         if target is None:
             return
+        self._near = target
 
         # 三种入场情况：
         #   A) 完全关闭（_is_open=False）→ 标准首次打开
@@ -469,6 +471,7 @@ class Popover(
             self._backdrop.deleteLater()
             self._backdrop = None
         self._is_open = False
+        self._near = None
         self._just_closed.start()
         self._disconnect_scroll_watchers()
         self._scale_proxy.end()

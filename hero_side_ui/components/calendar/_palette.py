@@ -93,8 +93,10 @@ def today_ring(color: str, theme: str) -> QColor:
 # 浅色主题下阴影带会显成突兀灰杠）。
 
 def surface_content1(theme: str) -> QColor:
-    """标题栏 / 星期名行背景（content1）。"""
-    return QColor("#18181b") if theme == "dark" else QColor("#ffffff")
+    """月/年标题栏背景（content1）。"""
+    if theme == "dark":
+        return QColor("#101114")
+    return QColor("#ffffff")
 
 
 def surface_base(theme: str) -> str:
