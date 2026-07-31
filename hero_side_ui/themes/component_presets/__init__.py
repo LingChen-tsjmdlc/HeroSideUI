@@ -21,6 +21,12 @@ HeroUI v2 组件级主题预设 (Component Presets)
 from .button import BUTTON_SIZES
 from .accordion import ACCORDION_SIZES
 from .input import INPUT_SIZES
+from .date_input import (
+    DATE_INPUT_SIZES,
+    VALID_DATE_INPUT_LABEL_PLACEMENTS,
+    VALID_DATE_INPUT_SIZES,
+    VALID_DATE_INPUT_VARIANTS,
+)
 from .textarea import TEXTAREA_SIZES
 from .divider import DIVIDER_SIZES
 from .card import CARD_SHADOWS
@@ -88,6 +94,10 @@ __all__ = [
     "BUTTON_SIZES",
     "ACCORDION_SIZES",
     "INPUT_SIZES",
+    "DATE_INPUT_SIZES",
+    "VALID_DATE_INPUT_SIZES",
+    "VALID_DATE_INPUT_VARIANTS",
+    "VALID_DATE_INPUT_LABEL_PLACEMENTS",
     "TEXTAREA_SIZES",
     "DIVIDER_SIZES",
     "CARD_SHADOWS",

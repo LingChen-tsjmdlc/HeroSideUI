@@ -571,6 +571,17 @@ class _InputStylingMixin:
 
     def _fill_slot(self, slot, slot_layout, content, on_click, icon_size, is_dark, dc):
         """把 content 填充到 slot 容器中。"""
+        # 用户传入的 QWidget 已经在槽位里时跳过 teardown+rebuild，
+        # 避免 FocusOut 触发 _apply_styles → _fill_slot 时 reparent
+        # 正在接收鼠标事件的 Button，导致 mouseReleaseEvent 丢失。
+        if (
+            isinstance(content, QWidget)
+            and slot_layout.count() == 1
+            and slot_layout.itemAt(0).widget() is content
+        ):
+            slot.show()
+            return
+
         # 先清空槽位里"我们自己创建的"widget（不删除用户外部 widget，只 takeAt）
         while slot_layout.count():
             item = slot_layout.takeAt(0)
