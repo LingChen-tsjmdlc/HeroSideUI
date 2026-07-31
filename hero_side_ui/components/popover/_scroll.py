@@ -193,7 +193,8 @@ class _PopoverScrollMixin:
         if not self._is_open or self._trigger is None:
             return
         try:
-            tr_global = self._trigger.mapToGlobal(QPoint(0, 0))
+            anchor = self._near or self._trigger
+            tr_global = anchor.mapToGlobal(QPoint(0, 0))
         except RuntimeError:
             # trigger C++ 对象已销毁
             return
@@ -243,11 +244,12 @@ class _PopoverScrollMixin:
         if not self._is_open or self._trigger is None:
             return
         try:
+            anchor = self._near or self._trigger
             self.adjustSize()
             self.resize(self.sizeHint())
-            pos = self._calc_position(self._trigger)
+            pos = self._calc_position(anchor)
             self.move(pos)
-            tr_global = self._trigger.mapToGlobal(QPoint(0, 0))
+            tr_global = anchor.mapToGlobal(QPoint(0, 0))
             self._scroll_anchor_offset = pos - tr_global
         except RuntimeError:
             return

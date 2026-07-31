@@ -56,7 +56,7 @@ class _WeekdayBar(QWidget):
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         w, h = self.width(), self.height()
-        # 只填 content1 亮底；与日期区（default-50）的分层靠色差实现。
+        # 星期名行底与月/年头部同为 content1；与日期区靠色差分层。
         # 不画底部阴影带——浅色主题下会显成一道突兀的灰杠。
         p.fillRect(QRectF(0, 0, w, h), pal.surface_content1(self._theme))
         p.end()

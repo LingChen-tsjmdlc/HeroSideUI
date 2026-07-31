@@ -154,75 +154,102 @@ HeroSideUI/
 
 ### 已完成组件（对标 HeroUI v2）
 
-| 组件                    | 文档                                        | 状态 |
-| ----------------------- | ------------------------------------------- | ---- |
-| Button 按钮             | [button.md](docs/button.md)                 | ✅   |
-| Accordion 手风琴        | [accordion.md](docs/accordion.md)           | ✅   |
-| Input 输入框            | [input.md](docs/input.md)                   | ✅   |
-| Divider 分割线          | [divider.md](docs/divider.md)               | ✅   |
-| Card 卡片               | [card.md](docs/card.md)                     | ✅   |
-| Checkbox 复选框         | [checkbox.md](docs/checkbox.md)             | ✅   |
-| Checkbox Group 复选框组 | [checkbox.md](docs/checkbox.md)             | ✅   |
-| Progress 进度条         | [progress.md](docs/progress.md)             | ✅   |
-| Circular Progress 环形  | [progress.md](docs/progress.md)             | ✅   |
-| Spinner 加载指示器      | [spinner.md](docs/spinner.md)               | ✅   |
-| Popover 弹出层          | [popover.md](docs/popover.md)               | ✅   |
-| Tooltip 工具提示        | [tooltip.md](docs/tooltip.md)               | ✅   |
-| Tabs 标签页             | [tabs.md](docs/tabs.md)                     | ✅   |
-| ThemeSwitcher 主题切换  | [theme_switcher.md](docs/theme_switcher.md) | ✅   |
-| Text 文字系（标题等）   | [text.md](docs/text.md)                     | ✅   |
-| Switch 开关             | [switch.md](docs/switch.md)                 | ✅   |
-| ScrollShadow 滚动阴影   | [scroll-shadow.md](docs/scroll-shadow.md)   | ✅   |
-| Listbox 列表选择框      | [listbox.md](docs/listbox.md)               | ✅   |
-| Autocomplete 自动补全   | [autocomplete.md](docs/autocomplete.md)     | ✅   |
-| Textarea 多行输入框     | [textarea.md](docs/textarea.md)             | ✅   |
-| Slider 滑块             | [slider.md](docs/slider.md)                 | ✅   |
-| Select 下拉选择框       | [select.md](docs/select.md)                 | ✅   |
-| Pagination 分页器       | [pagination.md](docs/pagination.md)         | ✅   |
-| Alert 警告提示          | [alert.md](docs/alert.md)                   | ✅   |
-| Skeleton 骨架屏         | [skeleton.md](docs/skeleton.md)             | ✅   |
-| Image 图片              | [image.md](docs/image.md)                   | ✅   |
-| Kbd 键盘按键            | [kbd.md](docs/kbd.md)                       | ✅   |
-| Link 链接               | [link.md](docs/link.md)                     | ✅   |
-| Chip 标签               | [chip.md](docs/chip.md)                     | ✅   |
-| Table 表格              | [table.md](docs/table.md)                   | ✅   |
-| Avatar 头像             | [avatar.md](docs/avatar.md)                 | ✅   |
-| AvatarGroup 头像组      | [avatar.md](docs/avatar.md)                 | ✅   |
-| Calendar 日历           | [calendar.md](docs/calendar.md)             | ✅   |
-| RangeCalendar 范围日历  | [calendar.md](docs/calendar.md)             | ✅   |
-| DateInput 日期选择器    | [date-input.md](docs/date-input.md)         | ✅   |
-| Radio 单选按钮          | [radio.md](docs/radio.md)                   | ✅   |
-| CodeBlock 代码块        | [code_block.md](docs/code_block.md)         | ✅   |
-| Markdown 渲染器         | [markdown.md](docs/markdown.md)             | ✅   |
+| 组件                     | 文档                                        | 状态 |
+| ------------------------ | ------------------------------------------- | ---- |
+| Button 按钮              | [button.md](docs/button.md)                 | ✅   |
+| Accordion 手风琴         | [accordion.md](docs/accordion.md)           | ✅   |
+| Input 输入框             | [input.md](docs/input.md)                   | ✅   |
+| Divider 分割线           | [divider.md](docs/divider.md)               | ✅   |
+| Card 卡片                | [card.md](docs/card.md)                     | ✅   |
+| Checkbox 复选框          | [checkbox.md](docs/checkbox.md)             | ✅   |
+| Checkbox Group 复选框组  | [checkbox.md](docs/checkbox.md)             | ✅   |
+| Progress 进度条          | [progress.md](docs/progress.md)             | ✅   |
+| Circular Progress 环形   | [progress.md](docs/progress.md)             | ✅   |
+| Spinner 加载指示器       | [spinner.md](docs/spinner.md)               | ✅   |
+| Popover 弹出层           | [popover.md](docs/popover.md)               | ✅   |
+| Tooltip 工具提示         | [tooltip.md](docs/tooltip.md)               | ✅   |
+| Tabs 标签页              | [tabs.md](docs/tabs.md)                     | ✅   |
+| ThemeSwitcher 主题切换   | [theme_switcher.md](docs/theme_switcher.md) | ✅   |
+| Text 文字系（标题等）    | [text.md](docs/text.md)                     | ✅   |
+| Switch 开关              | [switch.md](docs/switch.md)                 | ✅   |
+| ScrollShadow 滚动阴影    | [scroll-shadow.md](docs/scroll-shadow.md)   | ✅   |
+| Listbox 列表选择框       | [listbox.md](docs/listbox.md)               | ✅   |
+| Autocomplete 自动补全    | [autocomplete.md](docs/autocomplete.md)     | ✅   |
+| Textarea 多行输入框      | [textarea.md](docs/textarea.md)             | ✅   |
+| Slider 滑块              | [slider.md](docs/slider.md)                 | ✅   |
+| Select 下拉选择框        | [select.md](docs/select.md)                 | ✅   |
+| Pagination 分页器        | [pagination.md](docs/pagination.md)         | ✅   |
+| Alert 警告提示           | [alert.md](docs/alert.md)                   | ✅   |
+| Skeleton 骨架屏          | [skeleton.md](docs/skeleton.md)             | ✅   |
+| Image 图片               | [image.md](docs/image.md)                   | ✅   |
+| Kbd 键盘按键             | [kbd.md](docs/kbd.md)                       | ✅   |
+| Link 链接                | [link.md](docs/link.md)                     | ✅   |
+| Chip 标签                | [chip.md](docs/chip.md)                     | ✅   |
+| Table 表格               | [table.md](docs/table.md)                   | ✅   |
+| Avatar 头像              | [avatar.md](docs/avatar.md)                 | ✅   |
+| AvatarGroup 头像组       | [avatar.md](docs/avatar.md)                 | ✅   |
+| Calendar 日历            | [calendar.md](docs/calendar.md)             | ✅   |
+| RangeCalendar 范围日历   | [calendar.md](docs/calendar.md)             | ✅   |
+| DateInput 日期选择器     | [date-input.md](docs/date-input.md)         | ✅   |
+| DatePicker 日期选择器    | [date-picker.md](docs/date-picker.md)       | ✅   |
+| DateRangePicker 范围日期 | [date-picker.md](docs/date-picker.md)       | ✅   |
+| Radio 单选按钮           | [radio.md](docs/radio.md)                   | ✅   |
+| CodeBlock 代码块         | [code_block.md](docs/code_block.md)         | ✅   |
+| Markdown 渲染器          | [markdown.md](docs/markdown.md)             | ✅   |
 
-### 待开发组件（对标 HeroUI v2）
+### 待开发组件 — HeroUI v2 复刻
 
-| 组件                     | 说明                        | 难度       | 必要性     | 状态      |
-| ------------------------ | --------------------------- | ---------- | ---------- | --------- |
-| Dropdown 下拉菜单        | 触发式下拉面板（键盘导航）  | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
-| Modal 模态对话框         | 居中弹窗 + 焦点陷阱 + Esc   | ⭐⭐⭐     | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
-| DateRangePicker 范围日期 | 开始~结束日期选择器         | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
-| Drawer 抽屉              | 侧滑面板 + 遮罩 + Esc 关闭  | ⭐⭐⭐⭐   | ❤️❤️❤️     | 🔲 待开发 |
-| TimeInput 时间选择器     | 时:分（秒）段选择输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
-| NumberInput 数字输入框   | 带步进/步退的数字输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
-| RadioGroup 单选按钮组    | 多个 Radio 的互斥分组容器   | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
-| Badge 徽章               | 小型状态标签（点/圆角变体） | ⭐         | ❤️❤️❤️     | 🔲 待开发 |
-| Navbar 导航栏            | 顶部导航条（组合型容器）    | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
-| InputOTP 验证码输入框    | 等宽分格 OTP / 验证码输入   | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
-| Breadcrumbs 面包屑导航   | 路径层级指示                | ⭐⭐       | ❤️❤️       | 🔲 待开发 |
-| Spacer 间距填充器        | 弹性空白占位                | ⭐         | ❤️         | 🔲 待开发 |
+| 组件                   | 说明                        | 难度       | 必要性     | 状态      |
+| ---------------------- | --------------------------- | ---------- | ---------- | --------- |
+| Dropdown 下拉菜单      | 触发式下拉面板（键盘导航）  | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| Toast 轻提示           | 自动消失的通知气泡          | ⭐⭐⭐     | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| Drawer 抽屉            | 侧滑面板 + 遮罩 + Esc 关闭  | ⭐⭐⭐⭐   | ❤️❤️❤️     | 🔲 待开发 |
+| TimeInput 时间选择器   | 时:分（秒）段选择输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| NumberInput 数字输入框 | 带步进/步退的数字输入       | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| RadioGroup 单选按钮组  | 多个 Radio 的互斥分组容器   | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
+| Badge 徽章             | 小型状态标签（点/圆角变体） | ⭐         | ❤️❤️❤️     | 🔲 待开发 |
+| Navbar 导航栏          | 顶部导航条（组合型容器）    | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
+| InputOTP 验证码输入框  | 等宽分格 OTP / 验证码输入   | ⭐⭐⭐     | ❤️❤️       | 🔲 待开发 |
+| Breadcrumbs 面包屑导航 | 路径层级指示                | ⭐⭐       | ❤️❤️       | 🔲 待开发 |
+| Spacer 间距填充器      | 弹性空白占位                | ⭐         | ❤️         | 🔲 待开发 |
+
+### 待开发组件 — 桌面端专属或者是额外组件
+
+> HeroUI 是 Web 组件库，以下为 HeroSideUI 针对桌面 GUI 场景自行补充的组件。
+
+| 组件                        | 说明                                                                                      | 难度       | 必要性     | 状态      |
+| --------------------------- | ----------------------------------------------------------------------------------------- | ---------- | ---------- | --------- |
+| Dialog 对话框               | 模态无边框对话框：遮罩 + 居中弹窗 + Esc，用于消息提示/确认/提交内容，中断用户操作直到关闭 | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| ContextMenu 右键菜单        | 右键弹出菜单 + 子菜单 + 分隔线 + 快捷键标注                                               | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| Window 无边框窗口           | 自定义标题栏 + 窗口按钮 + 拖动/缩放/Aero Snap，现代桌面应用基底                           | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| Tree 树形控件               | 文件树 / 大纲视图 / 多级嵌套数据展示                                                      | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
+| SystemTray 系统托盘         | 最小化到托盘 + 托盘菜单 + 桌面通知                                                        | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
+| SplitView 分割面板          | 左右/上下可拖拽调整的分割视图，IDE / 文件管理器高频                                       | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
+| CommandBar 工具栏           | 工具栏操作按钮组 + 更多按钮折叠溢出                                                       | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
+| ColorPicker 颜色选择器      | 取色板 + 预设色 + 自定义 HEX/RGB 输入 + 透明度                                            | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
+| Icon 图标                   | 基于 Iconify 的矢量图标，联网获取百万级图标库 + 颜色/尺寸/旋转                            | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
+| AudioPlayer 音频播放器      | 播放控件 + 进度条 + 音量 + 支持主流格式                                                   | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
+| VideoPlayer 视频播放器      | 视频画面 + 播放控件 + 全屏 + 支持主流格式                                                 | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️   | 🔲 待开发 |
+| FlowLayout 流式布局         | 自动换行排列子控件，Chip/Tag/Badge 展示必备                                               | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
+| Carousel 轮播图             | 图片画廊 / 内容卡片轮播展示 + 自动播放 + 指示器                                           | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| ShortcutEditor 快捷键选择器 | 录制键盘快捷键 + 冲突检测 + 显示当前绑定                                                  | ⭐⭐⭐     | ❤️❤️❤️     | 🔲 待开发 |
+| SplashScreen 启动画面       | 应用启动时的品牌展示 + 进度指示                                                           | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
 
 > **难度 ⭐**（1~5）：⭐ 复用现有组件直接拼装；⭐⭐⭐ 需新交互逻辑但可复用现有基础设施；⭐⭐⭐⭐⭐ 涉及焦点管理 / 键盘导航 / 架构级上下文。
-> **必要性 ❤️**（1~5）：❤️❤️❤️❤️❤️ 表单与弹窗类高频刚需；❤️❤️❤️ 常用但可被现有组件组合替代；❤️ 偏 Web 导航语义、桌面端复用度低。
+> **必要性 ❤️**（1~5）：❤️❤️❤️❤️❤️ 高频刚需；❤️❤️❤️ 常用但可被组合替代；❤️ 偏 Web 语义或复用度低。
 
 ### 不计划开发
 
-| 组件              | 原因                                                      |
-| ----------------- | --------------------------------------------------------- |
-| Form 表单容器     | 纯组合语义，用 QLayout + 现有输入类组件即可，无需额外抽象 |
-| User 用户信息卡片 | Avatar + Text 的简单组合，使用方自行拼装更灵活            |
+| 组件                   | 原因                                                      |
+| ---------------------- | --------------------------------------------------------- |
+| Form 表单容器          | 纯组合语义，用 QLayout + 现有输入类组件即可，无需额外抽象 |
+| User 用户信息卡片      | Avatar + Text 的简单组合，使用方自行拼装更灵活            |
+| Modal 模态框（HeroUI） | 桌面端由 Dialog 统一覆盖，无需单独组件                    |
+| Segmented 分段控件     | 与 Tabs 功能重复，选项级互斥切换 Tabs 加 variant 即可覆盖 |
+| DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                   |
+| Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换   |
 
-> **进度**：已完成 **34** 个组件，待开发 **12** 个，不计划开发 **2** 个。核心表单/数据展示类已基本覆盖，剩余以浮层/导航类为主。建议优先级：**Dropdown / Modal / DateRangePicker** 先行。
+> **进度**：已完成 **40** 个组件，待开发 **26** 个（含桌面端专属 15 个），不计划开发 **6** 个。
 
 ---
 
