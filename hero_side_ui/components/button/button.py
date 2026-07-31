@@ -252,7 +252,16 @@ class Button(QPushButton):
 
         variant = self._variant
 
-        if is_dark:
+        # 透明底变体（light/ghost/bordered）禁用态保持透明，仅文字变淡；
+        # 其余（solid/flat/faded）用浅底表示禁用。
+        transparent_variants = ("light", "ghost", "bordered")
+        if variant in transparent_variants:
+            disabled_style = f"""
+                background-color: transparent;
+                color: {hex_to_rgba(colors[500], 0.4 if is_dark else 0.5)};
+                border: none;
+            """
+        elif is_dark:
             disabled_style = f"""
                 background-color: {hex_to_rgba(colors[800], 0.6)};
                 color: {hex_to_rgba(colors[500], 0.4)};

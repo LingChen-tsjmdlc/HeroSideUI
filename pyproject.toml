@@ -1,6 +1,6 @@
 [project]
 name = "herosideui"
-version = "0.5.0"
+version = "0.6.0"
 description = "PySide6 component library inspired by HeroUI v2 design system"
 readme = "README.md"
 requires-python = ">=3.10,<3.15"
@@ -25,6 +25,7 @@ dependencies = [
     "markdown-it-py>=3.0.0",
     "mdit-py-plugins>=0.4.0",
     "pygments>=2.15.0",
+    "pyicu-wheels>=2.15.2",
 ]
 
 [project.urls]
