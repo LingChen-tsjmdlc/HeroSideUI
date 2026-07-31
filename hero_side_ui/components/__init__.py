@@ -29,6 +29,7 @@ from .link import Link
 from .chip import Chip
 from .avatar import Avatar, AvatarGroup
 from .table import Table
+from .calendar import Calendar, RangeCalendar
 from .markdown import Markdown
 from .code_block import CodeBlock
 
@@ -84,6 +85,8 @@ __all__ = [
     "Avatar",
     "AvatarGroup",
     "Table",
+    "Calendar",
+    "RangeCalendar",
     "Markdown",
     "CodeBlock",
 ]

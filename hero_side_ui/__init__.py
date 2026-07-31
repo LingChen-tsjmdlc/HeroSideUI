@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.5.0"
+__version__ = "0.6.0"
 
 from .core import (
     ThemeProvider,
@@ -64,6 +64,8 @@ from .components import (
     Avatar,
     AvatarGroup,
     Table,
+    Calendar,
+    RangeCalendar,
     Markdown,
     CodeBlock,
 )
@@ -125,6 +127,8 @@ __all__ = [
     "Avatar",
     "AvatarGroup",
     "Table",
+    "Calendar",
+    "RangeCalendar",
     "Markdown",
     "CodeBlock",
 ]
