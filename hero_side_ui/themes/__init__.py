@@ -63,6 +63,9 @@ from .component_presets import (
     MARKDOWN_INLINE_CODE,
     CODE_BLOCK_SPEC,
     CODE_BLOCK_SYNTAX,
+    CODE_EDITOR_SPEC,
+    CODE_EDITOR_LINE,
+    CODE_EDITOR_SYNTAX,
 )
 
 
@@ -157,4 +160,7 @@ __all__ = [
     "MARKDOWN_INLINE_CODE",
     "CODE_BLOCK_SPEC",
     "CODE_BLOCK_SYNTAX",
+    "CODE_EDITOR_SPEC",
+    "CODE_EDITOR_LINE",
+    "CODE_EDITOR_SYNTAX",
 ]

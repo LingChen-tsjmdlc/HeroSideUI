@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.8.0"
+__version__ = "0.8.1"
 
 from .core import (
     ThemeProvider,
@@ -76,6 +76,7 @@ from .components import (
     today,
     Markdown,
     CodeBlock,
+    CodeEditor,
     DatePicker,
     DateRangePicker,
 )
@@ -149,6 +150,7 @@ __all__ = [
     "today",
     "Markdown",
     "CodeBlock",
+    "CodeEditor",
     "DatePicker",
     "DateRangePicker",
 ]

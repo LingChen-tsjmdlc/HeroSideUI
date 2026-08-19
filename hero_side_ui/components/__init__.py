@@ -42,6 +42,7 @@ from .date_input import (
 )
 from .markdown import Markdown
 from .code_block import CodeBlock
+from .code_editor import CodeEditor
 from .date_picker import DatePicker, DateRangePicker
 
 __all__ = [
@@ -108,6 +109,7 @@ __all__ = [
     "today",
     "Markdown",
     "CodeBlock",
+    "CodeEditor",
     "DatePicker",
     "DateRangePicker",
 ]

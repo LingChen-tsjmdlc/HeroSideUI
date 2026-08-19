@@ -24,8 +24,11 @@ SmoothScroll.attach(edit)
 # 自定义参数
 SmoothScroll.attach(edit, lines_per_step=5, duration=250)
 
-# 卸载
+# 卸载（临时退出：之后显式 attach 可以重新挂）
 SmoothScroll.detach(edit)
+
+# 永久退出（auto-attach 不再自动挂，显式 attach 也拒绝）
+SmoothScroll.opt_out(edit)
 ```
 
 > `Textarea` 内部已经自动 `attach` 了，你不需要手动调。这个 API 主要是给你**自己的滚动 widget** 用的。
@@ -74,3 +77,4 @@ SmoothScroll.set_global_default(
 ## 已接入
 
 - `Textarea` 在 `__init__` 末尾自动 `SmoothScroll.attach(self.text_edit)`
+- `CodeEditor` 在 `__init__` 末尾 `SmoothScroll.opt_out(self._edit)`：编辑器保持 Qt 原生整行滚动（QPlainTextEdit 行级跳变没有中间帧，平滑动画无收益）
