@@ -50,6 +50,8 @@ __all__ = ["SmoothScroll"]
 
 # 标记 widget 是否已挂过 SmoothScroll，避免重复
 _ATTACHED_FLAG = "_hs_smooth_scroll_attached"
+# 永久退出标记：opt_out() 写 True 后，auto-attach 与显式 attach 都不再挂
+_OPT_OUT_FLAG = "_hs_smooth_scroll_opted_out"
 
 
 class _SmoothScrollFilter(QObject):
@@ -197,7 +199,7 @@ class _GlobalAutoAttachFilter(QObject):
 
     def eventFilter(self, obj, event):
         if event.type() == QEvent.Type.Show and isinstance(obj, QAbstractScrollArea):
-            if obj.property(_ATTACHED_FLAG) is None:
+            if obj.property(_OPT_OUT_FLAG) is not True and obj.property(_ATTACHED_FLAG) is None:
                 SmoothScroll.attach(obj)
         return super().eventFilter(obj, event)
 
@@ -245,6 +247,8 @@ class SmoothScroll:
             return None
         if not isinstance(area, QAbstractScrollArea):
             return None
+        if area.property(_OPT_OUT_FLAG) is True:
+            return None   # 永久退出过，尊重之
 
         existing = area.property(_ATTACHED_FLAG)
         if existing is not None:
@@ -276,6 +280,13 @@ class SmoothScroll:
             pass
         existing.deleteLater()
         area.setProperty(_ATTACHED_FLAG, None)
+
+    @classmethod
+    def opt_out(cls, area: QAbstractScrollArea):
+        """永久退出平滑滚动（detach + 写禁用标记，auto-attach 与 attach 都不再挂）"""
+        cls.detach(area)
+        if isinstance(area, QAbstractScrollArea):
+            area.setProperty(_OPT_OUT_FLAG, True)
 
     @classmethod
     def ensure_applied(cls) -> bool:
