@@ -18,6 +18,7 @@ from .scroll_shadow import ScrollShadow
 from .listbox import Listbox, ListboxItem, ListboxSection
 from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 from .select import Select, SelectItem, SelectSection
+from .dropdown import Dropdown, DropdownItem, DropdownSection
 from .slider import Slider
 from .radio import Radio, RadioBase, RadioGroup
 from .pagination import Pagination
@@ -83,6 +84,9 @@ __all__ = [
     "Select",
     "SelectItem",
     "SelectSection",
+    "Dropdown",
+    "DropdownItem",
+    "DropdownSection",
     "Slider",
     "Radio",
     "RadioBase",

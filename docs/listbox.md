@@ -110,6 +110,17 @@ lb.add_section(sec)
 - `variants`: `variant × color × showDivider × isDisabled × disableAnimation` 完整组合（30 个 compoundVariants 已通过 `_hover_bg / _hover_border / _text_hover` 解析函数还原）。
 - `defaults`: `variant=solid / color=default / showDivider=false`。
 
+**暗色 hover 与 HeroUI 的偏差（刻意）**：HeroUI 的菜单容器是 `bg-content1`（暗色 `#18181b`），hover 色按它标定（`solid=default #3f3f46`、`faded=default-100 #27272a`、`flat=default/40`）。本项目的 Popover 暗色底是 `#27272a`（比 content1 亮一档），照搬会导致 `solid`/`faded` 的 hover 与容器**完全同色**、看不见。因此暗色下 hover 整体再提一档，并且 `flat` 把 alpha 从 `0.40` 提到 `0.70`：
+
+| variant | HeroUI 暗色值 | 本项目暗色值 | 与 `#27272a` 对比度 |
+| --- | --- | --- | --- |
+| `solid` / `shadow` | `default` `#3f3f46` | `default-600` `#52525b` | 1.93 |
+| `faded` | `default-100` `#27272a` | `default-700` `#3f3f46` | 1.43 |
+| `flat` | `default/40` | `default-700` @ `0.70` | 1.26 |
+| `bordered` / `light` | 透明 | 透明（靠边框 / 字色区分） | — |
+
+亮色下容器就是 `content1`（`#ffffff`），无此问题，`solid`/`shadow` 已纠正为 HeroUI 的 `default.DEFAULT`（`#d4d4d8`）。
+
 ## 主题
 
 - `theme="auto"` 默认注册到 `ThemeProvider`，跟随系统亮 / 暗主题。Card 等容器底色变化时也会自动跟（通过 `palette.Window` 传播）。

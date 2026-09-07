@@ -5,6 +5,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel
 
 from hero_side_ui import Listbox, ListboxItem, ListboxSection
+from hero_side_ui.themes import LISTBOX_SIZES
 
 
 # ============================================================
@@ -17,7 +18,8 @@ class TestListboxInit:
         assert lb._variant == "solid"
         assert lb._color == "default"
         assert lb._size == "md"
-        assert lb._radius == "sm"
+        # None = 未指定，菜单项回落 size token 的 item_radius
+        assert lb._radius is None
         assert lb._selection_mode == "none"
         assert lb._is_disabled is False
         assert lb._theme_mode == "auto"
@@ -36,6 +38,20 @@ class TestListboxInit:
         lb = Listbox(selection_mode="invalid")
         qtbot.addWidget(lb)
         assert lb._selection_mode == "none"
+
+    def test_radius_drives_item_paint_radius(self, qtbot):
+        lb = Listbox()
+        qtbot.addWidget(lb)
+        it = lb.add_item("A", key="a")
+        cfg = LISTBOX_SIZES["md"]
+        # 未指定 radius → 回落 size token
+        assert it._resolved_item_radius(cfg) == float(cfg["item_radius"])
+        lb.set_radius("lg")
+        assert lb._radius == "lg"
+        assert it._resolved_item_radius(cfg) == 14.0
+        lb.set_radius("full")
+        assert lb._radius == "full"
+        assert it._resolved_item_radius(cfg) == min(it.width(), it.height()) / 2.0
 
 
 class TestListboxItemInit:

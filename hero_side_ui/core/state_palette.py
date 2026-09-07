@@ -30,6 +30,8 @@ HeroSideUI - StatePalette
 - **纯静态方法 + 纯函数**：无状态、无单例。完全无副作用，可被任何组件直接调。
 - **返回 QColor**：组件自绘场景（``QPainter``）天然适用；走 QSS 的组件（如 button）自己 ``QColor.name(QColor.HexArgb)`` 转字符串。
 - **覆盖 6 variants × 6 colors × 2 themes × 5 states**：和 HeroUI menu/listbox token 一致。
+- **暗色 hover 比 HeroUI 提一档**：菜单容器（Popover 暗色底 `#27272a`）比 HeroUI 的
+  content1(`#18181b`) 亮一档，照搬 HeroUI 原值会让 hover 与容器同色，见 ``_STEP_UP``。
 
 States
 ~~~~~~
@@ -77,6 +79,27 @@ _TRANSPARENT = QColor(0, 0, 0, 0)
 def _pal(color: str) -> dict:
     """安全取色板，未知 color 退回到 ``default`` 避免 KeyError。"""
     return HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
+
+
+# HeroUI 语义色 ``default.DEFAULT``（``bg-default`` 用的那一档）不是 500：
+# semantic.ts 里 light=zinc-300 / dark=zinc-700；其余 color 的 DEFAULT 是 500。
+_DEFAULT_SHADE = {"light": 300, "dark": 700}
+
+
+def _pal_default(color: str, theme: str) -> QColor:
+    """HeroUI ``default.DEFAULT`` 档；非 default 色一律 500。"""
+    pal = _pal(color)
+    if color == "default":
+        return QColor(pal[_DEFAULT_SHADE.get(theme, "300")])
+    return QColor(pal[500])
+
+
+# 菜单容器的暗色底是 Popover 的 #27272a (= default-800)，比 HeroUI 的
+# content1(#18181b) 亮一档。HeroUI 的 hover 色是按 content1 容器标定的，
+# 直接用会与容器同色（solid/faded 恰好都是 #27272a）→ 整体再提一档。
+# 中性灰靠色相拉不开差距，flat 额外加 alpha 补足。
+_STEP_UP = {"light": {"solid": 300, "faded": 100}, "dark": {"solid": 600, "faded": 700}}
+_FLAT_ALPHA = {"light": 0.40, "dark": 0.70}
 
 
 # ============================================================
@@ -134,34 +157,26 @@ class StatePalette:
         palette = _pal(color)
         default_pal = HEROUI_COLORS["default"]
 
+        step = _STEP_UP.get(theme, _STEP_UP["light"])
+
         if variant in ("solid", "shadow"):
             if color == "default":
-                return (
-                    QColor(default_pal[100])
-                    if theme == "light"
-                    else QColor(default_pal[800])
-                )
+                return QColor(default_pal[step["solid"]])
             return QColor(palette[500])
 
         if variant == "flat":
             if color == "default":
-                c = (
-                    QColor(default_pal[200])
-                    if theme == "light"
-                    else QColor(default_pal[700])
-                )
-                c.setAlphaF(0.40)
+                c = _pal_default("default", theme)
+                c.setAlphaF(_FLAT_ALPHA.get(theme, 0.40))
                 return c
+            # 彩色靠色相就能和中性容器拉开，维持 HeroUI 的 /20
             c = QColor(palette[500])
             c.setAlphaF(0.20)
             return c
 
         if variant == "faded":
-            return (
-                QColor(default_pal[100])
-                if theme == "light"
-                else QColor(default_pal[800])
-            )
+            # HeroUI faded 恒用 bg-default-100，不跟 color 变
+            return QColor(default_pal[step["faded"]])
 
         # bordered / light: hover 不改 bg
         return QColor(_TRANSPARENT)

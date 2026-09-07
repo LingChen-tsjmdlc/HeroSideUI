@@ -18,7 +18,7 @@ HeroUI v2 组件级主题预设 (Component Presets)
     from hero_side_ui.themes import BUTTON_SIZES
 """
 
-from .button import BUTTON_SIZES
+from .button import BUTTON_SIZES, VALID_BUTTON_VARIANTS
 from .accordion import ACCORDION_SIZES
 from .input import INPUT_SIZES
 from .date_input import (
@@ -40,6 +40,7 @@ from .switch import SWITCH_SIZES
 from .listbox import LISTBOX_SIZES
 from .autocomplete import AUTOCOMPLETE_SIZES
 from .select import SELECT_SIZES
+from .dropdown import DROPDOWN_SIZES
 from .slider import SLIDER_SIZES
 from .radio import RADIO_SIZES
 from .pagination import PAGINATION_SIZES
@@ -113,6 +114,7 @@ __all__ = [
     "LISTBOX_SIZES",
     "AUTOCOMPLETE_SIZES",
     "SELECT_SIZES",
+    "DROPDOWN_SIZES",
     "SLIDER_SIZES",
     "RADIO_SIZES",
     "PAGINATION_SIZES",

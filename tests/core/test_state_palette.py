@@ -124,12 +124,15 @@ class TestStateEquivalence:
 
 class TestSpecificBgValues:
     def test_solid_default_light(self):
+        # HeroUI 语义色 default.DEFAULT：light = zinc-300
         c = StatePalette.bg("solid", "default", "light", "hover")
-        assert c.name() == HEROUI_COLORS["default"][100].lower()
+        assert c.name() == HEROUI_COLORS["default"][300].lower()
 
     def test_solid_default_dark(self):
+        # HeroUI default.DEFAULT = zinc-700；菜单容器比 HeroUI content1 亮一档，
+        # 这里再提一档（600）保证不和容器同色
         c = StatePalette.bg("solid", "default", "dark", "hover")
-        assert c.name() == HEROUI_COLORS["default"][800].lower()
+        assert c.name() == HEROUI_COLORS["default"][600].lower()
 
     def test_solid_primary_both_themes(self):
         assert (
@@ -159,16 +162,23 @@ class TestSpecificBgValues:
         c = StatePalette.bg("flat", "default", "light", "hover")
         # default/40 → alpha ≈ 102
         assert 99 <= c.alpha() <= 105
-        rgb = QColor(HEROUI_COLORS["default"][200])
+        rgb = QColor(HEROUI_COLORS["default"][300])
+        assert (c.red(), c.green(), c.blue()) == (rgb.red(), rgb.green(), rgb.blue())
+
+    def test_flat_default_dark_alpha_raised_for_visibility(self):
+        """暗色容器亮一档，flat 靠提 alpha 补足（0.40 → 0.70）。"""
+        c = StatePalette.bg("flat", "default", "dark", "hover")
+        assert 176 <= c.alpha() <= 182
+        rgb = QColor(HEROUI_COLORS["default"][700])
         assert (c.red(), c.green(), c.blue()) == (rgb.red(), rgb.green(), rgb.blue())
 
     def test_faded_hover_bg_is_default_100_light(self):
         c = StatePalette.bg("faded", "primary", "light", "hover")
         assert c.name() == HEROUI_COLORS["default"][100].lower()
 
-    def test_faded_hover_bg_is_default_800_dark(self):
+    def test_faded_hover_bg_is_default_700_dark(self):
         c = StatePalette.bg("faded", "primary", "dark", "hover")
-        assert c.name() == HEROUI_COLORS["default"][800].lower()
+        assert c.name() == HEROUI_COLORS["default"][700].lower()
 
     def test_bordered_hover_bg_transparent(self):
         c = StatePalette.bg("bordered", "primary", "light", "hover")
@@ -294,6 +304,52 @@ class TestSelectedIndicator:
                     ind = StatePalette.selected_indicator(variant, color, theme)
                     txt = StatePalette.text(variant, color, theme, "hover")
                     assert ind.name() == txt.name()
+
+
+# ============================================================
+# hover 必须能和菜单容器（Popover 暗色底）区分开
+# ============================================================
+
+
+def _composite(fg: QColor, bg: QColor) -> QColor:
+    a = fg.alphaF()
+    return QColor(
+        round(fg.red() * a + bg.red() * (1 - a)),
+        round(fg.green() * a + bg.green() * (1 - a)),
+        round(fg.blue() * a + bg.blue() * (1 - a)),
+    )
+
+
+def _contrast(a: QColor, b: QColor) -> float:
+    def lum(c: QColor) -> float:
+        def ch(v: float) -> float:
+            v /= 255.0
+            return v / 12.92 if v <= 0.03928 else ((v + 0.055) / 1.055) ** 2.4
+
+        return 0.2126 * ch(c.red()) + 0.7152 * ch(c.green()) + 0.0722 * ch(c.blue())
+
+    la, lb = lum(a), lum(b)
+    return (max(la, lb) + 0.05) / (min(la, lb) + 0.05)
+
+
+class TestHoverVsMenuContainer:
+    """暗色下 hover 不能和 Popover 底色撞色（历史 bug：两者都是 #27272a）。"""
+
+    CONTAINER = QColor(HEROUI_COLORS["default"][800])  # Popover 暗色底 #27272a
+
+    def test_dark_hover_not_same_color_as_container(self):
+        for variant in ("solid", "shadow", "flat", "faded"):
+            hover = StatePalette.bg(variant, "default", "dark", "hover")
+            merged = _composite(hover, self.CONTAINER)
+            assert merged.name() != self.CONTAINER.name(), f"{variant} hover 与容器同色"
+
+    def test_dark_hover_contrast_ratio(self):
+        for variant in ("solid", "shadow", "flat", "faded"):
+            hover = StatePalette.bg(variant, "default", "dark", "hover")
+            merged = _composite(hover, self.CONTAINER)
+            assert _contrast(merged, self.CONTAINER) >= 1.20, (
+                f"{variant} hover 合成后 {merged.name()} 与容器对比度不足"
+            )
 
 
 # ============================================================
