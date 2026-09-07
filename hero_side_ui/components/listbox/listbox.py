@@ -61,7 +61,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         variant: str = "solid",
         color: str = "default",
         size: str = "md",
-        radius: str = "sm",
+        radius: Optional[str] = None,
         selection_mode: str = "none",
         selected_keys: Optional[Iterable[str]] = None,
         disabled_keys: Optional[Iterable[str]] = None,
@@ -388,8 +388,9 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._empty_label.setMinimumHeight(cfg["empty_height"])
         self._propagate_style()
 
-    def set_radius(self, r: str):
-        if r not in RADIUS:
+    def set_radius(self, r: Optional[str]):
+        # None = 回落 size token（item_radius）；"full" 是动态半高，不在 RADIUS 表内
+        if r is not None and r not in RADIUS and r != "full":
             return
         self._radius = r
         self._propagate_style()

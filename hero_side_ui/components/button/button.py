@@ -10,7 +10,12 @@ from PySide6.QtCore import QObject, Qt, QSize, QEvent
 from PySide6.QtGui import QColor, QIcon, QPixmap
 from typing import Optional
 
-from ...themes import HEROUI_COLORS, RADIUS, BUTTON_SIZES
+from ...themes import (
+    HEROUI_COLORS,
+    RADIUS,
+    BUTTON_SIZES,
+    VALID_BUTTON_VARIANTS,
+)
 from ...utils import hex_to_rgba, load_svg_icon
 from ...animation import RippleOverlay, PressScaleEffect
 from ...core import ThemeProvider
@@ -39,6 +44,8 @@ class Button(QPushButton):
         btn_icon = Button(icon_only=True, icon="heroicons--eye-solid", variant="flat")
         btn_with_icon = Button("搜索", icon="heroicons--magnifying-glass-solid")
     """
+
+    VALID_VARIANTS = VALID_BUTTON_VARIANTS
 
     def __init__(
         self,

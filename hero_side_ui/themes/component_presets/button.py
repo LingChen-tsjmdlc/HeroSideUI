@@ -1,5 +1,8 @@
 """Button 组件尺寸配置。"""
 
+# Button 支持的变体（HeroUI v2 Button 无 shadow，改用 ghost）
+VALID_BUTTON_VARIANTS = ("solid", "bordered", "flat", "light", "faded", "ghost")
+
 BUTTON_SIZES = {
     "sm": {
         "padding_y": 6,

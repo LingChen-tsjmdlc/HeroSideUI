@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.8.1"
+__version__ = "0.9.0"
 
 from .core import (
     ThemeProvider,
@@ -50,6 +50,9 @@ from .components import (
     Select,
     SelectItem,
     SelectSection,
+    Dropdown,
+    DropdownItem,
+    DropdownSection,
     Slider,
     Radio,
     RadioBase,
@@ -124,6 +127,9 @@ __all__ = [
     "Select",
     "SelectItem",
     "SelectSection",
+    "Dropdown",
+    "DropdownItem",
+    "DropdownSection",
     "Slider",
     "Radio",
     "RadioBase",

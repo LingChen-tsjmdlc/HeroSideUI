@@ -401,6 +401,21 @@ class ListboxItem(QAbstractButton):
     def _size_cfg(self) -> dict:
         return LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
 
+    def _resolved_item_radius(self, cfg: dict) -> float:
+        """绘制圆角：父 Listbox 显式给了 radius 就用它，否则回落到 size token。"""
+        r = getattr(self, "_radius", None)
+        if not r:
+            return float(cfg["item_radius"])
+        if r == "full":
+            return min(self.width(), self.height()) / 2.0
+        px = RADIUS.get(r)
+        if px is None:
+            return float(cfg["item_radius"])
+        try:
+            return float(str(px).rstrip("px"))
+        except ValueError:
+            return float(cfg["item_radius"])
+
     def _apply_size(self):
         cfg = self._size_cfg()
 
@@ -755,7 +770,7 @@ class ListboxItem(QAbstractButton):
             opacity = 1.0
 
         cfg = self._size_cfg()
-        item_radius = cfg["item_radius"]
+        item_radius = self._resolved_item_radius(cfg)
 
         rect = self.rect()
         # 留出 divider 的位置
@@ -790,8 +805,8 @@ class ListboxItem(QAbstractButton):
             inset = border_w / 2
             p.drawRoundedRect(
                 body_rect.adjusted(int(inset), int(inset), -int(inset), -int(inset)),
-                item_radius - inset,
-                item_radius - inset,
+                max(0.0, item_radius - inset),
+                max(0.0, item_radius - inset),
             )
 
         # 选中指示标记 (selectedIcon)：右侧画一个小勾
