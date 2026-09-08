@@ -67,12 +67,15 @@ def test_table(qtbot):
 
 def test_inline_rich_text(qtbot):
     # 纯文字 + 粗斜删（无 code/link）→ 走富文本快路径，仍是单个 Text
+    # inline_styles 重构后默认输出带样式的 span（不再是无类 <b>/<i>/<s>）
     md = Markdown("a **b** *c* ~~d~~")
     qtbot.addWidget(md)
     para = _block_widgets(md)[0]
     assert isinstance(para, Text)
     html = para.text()
-    assert "<b>" in html and "<i>" in html and "<s>" in html
+    assert "font-weight:bold" in html
+    assert "font-style:italic" in html
+    assert "line-through" in html
 
 
 def test_paragraph_with_code_default_richtext(qtbot):
@@ -197,8 +200,8 @@ def test_inline_override(qtbot):
     qtbot.addWidget(md)
     html = _block_widgets(md)[0].text()
     assert "<span class='x'>" in html
-    # em 未覆盖 → 仍走默认 <i>
-    assert "<i>" in html
+    # em 未覆盖 → 仍走默认样式 span
+    assert "font-style:italic" in html
 
 
 def test_inline_override_default_escape(qtbot):
@@ -208,7 +211,7 @@ def test_inline_override_default_escape(qtbot):
 
     md = Markdown("**bold**", inline_overrides={"strong": boom})
     qtbot.addWidget(md)
-    assert "<b>" in _block_widgets(md)[0].text()
+    assert "font-weight:bold" in _block_widgets(md)[0].text()
 
 
 def test_block_renderer(qtbot):
