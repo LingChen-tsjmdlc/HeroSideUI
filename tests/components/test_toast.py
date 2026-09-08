@@ -468,7 +468,8 @@ class TestToastRegion:
         region._relayout(False)
         gap_spec = TOAST_SPEC["stack_gap"]
         for older, newer in zip(cards, cards[1:]):
-            body_bot_old = older.geometry().bottom() - older.pad_bottom
+            # body 底 = top + height - pad（Qt 的 bottom() 自带 -1，须补偿）
+            body_bot_old = older.geometry().top() + older.height() - older.pad_bottom
             body_top_new = newer.geometry().top() + newer.pad_top
             assert body_top_new - body_bot_old == gap_spec
 
@@ -486,19 +487,20 @@ class TestToastRegion:
         assert all(cards[i].paint_opacity > 0.9 for i in range(2, 5))
         QTest.qWait(TOAST_SPEC["duration_enter"] + 200)
         assert all(c.paint_opacity > 0.95 for c in cards)
+        expanded_top = cards[0].geometry().top()
 
-        # 第二次展开也应有滑动+淡入（回归：几何冻结在上次展开位，
-        # 再展开时起点==终点，_animate_move 早退只剩原位淡入）
+        # 第二次展开也应有滑动+淡入（折叠淡出的卡现在停在折叠堆叠位，
+        # 二次展开的起点天然 != 展开位，滑动真实发生）
         region._set_hovering(False)
         QTest.qWait(TOAST_SPEC["duration_move"] + 150)
         assert cards[0].isHidden()
-        top_target = cards[0].geometry().top()
+        folded_top = cards[0].geometry().top()
         region._set_hovering(True)
         QTest.qWait(30)
         assert cards[0].paint_opacity < 0.6
-        assert cards[0].geometry().top() != top_target  # 位置动画在跑
+        assert cards[0].geometry().top() != folded_top  # 位置动画在跑
         QTest.qWait(TOAST_SPEC["duration_move"] + 150)
-        assert cards[0].geometry().top() == top_target
+        assert cards[0].geometry().top() == expanded_top
         assert cards[0].paint_opacity > 0.95
 
     def test_collapse_fades_out_hidden_cards(self, qtbot, host):

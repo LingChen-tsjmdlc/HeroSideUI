@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.10.1"
+__version__ = "0.10.2"
 
 from .core import (
     ThemeProvider,

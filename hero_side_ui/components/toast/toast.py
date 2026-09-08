@@ -310,19 +310,26 @@ class Toast(QWidget):
         self._spinner.move(self._icon_label.x(), self._icon_label.y())
 
     def _text_avail_width(self) -> int:
-        """文本列真实宽度（标题截断与描述换行估算共用）。"""
-        rect = self._content_rect()
+        """文本列真实宽度（标题截断与描述换行估算共用）。
+
+        构造期尚未被 region 定宽（width 还是 Qt 默认 100）：按临时宽度算
+        elide 会得到空串，故回落到 sizeHint 宽；region resize 后
+        resizeEvent 会按真实宽度重算。
+        """
+        w = max(self.width(), self.sizeHint().width())
+        pad = self._shadow_pad()
+        rect_w = max(0.0, w - 2 * pad - 2 * self._width_inset)
         icon_w = (
             0 if self._hide_icon
             else TOAST_SPEC["icon"] + TOAST_SPEC["content_gap"]
         )
         # 左右各有一份 padding_x：此前漏减右侧一份，elide 判定的可用宽
         # 比文本列实际宽 12px，长标题不触发截断、钻进关闭按钮区
-        avail = int(rect.width()) - icon_w - 2 * TOAST_SPEC["padding_x"]
+        avail = int(rect_w) - icon_w - 2 * TOAST_SPEC["padding_x"]
         # end_content 占据文本列右侧（含一处列间距），一并扣除
-        w = self._end_content
-        if w is not None:
-            avail -= w.sizeHint().width() + TOAST_SPEC["content_gap"]
+        end = self._end_content
+        if end is not None:
+            avail -= end.sizeHint().width() + TOAST_SPEC["content_gap"]
         return max(0, avail)
 
     def _apply_title_elide(self):
