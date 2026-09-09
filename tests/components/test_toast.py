@@ -62,6 +62,17 @@ def _cards(region: ToastRegion, count: int, **kw) -> list:
     return cards
 
 
+def _seek_mid(anim, wait: int = 20) -> None:
+    """把进行中的动画确定性地推进到中点，再采样中间态。
+
+    固定 qWait(30) 采样依赖平台动画驱动的首帧时机：macOS 上首帧常在 30ms
+    之后才到，采到的是尚未起步的起点值。seek 直接写属性值，不受墙钟影响。
+    """
+    assert anim is not None
+    anim.setCurrentTime(anim.duration() // 2)
+    QTest.qWait(wait)
+
+
 class TestToastInit:
     """构造参数与默认值"""
 
@@ -496,9 +507,10 @@ class TestToastRegion:
         assert cards[0].isHidden()
         folded_top = cards[0].geometry().top()
         region._set_hovering(True)
-        QTest.qWait(30)
         assert cards[0].paint_opacity < 0.6
-        assert cards[0].geometry().top() != folded_top  # 位置动画在跑
+        _seek_mid(region._items[0].geo_anim)
+        # 中点处必须严格落在折叠位与展开位之间（滑动真实发生）
+        assert expanded_top < cards[0].geometry().top() < folded_top
         QTest.qWait(TOAST_SPEC["duration_move"] + 150)
         assert cards[0].geometry().top() == expanded_top
         assert cards[0].paint_opacity > 0.95
@@ -514,10 +526,10 @@ class TestToastRegion:
         QTest.qWait(TOAST_SPEC["duration_move"] + 200)
         assert all(not c.isHidden() and c.paint_opacity > 0.95 for c in cards)
         region._set_hovering(False)
-        QTest.qWait(30)
+        _seek_mid(region._items[0].fade_anim)
         # 采样窗口内：被藏的卡仍在淡出（未隐藏、透明度未回到满值）
         assert not cards[0].isHidden()
-        assert cards[0].paint_opacity < 1.0
+        assert 0.0 < cards[0].paint_opacity < 1.0
         QTest.qWait(TOAST_SPEC["duration_move"] + 200)
         assert cards[0].isHidden()
         assert not cards[2].isHidden()  # 停留卡不受影响
@@ -553,7 +565,7 @@ class TestToastRegion:
         QTest.qWait(TOAST_SPEC["duration_move"] + 200)
         assert cards[2]._width_inset == pytest.approx(0.0, abs=0.5)
         region._set_hovering(False)
-        QTest.qWait(30)
+        _seek_mid(cards[2]._inset_anim)
         mid = cards[2]._width_inset
         assert 0.0 < mid < TOAST_SPEC["collapsed_width_step"]
         QTest.qWait(TOAST_SPEC["duration_move"] + 200)

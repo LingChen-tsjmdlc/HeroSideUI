@@ -335,12 +335,34 @@ class Toast(QWidget):
     def _apply_title_elide(self):
         """标题单行截断（HeroUI: title truncate）。"""
         fm = self._title_label.fontMetrics()
-        self._title_label.setText(
-            fm.elidedText(
-                self._title_text, Qt.TextElideMode.ElideRight, self._text_avail_width()
-            )
-        )
-        self._apply_child_visible(self._title_label, bool(self._title_text))
+        avail = max(1, self._text_avail_width())
+        text = self._title_text
+        if not text:
+            self._title_label.setText("")
+        elif fm.horizontalAdvance(text) <= avail:
+            self._title_label.setText(text)
+        else:
+            # 部分平台字体下 fm.elidedText 会返回空串或别的省略形式，需自算兜底
+            elided = fm.elidedText(text, Qt.TextElideMode.ElideRight, avail)
+            if not elided.endswith("…"):
+                elided = self._elide_right(fm, text, avail)
+            self._title_label.setText(elided)
+        self._apply_child_visible(self._title_label, bool(text))
+
+    def _elide_right(self, fm, text: str, avail: int) -> str:
+        """二分出可容纳的最长前缀，追加省略号。"""
+        dots = "…"
+        dot_w = fm.horizontalAdvance(dots)
+        if dot_w >= avail:
+            return dots
+        lo, hi = 0, len(text)
+        while lo < hi:
+            mid = (lo + hi + 1) // 2
+            if fm.horizontalAdvance(text[:mid]) + dot_w <= avail:
+                lo = mid
+            else:
+                hi = mid - 1
+        return text[:lo] + dots
 
     # ============================================================
     # 绘制

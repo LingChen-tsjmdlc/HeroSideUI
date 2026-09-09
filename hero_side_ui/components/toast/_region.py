@@ -250,6 +250,8 @@ class ToastRegion(QWidget):
                 - card.content_height() - card.pad_top)
 
     def _target_geometry(self, item: _ToastItem, index: int, total: int, heights: list) -> QRect:
+        """按 heights（布局开始时统一采集的可见主体高度）定位，避免与
+        偏移量用的高度表不是同一份数据、导致相邻卡间距偏离 stack_gap。"""
         width = self._card_width()
         x = self._x_for(width)
         offset = self._edge_offset(index, total, heights)
@@ -257,7 +259,7 @@ class ToastRegion(QWidget):
         if self._placement.startswith("top"):
             content_y = TOAST_SPEC["margin"] + offset
         else:
-            content_y = self.height() - TOAST_SPEC["margin"] - offset - item.card.content_height()
+            content_y = self.height() - TOAST_SPEC["margin"] - offset - heights[index]
         y = content_y - item.card.pad_top
         return QRect(x, y, width, card_h)
 
@@ -267,14 +269,20 @@ class ToastRegion(QWidget):
         if total == 0:
             return
 
-        heights = [it.card.content_height() for it in items]
         # region 抬到宿主内容之上；卡片是宿主子件，随后逐个 raise 叠更上层
         self.raise_()
         # 折叠态只显示最新 max_visible 张；更旧的隐藏但保留计时（HeroUI
         # visibleToasts 语义：不渲染 ≠ 移除，hover 展开时重新显示）
         visible_from = 0 if self._expanded else max(0, total - self._max_visible)
+
+        # ---- 第一遍：状态（可见性 / 折叠按钮 / 内缩 / 透明度）----
+        # 这些操作可能让卡片重算自身高度（结束淡出快照会触发卡片 _relayout），
+        # 必须全部完成后再采集高度表，否则定位用的高度与卡片实际高度不一致，
+        # 展开态相邻卡片间距会偏离 stack_gap。
+        revealed = []
         for index, item in enumerate(items):
             card = item.card
+            card.sync_height()
             if index < visible_from:
                 item.visible = False
                 if item.hiding:
@@ -294,6 +302,7 @@ class ToastRegion(QWidget):
                     )
                 elif not item.hiding:
                     card.hide()
+                revealed.append(False)
                 continue
             was_hidden = not item.visible
             item.visible = True
@@ -302,8 +311,6 @@ class ToastRegion(QWidget):
             # 折叠态只有最新一张带关闭按钮：旧卡露出的边条不该带 X，
             # 且旧卡的 X 会被最新卡的命中区挡住
             card.set_folded(not self._expanded and index < total - 1)
-            target = self._target_geometry(item, index, total, heights)
-            item.base_geom = target
 
             # 折叠态：更早的卡片露出的边略窄（近似 HeroUI scaleX）
             depth = total - 1 - index
@@ -315,9 +322,23 @@ class ToastRegion(QWidget):
                 card.set_width_inset(inset)
             # 入场淡入进行中不能踩回 1.0，否则卡片会在入场起点
             # 以不透明状态闪现一两帧（帧级实证 f00 opacity=1.0）
-            # 折叠态隐藏的卡被展开揭示时也不能瞬跳满透明度（突兀弹出）：
+            if not was_hidden and not item.entering:
+                card.set_opacity(1.0)
+            revealed.append(was_hidden)
+
+        # ---- 第二遍：按统一采集的高度表定位 ----
+        heights = [it.card.content_height() for it in items]
+        for index, item in enumerate(items):
+            if index < visible_from:
+                continue
+            card = item.card
+            target = self._target_geometry(item, index, total, heights)
+            item.base_geom = target
+
+            # 折叠态隐藏的卡被展开揭示时不能瞬跳满透明度（突兀弹出）：
             # 位置动画本就从折叠位滑向展开位，这里补上同步淡入
-            if was_hidden and animate and not self._disable_animation and not item.entering:
+            if (revealed[index] and animate and not self._disable_animation
+                    and not item.entering):
                 # 起点重置到折叠堆叠位（HeroUI 中隐藏 toast 始终保有折叠
                 # transform，展开时从该位滑向展开位）。不重置的话几何冻结
                 # 在上次的展开位，第二次展开只剩原位淡入、没有滑动
