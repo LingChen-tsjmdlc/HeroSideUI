@@ -52,6 +52,9 @@ EDITABLE_TYPES = frozenset(
 
 VALID_GRANULARITIES = ("day", "hour", "minute", "second")
 
+# 纯时间粒度（TimeInput 用；不含 day）
+TIME_GRANULARITIES = ("hour", "minute", "second")
+
 
 @dataclass(frozen=True)
 class SegmentSpec:
@@ -81,10 +84,13 @@ def build_pattern(
     identifier: str = "gregorian",
     granularity: str = "day",
     hour_cycle: Optional[int] = None,
+    include_date: bool = True,
 ) -> str:
     """按 locale/历法/粒度/小时制求 ICU best pattern。
 
     :param hour_cycle: 12 或 24；None 表示跟随 locale 习惯（skeleton 用 j）
+    :param include_date: False 时只求时间部分 pattern（TimeInput 用，
+        不拼 yMd 日期前缀，段列表里不会出现年/月/日段）
     """
     if granularity not in _TIME_SKELETON:
         raise ValueError(f"invalid granularity: {granularity!r}")
@@ -96,7 +102,7 @@ def build_pattern(
 
     loc = _locale_for_locale(locale, identifier)
     gen = icu.DateTimePatternGenerator.createInstance(loc)
-    return gen.getBestPattern("yMd" + time_part)
+    return gen.getBestPattern(("yMd" if include_date else "") + time_part)
 
 
 def parse_pattern(pattern: str) -> List[SegmentSpec]:
@@ -161,6 +167,7 @@ def build_segments(
     hour_cycle: Optional[int] = None,
     hide_time_zone: bool = False,
     has_timezone: bool = False,
+    include_date: bool = True,
 ) -> List[SegmentSpec]:
     """求最终段列表：解析 pattern 后按需补/删时区段。
 
@@ -173,6 +180,7 @@ def build_segments(
             identifier=identifier,
             granularity=granularity,
             hour_cycle=hour_cycle,
+            include_date=include_date,
         )
     )
 
@@ -202,6 +210,7 @@ def _strip_dangling_literals(specs: List[SegmentSpec]) -> List[SegmentSpec]:
 __all__ = [
     "EDITABLE_TYPES",
     "VALID_GRANULARITIES",
+    "TIME_GRANULARITIES",
     "SegmentSpec",
     "build_pattern",
     "build_segments",

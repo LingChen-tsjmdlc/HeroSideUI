@@ -59,6 +59,8 @@ class DateFieldState:
     :param min_value / max_value: 值域约束，段提交时 clamp
     :param hide_time_zone: 隐藏时区段
     :param should_force_leading_zeros: 数字段补前导零
+    :param include_date: False 时为纯时间状态机（TimeInput），
+        段列表不含年/月/日，越界判定只比较时刻
     """
 
     def __init__(
@@ -74,6 +76,7 @@ class DateFieldState:
         max_value: Optional[DateTimeValue] = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
+        include_date: bool = True,
     ):
         self._granularity = granularity
         self._hour_cycle = hour_cycle
@@ -83,6 +86,7 @@ class DateFieldState:
         self._max_value = max_value
         self._hide_time_zone = hide_time_zone
         self._force_zeros = should_force_leading_zeros
+        self._include_date = include_date
 
         # 占位起点：优先 placeholder_value，其次今天
         base = placeholder_value or DateTimeValue.from_date(
@@ -104,6 +108,7 @@ class DateFieldState:
             hour_cycle=hour_cycle,
             hide_time_zone=hide_time_zone,
             has_timezone=self._timezone is not None,
+            include_date=include_date,
         )
 
         # 段值表：type → int；缺席即占位态
@@ -121,6 +126,11 @@ class DateFieldState:
     @property
     def granularity(self) -> str:
         return self._granularity
+
+    @property
+    def include_date(self) -> bool:
+        """是否含日期段（False = 纯时间状态机）。"""
+        return self._include_date
 
     @property
     def timezone(self) -> Optional[str]:
@@ -428,14 +438,30 @@ class DateFieldState:
         self._set_segment(seg_type, min(max(cur, lo), hi))
 
     def is_invalid(self) -> bool:
-        """值是否越界（供组件同步 invalid 视觉）。"""
+        """值是否越界（供组件同步 invalid 视觉）。
+
+        纯时间状态机（include_date=False）只比较时刻三元组——
+        min/max 约束的日期部分与输入无关，若整值比较会因占位日期
+        落在约束日期之外而恒标红。
+        """
         v = self.value()
         if v is None:
             return False
-        if self._min_value is not None and v < self._min_value:
-            return True
-        if self._max_value is not None and v > self._max_value:
-            return True
+        if self._include_date:
+            if self._min_value is not None and v < self._min_value:
+                return True
+            if self._max_value is not None and v > self._max_value:
+                return True
+            return False
+        key = (v.hour, v.minute, v.second)
+        if self._min_value is not None:
+            m = self._min_value
+            if key < (m.hour, m.minute, m.second):
+                return True
+        if self._max_value is not None:
+            m = self._max_value
+            if key > (m.hour, m.minute, m.second):
+                return True
         return False
 
 
