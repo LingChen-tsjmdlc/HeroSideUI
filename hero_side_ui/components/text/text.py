@@ -51,6 +51,7 @@ class Text(QLabel):
         force_selection_text_color: bool = True,
         selection_adapts_color: bool = False,
         rich_text: bool = False,
+        word_wrap: bool = False,
         theme: str = "auto",
         parent: Optional[QWidget] = None,
     ):
@@ -67,6 +68,9 @@ class Text(QLabel):
         self._rich_text: bool = rich_text
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
+
+        # 超出宽度时是否自动换行（QLabel 默认截断）
+        self.setWordWrap(word_wrap)
 
         # ---- 字体 ----
         self._apply_font()
@@ -365,7 +369,7 @@ class Caption(Text):
 
 
 class Body(Text):
-    """正文 — 语义化 alias，等价 ``Text(size='md')``。"""
+    """正文 — 语义化 alias，等价 ``Text(size='md')``；段落默认自动换行。"""
 
     def __init__(
         self,
@@ -374,6 +378,7 @@ class Body(Text):
         color: ColorInput = None,
         theme: str = "auto",
         selectable: bool = True,
+        word_wrap: bool = True,
         parent: Optional[QWidget] = None,
         **kwargs,
     ):
@@ -383,6 +388,7 @@ class Body(Text):
             weight="normal",
             color=color,
             selectable=selectable,
+            word_wrap=word_wrap,
             theme=theme,
             parent=parent,
             **kwargs,

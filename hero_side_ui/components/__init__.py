@@ -45,6 +45,7 @@ from .markdown import Markdown
 from .code_block import CodeBlock
 from .code_editor import CodeEditor
 from .date_picker import DatePicker, DateRangePicker
+from .drawer import Drawer
 from .toast import (
     Toast,
     ToastRegion,
@@ -126,6 +127,7 @@ __all__ = [
     "CodeEditor",
     "DatePicker",
     "DateRangePicker",
+    "Drawer",
     "Toast",
     "ToastRegion",
     "ToastProvider",

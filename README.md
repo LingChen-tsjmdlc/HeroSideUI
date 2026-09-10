@@ -200,12 +200,12 @@ HeroSideUI/
 | Markdown 渲染器          | [markdown.md](docs/markdown.md)             | ✅   |
 | Dropdown 下拉菜单        | [dropdown.md](docs/dropdown.md)             | ✅   |
 | Toast 轻提示             | [toast.md](docs/toast.md)                   | ✅   |
+| Drawer 抽屉              | [drawer.md](docs/drawer.md)                 | ✅   |
 
 ### 待开发组件 — HeroUI v2 复刻
 
 | 组件                   | 说明                        | 难度     | 必要性     | 状态      |
 | ---------------------- | --------------------------- | -------- | ---------- | --------- |
-| Drawer 抽屉            | 侧滑面板 + 遮罩 + Esc 关闭  | ⭐⭐⭐⭐ | ❤️❤️❤️     | 🔲 待开发 |
 | TimeInput 时间选择器   | 时:分（秒）段选择输入       | ⭐⭐⭐   | ❤️❤️❤️     | 🔲 待开发 |
 | NumberInput 数字输入框 | 带步进/步退的数字输入       | ⭐⭐⭐   | ❤️❤️❤️     | 🔲 待开发 |
 | Badge 徽章             | 小型状态标签（点/圆角变体） | ⭐       | ❤️❤️❤️     | 🔲 待开发 |
@@ -250,7 +250,7 @@ HeroSideUI/
 | DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                   |
 | Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换   |
 
-> **进度**：已完成 **44** 个组件，待开发 **23** 个（含桌面端专属 15 个），不计划开发 **6** 个。
+> **进度**：已完成 **45** 个组件，待开发 **22** 个（含桌面端专属 15 个），不计划开发 **6** 个。
 
 ---
 
