@@ -14,7 +14,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QLabel, QLayout, QSizePolicy
 
-from ...themes import HEROUI_COLORS, INPUT_SIZES, RADIUS
+from ...themes import HEROUI_COLORS, RADIUS
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -27,7 +27,7 @@ class _InputStylingMixin:
     def _apply_styles(self):
         """计算并应用全部样式"""
         is_dark = self._theme == "dark"
-        size_config = INPUT_SIZES.get(self._size, INPUT_SIZES["md"])
+        size_config = self._size_config()
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["default"])
         dc = HEROUI_COLORS["default"]
 
@@ -38,7 +38,7 @@ class _InputStylingMixin:
         # 禁用整体半透明
         if self._is_disabled:
             self.setGraphicsEffect(None)  # 清除
-            self.setStyleSheet("QWidget#heroInput { color: palette(disabled); }")
+            self.setStyleSheet(f"QWidget#{self.objectName()} {{ color: palette(disabled); }}")
         else:
             self.setStyleSheet("")
 

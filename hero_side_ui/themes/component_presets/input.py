@@ -86,4 +86,15 @@ INPUT_SIZES["small"] = INPUT_SIZES["sm"]
 INPUT_SIZES["medium"] = INPUT_SIZES["md"]
 INPUT_SIZES["large"] = INPUT_SIZES["lg"]
 
+# NumberInput 内容是数字（如 1,234.50 / 50% / ¥1,234.50），比文本短得多，
+# 整体最小宽度不复用文本输入的 240/260/300，单独给一张更紧凑的表。
+NUMBER_INPUT_MIN_WIDTHS = {
+    "sm": 60,
+    "md": 70,
+    "lg": 80,
+}
+NUMBER_INPUT_MIN_WIDTHS["small"] = NUMBER_INPUT_MIN_WIDTHS["sm"]
+NUMBER_INPUT_MIN_WIDTHS["medium"] = NUMBER_INPUT_MIN_WIDTHS["md"]
+NUMBER_INPUT_MIN_WIDTHS["large"] = NUMBER_INPUT_MIN_WIDTHS["lg"]
+
 __all__ = ["INPUT_SIZES"]

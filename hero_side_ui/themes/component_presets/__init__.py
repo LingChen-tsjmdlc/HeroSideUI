@@ -20,7 +20,7 @@ HeroUI v2 组件级主题预设 (Component Presets)
 
 from .button import BUTTON_SIZES, VALID_BUTTON_VARIANTS
 from .accordion import ACCORDION_SIZES
-from .input import INPUT_SIZES
+from .input import INPUT_SIZES, NUMBER_INPUT_MIN_WIDTHS
 from .date_input import (
     DATE_INPUT_SIZES,
     VALID_DATE_INPUT_LABEL_PLACEMENTS,
@@ -115,6 +115,7 @@ __all__ = [
     "BUTTON_SIZES",
     "ACCORDION_SIZES",
     "INPUT_SIZES",
+    "NUMBER_INPUT_MIN_WIDTHS",
     "DATE_INPUT_SIZES",
     "VALID_DATE_INPUT_SIZES",
     "VALID_DATE_INPUT_VARIANTS",

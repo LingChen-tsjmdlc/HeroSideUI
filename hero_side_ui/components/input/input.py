@@ -71,6 +71,9 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
     returned = Signal()
     cleared = Signal()
 
+    # QSS objectName；子类（如 NumberInput）可覆写
+    _object_name = "heroInput"
+
     def __init__(
         self,
         label: str = "",
@@ -156,7 +159,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
     # UI 结构
     # ============================================================
     def _setup_ui(self):
-        self.setObjectName("heroInput")
+        self.setObjectName(self._object_name)
 
         # --- 根布局 ---
         self._root = QVBoxLayout(self)
