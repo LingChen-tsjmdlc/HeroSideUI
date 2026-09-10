@@ -506,6 +506,16 @@ class TestLegacyAliases:
         # Body 走 md = 16px (1rem)
         assert b.font().pixelSize() == 16
         assert _stylesheet_color(b) == "#27272a"
+        # 段落正文默认自动换行（HeroUI <p> 行为）
+        assert b.wordWrap() is True
+
+    def test_text_word_wrap_default_off(self, qtbot):
+        t = Text("Text", theme="light")
+        qtbot.addWidget(t)
+        assert t.wordWrap() is False
+        t2 = Text("Text", theme="light", word_wrap=True)
+        qtbot.addWidget(t2)
+        assert t2.wordWrap() is True
 
     def test_body_dark(self, qtbot):
         b = Body("Body", theme="dark")

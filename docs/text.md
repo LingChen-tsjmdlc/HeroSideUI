@@ -50,6 +50,7 @@ Text("Always dark",  theme="dark")
 | `weight`       | `str` (`extralight`~`black`) / `QFont.Weight` / `int` (1~1000) | `"normal"` | 字重；只接受与 VF 原生 instance 一一对应的 6 个 token，传未知字符串会抛 `ValueError` |
 | `color`        | `str` / `QColor` / `tuple` / `None`                            | `None`     | 文字颜色；`None` 跟随主题默认正文色。详见下文                                        |
 | `transparency` | `float` `0.0~1.0`                                              | `1.0`      | 整体透明度；与 color 自身 alpha 相乘                                                 |
+| `word_wrap`    | `bool`                                                         | `False`    | 超出宽度时是否自动换行；`False` 时截断。`Body` 默认 `True`（段落自然换行）           |
 | `theme`        | `"auto"` / `"light"` / `"dark"`                                | `"auto"`   | 主题模式；`auto` 自动跟随 `ThemeProvider`，硬锁不参与全局切换                        |
 | `parent`       | `QWidget \| None`                                              | `None`     | Qt 父对象                                                                            |
 
@@ -173,7 +174,7 @@ t_dark = Text("永远暗色", theme="dark")  # 不受 toggle 影响
 | `Title`    | 见下 | bold   | `#18181b` / `#fafafa`  | 主标题               |
 | `Subtitle` | sm   | normal | `#71717a` / `#a1a1aa`  | 副标题、说明语       |
 | `Caption`  | xs   | normal | `#a1a1aa` / `#71717a`  | 辅助提示，最低对比度 |
-| `Body`     | md   | normal | `#27272a` / `#e4e4e7`  | 正文                 |
+| `Body`     | md   | normal | `#27272a` / `#e4e4e7`  | 正文（默认自动换行） |
 
 `Title` 还支持 `level` 参数：
 
