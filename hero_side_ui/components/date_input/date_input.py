@@ -40,9 +40,22 @@ from ._value import DateTimeValue
 
 
 class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
-    """HeroUI 风格的分段日期输入组件。"""
+    """HeroUI 风格的分段日期输入组件。
+
+    以下类属性供子类（如 TimeInput）覆写以定制行为：
+
+    :cvar _object_name: QSS objectName
+    :cvar _valid_granularities: 允许的粒度集合
+    :cvar _default_granularity: 未显式传 granularity 时的默认值
+    :cvar _include_date: 是否含日期段
+    """
 
     value_changed = Signal(object)
+
+    _object_name = "heroDateInput"
+    _valid_granularities = VALID_GRANULARITIES
+    _default_granularity = "day"
+    _include_date = True
 
     def __init__(
         self,
@@ -54,7 +67,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         size: str = "md",
         radius: Optional[str] = None,
         label_placement: str = "inside",
-        granularity: str = "day",
+        granularity: Optional[str] = None,
         hour_cycle: Optional[int] = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
@@ -78,10 +91,11 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
     ):
         super().__init__(parent)
 
-        if granularity not in VALID_GRANULARITIES:
+        granularity = granularity or self._default_granularity
+        if granularity not in self._valid_granularities:
             raise ValueError(
                 f"invalid granularity: {granularity!r}, "
-                f"expected one of {VALID_GRANULARITIES}"
+                f"expected one of {self._valid_granularities}"
             )
 
         # ---- 状态 ----
@@ -125,6 +139,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
             max_value=max_value,
             hide_time_zone=hide_time_zone,
             should_force_leading_zeros=should_force_leading_zeros,
+            include_date=self._include_date,
         )
         # 越界的初始值本身就该显示为 invalid，不能只看外部传参
         self._is_invalid = is_invalid or self._state.is_invalid()
@@ -145,7 +160,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
     # UI 结构
     # ============================================================
     def _setup_ui(self):
-        self.setObjectName("heroDateInput")
+        self.setObjectName(self._object_name)
 
         self._root = QVBoxLayout(self)
         self._root.setContentsMargins(0, 0, 0, 0)
@@ -434,7 +449,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self.value_changed.emit(None)
 
     def set_granularity(self, granularity: str):
-        if granularity not in VALID_GRANULARITIES:
+        if granularity not in self._valid_granularities:
             raise ValueError(f"invalid granularity: {granularity!r}")
         self._granularity = granularity
         self._recreate_state()
@@ -481,6 +496,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
             max_value=self._state._max_value,
             hide_time_zone=self._hide_time_zone,
             should_force_leading_zeros=self._state._force_zeros,
+            include_date=self._include_date,
         )
         self._rebuild_segments()
         self._apply_styles()
