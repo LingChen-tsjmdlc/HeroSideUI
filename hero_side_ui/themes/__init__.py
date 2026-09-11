@@ -91,6 +91,14 @@ from .component_presets import (
     VALID_TOAST_SEVERITIES,
     TOAST_SEVERITY_ICONS,
 )
+from .component_presets import (
+    INPUT_OTP_SIZES,
+    VALID_INPUT_OTP_SIZES,
+    VALID_INPUT_OTP_VARIANTS,
+    VALID_INPUT_OTP_RADII,
+    VALID_INPUT_OTP_TEXT_ALIGNS,
+    INPUT_OTP_CARET_PERIOD_MS,
+)
 
 
 # ----------------------------------------------------------------------
@@ -210,4 +218,10 @@ __all__ = [
     "VALID_TOAST_SHADOWS",
     "VALID_TOAST_SEVERITIES",
     "TOAST_SEVERITY_ICONS",
+    "INPUT_OTP_SIZES",
+    "VALID_INPUT_OTP_SIZES",
+    "VALID_INPUT_OTP_VARIANTS",
+    "VALID_INPUT_OTP_RADII",
+    "VALID_INPUT_OTP_TEXT_ALIGNS",
+    "INPUT_OTP_CARET_PERIOD_MS",
 ]

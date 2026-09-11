@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.14.0"
+__version__ = "0.15.0"
 
 from .core import (
     ThemeProvider,
@@ -86,6 +86,7 @@ from .components import (
     Drawer,
     TimeInput,
     NumberInput,
+    InputOtp,
     Toast,
     ToastRegion,
     ToastProvider,
@@ -175,6 +176,7 @@ __all__ = [
     "Drawer",
     "TimeInput",
     "NumberInput",
+    "InputOtp",
     "Toast",
     "ToastRegion",
     "ToastProvider",

@@ -49,6 +49,7 @@ from .date_picker import DatePicker, DateRangePicker
 from .drawer import Drawer
 from .time_input import TimeInput
 from .number_input import NumberInput
+from .input_otp import InputOtp
 from .toast import (
     Toast,
     ToastRegion,
@@ -134,6 +135,7 @@ __all__ = [
     "Drawer",
     "TimeInput",
     "NumberInput",
+    "InputOtp",
     "Toast",
     "ToastRegion",
     "ToastProvider",
