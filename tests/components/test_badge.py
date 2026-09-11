@@ -183,6 +183,10 @@ class TestPlacementGeometry:
             b = Badge(inner, content="9", shape="circle", placement="top-right")
             qtbot.addWidget(b)
             b.resize(side + 40, side + 40)
+            # 隐藏态布局未激活，inner 停在 (0,0) 会触发防裁剪钳制；
+            # 手动摆到真实布局位置（margin=角标半径）
+            m = b._badge_margin()
+            inner.setGeometry(m, m, side, side)
             b._update_badge_geometry()
             c = self._center(b)
             r = b.widget().geometry()
@@ -209,6 +213,9 @@ class TestPlacementGeometry:
         b = Badge(inner, content="9", placement="top-right")
         qtbot.addWidget(b)
         b.resize(159, 80)
+        # 隐藏态布局未激活：inner 手动摆到真实布局位置（x=拉宽后居中、y=margin）
+        m = b._badge_margin()
+        inner.setGeometry(51, m, 56, 56)
         b._update_badge_geometry()
         p = BADGE_PLACEMENT_OFFSETS["rectangle"]
         r = inner.geometry()
