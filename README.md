@@ -203,12 +203,12 @@ HeroSideUI/
 | Drawer 抽屉              | [drawer.md](docs/drawer.md)                 | ✅   |
 | TimeInput 时间选择器     | [time_input.md](docs/time_input.md)         | ✅   |
 | NumberInput 数字输入框   | [number_input.md](docs/number_input.md)     | ✅   |
+| Badge 徽章               | [badge.md](docs/badge.md)                   | ✅   |
 
 ### 待开发组件 — HeroUI v2 复刻
 
 | 组件                   | 说明                        | 难度   | 必要性 | 状态      |
 | ---------------------- | --------------------------- | ------ | ------ | --------- |
-| Badge 徽章             | 小型状态标签（点/圆角变体） | ⭐     | ❤️❤️❤️ | 🔲 待开发 |
 | InputOTP 验证码输入框  | 等宽分格 OTP / 验证码输入   | ⭐⭐⭐ | ❤️❤️   | 🔲 待开发 |
 | Breadcrumbs 面包屑导航 | 路径层级指示                | ⭐⭐   | ❤️❤️   | 🔲 待开发 |
 | Spacer 间距填充器      | 弹性空白占位                | ⭐     | ❤️     | 🔲 待开发 |
@@ -250,7 +250,7 @@ HeroSideUI/
 | DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                                                                    |
 | Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换                                                    |
 
-> **进度**：已完成 **47** 个组件，待开发 **19** 个（含桌面端专属 15 个），不计划开发 **7** 个。
+> **进度**：已完成 **48** 个组件，待开发 **18** 个（含桌面端专属 15 个），不计划开发 **7** 个。
 
 ---
 
