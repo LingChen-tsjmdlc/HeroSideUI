@@ -28,6 +28,7 @@ from .image import Image
 from .kbd import Kbd
 from .link import Link
 from .chip import Chip
+from .badge import Badge
 from .avatar import Avatar, AvatarGroup
 from .table import Table
 from .calendar import Calendar, RangeCalendar
@@ -111,6 +112,7 @@ __all__ = [
     "Kbd",
     "Link",
     "Chip",
+    "Badge",
     "Avatar",
     "AvatarGroup",
     "Table",
