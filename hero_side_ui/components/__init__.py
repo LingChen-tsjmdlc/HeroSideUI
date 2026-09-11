@@ -50,6 +50,8 @@ from .drawer import Drawer
 from .time_input import TimeInput
 from .number_input import NumberInput
 from .input_otp import InputOtp
+from .breadcrumbs import Breadcrumbs, BreadcrumbItem
+from .spacer import Spacer
 from .toast import (
     Toast,
     ToastRegion,
@@ -136,6 +138,9 @@ __all__ = [
     "TimeInput",
     "NumberInput",
     "InputOtp",
+    "Breadcrumbs",
+    "BreadcrumbItem",
+    "Spacer",
     "Toast",
     "ToastRegion",
     "ToastProvider",

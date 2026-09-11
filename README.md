@@ -2,66 +2,20 @@
 
 使用 PySide6 复刻 [HeroUI v2](https://v2.heroui.com/) 设计系统的 Python 桌面组件库。
 
-> **只改样式，不改逻辑** —— 所有组件继承自 PySide6 原生控件，保持完整的 Qt API 兼容性。
-> 你可以像使用 QPushButton 一样使用 Button，只是它看起来更好看了。
+> 把 HeroUI v2 的视觉与交互语义完整搬到 Qt 桌面端——外观对齐 Web 版，行为遵循桌面惯例。
+
+- **HeroUI v2 全部组件复刻完成**（51 个，含 DateInput/DatePicker/Table/Calendar/Dropdown/Toast/Drawer/Markdown 等高复杂度组件）
+- 另规划 15 个桌面端专属组件（Dialog / ContextMenu / Window / Tree 等）
 
 ---
 
 ## 设计理念
 
-HeroSideUI 不是一个全新的组件框架，而是一层**纯样式外壳**：
-
-- **零学习成本**: 所有组件继承自 PySide6 原生控件，Qt 的信号/槽、布局、属性系统全部可用
-- **只做样式**: 颜色、圆角、字体、间距、动画，都通过 QSS + QPainter 实现，不改底层逻辑
-- **设计一致性**: 颜色/圆角/字体等通用 Token 放在 `themes/` 顶层，组件独有的尺寸与阴影预设收纳在 `themes/component_presets/`，所有组件共享同一套规范
-- **亮暗双主题**: 每个组件内置 `theme="light"` / `"dark"` 支持
-
----
-
-## Qt 兼容性
-
-HeroSideUI **以 PySide6 为一等公民**，并对 PySide2 提供 best-effort 兼容（DCC 插件、老 Qt5 桌面应用）。
-
-```bash
-# 推荐
-pip install herosideui[pyside6]
-
-# DCC 插件 / 老 Qt5 应用
-pip install herosideui[pyside2]
-```
-
-> 完整迁移路线、重难点与撤退判定见 [`docs/migration.md`](docs/migration.md)。
-
----
-
-## 设计规范
-
-所有样式参考自 [HeroUI v2](https://heroui.com/) 设计系统（[GitHub 源码](https://github.com/heroui-inc/heroui/tree/main/packages/core/theme/src)），包括颜色、圆角、动画等。
-
-### 颜色系统
-
-6 种语义颜色，每种包含 50-900 共 10 个色阶：
-
-| 颜色        | 用途      | 主色值    |
-| ----------- | --------- | --------- |
-| `default`   | 中性操作  | `#71717a` |
-| `primary`   | 主要操作  | `#006FEE` |
-| `secondary` | 辅助操作  | `#7828c8` |
-| `success`   | 成功/确认 | `#17c964` |
-| `warning`   | 警告提示  | `#f5a524` |
-| `danger`    | 危险/删除 | `#f31260` |
-
-### 圆角系统
-
-| 级别   | 像素 | 说明           |
-| ------ | ---- | -------------- |
-| `none` | 0px  | 直角           |
-| `sm`   | 4px  | 小圆角         |
-| `md`   | 8px  | 中圆角（默认） |
-| `lg`   | 14px | 大圆角         |
-| `full` | 动态 | 胶囊形         |
-
-字体、动画等更多设计细节见 [`hero_side_ui/themes/`](hero_side_ui/themes/) 和 [`hero_side_ui/animation/`](hero_side_ui/animation/) 目录。
+- **Qt 生态一等公民**：全部组件基于 PySide6 构建，信号/槽、布局、父子关系等 Qt 机制完全可用；交互原语（Button/Checkbox/Switch/Radio/Text 等）直接继承原生控件，原生 API 无损
+- **复杂组件自绘复刻**：为达到与 Web 版逐像素对齐的视觉保真度，Toast/Table/Calendar/Markdown 等复杂组件采用 QWidget + QSS + QPainter 自绘实现，对外暴露 HeroUI 风格 API（如 `Input.value` / `value_changed`），而非原生控件 API
+- **全局 Provider**：一行 `HeroSideUIProvider.setup()` 统一管理主题、字体、平滑滚动，组件自动注册、主题切换自动刷新
+- **状态驱动视觉**：组件自监听 hover/press/focus/disabled 状态，无需调用方手动刷新
+- **设计一致性**：颜色/圆角/字体等通用 Token 放在 `themes/` 顶层，组件独有的尺寸与阴影预设收纳在 `themes/component_presets/`，所有组件共享同一套规范
 
 ---
 
@@ -69,81 +23,57 @@ pip install herosideui[pyside2]
 
 ### 环境要求
 
-- Python 3.10+
-- [uv](https://docs.astral.sh/uv/) 包管理器
+- Python 3.10+（3.10 ~ 3.14）
+- [uv](https://docs.astral.sh/uv/) 包管理器（推荐）
 
-### 安装与运行
+### 安装
 
 ```bash
-# 克隆项目
+# 从 PyPI 安装
+pip install herosideui[pyside6]
+
+# 或从源码
 git clone https://github.com/LingChen-tsjmdlc/HeroSideUI
 cd HeroSideUI
-
-# 安装依赖
 uv sync
-
-# 运行亮色模式示例（以按钮组件作为示例）
-uv run python examples/button/light_mode.py
-
-# 运行暗色模式示例（以按钮组件作为示例
-uv run python examples/button/dark_mode.py
 ```
 
-### 基本用法（以按钮组件作为示例）
+### 基本用法
 
 ```python
-from hero_side_ui import Button
+import sys
+from PySide6.QtWidgets import QApplication, QWidget, QVBoxLayout
 
-# 一行创建一个好看的按钮
+from hero_side_ui import HeroSideUIProvider, Button
+
+app = QApplication(sys.argv)
+
+# 一行初始化：主题 / 字体 / 平滑滚动 全局生效
+HeroSideUIProvider.setup(app, theme="light")   # "auto" / "light" / "dark"
+
+window = QWidget()
+layout = QVBoxLayout(window)
+
 btn = Button("Click me", color="primary", variant="solid")
-
-# 暗色模式
-btn_dark = Button("Dark", color="primary", variant="flat", theme="dark")
-
-# Qt 原生 API 正常使用
 btn.clicked.connect(lambda: print("clicked!"))
+layout.addWidget(btn)
+
+window.show()
+app.exec()
 ```
 
----
+> 组件在 `Provider.setup()` 之前创建也可以——会自动以默认配置降级初始化并给出 warning。
+> 单个组件可用 `theme="light"` / `"dark"` 覆盖全局主题，`"auto"` 跟随 Provider。
 
-## 项目结构
+### 运行示例
 
-```
-HeroSideUI/
-├── hero_side_ui/                # 主库
-│   ├── __init__.py
-│   ├── components/              # 组件实现
-│   │   ├── __init__.py
-│   │   ├── button.py            #   Button 按钮
-│   │   └── ......               #   更多组件...
-│   ├── themes/                  # 主题与设计 Token
-│   │   ├── colors.py            #   颜色系统 (6色 × 10阶) —— 通用
-│   │   ├── radius.py            #   圆角系统 —— 通用
-│   │   ├── font.py              #   字体系统 —— 通用
-│   │   └── component_presets/   #   组件级主题预设（尺寸/阴影等）
-│   │       ├── button.py        #     BUTTON_SIZES
-│   │       ├── card.py          #     CARD_SHADOWS
-│   │       ├── popover.py       #     POPOVER_SHADOWS
-│   │       └── ......           #     更多组件...
-│   ├── animation/               # 动画效果
-│   │   ├── ripple.py            #   水波纹
-│   │   └── press_scale.py       #   按压缩放
-│   ├── utils/                   # 工具函数
-│   │   └── color_utils.py       #   颜色转换 (hex→rgba)
-│   └── resources/               # 随包分发的静态资源
-│       └── icons/               #   内置 SVG 图标（打进 wheel）
-├── docs/                        # 组件 API 文档
-│   ├── button.md                #   Button 详细文档
-│   └── ......                   #   更多组件详细文档
-├── examples/                    # 组件使用示例
-│   ├── button/
-│   │   ├── light_mode.py        #   亮色模式全展示
-│   │   └── dark_mode.py         #   暗色模式全展示
-│   └── ....../                  #   更多组件示例
-├── tests/                       # 测试
-├── pyproject.toml               # 项目配置
-├── LICENSE                      # MIT
-└── README.md                    # 本文档
+每个组件都有对应的交互式示例（含全参数展示）：
+
+```bash
+uv run python examples/button/demo.py     # Button
+uv run python examples/input_otp/demo.py  # InputOTP
+uv run python examples/spacer/demo.py     # Spacer
+# ... 其余见 examples/ 目录，一律 examples/<组件>/demo.py
 ```
 
 ---
@@ -152,7 +82,7 @@ HeroSideUI/
 
 各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录。
 
-### 已完成组件（对标 HeroUI v2）
+### 已完成组件（51 / HeroUI v2 复刻全部完成）
 
 | 组件                     | 文档                                        | 状态 |
 | ------------------------ | ------------------------------------------- | ---- |
@@ -205,15 +135,10 @@ HeroSideUI/
 | NumberInput 数字输入框   | [number_input.md](docs/number_input.md)     | ✅   |
 | Badge 徽章               | [badge.md](docs/badge.md)                   | ✅   |
 | InputOTP 验证码输入框    | [input_otp.md](docs/input_otp.md)           | ✅   |
+| Breadcrumbs 面包屑导航   | [breadcrumbs.md](docs/breadcrumbs.md)       | ✅   |
+| Spacer 间距填充器        | [spacer.md](docs/spacer.md)                 | ✅   |
 
-### 待开发组件 — HeroUI v2 复刻
-
-| 组件                   | 说明                        | 难度   | 必要性 | 状态      |
-| ---------------------- | --------------------------- | ------ | ------ | --------- |
-| Breadcrumbs 面包屑导航 | 路径层级指示                | ⭐⭐   | ❤️❤️   | 🔲 待开发 |
-| Spacer 间距填充器      | 弹性空白占位                | ⭐     | ❤️     | 🔲 待开发 |
-
-### 待开发组件 — 桌面端专属或者是额外组件
+### 待开发组件 — 桌面端专属
 
 > HeroUI 是 Web 组件库，以下为 HeroSideUI 针对桌面 GUI 场景自行补充的组件。
 
@@ -250,7 +175,86 @@ HeroSideUI/
 | DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                                                                    |
 | Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换                                                    |
 
-> **进度**：已完成 **49** 个组件，待开发 **17** 个（含桌面端专属 15 个），不计划开发 **7** 个。
+> **进度**：HeroUI v2 复刻 **51 / 51 全部完成**；桌面端专属待开发 **15** 个；不计划开发 **7** 个。
+
+---
+
+## 设计规范
+
+所有样式参考自 [HeroUI v2](https://heroui.com/) 设计系统（[GitHub 源码](https://github.com/heroui-inc/heroui/tree/main/packages/core/theme/src)），包括颜色、圆角、动画等。
+
+### 颜色系统
+
+6 种语义颜色，每种包含 50-900 共 10 个色阶：
+
+| 颜色        | 用途      | 主色值    |
+| ----------- | --------- | --------- |
+| `default`   | 中性操作  | `#71717a` |
+| `primary`   | 主要操作  | `#006FEE` |
+| `secondary` | 辅助操作  | `#7828c8` |
+| `success`   | 成功/确认 | `#17c964` |
+| `warning`   | 警告提示  | `#f5a524` |
+| `danger`    | 危险/删除 | `#f31260` |
+
+### 圆角系统
+
+| 级别   | 像素 | 说明           |
+| ------ | ---- | -------------- |
+| `none` | 0px  | 直角           |
+| `sm`   | 4px  | 小圆角         |
+| `md`   | 8px  | 中圆角（默认） |
+| `lg`   | 14px | 大圆角         |
+| `full` | 动态 | 胶囊形         |
+
+字体、动画等更多设计细节见 [`hero_side_ui/themes/`](hero_side_ui/themes/) 和 [`hero_side_ui/animation/`](hero_side_ui/animation/) 目录。
+
+---
+
+## 项目结构
+
+```
+HeroSideUI/
+├── hero_side_ui/                # 主库
+│   ├── __init__.py              #   顶层导出（含 __version__）
+│   ├── components/              # 组件实现（目录式包，一组件一目录）
+│   │   ├── button/              #   Button 按钮
+│   │   │   ├── button.py        #     组件主体
+│   │   │   ├── _styling.py      #     配色 token
+│   │   │   └── __init__.py
+│   │   └── ......               #   更多组件...
+│   ├── core/                    # Provider / ThemeProvider / FontProvider
+│   ├── themes/                  # 主题与设计 Token
+│   │   ├── colors.py            #   颜色系统 (6 色 × 10 阶) —— 通用
+│   │   ├── radius.py            #   圆角系统 —— 通用
+│   │   ├── font.py              #   字体系统 —— 通用
+│   │   └── component_presets/   #   组件级主题预设（尺寸/阴影/校验表）
+│   ├── animation/               # 动画效果（水波纹 / 按压缩放 / 下划线展开等）
+│   ├── utils/                   # 工具函数（颜色转换 / SVG 图标加载等）
+│   └── resources/               # 随包分发的静态资源
+│       └── icons/               #   内置 SVG 图标（打进 wheel）
+├── docs/                        # 组件 API 文档（一组件一 md）
+├── examples/                    # 使用示例（examples/<组件>/demo.py）
+├── tests/                       # pytest + pytest-qt（tests/components/）
+├── pyproject.toml               # 项目配置（hatchling 构建）
+├── LICENSE                      # MIT
+└── README.md                    # 本文档
+```
+
+---
+
+## Qt 兼容性
+
+HeroSideUI **以 PySide6 为一等公民**，并对 PySide2 提供 best-effort 兼容（DCC 插件、老 Qt5 桌面应用）。
+
+```bash
+# 推荐
+pip install herosideui[pyside6]
+
+# DCC 插件 / 老 Qt5 应用
+pip install herosideui[pyside2]
+```
+
+> 完整迁移路线、重难点与撤退判定见 [`docs/migration.md`](docs/migration.md)。
 
 ---
 
@@ -274,11 +278,11 @@ HeroSideUI/
 uv run python -m pytest tests/ -v
 
 # 只测某个组件
-uv run python -m pytest tests/test_button.py -v
-uv run python -m pytest tests/test_accordion.py -v
+uv run python -m pytest tests/components/test_button.py -v
+uv run python -m pytest tests/components/test_breadcrumbs.py -v
 ```
 
-测试覆盖构造参数、颜色/变体/尺寸遍历、动态 API、展开收起逻辑、信号触发等。视觉效果和动画通过 `examples/` 目录的示例人工验证。
+测试覆盖构造参数、颜色/变体/尺寸遍历、动态 API、折叠/展开逻辑、信号触发等。视觉效果和动画通过 `examples/` 目录的示例人工验证。
 
 ---
 
@@ -291,8 +295,8 @@ uv run python -m pytest tests/test_accordion.py -v
 ```bash
 # 1. bump 版本号（pyproject.toml + hero_side_ui/__init__.py）
 # 2. commit + push
-git commit -am "chore: release v0.0.22"
-git tag v0.0.22 && git push origin main --tags
+git commit -am "chore: release v0.15.0"
+git tag v0.15.0 && git push origin main --tags
 # 3. 在 GitHub 网页 Releases → Draft a new release → 选 tag → Publish
 # 4. 等 Actions 绿勾 → PyPI 有新版
 ```
