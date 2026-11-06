@@ -4,12 +4,12 @@
 
 ## 这层测什么
 
-animation 模块封装了所有可复用的"动画样板"和绘制基元，被组件层广泛复用。这层测的是**动画的接口契约 + 状态机**，不验证视觉效果。
+本目录验证公共动画的接口契约、生命周期与状态机，并通过 `test_shared_contracts.py` 验证真实消费者接入。能力归属与迁移清单见 [ARCH-01 完成记录](../../docs/architecture-arch-01-completion.md)。
 
 | 建议文件                     | 被测对象                                        | 关注点                                                                                                                    |
 | ---------------------------- | ----------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------- |
 | `test_tween.py`              | `tween_value` / `tween_geometry` / `stop_tween` | `start==end` 不启动返回 None；先 stop 旧再起新；finished 后 runner_attr 清回 None；on_finished 被调用；多次连续调用不泄漏 |
-| `test_ripple.py`             | `RippleOverlay`                                 | `trigger(pos)` 后 active；duration 内 widget 仍 alive；finished 后自身被 deleteLater                                      |
+| `test_ripple.py`             | `RippleOverlay`                                 | 添加波纹后开始播放；完成后波纹从覆盖层移除并延迟释放 |
 | `test_press_scale.py`        | `PressScaleEffect`                              | press → scale<1.0；release → scale==1.0；嵌套到子 effect 时不冲突                                                         |
 | `test_collapse.py`           | `CollapseAnimation`                             | expand/collapse 切换；目标高度可达；信号 `finished` 发射；进行中再次 toggle 反向                                          |
 | `test_label_float.py`        | `LabelFloatAnimation`                           | resting↔floated 切换；progress ∈ [0,1]；插值回调被调                                                                      |
@@ -21,10 +21,12 @@ animation 模块封装了所有可复用的"动画样板"和绘制基元，被�
 | `test_check_draw.py`         | `paint_animated_check` / `CheckDrawAnimation`   | progress=0 不画；progress=1 完整对勾；中间值描出部分线段；driver 的 expand/collapse 切换                                  |
 | `test_padding_squeeze.py`    | `PaddingSqueezeAnimation`                       | margin 插值正确；finished 时停                                                                                            |
 | `test_pixmap_scale_proxy.py` | `PixmapScaleProxy`                              | 子 widget 的 paint 被缩放代理；scale=1.0 时透明                                                                           |
+| `test_shared_contracts.py` | 共享驱动与真实消费者 | 抢占、释放、重入、销毁、隐藏恢复与快速勾选 |
+| `test_architecture.py` | ARCH-01 边界 | 组件使用公共过渡、循环唯一实现、箭头兼容入口 |
 
 ## 这层 _不_ 测什么
 
-- ❌ 动画在某个真实组件里的视觉表现（例如 Button 的按压回弹）→ 由 `tests/components/test_button.py` 测"按压后状态恢复"，视觉靠 examples
+- ❌ 人工视觉效果验收；组件行为由消费者回归验证，主观视觉节奏通过 examples 检查
 - ❌ 像素级颜色断言 / 视觉回归 → 放 `tools/visual_regression/`（如未来引入）
 
 ## 测试写法范式
@@ -35,6 +37,7 @@ animation 模块封装了所有可复用的"动画样板"和绘制基元，被�
 import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtGui import QColor
+from shiboken6 import isValid
 from hero_side_ui.animation import tween_value, stop_tween
 
 
@@ -71,13 +74,13 @@ def test_consecutive_calls_stop_previous(qtbot):
     # a1 应该被 stop，owner 持有 a2
     assert owner._r is a2
     qtbot.wait(20)
-    assert a1.state() == a1.State.Stopped
+    assert not isValid(a1)  # 被取消的借用句柄已通过延迟删除释放
 ```
 
 要点：
 
 - `qtbot.wait(duration + 缓冲)` 给动画跑完的窗口（缓冲 50~100ms 足够）。
-- runner_attr 是否清回 None 是必查项 —— 漏清就是 GC 引用泄漏。
+- 同时验证通道清空和 Qt 子对象释放；仅清除 Python 字段不能证明对象已释放。返回句柄仅在运行期间有效。
 
 ### 2. paintEvent / 绘制函数：用 QImage + QPainter 直接画
 
@@ -91,7 +94,7 @@ def test_check_progress_0_paints_nothing(qtbot):
     img.fill(QColor("white"))
     p = QPainter(img)
     paint_animated_check(p, img.rect(), color=QColor("black"),
-                         progress=0.0, line_width=2)
+                         progress=0.0, stroke_width=2)
     p.end()
     # 中心仍是白色
     assert img.pixelColor(20, 20).name() == "#ffffff"
@@ -102,7 +105,7 @@ def test_check_progress_1_paints_full(qtbot):
     img.fill(QColor("white"))
     p = QPainter(img)
     paint_animated_check(p, img.rect(), color=QColor("black"),
-                         progress=1.0, line_width=3)
+                         progress=1.0, stroke_width=3)
     p.end()
     # 描线区域应有黑色像素
     has_black = any(
@@ -112,16 +115,17 @@ def test_check_progress_1_paints_full(qtbot):
     assert has_black
 ```
 
-### 3. Overlay/Effect 类：parent widget + signal 监听
+### 3. Overlay：宿主与退场生命周期
 
 ```python
-def test_ripple_emits_finished(qtbot):
+def test_ripple_is_removed_after_finish(qtbot):
     from PySide6.QtWidgets import QPushButton
     from hero_side_ui.animation import RippleOverlay
     btn = QPushButton("X"); qtbot.addWidget(btn); btn.resize(120, 36)
     ripple = RippleOverlay(btn)
-    with qtbot.waitSignal(ripple.finished, timeout=1500):
-        ripple.trigger(btn.rect().center())
+    ripple.add_ripple(btn.rect().center())
+    assert ripple._ripples
+    qtbot.waitUntil(lambda: not ripple._ripples, timeout=1500)
 ```
 
 要点：

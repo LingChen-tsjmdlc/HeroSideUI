@@ -9,6 +9,8 @@
 
 from __future__ import annotations
 
+from ...animation import tween_property
+
 from typing import Callable, Optional
 
 import shiboken6
@@ -16,6 +18,7 @@ from PySide6.QtCore import (
     QElapsedTimer,
     QPoint,
     QPropertyAnimation,
+    QEasingCurve,
     QRect,
     QRectF,
     QSize,
@@ -664,17 +667,8 @@ class Toast(QWidget):
     width_inset = Property(float, _get_width_inset, _set_width_inset_prop)
 
     def animate_width_inset(self, target: float):
-        """内缩量随位移同步渐变（折叠/展开切换时 scaleX 连续，不瞬跳）。"""
-        if abs(target - self._width_inset) < 0.01:
-            return
-        if self._inset_anim is not None:
-            self._inset_anim.stop()
-        anim = QPropertyAnimation(self, b"width_inset", self)
-        anim.setDuration(TOAST_SPEC["duration_move"])
-        anim.setStartValue(self._width_inset)
-        anim.setEndValue(float(target))
-        self._inset_anim = anim
-        anim.start()
+        tween_property(self, "_inset_anim", b"width_inset", float(target),
+                       duration=TOAST_SPEC["duration_move"], easing=QEasingCurve.Type.Linear)
 
     def sync_height(self):
         """宽度变化后立即按新宽度重算高度（入列前调用，避免显示时高度跳变）。"""

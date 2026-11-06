@@ -1,6 +1,7 @@
 """_InputWrapper — Input/Textarea 的背景画布（私有，自绘 bg + border + radius）。"""
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation
+from ...animation import tween_property
+
 from PySide6.QtWidgets import QWidget
 from typing import Optional
 
@@ -40,17 +41,11 @@ class _InputWrapper(QFrame):
         self._show_bottom_line = False  # underlined 模式下为 True
 
         # 动画
-        self._bg_anim = QPropertyAnimation(self, b"bg_color")
-        self._bg_anim.setDuration(150)
-        self._bg_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._bg_anim = None
 
-        self._border_anim = QPropertyAnimation(self, b"border_color")
-        self._border_anim.setDuration(150)
-        self._border_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._border_anim = None
 
-        self._bottom_anim = QPropertyAnimation(self, b"bottom_line_color")
-        self._bottom_anim.setDuration(150)
-        self._bottom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._bottom_anim = None
 
     # ---- Qt Properties (动画插值目标) ----
     from PySide6.QtCore import Property as _QtProperty  # 避免和 typing Property 冲突
@@ -91,34 +86,13 @@ class _InputWrapper(QFrame):
         self.update()
 
     def set_bg_color(self, c: QColor, animate: bool = True):
-        if animate:
-            self._bg_anim.stop()
-            self._bg_anim.setStartValue(QColor(self._bg_color))
-            self._bg_anim.setEndValue(QColor(c))
-            self._bg_anim.start()
-        else:
-            self._bg_color = QColor(c)
-            self.update()
+        tween_property(self, "_bg_anim", b"bg_color", QColor(c), duration=150, animated=animate)
 
     def set_border_color(self, c: QColor, animate: bool = True):
-        if animate:
-            self._border_anim.stop()
-            self._border_anim.setStartValue(QColor(self._border_color))
-            self._border_anim.setEndValue(QColor(c))
-            self._border_anim.start()
-        else:
-            self._border_color = QColor(c)
-            self.update()
+        tween_property(self, "_border_anim", b"border_color", QColor(c), duration=150, animated=animate)
 
     def set_bottom_line_color(self, c: QColor, animate: bool = True):
-        if animate:
-            self._bottom_anim.stop()
-            self._bottom_anim.setStartValue(QColor(self._bottom_line_color))
-            self._bottom_anim.setEndValue(QColor(c))
-            self._bottom_anim.start()
-        else:
-            self._bottom_line_color = QColor(c)
-            self.update()
+        tween_property(self, "_bottom_anim", b"bottom_line_color", QColor(c), duration=150, animated=animate)
 
     # ---- 手绘背景 + 边框 ----
     def paintEvent(self, event):

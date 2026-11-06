@@ -9,7 +9,7 @@
 
 from typing import Callable, Iterable, List, Optional, Union
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, Signal
 from PySide6.QtGui import QColor, QFont, QIcon
 from PySide6.QtWidgets import (
     QApplication,
@@ -20,7 +20,6 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import stop_tween, tween_value
 from ...core import ThemeProvider
 from ...themes import (
     AUTOCOMPLETE_SIZES,
@@ -39,7 +38,7 @@ from ..scroll_shadow import ScrollShadow
 from ._callbacks import _AutocompleteCallbacksMixin
 from ._end_content import _EndContentWidget
 from ._keyboard import _AutocompleteKeyboardMixin
-from ._selector_button import _SelectorButton
+from ..._shared.selection import SelectorButton as _SelectorButton
 from ._styling import _AutocompleteStylingMixin
 
 

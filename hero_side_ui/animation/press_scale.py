@@ -1,39 +1,20 @@
-"""
-HeroUI 风格按压缩放动画 (Press Scale)
+"""提供控件整体的按压缩放效果。"""
 
-仿照 HeroUI 的 data-[pressed=true]:scale-[0.97] 效果:
-  - 鼠标按下: 缩小到 97%，80ms，OutCubic
-  - 鼠标松开: 恢复到 100%，150ms，OutCubic
-
-实现方式:
-  自定义 QGraphicsEffect，在 draw() 中对 source pixmap 做居中缩放绘制。
-  通过 QPropertyAnimation 平滑驱动缩放值。
-
-用法:
-    scaler = PressScaleEffect(target_widget)
-    scaler.press()    # mousePressEvent 中调用
-    scaler.release()  # mouseReleaseEvent 中调用
-"""
-
-from PySide6.QtWidgets import QWidget, QGraphicsEffect
 from PySide6.QtCore import (
-    QObject, QPropertyAnimation, QEasingCurve, QRectF, QPointF,
     Property,
+    QEasingCurve,
+    QObject,
+    QPropertyAnimation,
+    QRectF,
 )
 from PySide6.QtGui import QPainter
-from typing import Optional
+from PySide6.QtWidgets import QGraphicsEffect, QWidget
 
 
 class _ScaleEffect(QGraphicsEffect):
-    """自定义 QGraphicsEffect: 居中缩放绘制
+    """居中缩放控件的源图像。"""
 
-    通过 setScale() 驱动缩放值，在 draw() 中:
-    1. 获取控件截图 (sourcePixmap)
-    2. 计算缩放后的居中矩形
-    3. 用 SmoothPixmapTransform 绘制缩放后的截图
-    """
-
-    def __init__(self, parent: Optional[QObject] = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._scale = 1.0
 
@@ -42,15 +23,15 @@ class _ScaleEffect(QGraphicsEffect):
 
     def setScale(self, value: float):
         self._scale = value
-        self.update()  # 触发重绘
+        self.update()
 
     def draw(self, painter: QPainter):
         if self._scale >= 0.999:
-            # 无缩放时直接绘制，零开销
+
             self.drawSource(painter)
             return
 
-        # 获取源控件的截图
+
         pixmap = self.sourcePixmap()
         if pixmap.isNull():
             return
@@ -62,7 +43,7 @@ class _ScaleEffect(QGraphicsEffect):
         h = pixmap.height()
         s = self._scale
 
-        # 缩放后的尺寸和居中偏移
+
         sw = w * s
         sh = h * s
         dx = (w - sw) / 2.0
@@ -73,37 +54,40 @@ class _ScaleEffect(QGraphicsEffect):
 
 
 class PressScaleEffect(QObject):
-    """按压缩放效果管理器
+    """将按下与松开状态换算为控件整体缩放。"""
 
-    将 _ScaleEffect 安装到目标控件上，通过 QPropertyAnimation 驱动缩放动画。
+    def __init__(
+        self,
+        target: QWidget,
+        scale_factor: float = 0.97,
+        press_duration: int = 80,
+        release_duration: int = 150,
+        parent: QObject | None = None,
+    ):
+        """安装并初始化按压效果。
 
-    参数:
-        target: 目标控件
-        scale_factor: 按下时的缩放比例，默认 0.97 (与 HeroUI 一致)
-        press_duration: 按下动画时长(ms)，默认 80
-        release_duration: 松开动画时长(ms)，默认 150
-    """
-
-    def __init__(self, target: QWidget,
-                 scale_factor: float = 0.97,
-                 press_duration: int = 80,
-                 release_duration: int = 150,
-                 parent: Optional[QObject] = None):
+        Args:
+            target: 接受图形效果的控件。
+            scale_factor: 按下后的缩放比例。
+            press_duration: 按下过渡毫秒数。
+            release_duration: 松开过渡毫秒数。
+            parent: Qt 父对象；省略时使用 target。
+        """
         super().__init__(parent or target)
         self._target = target
         self._scale_factor = scale_factor
         self._press_duration = press_duration
         self._release_duration = release_duration
 
-        # 安装自定义图形效果
+
         self._effect = _ScaleEffect(target)
         target.setGraphicsEffect(self._effect)
 
-        # 动画: 驱动 _effect 的 scale 值
+
         self._anim = QPropertyAnimation(self, b"scale_value")
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-    # ---- Qt Property: scale_value ----
+
     def _get_scale(self) -> float:
         try:
             return self._effect.scale()
@@ -111,8 +95,8 @@ class PressScaleEffect(QObject):
             return 1.0
 
     def _set_scale(self, value: float):
-        # 若 _effect 的 C++ 端已被销毁（例如被 setGraphicsEffect 覆盖），
-        # 静默忽略，避免 property metacall 触发异常风暴。
+
+
         try:
             self._effect.setScale(value)
         except RuntimeError:
@@ -120,10 +104,9 @@ class PressScaleEffect(QObject):
 
     scale_value = Property(float, _get_scale, _set_scale)
 
-    # ---- 公开接口 ----
 
     def press(self):
-        """鼠标按下 — 缩小到 scale_factor"""
+        """过渡到按下缩放比例。"""
         try:
             start = self._effect.scale()
         except RuntimeError:
@@ -135,7 +118,7 @@ class PressScaleEffect(QObject):
         self._anim.start()
 
     def release(self):
-        """鼠标松开 — 恢复到 1.0"""
+        """恢复到原始缩放比例。"""
         try:
             start = self._effect.scale()
         except RuntimeError:

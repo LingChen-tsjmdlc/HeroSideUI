@@ -6,10 +6,10 @@
 
 from __future__ import annotations
 
+from ...animation import tween_property, stop_tween
+
 from PySide6.QtCore import (
     Property,
-    QPropertyAnimation,
-    QEasingCurve,
     QSize,
     QPointF,
     QRect,
@@ -39,9 +39,7 @@ class _SegmentRow(QWidget):
         self._blink_timer.timeout.connect(self._toggle_blink)
         # underlined 活动段下划线从中心展开（对齐项目 UnderlineBar 动画）
         self._expand = 0.0
-        self._expand_anim = QPropertyAnimation(self, b"expand_progress", self)
-        self._expand_anim.setDuration(200)
-        self._expand_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._expand_anim = None
         # 光标换段时新活动段重新展开下划线
         self.caret_moved.connect(self._on_caret_moved)
 
@@ -56,21 +54,15 @@ class _SegmentRow(QWidget):
     expand_progress = Property(float, _get_expand, _set_expand)
 
     def _run_underline_anim(self, active: bool):
-        """活动段出现时播放展开动画（外扩+下划线共用进度），离开时收回。"""
-        if self._host._disable_animation:
-            self._set_expand(1.0 if active else 0.0)
-            return
-        self._expand_anim.stop()
-        self._expand_anim.setStartValue(self._expand)
-        self._expand_anim.setEndValue(1.0 if active else 0.0)
-        self._expand_anim.start()
+        tween_property(self, "_expand_anim", b"expand_progress", 1.0 if active else 0.0,
+                       duration=200, animated=not self._host._disable_animation)
 
     def _on_caret_moved(self):
         if self.hasFocus() and not self._host._is_read_only:
-            self._expand_anim.stop()
-            self._expand_anim.setStartValue(0.0)
-            self._expand_anim.setEndValue(1.0)
-            self._expand_anim.start()
+            stop_tween(self, "_expand_anim")
+            if not self._host._disable_animation:
+                self._set_expand(0.0)
+            self._run_underline_anim(True)
 
     # ---- 段几何 ----
 

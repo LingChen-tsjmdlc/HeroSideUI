@@ -14,13 +14,13 @@
 
 from __future__ import annotations
 
+from ...animation import tween_property
+
 from typing import Callable, Dict, List, Optional
 
 from PySide6.QtCore import (
-    QEasingCurve,
     QEvent,
     QPoint,
-    QPropertyAnimation,
     Qt,
 )
 from PySide6.QtWidgets import QGridLayout, QWidget
@@ -92,7 +92,6 @@ class AvatarGroup(QWidget):
         # 堆叠模式下：item -> 其在原位的 x 基准值；以及 item -> hover 平移动画
         self._items: List[QWidget] = []
         self._base_x: Dict[QWidget, int] = {}
-        self._anims: Dict[QWidget, QPropertyAnimation] = {}
 
         self._build()
 
@@ -180,10 +179,6 @@ class AvatarGroup(QWidget):
             av.show()
             right_edge = x + side
             x += side - AVATAR_GROUP_OVERLAP
-            anim = QPropertyAnimation(av, b"pos", self)
-            anim.setDuration(250)
-            anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-            self._anims[av] = anim
             av.installEventFilter(self)
 
         # 计数控件排布：
@@ -224,28 +219,11 @@ class AvatarGroup(QWidget):
         base = self._base_x.get(w)
         if base is None:
             return
-        w.raise_()  # hover 的浮到最上层
+        w.raise_()
         target_x = base - AVATAR_GROUP_HOVER_SHIFT if enter else base
-        if self._disable_animation:
-            w.move(target_x, w.y())
-            if not enter:
-                self._restore_z_order()
-            return
-        anim = self._anims.get(w)
-        if anim is None:
-            w.move(target_x, w.y())
-            return
-        anim.stop()
-        # 断开旧的一次性回调，避免重复连接累积
-        try:
-            anim.finished.disconnect(self._restore_z_order)
-        except (RuntimeError, TypeError):
-            pass
-        anim.setStartValue(w.pos())
-        anim.setEndValue(QPoint(target_x, w.y()))
-        if not enter:
-            anim.finished.connect(self._restore_z_order)
-        anim.start()
+        tween_property(w, "_avatar_group_shift", b"pos", QPoint(target_x, w.y()),
+                       duration=250, animated=not self._disable_animation,
+                       on_finished=self._restore_z_order if not enter else None)
 
     def _restore_z_order(self):
         # 复位到自然堆叠：越靠后的头像 z 越高（正序 raise）

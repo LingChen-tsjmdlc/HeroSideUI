@@ -9,9 +9,11 @@
 
 from __future__ import annotations
 
+from ...animation import tween_property, tween_value, stop_tween
+
 from typing import Optional
 
-from PySide6.QtCore import Qt, QTimer, QPropertyAnimation, QEasingCurve, Property
+from PySide6.QtCore import Qt, QPropertyAnimation, Property
 from PySide6.QtGui import QPainter, QColor, QLinearGradient, QPen
 from PySide6.QtWidgets import QWidget, QVBoxLayout
 
@@ -89,7 +91,7 @@ class Skeleton(QWidget):
         self._apply_styles()
 
         if not is_loaded and not disable_animation:
-            QTimer.singleShot(0, self._shimmer.start)
+            self._shimmer.start()
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
@@ -190,7 +192,11 @@ class Skeleton(QWidget):
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
         if disable:
+            self._cancel_fade_anims()
             self._shimmer.stop()
+            self._skeleton_opacity = 0.0 if self._is_loaded else 1.0
+            self._content_opacity = 1.0 if self._is_loaded else 0.0
+            self._update_content_opacity()
         elif not self._is_loaded:
             self._shimmer.start()
         self.update()
@@ -251,24 +257,11 @@ class Skeleton(QWidget):
     # -- 骨架层 opacity 动画 --
 
     def _animate_skeleton_to(self, target: float, on_done=None):
-        if abs(self._skeleton_opacity - target) < 0.01:
-            if on_done:
-                on_done()
-            return
-
-        self._skeleton_fade_anim = QPropertyAnimation(self, b"skeletonOpacity")
-        self._skeleton_fade_anim.setDuration(300)
-        self._skeleton_fade_anim.setStartValue(self._skeleton_opacity)
-        self._skeleton_fade_anim.setEndValue(target)
-        self._skeleton_fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        def _on_finished():
-            self._skeleton_fade_anim = None
-            if on_done:
-                on_done()
-
-        self._skeleton_fade_anim.finished.connect(_on_finished)
-        self._skeleton_fade_anim.start()
+        tween_property(
+            self, "_skeleton_fade_anim", b"skeletonOpacity", target, duration=300,
+            animated=not self._disable_animation and abs(self._skeleton_opacity - target) >= 0.01,
+            on_finished=on_done,
+        )
 
     # -- 内容层 opacity 动画 --
 
@@ -282,48 +275,16 @@ class Skeleton(QWidget):
         # 有 child 的 Skeleton 高度会坍缩为 0。靠 opacity=0 隐藏即可。
 
     def _fade_content_to(self, target: float):
-        from PySide6.QtWidgets import QGraphicsOpacityEffect
-
-        if not self._content.graphicsEffect():
-            self._content.setGraphicsEffect(QGraphicsOpacityEffect(self._content))
-
-        if abs(self._content_opacity - target) < 0.01:
-            self._content_opacity = target
+        def apply(value):
+            self._content_opacity = float(value)
             self._update_content_opacity()
-            return
 
-        self._content_fade_anim = QPropertyAnimation(
-            self._content.graphicsEffect(), b"opacity"
-        )
-        self._content_fade_anim.setDuration(300)
-        self._content_fade_anim.setStartValue(self._content_opacity)
-        self._content_fade_anim.setEndValue(target)
-        self._content_fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        def _on_finished():
-            self._content_opacity = target
-            self._update_content_opacity()
-            self._content_fade_anim = None
-
-        self._content_fade_anim.finished.connect(_on_finished)
-        self._content_fade_anim.start()
+        tween_value(self, "_content_fade_anim", self._content_opacity, target, apply,
+                    duration=300, animated=not self._disable_animation)
 
     def _cancel_fade_anims(self):
-        if self._skeleton_fade_anim is not None:
-            self._skeleton_fade_anim.stop()
-            self._skeleton_fade_anim = None
-        if self._content_fade_anim is not None:
-            self._content_fade_anim.stop()
-            self._content_fade_anim = None
-
-    def showEvent(self, event):
-        super().showEvent(event)
-        if not self._is_loaded and not self._disable_animation:
-            self._shimmer.start()
-
-    def hideEvent(self, event):
-        super().hideEvent(event)
-        self._shimmer.stop()
+        stop_tween(self, "_skeleton_fade_anim")
+        stop_tween(self, "_content_fade_anim")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

@@ -35,6 +35,8 @@ Spinner(variant="gradient", color="secondary", label="Please wait")
 
 > Qt 复刻：所有 variant 都是单个 `Spinner` widget 内部 `QPainter` 自绘，每根棒/每个 dot 不再是单独 widget。`default` 用了两条 `PhaseDriver`（一条 ease、一条 linear），其余 variant 共用一条 phase 驱动器。
 
+PhaseDriver 使用公共 LoopDriver：显示后运行，隐藏后停止，再显示从周期起点重启。隐藏期间切换 variant 不启动后台循环。
+
 ## 参数
 
 | 参数      | 类型 / 取值                                                  | 默认值    |

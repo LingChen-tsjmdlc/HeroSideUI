@@ -41,7 +41,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation.tween import stop_tween, tween_value
+from ...animation.tween import tween_value
 from ...core import ThemeProvider
 from ...themes import (
     HEROUI_COLORS,
@@ -375,42 +375,20 @@ class Link(QFrame):
         return 1.0
 
     def _animate_opacity(self) -> None:
-        target = self._target_opacity()
-        if self._disable_animation:
-            stop_tween(self, "_opacity_anim_runner")
-            self._opacity_effect.setOpacity(target)
-            return
-        cur = self._opacity_effect.opacity()
-        tween_value(
-            self,
-            "_opacity_anim_runner",
-            float(cur),
-            float(target),
-            self._opacity_effect.setOpacity,
-            duration=LINK_OPACITY_DURATION,
-        )
+        tween_value(self, "_opacity_anim_runner", float(self._opacity_effect.opacity()),
+                    float(self._target_opacity()), self._opacity_effect.setOpacity,
+                    duration=LINK_OPACITY_DURATION, animated=not self._disable_animation)
 
     def _animate_block_bg(self) -> None:
-        """is_block=True 时根据 hover 状态切换背景 alpha 进度。"""
-        target = 1.0 if (self._is_hovered and not self._is_disabled) else 0.0
-        if self._disable_animation:
-            stop_tween(self, "_block_bg_anim_runner")
-            self._block_bg_progress = target
-            self.update()
-            return
+        target = 1.0 if self._is_hovered and not self._is_disabled else 0.0
 
-        def _on_step(v):
-            self._block_bg_progress = float(v)
+        def step(value):
+            self._block_bg_progress = float(value)
             self.update()
 
-        tween_value(
-            self,
-            "_block_bg_anim_runner",
-            float(self._block_bg_progress),
-            float(target),
-            _on_step,
-            duration=LINK_BLOCK["anim_duration"],
-        )
+        tween_value(self, "_block_bg_anim_runner", float(self._block_bg_progress),
+                    target, step, duration=LINK_BLOCK["anim_duration"],
+                    animated=not self._disable_animation)
 
     # ============================================================
     # 文字色 / icon 色推送

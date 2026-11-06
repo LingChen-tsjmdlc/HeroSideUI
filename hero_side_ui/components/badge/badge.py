@@ -9,9 +9,11 @@ isDot（content 为空）与 isOneChar（content 单字符）均由 content 自�
 
 from __future__ import annotations
 
+from ...animation import tween_property, stop_tween
+
 from typing import Optional
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QRectF, Qt
+from PySide6.QtCore import QPropertyAnimation, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
@@ -315,24 +317,14 @@ class Badge(QWidget):
     # ---- visibility animation ----
 
     def _animate_visibility(self, show: bool):
-        # 官方 isInvisible 切换 = scale-0 + opacity-0 过渡；桌面简化为
-        # 300ms 透明度过渡（shadow 投影与 opacity effect 互斥，动画期间
-        # 临时换成 opacity effect，结束后恢复）
-        if self._anim is not None:
-            self._anim.stop()
-            self._anim.deleteLater()
-            self._anim = None
-        eff = QGraphicsOpacityEffect(self._badge)
-        self._badge.setGraphicsEffect(eff)
-        eff.setOpacity(0.0 if show else 1.0)
+        stop_tween(self, "_anim")
+        effect = QGraphicsOpacityEffect(self._badge)
+        self._badge.setGraphicsEffect(effect)
+        effect.setOpacity(0.0 if show else 1.0)
         self._badge.setVisible(True)
-        self._anim = QPropertyAnimation(eff, b"opacity", self)
-        self._anim.setDuration(ANIM_DURATION)
-        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._anim.setStartValue(0.0 if show else 1.0)
-        self._anim.setEndValue(1.0 if show else 0.0)
-        self._anim.finished.connect(lambda show=show: self._on_anim_finished(show))
-        self._anim.start()
+        tween_property(effect, "_anim", b"opacity", 1.0 if show else 0.0,
+                       owner=self, duration=ANIM_DURATION,
+                       on_finished=lambda: self._on_anim_finished(show))
 
     def _on_anim_finished(self, show: bool):
         self._anim = None
@@ -399,16 +391,12 @@ class Badge(QWidget):
         self._apply_styles()
 
     def set_invisible(self, invisible: bool):
-        """切换角标可见性；默认带 300ms 淡入淡出（对齐官方 duration-300）。"""
         invisible = bool(invisible)
         if invisible == self._is_invisible:
             return
         self._is_invisible = invisible
         if self._disable_animation:
-            if self._anim is not None:
-                self._anim.stop()
-                self._anim.deleteLater()
-                self._anim = None
+            stop_tween(self, "_anim")
             self._badge.setVisible(not invisible)
             self._apply_badge_effect()
         else:

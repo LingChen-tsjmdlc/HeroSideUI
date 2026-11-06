@@ -1,61 +1,22 @@
-"""
-HeroUI 风格的"淡入 + 缩放"动画 (Fade + Scale)
+"""提供透明度与缩放联动的浮层过渡。"""
 
-通用打开/关闭过渡：opacity 0→1 + scale 0.95→1，150ms OutCubic。
-适用于 Popover / Modal / Dropdown / Tooltip 等浮层组件。
-
-实现方式:
-  - 用一个 0..1 的 progress（QPropertyAnimation 驱动）
-  - opacity = progress
-  - scale = scale_min + (1 - scale_min) * progress
-  - 由 owner 控件在 paintEvent 中读取 scale_value() 自己做 QPainter.scale()
-  - opacity 由 setWindowOpacity（顶层窗口）或 QGraphicsOpacityEffect（子控件）实现
-
-用法 1: 顶层窗口（如 Popover）::
-
-    self._fade = FadeScaleAnimation(target=self,
-                                    apply_opacity_via="window")
-    self._fade.opened.connect(self._on_open_finished)
-    self._fade.closed.connect(self._on_close_finished)
-    # 打开
-    self._fade.play_in()
-    # 在 paintEvent 里:
-    s = self._fade.scale_value()
-    if s < 1.0:
-        painter.translate(cx, cy); painter.scale(s, s); painter.translate(-cx, -cy)
-
-用法 2: 普通子控件::
-
-    self._fade = FadeScaleAnimation(target=widget,
-                                    apply_opacity_via="effect")
-    self._fade.play_in()    # 出现
-    self._fade.play_out()   # 隐藏
-"""
-
-from PySide6.QtWidgets import QWidget, QGraphicsOpacityEffect
 from PySide6.QtCore import (
-    QObject, QPropertyAnimation, QEasingCurve, Property, Signal,
+    Property,
+    QEasingCurve,
+    QObject,
+    QPropertyAnimation,
+    Signal,
 )
-from typing import Optional
+from PySide6.QtWidgets import QGraphicsOpacityEffect, QWidget
 
 
 class FadeScaleAnimation(QObject):
-    """淡入淡出 + 缩放联动动画。
+    """同步浮层的透明度和缩放进度。
 
-    参数:
-        target: 目标控件
-        scale_min: 起始缩放比例（0~1），默认 0.95
-        duration_in: 打开动画时长(ms)，默认 150
-        duration_out: 关闭动画时长(ms)，默认 150
-        easing_in / easing_out: 进出曲线，默认 OutCubic / InCubic
-        apply_opacity_via:
-            - "window"   → 用 setWindowOpacity（顶层窗口推荐）
-            - "effect"   → 用 QGraphicsOpacityEffect（子控件）
-            - "manual"   → 不自动管 opacity，由调用者读取 progress 自处理
-
-    信号:
-        finished_in:  play_in 完成
-        finished_out: play_out 完成
+    Attributes:
+        progress: 0 到 1 的当前进度。
+        finished_in: 入场完成信号。
+        finished_out: 退场完成信号。
     """
 
     finished_in = Signal()
@@ -70,8 +31,20 @@ class FadeScaleAnimation(QObject):
         easing_in: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
         easing_out: QEasingCurve.Type = QEasingCurve.Type.InCubic,
         apply_opacity_via: str = "window",
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ):
+        """初始化浮层过渡。
+
+        Args:
+            target: 接受透明度设置和重绘请求的控件。
+            scale_min: 进度为 0 时的缩放比例。
+            duration_in: 入场毫秒数。
+            duration_out: 退场毫秒数。
+            easing_in: 入场曲线。
+            easing_out: 退场曲线。
+            apply_opacity_via: window 设置窗口透明度，effect 安装透明度效果，manual 交由调用者绘制。
+            parent: Qt 父对象；省略时使用 target。
+        """
         super().__init__(parent or target)
         self._target = target
         self._scale_min = scale_min
@@ -81,23 +54,23 @@ class FadeScaleAnimation(QObject):
         self._easing_out = easing_out
         self._opacity_mode = apply_opacity_via
 
-        # progress 0..1
+
         self._progress = 0.0
         self._anim = QPropertyAnimation(self, b"progress")
         self._anim.setEasingCurve(self._easing_in)
         self._anim.finished.connect(self._on_finished)
 
-        # 内部状态：当前播放方向 ("in" / "out" / None)
-        self._direction: Optional[str] = None
 
-        # 子控件模式下复用 GraphicsOpacityEffect
-        self._effect: Optional[QGraphicsOpacityEffect] = None
+        self._direction: str | None = None
+
+
+        self._effect: QGraphicsOpacityEffect | None = None
         if apply_opacity_via == "effect":
             self._effect = QGraphicsOpacityEffect(target)
             self._effect.setOpacity(0.0)
             target.setGraphicsEffect(self._effect)
 
-    # ---- Qt property: progress ----
+
     def _get_progress(self) -> float:
         return self._progress
 
@@ -107,9 +80,13 @@ class FadeScaleAnimation(QObject):
 
     progress = Property(float, _get_progress, _set_progress)
 
-    # ---- public ----
+
     def play_in(self, instant: bool = False):
-        """从当前 progress 推进到 1.0（淡入 + 放大到原尺寸）。"""
+        """从当前进度进入。
+
+        Args:
+            instant: 是否直接应用入场终态并发出完成信号。
+        """
         self._direction = "in"
         self._anim.stop()
         if instant:
@@ -124,7 +101,11 @@ class FadeScaleAnimation(QObject):
         self._anim.start()
 
     def play_out(self, instant: bool = False):
-        """从当前 progress 推进到 0.0（淡出 + 缩小）。"""
+        """从当前进度退出。
+
+        Args:
+            instant: 是否直接应用退场终态并发出完成信号。
+        """
         self._direction = "out"
         self._anim.stop()
         if instant:
@@ -139,25 +120,29 @@ class FadeScaleAnimation(QObject):
         self._anim.start()
 
     def is_running(self) -> bool:
+        """返回过渡是否正在运行。"""
         return self._anim.state() == QPropertyAnimation.State.Running
 
     def progress_value(self) -> float:
+        """返回当前过渡进度。"""
         return self._progress
 
     def opacity_value(self) -> float:
+        """返回当前透明度。"""
         return self._progress
 
     def scale_value(self) -> float:
+        """返回由进度换算的缩放比例。"""
         return self._scale_min + (1.0 - self._scale_min) * self._progress
 
-    # ---- internal ----
+
     def _apply(self):
         opacity = self._progress
         if self._opacity_mode == "window":
             self._target.setWindowOpacity(opacity)
         elif self._opacity_mode == "effect" and self._effect is not None:
             self._effect.setOpacity(opacity)
-        # 触发 owner 重绘以更新 scale
+
         self._target.update()
 
     def _on_finished(self):

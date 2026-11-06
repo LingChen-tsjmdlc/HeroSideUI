@@ -1,11 +1,11 @@
 """_ClearButton — Input 右侧清除按钮（私有），带淡入/淡出动画。"""
 
+from ...animation import tween_property
+
 from PySide6.QtWidgets import QWidget
 from typing import Optional
 
 from PySide6.QtCore import (
-    QEasingCurve,
-    QPropertyAnimation,
     QSize,
     Qt,
     Signal,
@@ -37,41 +37,28 @@ class _ClearButton(QPushButton):
         self._opacity_effect.setOpacity(0.0)
         self.setGraphicsEffect(self._opacity_effect)
 
-        self._opacity_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
-        self._opacity_anim.setDuration(150)
-        self._opacity_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._opacity_anim = None
 
         self._visible = False
 
     def set_visible(self, visible: bool, animate: bool = True):
-        """显示/隐藏（带淡入淡出）"""
-        if visible == self._visible:
+        if visible == self._visible and animate:
             return
         self._visible = visible
-        target = 0.7 if visible else 0.0
-        if animate:
-            self._opacity_anim.stop()
-            self._opacity_anim.setStartValue(self._opacity_effect.opacity())
-            self._opacity_anim.setEndValue(target)
-            self._opacity_anim.start()
-        else:
-            self._opacity_effect.setOpacity(target)
-
-        # 禁用时不响应点击
+        tween_property(
+            self._opacity_effect, "_opacity_anim", b"opacity", 0.7 if visible else 0.0,
+            owner=self, duration=150, animated=animate,
+        )
         self.setEnabled(visible)
 
     def enterEvent(self, event):
         if self._visible:
-            self._opacity_anim.stop()
-            self._opacity_anim.setStartValue(self._opacity_effect.opacity())
-            self._opacity_anim.setEndValue(1.0)
-            self._opacity_anim.start()
+            tween_property(self._opacity_effect, "_opacity_anim", b"opacity", 1.0,
+                           owner=self, duration=150)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self._visible:
-            self._opacity_anim.stop()
-            self._opacity_anim.setStartValue(self._opacity_effect.opacity())
-            self._opacity_anim.setEndValue(0.7)
-            self._opacity_anim.start()
+            tween_property(self._opacity_effect, "_opacity_anim", b"opacity", 0.7,
+                           owner=self, duration=150)
         super().leaveEvent(event)

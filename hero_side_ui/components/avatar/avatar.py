@@ -15,12 +15,12 @@ name 存在时 fallback 显示首字母（safe_initials），否则显示默认�
 
 from __future__ import annotations
 
+from ...animation import tween_property, stop_tween
+
 from typing import Callable, Optional
 
 from PySide6.QtCore import (
     Property,
-    QEasingCurve,
-    QPropertyAnimation,
     QRectF,
     Qt,
     Signal,
@@ -175,9 +175,7 @@ class Avatar(QWidget):
         self._icon_canvas = _IconCanvas(self)
 
         # fade-in 动画（图像 opacity 0→1，对齐 transition-opacity 500ms）
-        self._fade_anim = QPropertyAnimation(self, b"imgOpacity")
-        self._fade_anim.setDuration(500)
-        self._fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._fade_anim = None
 
     # ============================================================
     # 尺寸 / 布局
@@ -233,14 +231,11 @@ class Avatar(QWidget):
         self.update()
 
     def _fade_in(self):
-        if self._disable_animation:
-            self._img_opacity = 1.0
-            self.update()
-            return
-        self._fade_anim.stop()
-        self._fade_anim.setStartValue(0.0)
-        self._fade_anim.setEndValue(1.0)
-        self._fade_anim.start()
+        stop_tween(self, "_fade_anim")
+        if not self._disable_animation:
+            self.imgOpacity = 0.0
+        tween_property(self, "_fade_anim", b"imgOpacity", 1.0,
+                       duration=500, animated=not self._disable_animation)
 
     # ============================================================
     # fallback 显隐

@@ -25,6 +25,8 @@ HeroSideUI Drawer Component
     disable_animation=True 时直接跳到终态。
 """
 
+from ...animation import tween_property, stop_tween
+
 from typing import Callable, Optional, Union
 from weakref import WeakKeyDictionary, ref
 
@@ -32,7 +34,6 @@ from PySide6.QtCore import (
     QEasingCurve,
     QEvent,
     QPoint,
-    QPropertyAnimation,
     QRect,
     Qt,
     QTimer,
@@ -143,7 +144,7 @@ class Drawer(QWidget):
         self._panel.set_hide_close_button(hide_close_button)
         if close_button is not None:
             self._panel.set_close_button(close_button)
-        self._slide_anim = QPropertyAnimation(self._panel, b"pos", self)
+        self._slide_anim = None
 
         # Esc —— 仅在打开且允许键盘关闭时启用
         self._esc = QShortcut(QKeySequence(Qt.Key_Escape), self)
@@ -322,7 +323,7 @@ class Drawer(QWidget):
         """规格 / 宿主尺寸变化后把面板摆回贴边位（不动画）。"""
         if not self._is_open or self._host is None:
             return
-        self._slide_anim.stop()
+        stop_tween(self, "_slide_anim")
         self._panel.setGeometry(self._panel_rect())
 
     # ============================================================
@@ -335,7 +336,7 @@ class Drawer(QWidget):
             raise ValueError("Drawer 需要宿主窗口：构造时传 host= 或 parent=")
 
         self._close_timer.stop()
-        self._slide_anim.stop()
+        stop_tween(self, "_slide_anim")
         self._destroy_backdrop()
         self._is_open = True
         self._closing = False
@@ -383,7 +384,7 @@ class Drawer(QWidget):
             return  # 关闭途中又被打开
         self._closing = False
         self._close_timer.stop()
-        self._slide_anim.stop()
+        stop_tween(self, "_slide_anim")
         self._destroy_backdrop()
         self.hide()
         self._unregister_open()
@@ -398,15 +399,9 @@ class Drawer(QWidget):
             self._on_open_change(opened)
 
     def _slide_to(self, end: QPoint, duration: int, entering: bool):
-        """面板位移动画；entering 用 easeOut，退场用 easeIn（use-drawer.ts）。"""
-        self._slide_anim.stop()
-        self._slide_anim.setDuration(max(0, duration))
-        self._slide_anim.setEasingCurve(
-            QEasingCurve.Type.OutCubic if entering else QEasingCurve.Type.InCubic
-        )
-        self._slide_anim.setStartValue(QPoint(self._panel.pos()))
-        self._slide_anim.setEndValue(QPoint(end))
-        self._slide_anim.start()
+        tween_property(self._panel, "_slide_anim", b"pos", QPoint(end), owner=self,
+                       duration=max(0, duration),
+                       easing=QEasingCurve.Type.OutCubic if entering else QEasingCurve.Type.InCubic)
 
     # ============================================================
     # 事件

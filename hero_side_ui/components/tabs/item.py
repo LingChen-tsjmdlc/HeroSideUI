@@ -26,7 +26,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import paint_animated_check, tween_value, stop_tween
+from ...animation import tween_value, stop_tween
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS, TABS_SIZES
 from ...utils import load_svg_icon
@@ -307,26 +307,10 @@ class TabItem(QAbstractButton):
         self.update()
 
     def _on_toggled(self, checked: bool):
-        """toggled 信号回调 —— 选中态变化时驱动文字色动画。
-
-        这是处理选中态变化的**唯一**入口；无论是用户点击、QButtonGroup 排他切换、
-        还是程序里 setChecked，都会经过此回调。
-        """
         target = self._selected_color if checked else self._unselected_color
-        if self._disable_animation:
-            stop_tween(self, "_color_anim_runner")
-            self._current_text_color = QColor(target)
-            self._refresh_icons()
-            self.update()
-            return
-        tween_value(
-            self,
-            "_color_anim_runner",
-            QColor(self._current_text_color),
-            QColor(target),
-            self._on_color_step,
-            duration=self.SELECT_ANIM_DURATION,
-        )
+        tween_value(self, "_color_anim_runner", QColor(self._current_text_color),
+                    QColor(target), self._on_color_step,
+                    duration=self.SELECT_ANIM_DURATION, animated=not self._disable_animation)
 
     def _on_color_step(self, value):
         if isinstance(value, QColor):
@@ -336,20 +320,9 @@ class TabItem(QAbstractButton):
             self.update()
 
     def _animate_opacity(self, target: float):
-        if self._disable_animation:
-            stop_tween(self, "_opacity_anim_runner")
-            self._current_opacity = target
-            self._sync_custom_opacity()
-            self.update()
-            return
-        tween_value(
-            self,
-            "_opacity_anim_runner",
-            float(self._current_opacity),
-            float(target),
-            self._on_opacity_step,
-            duration=self.HOVER_ANIM_DURATION,
-        )
+        tween_value(self, "_opacity_anim_runner", float(self._current_opacity),
+                    float(target), self._on_opacity_step,
+                    duration=self.HOVER_ANIM_DURATION, animated=not self._disable_animation)
 
     def _on_opacity_step(self, value):
         try:

@@ -23,6 +23,8 @@ HeroSideUI Card Component
     在回调里插值计算 QColor 并刷新内层 _content 的 QSS。
 """
 
+from ...animation import tween_property
+
 from PySide6.QtWidgets import (
     QWidget,
     QVBoxLayout,
@@ -34,8 +36,6 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import (
     Qt,
     Signal,
-    QPropertyAnimation,
-    QEasingCurve,
     Property,
     QRectF,
 )
@@ -176,9 +176,7 @@ class Card(QWidget):
 
         # hover 过渡: 0.0=normal, 1.0=hovered
         self._hover_progress = 0.0
-        self._hover_anim = QPropertyAnimation(self, b"hover_progress")
-        self._hover_anim.setDuration(300)
-        self._hover_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._hover_anim = None
 
         self._setup_ui()
         self._apply_styles()
@@ -542,19 +540,13 @@ class Card(QWidget):
     def enterEvent(self, event):
         if self._is_hoverable and not self._is_disabled:
             self._is_hovered = True
-            self._hover_anim.stop()
-            self._hover_anim.setStartValue(self._hover_progress)
-            self._hover_anim.setEndValue(1.0)
-            self._hover_anim.start()
+            tween_property(self, "_hover_anim", b"hover_progress", 1.0, duration=300)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self._is_hoverable:
             self._is_hovered = False
-            self._hover_anim.stop()
-            self._hover_anim.setStartValue(self._hover_progress)
-            self._hover_anim.setEndValue(0.0)
-            self._hover_anim.start()
+            tween_property(self, "_hover_anim", b"hover_progress", 0.0, duration=300)
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):

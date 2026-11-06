@@ -7,9 +7,11 @@ hover 背景做 150ms 平滑补间（对齐 calendar.ts transition duration-150�
 
 from __future__ import annotations
 
+from ...animation import tween_value
+
 from typing import Optional
 
-from PySide6.QtCore import QRectF, Qt, QVariantAnimation
+from PySide6.QtCore import QEasingCurve, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton
 
@@ -39,9 +41,7 @@ class _CalendarCell(QAbstractButton):
 
         # hover 背景补间：0=无底，1=完全 hover 底
         self._hover_t = 0.0
-        self._hover_anim = QVariantAnimation(self)
-        self._hover_anim.setDuration(_HOVER_ANIM_MS)
-        self._hover_anim.valueChanged.connect(self._on_hover_tick)
+        self._hover_anim = None
 
     # ---- 父注入 -------------------------------------------------------
 
@@ -76,10 +76,8 @@ class _CalendarCell(QAbstractButton):
         super().leaveEvent(ev)
 
     def _start_hover_anim(self, target: float) -> None:
-        self._hover_anim.stop()
-        self._hover_anim.setStartValue(self._hover_t)
-        self._hover_anim.setEndValue(target)
-        self._hover_anim.start()
+        tween_value(self, "_hover_anim", self._hover_t, target, self._on_hover_tick,
+                    duration=_HOVER_ANIM_MS, easing=QEasingCurve.Type.Linear)
 
     def _on_hover_tick(self, v) -> None:
         self._hover_t = float(v)

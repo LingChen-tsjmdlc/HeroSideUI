@@ -7,7 +7,9 @@ QLabel 覆盖层无交互子控件、不加 QGraphicsEffect，规避离屏渲染
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QPoint, Qt
+from ...animation import tween_property, stop_tween
+
+from PySide6.QtCore import QPropertyAnimation, QPoint, Qt
 from PySide6.QtWidgets import QLabel, QWidget
 
 from ...utils import safe_delete
@@ -29,60 +31,38 @@ class _SlideTransition:
         return self._overlay is not None
 
     def run(self, direction: int, on_render_new) -> None:
-        """direction: +1 下一页（新内容从右侧进），-1 上一页（从左侧进）。
-
-        on_render_new: 回调，在旧内容已被快照后调用，用于把 content 刷新成新月。
-        """
-        w = self._viewport.width()
-        h = self._viewport.height()
-        if w <= 0 or h <= 0:
+        width = self._viewport.width()
+        height = self._viewport.height()
+        self._finish()
+        if width <= 0 or height <= 0:
             on_render_new()
             return
-
-        self._finish()  # 若上一次动画未结束，先收尾
-
-        # 1) 快照旧内容
-        old_pix = self._content.grab()
         overlay = QLabel(self._viewport)
-        overlay.setPixmap(old_pix)
+        overlay.setPixmap(self._content.grab())
         overlay.setGeometry(self._content.geometry())
         overlay.show()
         overlay.raise_()
         self._overlay = overlay
-
-        # 2) 渲染新内容到底层 content
         on_render_new()
+        self._content.move(direction * width, self._content.y())
+        self._anim_in = tween_property(
+            self._content, "_calendar_slide_in", b"pos", QPoint(0, self._content.y()),
+            owner=self._viewport, duration=_DURATION_MS,
+        )
+        self._anim_out = tween_property(
+            overlay, "_calendar_slide_out", b"pos", QPoint(-direction * width, overlay.y()),
+            owner=self._viewport, duration=_DURATION_MS, on_finished=self._finish,
+        )
 
-        # 3) 新内容起始位置在 direction 方向偏移一屏
-        start_x = direction * w
-        self._content.move(start_x, self._content.y())
 
-        # 4) 旧层滑出到反方向，新层滑入到 0
-        self._anim_out = self._make_anim(overlay, QPoint(-direction * w, overlay.y()))
-        self._anim_in = self._make_anim(self._content, QPoint(0, self._content.y()))
-        self._anim_out.finished.connect(self._finish)
-        self._anim_out.start()
-        self._anim_in.start()
-
-    def _make_anim(self, target: QWidget, end: QPoint) -> QPropertyAnimation:
-        anim = QPropertyAnimation(target, b"pos", self._viewport)
-        anim.setDuration(_DURATION_MS)
-        anim.setStartValue(target.pos())
-        anim.setEndValue(end)
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        return anim
 
     def _finish(self) -> None:
-        if self._anim_in is not None:
-            self._anim_in.stop()
-            self._anim_in = None
-        if self._anim_out is not None:
-            self._anim_out.stop()
-            self._anim_out = None
+        stop_tween(self._viewport, "_calendar_slide_in")
+        stop_tween(self._viewport, "_calendar_slide_out")
+        self._anim_in = self._anim_out = None
         if self._overlay is not None:
             safe_delete(self._overlay)
             self._overlay = None
-        # 确保新内容归位
         self._content.move(0, self._content.y())
 
     def stop(self) -> None:

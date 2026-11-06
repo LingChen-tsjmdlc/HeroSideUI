@@ -7,9 +7,11 @@ Slider thumb tooltip：顶层无边框 widget，自绘背景 + 文字 + 箭头�
 
 from __future__ import annotations
 
+from ...animation import tween_property
+
 from typing import Optional
 
-from PySide6.QtCore import Qt, QPoint, QPointF, QPropertyAnimation, QRectF
+from PySide6.QtCore import QEasingCurve, Qt, QPoint, QPointF, QRectF
 from PySide6.QtGui import (
     QColor,
     QFontMetrics,
@@ -77,8 +79,7 @@ class _SliderThumbTip(QWidget):
 
         # 淡入淡出 —— 顶层窗口用 windowOpacity
         self.setWindowOpacity(0.0)
-        self._anim = QPropertyAnimation(self, b"windowOpacity", self)
-        self._anim.setDuration(120)
+        self._anim = None
         self._fade_done_cb = None  # 当前已连接的 finished 回调
 
         self.hide()
@@ -187,25 +188,9 @@ class _SliderThumbTip(QWidget):
         self._fade(0.0, on_done=self.hide)
 
     def _fade(self, target: float, on_done=None):
-        self._anim.stop()
-        if self._disable_animation:
-            self.setWindowOpacity(target)
-            if on_done:
-                on_done()
-            return
-        # 仅 disconnect 之前已连接的回调，避免对未连接信号 disconnect 触发 warning
-        if self._fade_done_cb is not None:
-            try:
-                self._anim.finished.disconnect(self._fade_done_cb)
-            except (RuntimeError, TypeError):
-                pass
-            self._fade_done_cb = None
-        if on_done:
-            self._anim.finished.connect(on_done)
-            self._fade_done_cb = on_done
-        self._anim.setStartValue(self.windowOpacity())
-        self._anim.setEndValue(target)
-        self._anim.start()
+        tween_property(self, "_anim", b"windowOpacity", target, duration=120,
+                       animated=not self._disable_animation and self.windowOpacity() != target,
+                       on_finished=on_done, easing=QEasingCurve.Type.Linear)
 
     # ---- 绘制 ----
     def paintEvent(self, _event):

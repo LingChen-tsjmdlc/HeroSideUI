@@ -15,6 +15,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtCore import QObject
 from PySide6.QtGui import QColor
+from shiboken6 import isValid
 
 from hero_side_ui.animation import tween_value, tween_geometry, stop_tween
 
@@ -52,7 +53,7 @@ class TestTweenValueBasic:
         qtbot.wait(120)
         # finished 后 runner_attr 应清回 None
         assert owner._r is None
-        assert anim.state() == anim.State.Stopped
+        assert not isValid(anim)
 
     def test_on_step_called_with_endpoints(self, qtbot):
         owner = _Owner()
@@ -86,7 +87,7 @@ class TestTweenValuePreemption:
         assert owner._r is a2
         # 给 Qt 一点时间让 a1 真正停下
         qtbot.wait(30)
-        assert a1.state() == a1.State.Stopped
+        assert not isValid(a1)
         # 清场：让 a2 结束
         qtbot.wait(600)
         assert owner._r is None
@@ -124,7 +125,7 @@ class TestStopTween:
         assert owner._r is None
         # 给 Qt 一点时间，确认动画真的停了
         qtbot.wait(30)
-        assert anim.state() == anim.State.Stopped
+        assert not isValid(anim)
 
     def test_stop_when_no_animation(self, qtbot):
         """attr 未设置或为 None 时也不能崩。"""

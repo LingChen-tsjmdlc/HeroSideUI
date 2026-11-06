@@ -4,17 +4,16 @@
 持续旋转，作为加载指示。
 """
 
+from ...animation import tween_property
+
 import math
 from typing import Optional
 
 from PySide6.QtCore import (
     Property,
     QByteArray,
-    QEasingCurve,
-    QPropertyAnimation,
     QRectF,
     Qt,
-    QTimer,
     Signal,
 )
 from PySide6.QtGui import QColor, QFont, QPainter, QPen
@@ -26,7 +25,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import SpinAnimation, StripeFlowAnimation
+from ...animation import SpinAnimation
 from ...core import ThemeProvider
 from ...themes import CIRCULAR_PROGRESS_SIZES, HEROUI_COLORS
 from ..text import Text
@@ -89,9 +88,7 @@ class CircularProgress(QWidget):
         # 确定态动画：从当前 ratio → 目标 ratio
         # 先按 value 计算出初始 ratio，避免 label 初次渲染显示 0%
         self._anim_ratio = self._progress_ratio() if not is_indeterminate else 0.0
-        self._ratio_anim = QPropertyAnimation(self, b"anim_ratio")
-        self._ratio_anim.setDuration(500)
-        self._ratio_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._ratio_anim = None
 
         self._setup_ui()
         self._apply_styles()
@@ -223,25 +220,17 @@ class CircularProgress(QWidget):
     def set_value(self, v: float):
         self._value = max(self._min, min(self._max, v))
         self._refresh_text_labels()
-        if self._is_indeterminate:
-            return
-        self._ratio_anim.stop()
-        target = self._progress_ratio()
-        if self._disable_animation:
-            self._anim_ratio = target
-            self._svg.update()
-            return
-        self._ratio_anim.setStartValue(self._anim_ratio)
-        self._ratio_anim.setEndValue(target)
-        self._ratio_anim.start()
+        if not self._is_indeterminate:
+            tween_property(self, "_ratio_anim", b"anim_ratio", self._progress_ratio(),
+                           duration=500, animated=not self._disable_animation)
 
     def set_range(self, min_value: float, max_value: float):
         self._min = min_value
         self._max = max_value
         self._value = max(self._min, min(self._max, self._value))
-        self._anim_ratio = self._progress_ratio()
+        tween_property(self, "_ratio_anim", b"anim_ratio", self._progress_ratio(),
+                       duration=0)
         self._refresh_text_labels()
-        self._svg.update()
 
     def set_color(self, color: str):
         self._color = color

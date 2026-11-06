@@ -7,9 +7,11 @@ show_pickers 时（仅单月）标题变可点胶囊，带 chevron-down，展开
 
 from __future__ import annotations
 
+from ...animation import tween_value
+
 from typing import List, Optional
 
-from PySide6.QtCore import QEasingCurve, Qt, QVariantAnimation, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
@@ -46,10 +48,7 @@ class _TitleButton(QWidget):
         self._load_base_pixmap()
 
         # chevron 旋转动画（0°→180°）
-        self._rot_anim = QVariantAnimation(self)
-        self._rot_anim.setDuration(200)
-        self._rot_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._rot_anim.valueChanged.connect(self._on_rot_tick)
+        self._rot_anim = None
 
         lay = QHBoxLayout(self)
         lay.setContentsMargins(0, 0, 0, 0)
@@ -91,10 +90,8 @@ class _TitleButton(QWidget):
         if expanded == self._expanded:
             return
         self._expanded = expanded
-        self._rot_anim.stop()
-        self._rot_anim.setStartValue(self._angle)
-        self._rot_anim.setEndValue(180.0 if expanded else 0.0)
-        self._rot_anim.start()
+        tween_value(self, "_rot_anim", self._angle, 180.0 if expanded else 0.0,
+                    self._on_rot_tick, duration=200)
 
     def set_theme(self, theme: str) -> None:
         self._theme = theme

@@ -45,7 +45,7 @@ from PySide6.QtWidgets import QAbstractButton, QWidget
 
 from ...themes import HEROUI_COLORS, SWITCH_SIZES
 from ...core import ThemeProvider
-from ...animation.tween import tween_value, stop_tween
+from ...animation.tween import tween_value
 
 
 def _render_svg(svg_str: str, color: Optional[QColor] = None) -> QSvgRenderer:
@@ -228,39 +228,12 @@ class Switch(QAbstractButton):
     # 状态切换 → 动画
     # ============================================================
     def _on_toggled(self, checked: bool):
-        # 发射语义信号
         self.selected_changed.emit(checked)
-
-        # 目标 bg 色
         self._target_bg = self._checked_bg() if checked else self._unchecked_bg()
-
-        if self._disable_animation:
-            stop_tween(self, "_thumb_anim_runner")
-            stop_tween(self, "_bg_anim_runner")
-            self._thumb_t = 1.0 if checked else 0.0
-            self._bg_color = QColor(self._target_bg)
-            self.update()
-            return
-
-        # thumb 位移动画
-        tween_value(
-            self,
-            "_thumb_anim_runner",
-            self._thumb_t,
-            1.0 if checked else 0.0,
-            self._on_thumb_step,
-            duration=250,
-        )
-
-        # bg 颜色过渡
-        tween_value(
-            self,
-            "_bg_anim_runner",
-            QColor(self._bg_color),
-            QColor(self._target_bg),
-            self._on_bg_step,
-            duration=250,
-        )
+        tween_value(self, "_thumb_anim_runner", self._thumb_t, 1.0 if checked else 0.0,
+                    self._on_thumb_step, duration=250, animated=not self._disable_animation)
+        tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(self._target_bg),
+                    self._on_bg_step, duration=250, animated=not self._disable_animation)
 
     def _on_thumb_step(self, v):
         self._thumb_t = float(v)
@@ -275,20 +248,8 @@ class Switch(QAbstractButton):
         self.update()
 
     def _animate_press_to(self, target: float):
-        """平滑过渡 thumb 的按压拉伸量 (0 ↔ 1),100ms。"""
-        if self._disable_animation:
-            stop_tween(self, "_press_anim_runner")
-            self._press_t = target
-            self.update()
-            return
-        tween_value(
-            self,
-            "_press_anim_runner",
-            self._press_t,
-            target,
-            self._on_press_step,
-            duration=100,
-        )
+        tween_value(self, "_press_anim_runner", self._press_t, target,
+                    self._on_press_step, duration=100, animated=not self._disable_animation)
 
     # ============================================================
     # 事件
@@ -480,21 +441,9 @@ class Switch(QAbstractButton):
         if color == self._color:
             return
         self._color = color
-        # 重新计算目标 bg(如果当前选中要立即变色)
-        self._target_bg = (
-            self._checked_bg() if self.isChecked() else self._unchecked_bg()
-        )
-        if self._disable_animation:
-            self._bg_color = QColor(self._target_bg)
-        else:
-            tween_value(
-                self,
-                "_bg_anim_runner",
-                QColor(self._bg_color),
-                QColor(self._target_bg),
-                self._on_bg_step,
-                duration=200,
-            )
+        self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
+        tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(self._target_bg),
+                    self._on_bg_step, duration=200, animated=not self._disable_animation)
         self.update()
 
     def set_size(self, size: str):
@@ -516,6 +465,13 @@ class Switch(QAbstractButton):
 
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
+        if disable:
+            tween_value(self, "_thumb_anim_runner", self._thumb_t,
+                        1.0 if self.isChecked() else 0.0, self._on_thumb_step, duration=0)
+            target = self._checked_bg() if self.isChecked() else self._unchecked_bg()
+            tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(target),
+                        self._on_bg_step, duration=0)
+            self._animate_press_to(0.0)
 
     def set_start_content(self, svg: Optional[str]):
         self._start_content = svg

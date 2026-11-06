@@ -1,138 +1,76 @@
-"""
-HeroUI 风格的"未定态"循环动画 (Indeterminate)
+"""将公共循环进度换算为未定进度条位置或旋转角度。"""
 
-包含两类常用 loading 动画:
-  - IndeterminateBarAnimation: 线性条上滑块来回循环（用于 Progress.is_indeterminate）
-  - SpinAnimation: 0→360 的旋转角度循环（用于 CircularProgress.is_indeterminate / Spinner）
+from PySide6.QtCore import Property, QEasingCurve
 
-二者都暴露一个 0..1 或 0..360 的实时值，由 owner 在 paintEvent 里读取自绘。
-
-用法 1 — 线性滑块::
-
-    self._loader = IndeterminateBarAnimation(self)
-    self._loader.start()
-    # paintEvent:
-    pos = self._loader.position()  # ∈ [-bar_width_ratio, 1.0]
-    # 画 bar，用 pos 作为左侧 ratio
-
-用法 2 — 旋转::
-
-    self._spin = SpinAnimation(self, duration=900)
-    self._spin.start()
-    # paintEvent:
-    deg = self._spin.angle()
-    painter.translate(cx, cy); painter.rotate(deg); painter.translate(-cx, -cy)
-"""
-
-from PySide6.QtWidgets import QWidget
-from PySide6.QtCore import (
-    QObject, QPropertyAnimation, QEasingCurve, Property,
-)
-from typing import Optional
+from .loop import LoopDriver
 
 
-class IndeterminateBarAnimation(QObject):
-    """线性进度条的"未定态"滑块动画。
+class IndeterminateBarAnimation(LoopDriver):
+    """驱动未定进度条的滑块位置。
 
-    驱动一个 [-bar_ratio, 1.0] 之间循环的 position 值，
-    owner 在 paintEvent 中根据它定位滑块。
-
-    参数:
-        owner: 拥有这个动画的控件（动画驱动 owner.update()）
-        duration: 一个完整周期时长(ms)，默认 1500
-        bar_ratio: 滑块宽度占总长比例，默认 0.4
-        easing: 缓动曲线，默认 InOutSine（HeroUI 体感）
+    Attributes:
+        position: 从负滑块宽度比例到 1 的位置。
     """
-
     def __init__(
         self,
-        owner: QWidget,
-        duration: int = 1500,
-        bar_ratio: float = 0.4,
-        easing: QEasingCurve.Type = QEasingCurve.Type.InOutSine,
-        parent: Optional[QObject] = None,
+        owner,
+        duration=1500,
+        bar_ratio=0.4,
+        easing=QEasingCurve.Type.InOutSine,
+        parent=None,
     ):
-        super().__init__(parent or owner)
-        self._owner = owner
+        """初始化滑块循环。
+
+        Args:
+            owner: 接收重绘的 QWidget。
+            duration: 一个周期的毫秒数。
+            bar_ratio: 滑块宽度占轨道总长的比例。
+            easing: 进度缓动曲线。
+            parent: Qt 父对象；省略时使用 owner。
+        """
         self._bar_ratio = bar_ratio
-        self._position = -bar_ratio
+        super().__init__(owner, duration, easing, parent)
 
-        self._anim = QPropertyAnimation(self, b"position")
-        self._anim.setDuration(duration)
-        self._anim.setStartValue(-bar_ratio)
-        self._anim.setEndValue(1.0)
-        self._anim.setLoopCount(-1)
-        self._anim.setEasingCurve(easing)
+    def _get_pos(self):
+        return -self._bar_ratio + self.value() * (1.0 + self._bar_ratio)
 
-    def _get_pos(self) -> float:
-        return self._position
-
-    def _set_pos(self, v: float):
-        self._position = v
-        self._owner.update()
+    def _set_pos(self, value):
+        self._set_phase((value + self._bar_ratio) / (1.0 + self._bar_ratio))
 
     position = Property(float, _get_pos, _set_pos)
 
-    def bar_ratio(self) -> float:
+    def bar_ratio(self):
+        """返回滑块宽度比例。"""
         return self._bar_ratio
 
-    def start(self):
-        if self._anim.state() != QPropertyAnimation.State.Running:
-            self._position = -self._bar_ratio
-            self._anim.start()
 
-    def stop(self):
-        self._anim.stop()
+class SpinAnimation(LoopDriver):
+    """将循环进度换算为旋转角度。
 
-    def is_running(self) -> bool:
-        return self._anim.state() == QPropertyAnimation.State.Running
-
-
-class SpinAnimation(QObject):
-    """0→360° 的循环旋转动画。
-
-    参数:
-        owner: 拥有这个动画的控件
-        duration: 一圈时长(ms)，默认 900
-        easing: 缓动曲线，默认 Linear
+    Attributes:
+        angle: 当前角度，单位为度。
     """
-
     def __init__(
-        self,
-        owner: QWidget,
-        duration: int = 900,
-        easing: QEasingCurve.Type = QEasingCurve.Type.Linear,
-        parent: Optional[QObject] = None,
+        self, owner, duration=900, easing=QEasingCurve.Type.Linear, parent=None
     ):
-        super().__init__(parent or owner)
-        self._owner = owner
-        self._angle = 0.0
+        """初始化旋转循环。
 
-        self._anim = QPropertyAnimation(self, b"angle")
-        self._anim.setDuration(duration)
-        self._anim.setStartValue(0.0)
-        self._anim.setEndValue(360.0)
-        self._anim.setLoopCount(-1)
-        self._anim.setEasingCurve(easing)
+        Args:
+            owner: 接收重绘的 QWidget。
+            duration: 一个周期的毫秒数。
+            easing: 进度缓动曲线。
+            parent: Qt 父对象；省略时使用 owner。
+        """
+        super().__init__(owner, duration, easing, parent)
 
-    def _get_angle(self) -> float:
-        return self._angle
+    def _get_angle(self):
+        return self.value() * 360.0
 
-    def _set_angle(self, v: float):
-        self._angle = v
-        self._owner.update()
+    def _set_angle(self, value):
+        self._set_phase(value / 360.0)
 
     angle = Property(float, _get_angle, _set_angle)
 
-    def angle_value(self) -> float:
-        return self._angle
-
-    def start(self):
-        if self._anim.state() != QPropertyAnimation.State.Running:
-            self._anim.start()
-
-    def stop(self):
-        self._anim.stop()
-
-    def is_running(self) -> bool:
-        return self._anim.state() == QPropertyAnimation.State.Running
+    def angle_value(self):
+        """返回当前旋转角度，单位为度。"""
+        return self.angle

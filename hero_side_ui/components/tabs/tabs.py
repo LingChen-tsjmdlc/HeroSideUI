@@ -30,7 +30,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import stop_tween, tween_geometry, tween_value
+from ...animation import stop_tween, tween_geometry
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS, TABS_SIZES
 from ...utils import load_svg_icon
@@ -541,24 +541,14 @@ class Tabs(QWidget):
 
     def _move_cursor_to(self, index: int, *, animate: bool):
         if not 0 <= index < len(self._tabs):
+            stop_tween(self._cursor, "_cursor_anim_runner")
             self._cursor.hide()
             return
-        target_geom = QRect(self._tabs[index].geometry())
-
-        # 首次 / disable_animation / cursor 还没显示过 —— 直接到位
-        if not animate or self._disable_animation or not self._cursor.isVisible():
-            stop_tween(self._cursor, "_cursor_anim_runner")
-            self._cursor.setGeometry(target_geom)
-            self._cursor.show()
-            self._cursor.lower()
-            return
-
-        tween_geometry(
-            self._cursor,
-            "_cursor_anim_runner",
-            target_geom,
-            duration=self.CURSOR_ANIM_DURATION,
-        )
+        target = QRect(self._tabs[index].geometry())
+        tween_geometry(self._cursor, "_cursor_anim_runner", target,
+                       duration=self.CURSOR_ANIM_DURATION,
+                       animated=animate and not self._disable_animation and self._cursor.isVisible())
+        self._cursor.show()
         self._cursor.lower()
 
     def resizeEvent(self, ev):

@@ -1,51 +1,24 @@
-"""
-Tween 动画工具
-============
+"""提供按通道抢占、支持立即终态的单次过渡。"""
 
-封装两类常用动画样板，避免在组件代码里反复写 "新建动画 → 停旧的 → connect step → 持有 runner 防 GC → finished 时清空 runner" 这一套。
+import weakref
+from collections.abc import Callable
+from typing import Any
 
-API
----
+from PySide6.QtCore import QEasingCurve, QObject, QPropertyAnimation, QVariantAnimation
 
-- ``tween_value(owner, runner_attr, start, end, on_step, *, duration, easing, on_finished=None)``
-  通用值过渡（``QVariantAnimation``）。``owner`` 上的 ``runner_attr``
-  字段持有当前动画实例；自动停旧 → 起新 → finished 时把 attr 清回 ``None``。
-  返回新 anim。``end == start`` 时不启动并返回 ``None``。
+from ._runner import alive, connect_owned, current, settle, start_runner, stop_runner
 
-- ``stop_tween(owner, runner_attr)``
-  显式停掉某条 tween（断点切换样式时清场用）。
-
-- ``tween_geometry(widget, runner_attr, end_rect, *, duration, easing, on_finished=None)``
-  ``QPropertyAnimation(widget, b"geometry")`` 版本，行为一致；返回新 anim。
-
-约束
-----
-- 内部不做相等性比较以外的状态判断；调用方负责语义（如 ``disable_animation``
-  下应直接跳到目标值，而非调用本工具）。
-- ``on_step`` 接受 ``QVariantAnimation.valueChanged`` 派发的值，类型由
-  ``start``/``end`` 推断（QColor / float / int / QRect 等）。
-"""
-
-from __future__ import annotations
-
-from typing import Any, Callable, Optional
-
-from PySide6.QtCore import QEasingCurve, QPropertyAnimation, QVariantAnimation
-
-__all__ = ["tween_value", "stop_tween", "tween_geometry"]
+__all__ = ["stop_tween", "tween_geometry", "tween_property", "tween_value"]
 
 
 def stop_tween(owner: Any, runner_attr: str) -> None:
-    """显式停掉 owner.<runner_attr> 上挂的动画。"""
-    runner = getattr(owner, runner_attr, None)
-    if runner is None:
-        return
-    try:
-        runner.stop()
-    except RuntimeError:
-        # C++ 端已销毁
-        pass
-    setattr(owner, runner_attr, None)
+    """取消通道并释放旧动画，不通知完成。
+
+    Args:
+        owner: 通道持有者；Qt 对象已销毁时也可清理。
+        runner_attr: 保存动画的字段名。
+    """
+    stop_runner(owner, runner_attr)
 
 
 def tween_value(
@@ -56,43 +29,113 @@ def tween_value(
     on_step: Callable[[Any], None],
     *,
     duration: int,
-    easing: QEasingCurve.Type = QEasingCurve.OutCubic,
-    on_finished: Optional[Callable[[], None]] = None,
-) -> Optional[QVariantAnimation]:
-    """启动一段值过渡（QColor / float / int / 任何 QVariantAnimation 支持的类型）。
+    easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
+    on_finished: Callable[[], None] | None = None,
+    animated: bool = True,
+) -> QVariantAnimation | None:
+    """从当前值过渡到目标值，先取消通道中的旧请求。
 
-    使用模式::
+    Args:
+        owner: 作为 Qt 父对象和通道持有者的 QObject。
+        runner_attr: 保存当前动画的字段名。
+        start: 起始值。
+        end: 目标值。
+        on_step: 每帧接收插值结果的回调。
+        duration: 时长，单位为毫秒；非正数时立即完成。
+        easing: 插值缓动曲线。
+        on_finished: 自然完成或立即完成后执行的回调；取消时不调用。
+        animated: 是否播放过渡；False 时先应用目标值。
 
-        tween_value(self, "_color_anim_runner",
-                    self._current_text_color, target,
-                    self._on_color_step,
-                    duration=150)
+    Returns:
+        运行期间有效的 Qt 动画句柄；无需动画时返回 None。
 
-    返回新 anim；若 ``start == end`` 不启动并返回 ``None``。
+    Note:
+        同值请求不派发帧更新，但会取消旧请求并通知完成；回调中发出的新请求优先。
     """
-    if start == end:
-        return None
-
     stop_tween(owner, runner_attr)
-
+    if not alive(owner):
+        return None
+    if not animated or duration <= 0:
+        settle(owner, runner_attr, lambda: on_step(end), on_finished)
+        return None
+    if start == end:
+        settle(owner, runner_attr, on_finished=on_finished)
+        return None
     anim = QVariantAnimation(owner)
     anim.setStartValue(start)
     anim.setEndValue(end)
     anim.setDuration(duration)
     anim.setEasingCurve(easing)
-    anim.valueChanged.connect(on_step)
 
-    def _on_done():
-        # 仅当当前 runner 仍是本 anim 时清空（避免被新 tween 覆盖后误清）
-        if getattr(owner, runner_attr, None) is anim:
-            setattr(owner, runner_attr, None)
-        if on_finished is not None:
-            on_finished()
+    owner_ref = weakref.ref(owner)
 
-    anim.finished.connect(_on_done)
-    setattr(owner, runner_attr, anim)
-    anim.start()
-    return anim
+    def step(value):
+        holder = owner_ref()
+        if holder is not None and current(holder, runner_attr, anim):
+            on_step(value)
+
+    connect_owned(anim, anim.valueChanged, step)
+    return start_runner(owner, runner_attr, anim, on_finished)
+
+
+def tween_property(
+    target,
+    runner_attr: str,
+    property_name: bytes,
+    end,
+    *,
+    duration: int,
+    easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
+    owner=None,
+    on_finished: Callable[[], None] | None = None,
+    animated: bool = True,
+) -> QPropertyAnimation | None:
+    """从 Qt 属性当前值过渡到目标值。
+
+    Args:
+        target: 持有目标属性的 QObject。
+        runner_attr: 通道字段名。
+        property_name: Qt 属性名的 ASCII 字节串。
+        end: 目标属性值。
+        duration: 时长，单位为毫秒；非正数时立即完成。
+        easing: 插值缓动曲线。
+        owner: 通道持有者；省略时使用 target，普通持有者须支持弱引用。
+        on_finished: 完成回调；取消或目标销毁时不调用。
+        animated: 是否播放过渡。
+
+    Returns:
+        运行期间有效的 Qt 动画句柄；无需动画时返回 None。
+
+    Note:
+        QObject 持有者同时作为 Qt 父对象；普通持有者的动画以 target 为父对象。
+    """
+    owner = target if owner is None else owner
+    stop_tween(owner, runner_attr)
+    if not alive(owner) or not alive(target):
+        return None
+    name = property_name.decode("ascii")
+    if not animated or duration <= 0:
+        settle(owner, runner_attr, lambda: target.setProperty(name, end), on_finished)
+        return None
+    start = target.property(name)
+    if start == end:
+        settle(owner, runner_attr, on_finished=on_finished)
+        return None
+    parent = owner if isinstance(owner, QObject) else target
+    anim = QPropertyAnimation(target, property_name, parent)
+    anim.setStartValue(start)
+    anim.setEndValue(end)
+    anim.setDuration(duration)
+    anim.setEasingCurve(easing)
+    owner_ref = weakref.ref(owner)
+
+    def target_destroyed():
+        holder = owner_ref()
+        if holder is not None and current(holder, runner_attr, anim):
+            stop_runner(holder, runner_attr)
+
+    connect_owned(anim, target.destroyed, target_destroyed)
+    return start_runner(owner, runner_attr, anim, on_finished)
 
 
 def tween_geometry(
@@ -101,32 +144,31 @@ def tween_geometry(
     end_rect,
     *,
     duration: int,
-    easing: QEasingCurve.Type = QEasingCurve.OutCubic,
-    on_finished: Optional[Callable[[], None]] = None,
-) -> Optional[QPropertyAnimation]:
-    """启动一段 ``geometry`` 过渡。
+    easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
+    on_finished: Callable[[], None] | None = None,
+    animated: bool = True,
+) -> QPropertyAnimation | None:
+    """通过公共属性过渡更新控件几何。
 
-    runner_attr 挂在 widget 自身上 —— widget 同时是动画对象和持有者。
+    Args:
+        widget: 目标控件及通道持有者。
+        runner_attr: 保存当前动画的字段名。
+        end_rect: 目标 QRect。
+        duration: 时长，单位为毫秒。
+        easing: 插值缓动曲线。
+        on_finished: 完成回调。
+        animated: 是否播放过渡。
+
+    Returns:
+        运行期间有效的 Qt 动画句柄；无需动画时返回 None。
     """
-    start_rect = widget.geometry()
-    if start_rect == end_rect:
-        return None
-
-    stop_tween(widget, runner_attr)
-
-    anim = QPropertyAnimation(widget, b"geometry")
-    anim.setDuration(duration)
-    anim.setStartValue(start_rect)
-    anim.setEndValue(end_rect)
-    anim.setEasingCurve(easing)
-
-    def _on_done():
-        if getattr(widget, runner_attr, None) is anim:
-            setattr(widget, runner_attr, None)
-        if on_finished is not None:
-            on_finished()
-
-    anim.finished.connect(_on_done)
-    setattr(widget, runner_attr, anim)
-    anim.start()
-    return anim
+    return tween_property(
+        widget,
+        runner_attr,
+        b"geometry",
+        end_rect,
+        duration=duration,
+        easing=easing,
+        on_finished=on_finished,
+        animated=animated,
+    )

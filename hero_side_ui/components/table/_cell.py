@@ -345,20 +345,9 @@ class _TableCell(QWidget):
         return QColor(_TRANSPARENT)
 
     def _refresh_before(self, *, animated: bool):
-        target = self._target_before()
-        if not animated:
-            self._cur_before = target
-            self.update()
-            return
-        start, end = aligned_color_pair(self._cur_before, target)
-        tween_value(
-            self,
-            "_before_anim_runner",
-            start,
-            end,
-            self._on_before_step,
-            duration=_HOVER_ANIM_MS,
-        )
+        start, end = aligned_color_pair(self._cur_before, self._target_before())
+        tween_value(self, "_before_anim_runner", start, end, self._on_before_step,
+                    duration=_HOVER_ANIM_MS, animated=animated)
 
     def _on_before_step(self, c):
         self._cur_before = QColor(c)

@@ -10,12 +10,12 @@
     - 任意 `RadioBase` 子类皆可被 `RadioGroup.add_radio` 接纳
 """
 
+from ...animation import tween_property
+
 from typing import Optional
 
 from PySide6.QtCore import (
     Property,
-    QEasingCurve,
-    QPropertyAnimation,
     QSize,
     Qt,
     Signal,
@@ -94,17 +94,13 @@ class RadioBase(QAbstractButton):
         self.setFocusPolicy(Qt.FocusPolicy.TabFocus)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
 
-        if is_selected and not disable_animation:
+        if is_selected:
             self._control_progress = 1.0
 
         # 动画
-        self._control_anim = QPropertyAnimation(self, b"control_progress")
-        self._control_anim.setDuration(180)
-        self._control_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._control_anim = None
 
-        self._press_anim = QPropertyAnimation(self, b"press_progress")
-        self._press_anim.setDuration(120)
-        self._press_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._press_anim = None
 
         self.toggled.connect(self._on_toggled)
         self._refresh_geometry()
@@ -137,14 +133,8 @@ class RadioBase(QAbstractButton):
     # 状态变化
     # ============================================================
     def _on_toggled(self, checked: bool):
-        if self._disable_animation:
-            self._control_progress = 1.0 if checked else 0.0
-            self.update()
-        else:
-            self._control_anim.stop()
-            self._control_anim.setStartValue(self._control_progress)
-            self._control_anim.setEndValue(1.0 if checked else 0.0)
-            self._control_anim.start()
+        tween_property(self, "_control_anim", b"control_progress", 1.0 if checked else 0.0,
+                       duration=180, animated=not self._disable_animation)
         if checked:
             self.selected.emit(self._value)
 
@@ -153,20 +143,12 @@ class RadioBase(QAbstractButton):
     # ============================================================
     def mousePressEvent(self, event):
         if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(1.0)
-            self._press_anim.setDuration(80)
-            self._press_anim.start()
+            tween_property(self, "_press_anim", b"press_progress", 1.0, duration=80)
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(0.0)
-            self._press_anim.setDuration(150)
-            self._press_anim.start()
+            tween_property(self, "_press_anim", b"press_progress", 0.0, duration=150)
         super().mouseReleaseEvent(event)
 
     def enterEvent(self, event):
@@ -252,6 +234,10 @@ class RadioBase(QAbstractButton):
 
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
+        if disable:
+            tween_property(self, "_control_anim", b"control_progress",
+                           1.0 if self.isChecked() else 0.0, duration=0)
+            tween_property(self, "_press_anim", b"press_progress", 0.0, duration=0)
 
     def set_theme(self, theme: str):
         if theme == "auto":

@@ -35,12 +35,14 @@ class TestSpinnerInit:
     def test_default_starts_two_drivers(self, qtbot):
         sp = Spinner(variant="default")
         qtbot.addWidget(sp)
+        sp.show()
         assert sp._driver_a.is_running()
         assert sp._driver_b.is_running()
 
     def test_non_default_starts_one_driver(self, qtbot):
         sp = Spinner(variant="simple")
         qtbot.addWidget(sp)
+        sp.show()
         assert sp._driver_a.is_running()
         assert not sp._driver_b.is_running()
 
@@ -136,6 +138,7 @@ class TestSpinnerDynamicAPI:
     def test_set_variant_back_to_default_starts_b(self, qtbot):
         sp = Spinner(variant="simple")
         qtbot.addWidget(sp)
+        sp.show()
         assert not sp._driver_b.is_running()
         sp.set_variant("default")
         assert sp._driver_b.is_running()

@@ -27,7 +27,6 @@ from PySide6.QtWidgets import (
 from ...animation import (
     CheckDrawAnimation,
     paint_animated_check,
-    stop_tween,
     tween_value,
 )
 from ...core import StatePalette, ThemeProvider
@@ -386,6 +385,8 @@ class ListboxItem(QAbstractButton):
         self._radius = radius
         self._theme = theme
         self._disable_animation = disable_animation
+        if disable_animation:
+            self._check_anim.set_immediate(self._is_selected)
         self._hide_selected_icon = hide_selected_icon
         self._highlight_on_focus = highlight_on_focus
         self._selectable = selectable
@@ -686,16 +687,6 @@ class ListboxItem(QAbstractButton):
         # 不让 alpha 同步淡出 —— 否则会和 progress 1→0 重叠成"双重消失"。
         target_indicator = 0.0 if self._hide_selected_icon else 1.0
 
-        if not animated:
-            self._cur_bg = target_bg
-            self._cur_border = target_border
-            self._cur_text = target_text
-            self._cur_indicator_alpha = target_indicator
-            self._apply_text_color()
-            self._refresh_pixmap_color()
-            self.update()
-            return
-
         # 关键：透明色没有"色相"，直接 lerp(QColor(0,0,0,0) → 实色) 在 alpha 升起的同时 RGB
         # 也从黑色拉过去，前半段会出现一抹深灰（用户截图里就是这个效果）。
         # 解决：用 aligned_color_pair 把"透明端"的 RGB 对齐到"非透明端"的 RGB，alpha 保持 0；
@@ -711,7 +702,7 @@ class ListboxItem(QAbstractButton):
             bg_start,
             bg_end,
             self._on_bg_step,
-            duration=self.HOVER_ANIM_DURATION,
+            duration=self.HOVER_ANIM_DURATION, animated=animated,
         )
         tween_value(
             self,
@@ -719,7 +710,7 @@ class ListboxItem(QAbstractButton):
             bd_start,
             bd_end,
             self._on_border_step,
-            duration=self.HOVER_ANIM_DURATION,
+            duration=self.HOVER_ANIM_DURATION, animated=animated,
         )
         tween_value(
             self,
@@ -727,7 +718,7 @@ class ListboxItem(QAbstractButton):
             QColor(self._cur_text),
             QColor(target_text),
             self._on_text_step,
-            duration=self.HOVER_ANIM_DURATION,
+            duration=self.HOVER_ANIM_DURATION, animated=animated,
         )
         tween_value(
             self,
@@ -735,7 +726,7 @@ class ListboxItem(QAbstractButton):
             float(self._cur_indicator_alpha),
             float(target_indicator),
             self._on_indicator_step,
-            duration=self.SELECT_ANIM_DURATION,
+            duration=self.SELECT_ANIM_DURATION, animated=animated,
         )
 
     def _on_bg_step(self, c):

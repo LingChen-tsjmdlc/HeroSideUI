@@ -5,7 +5,7 @@ from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from ..button import Button
 
-from ._selector_button import _SelectorButton
+from ..._shared.selection import SelectorButton as _SelectorButton
 
 
 class _EndContentWidget(QWidget):

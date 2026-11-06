@@ -10,6 +10,8 @@
 公共信号: page_changed(int)
 """
 
+from ...animation import tween_property
+
 from typing import Callable, List, Optional, Union
 
 from PySide6.QtCore import QEasingCurve, QPoint, QRect, QSize, Qt, QTimer, Signal
@@ -20,7 +22,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import start_cursor_slide, stop_tween, tween_value
+from ...animation import start_cursor_slide, stop_tween
 from ...core import ThemeProvider
 from ...themes import PAGINATION_SIZES
 
@@ -619,37 +621,13 @@ class Pagination(QWidget):
         )
 
     def _fade_in_cursor_if_needed(self):
-        """首次显示 cursor 时淡入。"""
         if self._cursor_opacity_effect is None:
             return
-        if not self._cursor_first_show:
-            # 已经淡入过,直接保持 1.0
-            self._cursor_opacity_effect.setOpacity(1.0)
-            self._cursor.set_opacity(1.0)
-            return
+        animated = self._cursor_first_show and not self._disable_animation
         self._cursor_first_show = False
-
-        # 同时把 _CursorWidget 内部的 opacity 设 1 (paintEvent 用)
         self._cursor.set_opacity(1.0)
-
-        if self._disable_animation:
-            self._cursor_opacity_effect.setOpacity(1.0)
-            return
-
-        def _on_step(value):
-            try:
-                self._cursor_opacity_effect.setOpacity(float(value))
-            except RuntimeError:
-                pass
-
-        tween_value(
-            self,
-            "_cursor_fade_runner",
-            0.0,
-            1.0,
-            _on_step,
-            duration=self.CURSOR_FADE_IN_MS,
-        )
+        tween_property(self._cursor_opacity_effect, "_cursor_fade_runner", b"opacity",
+                       1.0, owner=self, duration=self.CURSOR_FADE_IN_MS, animated=animated)
 
     # ============================================================
     # disabled 状态

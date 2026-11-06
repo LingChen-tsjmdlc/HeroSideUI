@@ -49,10 +49,7 @@ jobs:
         run: uv python install ${{ matrix.python-version }}
 
       - name: Install deps | 安装依赖
-        run: uv sync
-
-      - name: Install test deps | 安装测试依赖
-        run: uv add --dev pytest pytest-qt
+        run: uv sync --locked --python "${{ matrix.python-version }}"
 
       - name: Run ${{ matrix.group.name }} tests | 运行 ${{ matrix.group.name }} 测试
         run: |
@@ -76,9 +73,9 @@ jobs:
               exit 0
             fi
             echo "Shard $IDX/$TOTAL ($COUNT files, $PER per shard): $FILES"
-            uv run python -m pytest $FILES -v --tb=short
+            uv run --locked --python "${{ matrix.python-version }}" python -m pytest $FILES -v --tb=short
           else
-            uv run python -m pytest ${{ matrix.group.path }} -v --tb=short
+            uv run --locked --python "${{ matrix.python-version }}" python -m pytest ${{ matrix.group.path }} -v --tb=short
           fi
 
   # ============================================================

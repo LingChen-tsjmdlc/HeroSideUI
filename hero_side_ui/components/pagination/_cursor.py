@@ -8,9 +8,11 @@
   - 鼠标穿透,首次出现淡入
 """
 
+from ...animation import tween_value, stop_tween
+
 from typing import Optional
 
-from PySide6.QtCore import QEasingCurve, QRectF, Qt, QVariantAnimation
+from PySide6.QtCore import QRectF, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
 
@@ -93,64 +95,33 @@ class _CursorWidget(QWidget):
         """是否已设置过页码文本 (空字符串视为未设置)。"""
         return bool(self._page_text)
 
-    def start_text_swap(
-        self,
-        new_text: str,
-        *,
-        duration_ms: int = 300,
-        direction: str = "up",
-    ):
-        """启动新旧文字方向化交叉滚动动画 (与 cursor 滑动同步调用)。
-
-        direction:
-            "up"   - 页码增大方向,旧字向上滚出 + 新字从下方滚入
-            "down" - 页码减小方向,旧字向下滚出 + 新字从上方滚入
-        """
+    def start_text_swap(self, new_text: str, *, duration_ms: int = 300,
+                        direction: str = "up"):
         new_text = str(new_text)
-        # 文字未变 / 之前没有有效文字 → 不需要动画
         if new_text == self._page_text:
             return
         if not self._page_text:
-            self._page_text = new_text
-            self._text_progress = 1.0
-            self.update()
+            self.set_page_text(new_text)
             return
         self._stop_text_anim()
         self._old_page_text = self._page_text
         self._page_text = new_text
         self._text_direction = direction if direction in ("up", "down") else "up"
         self._text_progress = 0.0
-        anim = QVariantAnimation(self)
-        anim.setStartValue(0.0)
-        anim.setEndValue(1.0)
-        anim.setDuration(max(1, int(duration_ms)))
-        anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-        def _step(v):
-            try:
-                self._text_progress = float(v)
-                self.update()
-            except RuntimeError:
-                pass
-
-        def _done():
-            self._text_progress = 1.0
-            self._old_page_text = ""
-            self._text_anim = None
+        def step(value):
+            self._text_progress = float(value)
             self.update()
 
-        anim.valueChanged.connect(_step)
-        anim.finished.connect(_done)
-        self._text_anim = anim
-        anim.start()
+        def done():
+            self._old_page_text = ""
+            self.update()
+
+        tween_value(self, "_text_anim", 0.0, 1.0, step,
+                    duration=max(1, int(duration_ms)), on_finished=done)
 
     def _stop_text_anim(self):
-        if self._text_anim is not None:
-            try:
-                self._text_anim.stop()
-            except RuntimeError:
-                pass
-            self._text_anim = None
+        stop_tween(self, "_text_anim")
 
     def set_scale(self, scale: float):
         self._scale = float(scale)

@@ -11,6 +11,8 @@
 
 from __future__ import annotations
 
+from ...animation import tween_property, stop_tween
+
 from dataclasses import dataclass, field
 from typing import Optional
 
@@ -19,6 +21,7 @@ from PySide6.QtCore import (
     QObject,
     QPoint,
     QPropertyAnimation,
+    QEasingCurve,
     QRect,
     Qt,
     QTimer,
@@ -347,7 +350,8 @@ class ToastRegion(QWidget):
                 card.set_opacity(0.0)
                 self._animate_opacity(item, 1.0)
             elif not item.entering:
-                card.set_opacity(1.0)
+                tween_property(card, "fade_anim", b"paint_opacity", 1.0, owner=item,
+                               duration=0)
 
             if item.drag_dx or item.drag_dy:
                 target = target.translated(item.drag_dx, item.drag_dy)
@@ -355,23 +359,15 @@ class ToastRegion(QWidget):
             if animate and not self._disable_animation:
                 self._animate_move(item, target)
             else:
-                card.setGeometry(target)
+                tween_property(card, "geo_anim", b"geometry", target, owner=item,
+                               duration=0)
 
             # 越新的越靠上层
             card.raise_()
 
     def _animate_move(self, item: _ToastItem, target: QRect):
-        card = item.card
-        if card.geometry() == target:
-            return
-        if item.geo_anim is not None:
-            item.geo_anim.stop()
-        anim = QPropertyAnimation(card, b"geometry", self)
-        anim.setDuration(TOAST_SPEC["duration_move"])
-        anim.setStartValue(card.geometry())
-        anim.setEndValue(target)
-        item.geo_anim = anim
-        anim.start()
+        tween_property(item.card, "geo_anim", b"geometry", target, owner=item,
+                       duration=TOAST_SPEC["duration_move"], easing=QEasingCurve.Type.Linear)
 
     # ============================================================
     # 进出场动画
@@ -420,28 +416,14 @@ class ToastRegion(QWidget):
         else:
             end.translate(-geo.width(), 0)
 
-        if item.geo_anim is not None:
-            item.geo_anim.stop()
-        anim = QPropertyAnimation(card, b"geometry", self)
-        anim.setDuration(TOAST_SPEC["duration_exit"])
-        anim.setStartValue(geo)
-        anim.setEndValue(end)
-        item.geo_anim = anim
-        anim.start()
+        tween_property(card, "geo_anim", b"geometry", end, owner=item,
+                       duration=TOAST_SPEC["duration_exit"], easing=QEasingCurve.Type.Linear)
         self._animate_opacity(item, 0.0, then=lambda: self._finalize_exit(item))
 
     def _animate_opacity(self, item: _ToastItem, target: float, then=None):
-        card = item.card
-        if item.fade_anim is not None:
-            item.fade_anim.stop()
-        anim = QPropertyAnimation(card, b"paint_opacity", self)
-        anim.setDuration(TOAST_SPEC["duration_exit"])
-        anim.setStartValue(card.paint_opacity)
-        anim.setEndValue(target)
-        if then is not None:
-            anim.finished.connect(then)
-        item.fade_anim = anim
-        anim.start()
+        tween_property(item.card, "fade_anim", b"paint_opacity", target, owner=item,
+                       duration=TOAST_SPEC["duration_exit"], on_finished=then,
+                       easing=QEasingCurve.Type.Linear)
 
     def _finish_hide(self, item: _ToastItem):
         """折叠淡出结束的回调：仍处于隐藏态才真正 hide（中途被重新
@@ -455,6 +437,8 @@ class ToastRegion(QWidget):
     def _finalize_exit(self, item: _ToastItem):
         if item not in self._items:
             return
+        stop_tween(item, "geo_anim")
+        stop_tween(item, "fade_anim")
         self._items.remove(item)
         safe_delete(item.card)
         self._relayout(animate=True)

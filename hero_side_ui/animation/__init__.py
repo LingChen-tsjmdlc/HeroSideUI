@@ -1,40 +1,44 @@
-# Animation module - 动画效果
-from .ripple import RippleOverlay
-from .press_scale import PressScaleEffect
+"""公共动画驱动、语义效果和绘制工具。"""
+
+from .backdrop_fade import BackdropFade
+from .check_draw import CheckDrawAnimation, paint_animated_check
 from .collapse import CollapseAnimation
-from .label_float import LabelFloatAnimation
-from .underline_expand import UnderlineBar
+from .cursor_slide import start_cursor_slide
 from .fade_scale import FadeScaleAnimation
 from .indeterminate import IndeterminateBarAnimation, SpinAnimation
+from .label_float import LabelFloatAnimation
+from .loop import LoopDriver
+from .padding_squeeze import PaddingSqueezeAnimation
+from .pixmap_scale_proxy import PixmapScaleProxy
+from .press_scale import PressScaleEffect
+from .ripple import RippleOverlay
+from .skeleton_shimmer import SkeletonShimmerAnimation
 from .spinner_loops import PhaseDriver
 from .stripe_flow import StripeFlowAnimation
-from .backdrop_fade import BackdropFade
-from .pixmap_scale_proxy import PixmapScaleProxy
-from .padding_squeeze import PaddingSqueezeAnimation
-from .tween import tween_value, stop_tween, tween_geometry
-from .cursor_slide import start_cursor_slide
-from .check_draw import paint_animated_check, CheckDrawAnimation
-from .skeleton_shimmer import SkeletonShimmerAnimation
+from .tween import stop_tween, tween_geometry, tween_property, tween_value
+from .underline_expand import UnderlineBar
 
 __all__ = [
-    "RippleOverlay",
-    "PressScaleEffect",
+    "BackdropFade",
+    "CheckDrawAnimation",
     "CollapseAnimation",
-    "LabelFloatAnimation",
-    "UnderlineBar",
     "FadeScaleAnimation",
     "IndeterminateBarAnimation",
-    "SpinAnimation",
-    "PhaseDriver",
-    "StripeFlowAnimation",
-    "BackdropFade",
-    "PixmapScaleProxy",
+    "LabelFloatAnimation",
+    "LoopDriver",
     "PaddingSqueezeAnimation",
-    "tween_value",
+    "PhaseDriver",
+    "PixmapScaleProxy",
+    "PressScaleEffect",
+    "RippleOverlay",
+    "SkeletonShimmerAnimation",
+    "SpinAnimation",
+    "StripeFlowAnimation",
+    "UnderlineBar",
+    "paint_animated_check",
+    "start_cursor_slide",
     "stop_tween",
     "tween_geometry",
-    "start_cursor_slide",
-    "paint_animated_check",
-    "CheckDrawAnimation",
-    "SkeletonShimmerAnimation",
+    "tween_property",
+    "tween_value",
 ]

@@ -40,13 +40,11 @@ from PySide6.QtWidgets import (
 from PySide6.QtCore import (
     Qt,
     Signal,
-    QPropertyAnimation,
     QEasingCurve,
     Property,
     QRectF,
     QByteArray,
     QSize,
-    QTimer,
 )
 from PySide6.QtGui import (
     QPainter,
@@ -59,7 +57,7 @@ from typing import Optional, List
 
 from ...themes import HEROUI_COLORS, RADIUS, CHECKBOX_SIZES
 from ...utils import hex_to_rgba
-from ...animation import paint_animated_check
+from ...animation import CheckDrawAnimation, paint_animated_check, tween_property
 from ...core import ThemeProvider
 
 # ============================================================
@@ -143,36 +141,25 @@ class Checkbox(QCheckBox):
         self._fill_progress = 0.0  # after 填充: 0 = 未选中, 1 = 选中（scale+opacity）
         self._line_progress = 0.0  # lineThrough 下划线宽度: 0 → 1
         self._press_progress = 0.0  # 按压缩放: 0 = 1.0, 1 = 0.95
-        self._check_draw = 0.0  # check 图标描边进度: 0 → 1（勾选时从 0 按路径描到 1）
+        self._check_anim = CheckDrawAnimation(
+            self, on_step=lambda _: self.update(), duration_in=500, delay_in=100,
+        )
         self._hover = False
 
         # 初始状态
         self.setCheckable(True)
         self.setChecked(is_selected)
         self.setEnabled(not is_disabled)
-        if is_selected and not disable_animation:
+        self._check_anim.set_immediate(is_selected and not is_indeterminate)
+        if is_selected:
             self._fill_progress = 1.0
-            self._check_draw = 1.0
             if line_through:
                 self._line_progress = 1.0
 
         # 动画
-        self._fill_anim = QPropertyAnimation(self, b"fill_progress")
-        self._fill_anim.setDuration(200)
-        self._fill_anim.setEasingCurve(QEasingCurve.Type.Linear)
-
-        self._line_anim = QPropertyAnimation(self, b"line_progress")
-        self._line_anim.setDuration(200)
-        self._line_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        self._press_anim = QPropertyAnimation(self, b"press_progress")
-        self._press_anim.setDuration(120)
-        self._press_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
-        # check 描边动画（选中时用；取消时不用，图标直接跟 fill_progress 淡出）
-        self._check_anim = QPropertyAnimation(self, b"check_draw")
-        self._check_anim.setDuration(500)
-        self._check_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._fill_anim = None
+        self._line_anim = None
+        self._press_anim = None
 
         # 原生 stateChanged 驱动我们的动画
         self.stateChanged.connect(self._on_state_changed)
@@ -221,11 +208,10 @@ class Checkbox(QCheckBox):
     press_progress = Property(float, _get_press, _set_press)
 
     def _get_check_draw(self) -> float:
-        return self._check_draw
+        return self._check_anim.progress
 
-    def _set_check_draw(self, v: float):
-        self._check_draw = v
-        self.update()
+    def _set_check_draw(self, value: float):
+        self._check_anim.progress = value
 
     check_draw = Property(float, _get_check_draw, _set_check_draw)
 
@@ -233,70 +219,34 @@ class Checkbox(QCheckBox):
     # 状态变化 / 动画
     # ============================================================
     def _on_state_changed(self, state):
-        """Qt stateChanged → 驱动动画
-
-        PySide6 的 stateChanged 在不同版本可能发射 int(0/1/2) 或 Qt.CheckState 枚举，
-        统一用 isChecked() 读取当前状态最稳。
-        """
         checked = self.isChecked()
-
-        if self._disable_animation:
-            self._fill_progress = 1.0 if checked else 0.0
-            self._check_draw = 1.0 if checked else 0.0
-            self._line_progress = 1.0 if (checked and self._line_through) else 0.0
-            self.update()
-            return
-
-        self._fill_anim.stop()
-        self._fill_anim.setStartValue(self._fill_progress)
-        self._fill_anim.setEndValue(1.0 if checked else 0.0)
-        self._fill_anim.start()
-
-        # check 描边：勾选 → 0 → 1（画对勾的过程）；取消 → 直接跳 0（让图标跟 fill 淡出）
-        self._check_anim.stop()
-        if checked:
-            # 立即清零；延迟 100ms 再开始描，让背景先铺开
-            self._check_draw = 0.0
-            self.update()
-            QTimer.singleShot(100, self._start_check_draw)
+        tween_property(
+            self, "_fill_anim", b"fill_progress", 1.0 if checked else 0.0,
+            duration=200, easing=QEasingCurve.Type.Linear,
+            animated=not self._disable_animation,
+        )
+        if self._is_indeterminate or self._disable_animation:
+            self._check_anim.set_immediate(checked and not self._is_indeterminate)
         else:
-            # 取消：立刻置 1（整条对勾可见），然后跟随 fill opacity 淡出
-            self._check_draw = 1.0
+            self._check_anim.play(checked)
+        tween_property(
+            self, "_line_anim", b"line_progress",
+            1.0 if checked and self._line_through else 0.0, duration=200,
+            animated=not self._disable_animation,
+        )
 
-        if self._line_through:
-            self._line_anim.stop()
-            self._line_anim.setStartValue(self._line_progress)
-            self._line_anim.setEndValue(1.0 if checked else 0.0)
-            self._line_anim.start()
-
-    def _start_check_draw(self):
-        """延迟 100ms 后启动 check 描边动画；如果此刻已不再是选中，则不启动"""
-        if not self.isChecked() or self._is_indeterminate:
-            return
-        self._check_anim.stop()
-        self._check_anim.setStartValue(self._check_draw)
-        self._check_anim.setEndValue(1.0)
-        self._check_anim.start()
 
     # ============================================================
     # 按压缩放
     # ============================================================
     def mousePressEvent(self, event):
         if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(1.0)
-            self._press_anim.setDuration(80)
-            self._press_anim.start()
+            tween_property(self, "_press_anim", b"press_progress", 1.0, duration=80)
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
         if self.isEnabled() and not self._disable_animation:
-            self._press_anim.stop()
-            self._press_anim.setStartValue(self._press_progress)
-            self._press_anim.setEndValue(0.0)
-            self._press_anim.setDuration(150)
-            self._press_anim.start()
+            tween_property(self, "_press_anim", b"press_progress", 0.0, duration=150)
         super().mouseReleaseEvent(event)
 
     def enterEvent(self, event):
@@ -515,7 +465,7 @@ class Checkbox(QCheckBox):
                     painter,
                     (ic_x, ic_y, ic_w, ic_h),
                     icon_color,
-                    progress=self._check_draw,
+                    progress=self._check_anim.progress,
                     opacity=opacity,
                 )
 
@@ -622,10 +572,10 @@ class Checkbox(QCheckBox):
 
     def set_line_through(self, enabled: bool):
         self._line_through = enabled
-        # 状态同步
-        if self.isChecked():
-            self._line_progress = 1.0 if enabled else 0.0
-        self.update()
+        tween_property(
+            self, "_line_anim", b"line_progress",
+            1.0 if enabled and self.isChecked() else 0.0, duration=0,
+        )
 
     def set_is_disabled(self, disabled: bool):
         self._is_disabled = disabled
@@ -638,10 +588,14 @@ class Checkbox(QCheckBox):
 
     def set_is_indeterminate(self, indeterminate: bool):
         self._is_indeterminate = indeterminate
+        self._check_anim.set_immediate(self.isChecked() and not indeterminate)
         self.update()
 
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
+        if disable:
+            self._on_state_changed(None)
+            tween_property(self, "_press_anim", b"press_progress", 0.0, duration=0)
 
     def is_selected(self) -> bool:
         """别名: isChecked()"""

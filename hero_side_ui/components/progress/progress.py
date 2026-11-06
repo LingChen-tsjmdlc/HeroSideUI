@@ -18,6 +18,8 @@ CircularProgress (圆形进度条):
     变体: color × size × is_indeterminate × is_disabled × theme
 """
 
+from ...animation import tween_property
+
 import math
 
 from PySide6.QtWidgets import (
@@ -29,8 +31,6 @@ from PySide6.QtWidgets import (
 )
 from PySide6.QtCore import (
     Qt,
-    QPropertyAnimation,
-    QEasingCurve,
     Property,
     QRectF,
     QPointF,
@@ -56,7 +56,6 @@ from ...themes import (
 from ...utils import hex_to_rgba
 from ...animation import (
     IndeterminateBarAnimation,
-    SpinAnimation,
     StripeFlowAnimation,
 )
 from ...core import ThemeProvider
@@ -98,9 +97,7 @@ class _LinearTrack(QWidget):
 
         # 确定态：progress_px 动画（跟随 owner 宽度 * ratio）
         self._anim_ratio = 0.0
-        self._ratio_anim = QPropertyAnimation(self, b"anim_ratio")
-        self._ratio_anim.setDuration(500)
-        self._ratio_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._ratio_anim = None
 
         # striped 条带流动（复用 StripeFlowAnimation）
         self._stripe_flow = StripeFlowAnimation(
@@ -134,14 +131,8 @@ class _LinearTrack(QWidget):
         self._stripe_flow.stop()
 
     def animate_to(self, ratio: float, disable_animation: bool = False):
-        self._ratio_anim.stop()
-        if disable_animation:
-            self._anim_ratio = ratio
-            self.update()
-            return
-        self._ratio_anim.setStartValue(self._anim_ratio)
-        self._ratio_anim.setEndValue(ratio)
-        self._ratio_anim.start()
+        tween_property(self, "_ratio_anim", b"anim_ratio", ratio,
+                       duration=500, animated=not disable_animation)
 
     # ----- 尺寸 -----
     def sizeHint(self):

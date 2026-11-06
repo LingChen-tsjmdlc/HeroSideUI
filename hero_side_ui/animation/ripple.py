@@ -1,53 +1,55 @@
-"""
-HeroUI 风格水波纹（Ripple）动画
-
-原理参考: https://github.com/heroui-inc/heroui/blob/main/packages/components/ripple/
-
-实现方式:
-  1. RippleOverlay 是一个透明覆盖层，叠在宿主控件上方
-  2. 宿主控件在 mousePressEvent 中调用 add_ripple(pos) 记录点击坐标
-  3. QPropertyAnimation 驱动 _progress 从 0→1
-  4. paintEvent 中根据 progress 画扩散的半透明圆:
-     - 半径 = progress × 到四角的最大距离
-     - 透明度 = 0.35 × (1 - progress)
-  5. 动画结束后自动清理已完成的水波纹
-
-用法:
-    overlay = RippleOverlay(parent=some_widget, color=QColor(255, 255, 255))
-
-    # 在宿主的 mousePressEvent 中:
-    overlay.add_ripple(event.position().toPoint())
-"""
+"""提供按点击位置扩散的水波纹和透明覆盖层。"""
 
 import re
 
-from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import (
-    Qt, QEvent, QPropertyAnimation, QEasingCurve, QPoint,
-    Property, QObject, Signal,
+    Property,
+    QEasingCurve,
+    QEvent,
+    QObject,
+    QPoint,
+    QPropertyAnimation,
+    Qt,
+    Signal,
 )
-from PySide6.QtGui import QPainter, QColor, QPainterPath
-from typing import Optional
+from PySide6.QtGui import QColor, QPainter, QPainterPath
+from PySide6.QtWidgets import QWidget
 
 
 class _SingleRipple(QObject):
-    """单个水波纹的数据和动画驱动
+    """维护一个水波纹的扩散和透明度。
 
-    每次点击创建一个实例，动画结束后由 RippleOverlay 清理
+    Attributes:
+        finished: 完成时携带自身对象的信号。
     """
 
-    # 动画完成时发射，携带自身引用
+
     finished = Signal(object)
 
-    def __init__(self, center: QPoint, max_radius: float,
-                 color: QColor, duration_ms: int, parent: Optional[QObject] = None):
+    def __init__(
+        self,
+        center: QPoint,
+        max_radius: float,
+        color: QColor,
+        duration_ms: int,
+        parent: QObject | None = None,
+    ):
+        """初始化单个水波纹。
+
+        Args:
+            center: 覆盖层坐标中的圆心。
+            max_radius: 终态半径，单位为像素。
+            color: 水波纹基色。
+            duration_ms: 扩散毫秒数。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._center = center
         self._max_radius = max_radius
-        self._color = QColor(color)  # 拷贝一份，避免外部修改
+        self._color = QColor(color)
         self._progress = 0.0
 
-        # 动画: progress 0 → 1
+
         self._anim = QPropertyAnimation(self, b"progress")
         self._anim.setStartValue(0.0)
         self._anim.setEndValue(1.0)
@@ -55,19 +57,19 @@ class _SingleRipple(QObject):
         self._anim.setEasingCurve(QEasingCurve.Type.OutQuad)
         self._anim.finished.connect(self._on_finished)
 
-    # ---- Qt Property: progress ----
+
     def _get_progress(self) -> float:
         return self._progress
 
     def _set_progress(self, value: float):
         self._progress = value
-        # 通知父级（RippleOverlay）重绘
+
         if self.parent():
             self.parent().update()
 
     progress = Property(float, _get_progress, _set_progress)
 
-    # ---- 公开属性 ----
+
     @property
     def center(self) -> QPoint:
         return self._center
@@ -78,13 +80,13 @@ class _SingleRipple(QObject):
 
     @property
     def current_color(self) -> QColor:
-        """返回当前透明度的颜色 (初始 0.35 → 结束 0)"""
+        """返回随扩散进度逐渐透明的颜色。"""
         c = QColor(self._color)
         alpha = int(255 * 0.35 * (1.0 - self._progress))
         c.setAlpha(max(alpha, 0))
         return c
 
-    # ---- 控制 ----
+
     def start(self):
         self._anim.start()
 
@@ -93,36 +95,40 @@ class _SingleRipple(QObject):
 
 
 class RippleOverlay(QWidget):
-    """水波纹覆盖层 — 叠在宿主控件上方，绘制所有活跃的水波纹
+    """在宿主上叠加可独立退场的水波纹。"""
 
-    参数:
-        parent: 宿主控件（水波纹会跟随其大小）
-        color: 水波纹颜色，默认白色半透明
-        ripple_enabled: 是否启用水波纹
-    """
+    def __init__(
+        self, parent: QWidget, color: QColor | None = None, ripple_enabled: bool = True
+    ):
+        """初始化不拦截鼠标的透明覆盖层。
 
-    def __init__(self, parent: QWidget,
-                 color: Optional[QColor] = None,
-                 ripple_enabled: bool = True):
+        Args:
+            parent: 需要覆盖的宿主控件。
+            color: 水波纹基色；省略时使用白色。
+            ripple_enabled: 是否接受新的水波纹请求。
+        """
         super().__init__(parent)
         self._ripples: list[_SingleRipple] = []
         self._color = color or QColor(255, 255, 255)
         self._enabled = ripple_enabled
 
-        # 覆盖层设置: 透明、不接收鼠标事件、跟随父控件大小
+
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setGeometry(parent.rect())
         parent.installEventFilter(self)
 
-    # ---- 公开接口 ----
 
     def add_ripple(self, pos: QPoint):
-        """在指定位置添加一个水波纹"""
+        """在启用状态下添加并播放水波纹。
+
+        Args:
+            pos: 相对覆盖层的点击位置。
+        """
         if not self._enabled:
             return
 
-        # 计算最大半径: 从点击点到四个角的最大距离
+
         w, h = self.width(), self.height()
         max_radius = max(
             _distance(pos, QPoint(0, 0)),
@@ -131,7 +137,7 @@ class RippleOverlay(QWidget):
             _distance(pos, QPoint(w, h)),
         )
 
-        # 动画时长: 按大小缩放，clamp 在 500-900ms，保证肉眼可见的扩散过程
+
         duration = int(max(500, min(max_radius * 4.0, 900)))
 
         ripple = _SingleRipple(pos, max_radius, self._color, duration, parent=self)
@@ -140,42 +146,53 @@ class RippleOverlay(QWidget):
         ripple.start()
 
     def set_color(self, color: QColor):
-        """更新水波纹颜色（影响后续新创建的水波纹）"""
+        """设置后续新水波纹的基色。
+
+        Args:
+            color: 新的基色。
+        """
         self._color = QColor(color)
 
     def set_enabled(self, enabled: bool):
-        """启用/禁用水波纹"""
+        """控制是否接受新水波纹，不取消已在播放的波纹。
+
+        Args:
+            enabled: 是否启用。
+        """
         self._enabled = enabled
 
-    # ---- 内部 ----
 
     def _remove_ripple(self, ripple: _SingleRipple):
-        """动画完成后移除"""
+        """移除已完成的水波纹并安排延迟删除。"""
         if ripple in self._ripples:
             self._ripples.remove(ripple)
             ripple.deleteLater()
             self.update()
 
     def eventFilter(self, obj: QObject, event) -> bool:
-        """跟随父控件大小变化"""
+        """随宿主尺寸变化更新覆盖区域。"""
         if obj == self.parent() and event.type() == QEvent.Type.Resize:
             self.setGeometry(self.parent().rect())
         return False
 
     def paintEvent(self, event):
-        """绘制所有活跃的水波纹"""
+        """在宿主圆角范围内绘制当前水波纹。"""
         if not self._ripples:
             return
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
-        # 裁剪到父控件的圆角区域（水波纹不会溢出按钮边界）
+
         clip_path = QPainterPath()
         radius = self._get_parent_radius()
         clip_path.addRoundedRect(
-            0.0, 0.0, float(self.width()), float(self.height()),
-            radius, radius,
+            0.0,
+            0.0,
+            float(self.width()),
+            float(self.height()),
+            radius,
+            radius,
         )
         painter.setClipPath(clip_path)
 
@@ -191,7 +208,7 @@ class RippleOverlay(QWidget):
         painter.end()
 
     def _get_parent_radius(self) -> float:
-        """尝试从父控件的 QSS 中提取 border-radius"""
+        """读取宿主 QSS 中的像素圆角，未指定时返回 0。"""
         parent = self.parent()
         if parent is None:
             return 0.0

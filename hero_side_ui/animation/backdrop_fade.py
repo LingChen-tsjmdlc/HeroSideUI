@@ -1,53 +1,19 @@
-"""
-BackdropFade —— 遮罩层淡入淡出动画
+"""提供遮罩淡入淡出的进度控制。"""
 
-通用遮罩渐入渐出控制器，供 Popover / Modal / Drawer 等浮层组件的
-backdrop 子 widget 复用。
-
-核心能力:
-  - 通过 Qt Property `progress`（0→1）驱动整体透明度
-  - owner 的 paintEvent 读 `progress_value()`，用 `painter.setOpacity()`
-    实现淡入淡出（painter 自绘场景）
-  - 支持独立的进/出时长与曲线
-  - play_out 动画结束时自动 hide，避免 owner 手动管生命周期
-
-典型用法::
-
-    class MyBackdrop(QWidget):
-        def __init__(self, ...):
-            super().__init__(...)
-            self._fade = BackdropFade(
-                owner=self, duration_in=260, duration_out=200,
-            )
-
-        def paintEvent(self, event):
-            p = QPainter(self)
-            p.setOpacity(self._fade.progress_value())
-            ...
-
-    # 显示：
-    backdrop.show()
-    backdrop._fade.play_in()
-    # 关闭：
-    backdrop._fade.play_out()  # 动画结束自动 hide
-"""
-
-from PySide6.QtWidgets import QWidget
 from PySide6.QtCore import (
-    QObject, QPropertyAnimation, QEasingCurve, Property,
+    Property,
+    QEasingCurve,
+    QObject,
+    QPropertyAnimation,
 )
-from typing import Optional
+from PySide6.QtWidgets import QWidget
 
 
 class BackdropFade(QObject):
-    """遮罩层渐入渐出动画驱动器。
+    """驱动遮罩透明度进度并请求宿主重绘。
 
-    参数:
-        owner: 遮罩 widget 本体（动画结束后会被 hide）
-        duration_in: 渐入时长 (ms)
-        duration_out: 渐出时长 (ms)
-        easing: 缓动曲线（默认 OutCubic）
-        auto_hide_on_out: play_out 结束后是否自动 hide owner
+    Attributes:
+        progress: 0 到 1 的当前透明度进度。
     """
 
     def __init__(
@@ -57,8 +23,18 @@ class BackdropFade(QObject):
         duration_out: int = 200,
         easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
         auto_hide_on_out: bool = True,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
     ):
+        """初始化遮罩控制器。
+
+        Args:
+            owner: 负责绘制遮罩的 QWidget。
+            duration_in: 淡入毫秒数。
+            duration_out: 淡出毫秒数。
+            easing: 进出场共用的缓动曲线。
+            auto_hide_on_out: 淡出完成后是否隐藏宿主。
+            parent: Qt 父对象；省略时使用 owner。
+        """
         super().__init__(parent or owner)
         self._owner = owner
         self._duration_in = duration_in
@@ -71,7 +47,7 @@ class BackdropFade(QObject):
         self._anim.setEasingCurve(self._easing)
         self._anim.finished.connect(self._on_finished)
 
-    # ---- Qt property: progress ----
+
     def _get_progress(self) -> float:
         return self._progress
 
@@ -82,10 +58,12 @@ class BackdropFade(QObject):
     progress = Property(float, _get_progress, _set_progress)
 
     def progress_value(self) -> float:
+        """返回当前遮罩进度。"""
         return self._progress
 
-    # ---- 播放控制 ----
+
     def play_in(self):
+        """从当前进度淡入。"""
         self._anim.stop()
         self._anim.setDuration(self._duration_in)
         self._anim.setStartValue(self._progress)
@@ -93,6 +71,7 @@ class BackdropFade(QObject):
         self._anim.start()
 
     def play_out(self):
+        """从当前进度淡出。"""
         self._anim.stop()
         self._anim.setDuration(self._duration_out)
         self._anim.setStartValue(self._progress)
@@ -100,5 +79,6 @@ class BackdropFade(QObject):
         self._anim.start()
 
     def _on_finished(self):
+        """按配置在淡出完成后隐藏遮罩。"""
         if self._auto_hide and self._progress <= 0.01:
             self._owner.hide()

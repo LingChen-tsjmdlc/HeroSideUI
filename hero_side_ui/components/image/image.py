@@ -15,12 +15,12 @@ shadow 用 QGraphicsDropShadowEffect 挂在 wrapper 上。
 
 from __future__ import annotations
 
+from ...animation import tween_property
+
 from typing import Optional
 
 from PySide6.QtCore import (
     Signal,
-    QPropertyAnimation,
-    QEasingCurve,
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget
@@ -140,14 +140,10 @@ class Image(QWidget):
         self._img.raise_()
 
         # zoom 动画
-        self._zoom_anim = QPropertyAnimation(self._img, b"zoomFactor")
-        self._zoom_anim.setDuration(300)
-        self._zoom_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._zoom_anim = None
 
         # fade-in 动画（loaded 后 opacity 0→1，对齐 transition-opacity 300ms）
-        self._fade_anim = QPropertyAnimation(self._img, b"fadeOpacity")
-        self._fade_anim.setDuration(300)
-        self._fade_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._fade_anim = None
 
         # rememove_wrapper：彻底简化为单 QLabel 行为
         if self._remove_wrapper:
@@ -226,13 +222,8 @@ class Image(QWidget):
             self._img.raise_()
 
     def _fade_in(self):
-        if self._disable_animation:
-            self._img.fadeOpacity = 1.0
-            return
-        self._fade_anim.stop()
-        self._fade_anim.setStartValue(self._img.fadeOpacity)
-        self._fade_anim.setEndValue(1.0)
-        self._fade_anim.start()
+        tween_property(self._img, "_fade_anim", b"fadeOpacity", 1.0, owner=self,
+                       duration=300, animated=not self._disable_animation)
 
     # ============================================================
     # 阴影
@@ -304,24 +295,14 @@ class Image(QWidget):
     # ============================================================
     def enterEvent(self, event):
         if self._is_zoomed and self._image_status == "loaded":
-            self._zoom_anim.stop()
-            self._zoom_anim.setStartValue(self._img.zoomFactor)
-            self._zoom_anim.setEndValue(self._zoom_factor)
-            if self._disable_animation:
-                self._img.zoomFactor = self._zoom_factor
-            else:
-                self._zoom_anim.start()
+            tween_property(self._img, "_zoom_anim", b"zoomFactor", self._zoom_factor,
+                           owner=self, duration=300, animated=not self._disable_animation)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self._is_zoomed:
-            self._zoom_anim.stop()
-            self._zoom_anim.setStartValue(self._img.zoomFactor)
-            self._zoom_anim.setEndValue(1.0)
-            if self._disable_animation:
-                self._img.zoomFactor = 1.0
-            else:
-                self._zoom_anim.start()
+            tween_property(self._img, "_zoom_anim", b"zoomFactor", 1.0,
+                           owner=self, duration=300, animated=not self._disable_animation)
         super().leaveEvent(event)
 
     # ============================================================

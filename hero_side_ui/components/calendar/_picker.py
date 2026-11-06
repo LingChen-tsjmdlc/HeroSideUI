@@ -10,14 +10,14 @@
 
 from __future__ import annotations
 
+from ...animation import tween_value
+
 from typing import List, Optional
 
 from PySide6.QtCore import (
-    QEasingCurve,
     QRectF,
     Qt,
     QTimer,
-    QVariantAnimation,
     Signal,
 )
 from PySide6.QtGui import QColor, QLinearGradient, QPainter
@@ -63,10 +63,7 @@ class _PickerColumn(QScrollArea):
         self.viewport().setAutoFillBackground(False)
 
         # 平滑滚动动画
-        self._anim = QVariantAnimation(self)
-        self._anim.setDuration(_SNAP_ANIM_MS)
-        self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-        self._anim.valueChanged.connect(lambda v: self.verticalScrollBar().setValue(int(v)))
+        self._anim = None
 
         # 停止判定
         self._settle = QTimer(self)
@@ -147,28 +144,16 @@ class _PickerColumn(QScrollArea):
     def _animate_center(self, idx: int, *, emit: bool) -> None:
         target = self._target_for(idx)
         bar = self.verticalScrollBar()
-        if target == bar.value():
-            self._update_item_colors()
-            if emit:
-                self.value_committed.emit(self._items[idx][0])
-            return
         self._snapping = True
-        self._anim.stop()
-        self._anim.setStartValue(bar.value())
-        self._anim.setEndValue(target)
 
-        def done(_s=None):
+        def done():
             self._snapping = False
             self._update_item_colors()
             if emit:
                 self.value_committed.emit(self._items[idx][0])
-            try:
-                self._anim.finished.disconnect(done)
-            except (RuntimeError, TypeError):
-                pass
 
-        self._anim.finished.connect(done)
-        self._anim.start()
+        tween_value(self, "_anim", bar.value(), target, lambda v: bar.setValue(int(v)),
+                    duration=_SNAP_ANIM_MS, on_finished=done, animated=target != bar.value())
 
     def scroll_to_value(self, value, *, animated: bool) -> None:
         idx = self._value_to_index.get(value)

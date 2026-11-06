@@ -4,11 +4,11 @@
 也可单独使用（会退化到 splitted 外观）。
 """
 
+from ...animation import tween_property
+
 from typing import Optional
 
 from PySide6.QtCore import (
-    QEasingCurve,
-    QPropertyAnimation,
     Qt,
     Signal,
 )
@@ -188,9 +188,7 @@ class AccordionItem(QWidget):
         )
 
         # 箭头旋转动画（独立管理）
-        self._rotation_anim = QPropertyAnimation(self._indicator, b"rotation")
-        self._rotation_anim.setDuration(400)
-        self._rotation_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
+        self._rotation_anim = None
 
         # trigger 按压透明度反馈
         self._trigger_opacity = QGraphicsOpacityEffect(self._trigger)
@@ -340,37 +338,21 @@ class AccordionItem(QWidget):
             self.expand()
 
     def expand(self):
-        """展开内容区"""
         if self._expanded and not self._collapse_anim.is_animating:
             return
         self._expanded = True
-
-        # 折叠动画（高度+透明度）
         self._collapse_anim.expand()
-
-        # 箭头旋转: → 90°
-        self._rotation_anim.stop()
-        self._rotation_anim.setStartValue(self._indicator.rotation)
-        self._rotation_anim.setEndValue(90.0)
-        self._rotation_anim.start()
-
+        tween_property(self._indicator, "_rotation_anim", b"rotation", 90.0,
+                       owner=self, duration=400)
         self.expanded_changed.emit(True)
 
     def collapse(self):
-        """收起内容区"""
         if not self._expanded and not self._collapse_anim.is_animating:
             return
         self._expanded = False
-
-        # 折叠动画（透明度先行 → 高度跟随）
         self._collapse_anim.collapse()
-
-        # 箭头旋转: → 0°
-        self._rotation_anim.stop()
-        self._rotation_anim.setStartValue(self._indicator.rotation)
-        self._rotation_anim.setEndValue(0.0)
-        self._rotation_anim.start()
-
+        tween_property(self._indicator, "_rotation_anim", b"rotation", 0.0,
+                       owner=self, duration=400)
         self.expanded_changed.emit(False)
 
     # ---- 公共 API ----

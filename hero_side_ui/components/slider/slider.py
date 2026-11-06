@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation.tween import stop_tween, tween_value
+from ...animation.tween import tween_value
 from ...core import ThemeProvider
 from ...themes import SLIDER_SIZES
 from ..text import Text
@@ -386,19 +386,10 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 拖拽 scale-80 动画
     # ============================================================
     def _animate_press(self, idx: int, target: float):
-        if self._disable_animation or self._disable_thumb_scale:
-            stop_tween(self, f"_drag_runner_{idx}")
-            self._drag_press_t[idx] = target
-            self._canvas.update()
-            return
-        tween_value(
-            self,
-            f"_drag_runner_{idx}",
-            float(self._drag_press_t[idx]),
-            float(target),
-            lambda v, i=idx: self._on_press_step(i, v),
-            duration=_DRAG_PRESS_DURATION,
-        )
+        tween_value(self, f"_drag_runner_{idx}", float(self._drag_press_t[idx]),
+                    float(target), lambda value: self._on_press_step(idx, value),
+                    duration=_DRAG_PRESS_DURATION,
+                    animated=not self._disable_animation and not self._disable_thumb_scale)
 
     def _on_press_step(self, idx: int, v):
         self._drag_press_t[idx] = float(v)
