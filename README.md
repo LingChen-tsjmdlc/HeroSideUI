@@ -82,6 +82,8 @@ uv run python examples/spacer/demo.py     # Spacer
 
 各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录。
 
+架构整理方向与公共能力接入约束见 [架构整理与演进规则](docs/architecture.md)；具体复现与验证边界见 [2026-11-06 审查验证明细](docs/architecture-audit-2026-11-06.md)。
+
 ### 已完成组件（51 / HeroUI v2 复刻全部完成）
 
 | 组件                     | 文档                                        | 状态 |
