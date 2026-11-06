@@ -1,5 +1,6 @@
 # Components module
 from .button import Button
+from .icon import Icon
 from .accordion import Accordion, AccordionItem
 from .input import Input
 from .textarea import Textarea
@@ -65,6 +66,7 @@ from .toast import (
 
 __all__ = [
     "Button",
+    "Icon",
     "Accordion",
     "AccordionItem",
     "Input",

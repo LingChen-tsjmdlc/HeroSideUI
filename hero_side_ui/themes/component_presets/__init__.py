@@ -19,6 +19,7 @@ HeroUI v2 组件级主题预设 (Component Presets)
 """
 
 from .button import BUTTON_SIZES, VALID_BUTTON_VARIANTS
+from .icon import ICON_SIZES
 from .accordion import ACCORDION_SIZES
 from .input import INPUT_SIZES, NUMBER_INPUT_MIN_WIDTHS
 from .date_input import (
@@ -141,6 +142,7 @@ from .breadcrumbs import (
 )
 
 __all__ = [
+    "ICON_SIZES",
     "BUTTON_SIZES",
     "ACCORDION_SIZES",
     "INPUT_SIZES",

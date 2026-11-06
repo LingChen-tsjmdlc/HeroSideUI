@@ -5,7 +5,7 @@
 > 把 HeroUI v2 的视觉与交互语义完整搬到 Qt 桌面端——外观对齐 Web 版，行为遵循桌面惯例。
 
 - **HeroUI v2 全部组件复刻完成**（51 个，含 DateInput/DatePicker/Table/Calendar/Dropdown/Toast/Drawer/Markdown 等高复杂度组件）
-- 另规划 15 个桌面端专属组件（Dialog / ContextMenu / Window / Tree 等）
+- 桌面端扩展已提供 Icon，另有 14 个组件待开发（Dialog / ContextMenu / Window / Tree 等）
 
 ---
 
@@ -29,8 +29,8 @@
 ### 安装
 
 ```bash
-# 从 PyPI 安装
-pip install herosideui[pyside6]
+# 从 Test PyPI 安装
+pip install herosideui
 
 # 或从源码
 git clone https://github.com/LingChen-tsjmdlc/HeroSideUI
@@ -73,6 +73,7 @@ app.exec()
 uv run python examples/button/demo.py     # Button
 uv run python examples/input_otp/demo.py  # InputOTP
 uv run python examples/spacer/demo.py     # Spacer
+uv run python examples/icon/demo.py       # Icon：内置离线图标 + pyside-iconify
 # ... 其余见 examples/ 目录，一律 examples/<组件>/demo.py
 ```
 
@@ -84,7 +85,7 @@ uv run python examples/spacer/demo.py     # Spacer
 
 架构整理方向与公共能力接入约束见 [架构整理与演进规则](docs/architecture.md)；具体复现与验证边界见 [2026-11-06 审查验证明细](docs/architecture-audit-2026-11-06.md)。
 
-### 已完成组件（51 / HeroUI v2 复刻全部完成）
+### 已完成组件（51 个 HeroUI v2 复刻 + Icon 桌面端扩展）
 
 | 组件                     | 文档                                        | 状态 |
 | ------------------------ | ------------------------------------------- | ---- |
@@ -139,6 +140,9 @@ uv run python examples/spacer/demo.py     # Spacer
 | InputOTP 验证码输入框    | [input_otp.md](docs/input_otp.md)           | ✅   |
 | Breadcrumbs 面包屑导航   | [breadcrumbs.md](docs/breadcrumbs.md)       | ✅   |
 | Spacer 间距填充器        | [spacer.md](docs/spacer.md)                 | ✅   |
+| Icon 图标                | [icon.md](docs/icon.md)                     | ✅   |
+
+Icon 基于 [pyside-iconify](https://github.com/LingChen-tsjmdlc/pyside-iconify)；安装本库后也可以直接使用它的公开 API。组件内置的 52 个图标随包离线提供，应用仍可联网加载其他图标。资源入口、主题与静态图标槽位的使用边界见 [Icon 文档](docs/icon.md)。
 
 ### 待开发组件 — 桌面端专属
 
@@ -154,7 +158,6 @@ uv run python examples/spacer/demo.py     # Spacer
 | SplitView 分割面板          | 左右/上下可拖拽调整的分割视图，IDE / 文件管理器高频                                       | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
 | CommandBar 工具栏           | 工具栏操作按钮组 + 更多按钮折叠溢出                                                       | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
 | ColorPicker 颜色选择器      | 取色板 + 预设色 + 自定义 HEX/RGB 输入 + 透明度                                            | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
-| Icon 图标                   | 基于 Iconify 的矢量图标，联网获取百万级图标库 + 颜色/尺寸/旋转                            | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
 | AudioPlayer 音频播放器      | 播放控件 + 进度条 + 音量 + 支持主流格式                                                   | ⭐⭐⭐⭐   | ❤️❤️❤️❤️   | 🔲 待开发 |
 | VideoPlayer 视频播放器      | 视频画面 + 播放控件 + 全屏 + 支持主流格式                                                 | ⭐⭐⭐⭐⭐ | ❤️❤️❤️❤️   | 🔲 待开发 |
 | FlowLayout 流式布局         | 自动换行排列子控件，Chip/Tag/Badge 展示必备                                               | ⭐⭐       | ❤️❤️❤️     | 🔲 待开发 |
@@ -177,7 +180,7 @@ uv run python examples/spacer/demo.py     # Spacer
 | DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                                                                    |
 | Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换                                                    |
 
-> **进度**：HeroUI v2 复刻 **51 / 51 全部完成**；桌面端专属待开发 **15** 个；不计划开发 **7** 个。
+> **进度**：HeroUI v2 复刻 **51 / 51 全部完成**；桌面端专属完成 **1 / 15** 个，待开发 **14** 个；不计划开发 **7** 个。
 
 ---
 
@@ -231,7 +234,8 @@ HeroSideUI/
 │   │   ├── font.py              #   字体系统 —— 通用
 │   │   └── component_presets/   #   组件级主题预设（尺寸/阴影/校验表）
 │   ├── animation/               # 动画效果（水波纹 / 按压缩放 / 下划线展开等）
-│   ├── utils/                   # 工具函数（颜色转换 / SVG 图标加载等）
+│   ├── icons/                   # 图标资源与 pyside-iconify 公开 API 适配
+│   ├── utils/                   # 工具函数（颜色转换 / 静态图标兼容入口等）
 │   └── resources/               # 随包分发的静态资源
 │       └── icons/               #   内置 SVG 图标（打进 wheel）
 ├── docs/                        # 组件 API 文档（一组件一 md）

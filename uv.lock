@@ -57,13 +57,14 @@ wheels = [
 
 [[package]]
 name = "herosideui"
-version = "0.16.2"
+version = "0.17.0"
 source = { editable = "." }
 dependencies = [
     { name = "markdown-it-py" },
     { name = "mdit-py-plugins" },
     { name = "pygments" },
     { name = "pyicu-wheels" },
+    { name = "pyside-iconify" },
     { name = "pyside6" },
 ]
 
@@ -87,6 +88,7 @@ requires-dist = [
     { name = "mdit-py-plugins", specifier = ">=0.4.0" },
     { name = "pygments", specifier = ">=2.15.0" },
     { name = "pyicu-wheels", specifier = ">=2.15.2" },
+    { name = "pyside-iconify", specifier = ">=1.2.0,<2" },
     { name = "pyside6", specifier = ">=6.11.0" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
     { name = "pytest-qt", marker = "extra == 'dev'", specifier = ">=4.0.0" },
@@ -305,6 +307,15 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/51/2e/4691a0a5b8a2c3763a22c265b5a72b13d41084cb958d2b1ebc7fb164d90f/pyicu_wheels-2.15.2-cp314-cp314t-win32.whl", hash = "sha256:36cb5a705b7d198b413e243e48c11d02a7ebc33bda5958a0ec9c852f31478a5f", size = 15628512, upload-time = "2026-03-11T12:48:43.906Z" },
     { url = "https://files.pythonhosted.org/packages/85/af/82ee132629fa9eb470c07ca77382358f773236ac3b882471b401d55f8ce8/pyicu_wheels-2.15.2-cp314-cp314t-win_amd64.whl", hash = "sha256:ce369461880be7db5eaf60d640f34ddee78b70c225bd03f9f7df2932ef5a09b9", size = 16204048, upload-time = "2026-03-11T12:48:47.209Z" },
     { url = "https://files.pythonhosted.org/packages/1e/b8/7f8dad7a93413ab9fd7fdcf0108bcc31f5e6d3b7d523b99a062e1da6c129/pyicu_wheels-2.15.2-cp314-cp314t-win_arm64.whl", hash = "sha256:2d193aab4f69df4da72dcc53dcbbefb2a31eca927589573766cc8beed82f9d58", size = 15718321, upload-time = "2026-03-11T12:48:50.725Z" },
+]
+
+[[package]]
+name = "pyside-iconify"
+version = "1.2.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/68/88/c6de1f251d5b75ab3fa22d4c477b947ce146f1327c98c63f765ea2905a08/pyside_iconify-1.2.0.tar.gz", hash = "sha256:3f4528a3be7edd4715452d3f6259726dfeffd0551202975d5b1cd7533e6d2323", size = 214823, upload-time = "2026-10-27T09:14:53.981Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/ed/63/d74d8e90face39f94dea75af936aa5ee792d613cbb4eef0f645c769752bf/pyside_iconify-1.2.0-py3-none-any.whl", hash = "sha256:e93a7aaaa1620092462f2f053e1ffd4906dca1774054d20b917a796c71c0a17f", size = 117124, upload-time = "2026-10-27T09:14:52.423Z" },
 ]
 
 [[package]]

@@ -4,7 +4,7 @@
 
 HeroSideUI 的整理目标是让新增组件持续遵循同一套职责划分、依赖方向和接入规则，使同类能力的修改集中在明确的拥有者中，并保持公开 API 稳定。
 
-本文基于 0.16.1、提交 `887be09d53ed216cac57e4fe6d437afecbb1f454` 的审查，区分已观察到的结构问题与建议建立的约束。**约束和目录方案尚未实施为代码门禁。**运行缺陷、验证环境、复现方法和测试范围保存在 [2026-11-06 审查验证明细](architecture-audit-2026-11-06.md)。
+本文基于 0.16.1、提交 `887be09d53ed216cac57e4fe6d437afecbb1f454` 的审查，区分已观察到的结构问题与建议建立的约束。**整体约束和目录方案尚未实施为代码门禁；图标能力已按下方接入记录落实局部边界与测试。**运行缺陷、验证环境、复现方法和测试范围保存在 [2026-11-06 审查验证明细](architecture-audit-2026-11-06.md)。
 
 现有“一组件一包”、主题 Token、Provider 和公共动画可以继续作为基础。当前需要治理的核心是：公共能力已经存在，但抽取、接入和后续新增组件没有形成持续一致的规则。
 
@@ -205,6 +205,31 @@ flowchart TD
 统一主题与字体刷新、逻辑状态与派生状态的职责，以及全局设施安装和恢复规则。根据已决定的依赖策略处理 Token、工具、运行时与公开导出之间的边界，并加入能够持续执行的检查。
 
 **验收：**新增组件可以遵循稳定接入点；已有特殊路径有明确去向；CI 或评审能够识别新增违规，而非依靠维护者记住全部历史。
+
+## 图标能力的接入记录
+
+2026-11-06，新增 `Icon` 时将公共实现与已知消费者一起接入，作为 ARCH-01 的局部实践。该工作不代表动画、输入或浮层等其他共享能力已完成迁移。
+
+| 能力 | 拥有者与入口 | 消费者与约束 |
+| --- | --- | --- |
+| 图标渲染、缓存、在线加载、hover 与动画 | 正式依赖 `pyside-iconify>=1.2.0,<2` 的公开 API | 不复制渲染器、下载器、动画驱动或请求状态机；应用可直接使用该生态 |
+| 内置名称、外部 SVG 与 `IconData` 的统一解析 | `hero_side_ui/icons/` | `Icon` 与旧 `load_svg_icon()` 共用；不引用 Provider、不接管网络策略 |
+| 离线资源 | 现有 `resources/icons/*.svg` 为唯一内置资源源文件 | 惰性读取、注册至保留的 `herosideui:` 前缀；不新增第二份 JSON 图标数据，也不覆盖普通 Iconify 前缀 |
+| HeroUI 尺寸与语义颜色、局部主题 | `components/icon/`，尺寸放在 `themes/component_presets/icon.py` | 基于 `IconWidget` 的控件适配；不操作依赖库私有字段 |
+| 旧静态快照 API | `utils/icon_utils.py` 保留兼容层，转调 `icons/` | 所有已通过该入口加载图标的组件同步切换后端，不逐个复制适配逻辑 |
+
+旧入口的已知消费者包括 Button、ThemeSwitcher、Accordion、Input、Textarea、Autocomplete、Select、Alert、Toast、Avatar、Breadcrumbs、Calendar、NumberInput、Pagination、Listbox、Tabs、Slider、Table、Link 和 Kbd。迁移后仍保持内置名称、SVG 路径、`color="original"`、描边覆盖和缺失透明位图契约。
+
+保留差异与后续边界：
+
+- `load_svg_icon()` 保留 Provider 感知的默认对比色和 DPR=1 的静态尺寸契约。它是旧 API 的兼容边界；`icons/` 资源层自身不读取 Provider。新独立图标使用支持异步刷新和高 DPI 的 `Icon`。
+- 旧组件字符串图标槽位仍是静态快照。远程图标需先预加载再设置；没有把它们隐式改为带请求生命周期的控件。
+- Checkbox 的延迟描勾与 Switch 的轨道内图形等组件自绘语义仍由原组件持有，不在本次资源型图标迁移中改写。已有动画复用问题继续按 ARCH-01 追踪。
+- HeroSideUI 不调用 `set_offline()`，不改变依赖库默认配置。内置数据已在本地，用户的其他图标仍走默认客户端；没有建立第二套全局客户端或声称两者完全隔离。
+
+验证入口为 [资源与兼容测试](../tests/utils/test_icon_resources.py)、[Icon 消费者测试](../tests/components/test_icon.py) 和既有 [静态图标测试](../tests/utils/test_icon_utils.py)。除绘制、主题、离线与在线共存行为外，导入边界测试限制生产代码只有图标资源包与 Icon 适配包可以直接引用 `pyside_iconify`，且仅引用其公开 API。
+
+API 与使用示例见 [Icon 文档](icon.md)。
 
 ## 架构整理的完成标准
 

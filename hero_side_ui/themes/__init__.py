@@ -3,6 +3,7 @@ from .colors import HEROUI_COLORS
 from .radius import RADIUS
 from .component_presets import (
     BUTTON_SIZES,
+    ICON_SIZES,
     VALID_BUTTON_VARIANTS,
     ACCORDION_SIZES,
     INPUT_SIZES,
@@ -141,6 +142,7 @@ def __getattr__(name: str):
 
 
 __all__ = [
+    "ICON_SIZES",
     "HEROUI_COLORS",
     "RADIUS",
     "FONT_FAMILY",
