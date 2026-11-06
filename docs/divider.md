@@ -138,6 +138,42 @@ card.add_footer(footer)
 
 ---
 
+## 已知设计限制与修复建议
+
+### 1. 布局对齐标记下分割线不可见（无内在首选宽度）
+
+**现象**：把 Divider 用对齐标记加入布局时，分割线完全不可见：
+
+```python
+# 反例：线会消失
+layout.addWidget(divider, 0, Qt.AlignmentFlag.AlignHCenter)
+```
+
+**根因**：Qt 布局中带对齐标记的条目不参与拉伸，按 `sizeHint()` 给位。Divider
+的铺满能力来自 `sizePolicy(Expanding, Fixed)`，但该策略只在布局允许拉伸的语
+境下生效；Divider 本体只有 QSS 背景色、无内容，`sizeHint` 塌到约 0px，对齐
+语境下整条线消失。
+
+**与上游的差距**：React 版 Divider 自带 `w-full`（width: 100%）作为内在属
+性，放入任何容器都天然铺满；PySide 移植版把「铺满」寄托在使用方不加对齐标
+记上——契约只保了一半。
+
+**规避方式**（当前版本）：
+
+```python
+# 正例 1：不带对齐标记，由 Expanding 策略铺满
+layout.addWidget(divider)
+
+# 正例 2：需要对齐/定宽场景，显式固定几何
+divider.setFixedWidth(120)
+```
+
+**修复建议**：组件覆写 `sizeHint()`，给出确定的首选尺寸（horizontal →
+`QSize(默认宽, thickness)`，vertical → `QSize(thickness, 默认高)`），使任何
+布局语境下首选尺寸都是确定的一条线，而非依赖使用方布局写法。
+
+---
+
 ## 示例文件
 
 查看 [examples/divider/](../examples/divider/) 目录：

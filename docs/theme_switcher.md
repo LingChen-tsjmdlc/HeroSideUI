@@ -78,7 +78,8 @@ switcher = ThemeSwitcher(
 | `size`       | `str`           | `"md"`                  | Button 尺寸                            |
 | `radius`     | `str`           | `"full"`                | Button 圆角                            |
 
-注：`icon_only` 被 ThemeSwitcher 强制设为 `True`（正方形按钮），不允许用户覆盖。
+注：`icon_only` 与 `theme` 被 ThemeSwitcher 内部固定（正方形按钮 / 永远 auto 跟随全局），
+不在构造参数中。传入会直接抛 `TypeError`。
 
 ### 动态 API
 

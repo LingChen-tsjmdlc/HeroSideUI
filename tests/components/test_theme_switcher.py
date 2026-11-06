@@ -87,6 +87,13 @@ class TestThemeSwitcherInit:
         assert sw._sun_icon_src == "heroicons--check-solid"
         assert sw._moon_icon_src == "heroicons--x-circle-solid"
 
+    def test_forced_params_raise(self, qtbot):
+        """icon_only / theme 被内部固定，传入应直接抛 TypeError"""
+        with pytest.raises(TypeError):
+            ThemeSwitcher(icon_only=False)
+        with pytest.raises(TypeError):
+            ThemeSwitcher(theme="dark")
+
 
 class TestThemeSwitcherClick:
     """点击行为"""

@@ -89,13 +89,7 @@ class ThemeSwitcher(Button):
         size: str = "md",
         radius: Optional[str] = "full",
         parent: Optional[QObject] = None,
-        **kwargs,
     ):
-        # ThemeSwitcher 自身始终跟随全局（auto），不需要用户改 theme
-        kwargs.pop("theme", None)
-        # icon_only 由 ThemeSwitcher 强制开启，不允许用户覆盖
-        kwargs.pop("icon_only", None)
-
         super().__init__(
             text="",
             color=color,
@@ -105,7 +99,6 @@ class ThemeSwitcher(Button):
             icon_only=True,
             parent=parent,
             theme="auto",
-            **kwargs,
         )
 
         self._sun_icon_src = sun_icon

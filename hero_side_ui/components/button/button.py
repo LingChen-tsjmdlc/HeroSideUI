@@ -62,7 +62,7 @@ class Button(QPushButton):
         icon_color=None,
         parent: Optional[QObject] = None,
         theme: str = "auto",
-        **kwargs,
+        disable_ripple: bool = False,
     ):
         super().__init__(text, parent)
 
@@ -79,10 +79,11 @@ class Button(QPushButton):
         self._is_hovered = False
         self._theme_mode = theme  # 用户设定的模式: "auto"/"light"/"dark"
         self._theme = self._resolve_theme(theme)  # 实际生效: "light"/"dark"
-        self._disable_ripple = kwargs.get("disable_ripple", False)
+        self._disable_ripple = disable_ripple
 
-        # 应用样式
+        # 样式与几何拆分：样式 setter 只重跑 _apply_styles，不冲外部几何定制
         self._apply_styles()
+        self._apply_geometry()
 
         # 水波纹覆盖层
         self._ripple_overlay = None
@@ -115,7 +116,7 @@ class Button(QPushButton):
     # ============================================================
 
     def _apply_styles(self):
-        """生成并应用完整的 QSS 样式"""
+        """应用视觉样式：QSS + 字体 + 行为属性；不碰几何"""
         qss = self._build_qss()
         self.setStyleSheet(qss)
 
@@ -147,33 +148,32 @@ class Button(QPushButton):
             weight_token = "medium"
         self.setFont(make_text_qfont(fs, weight_token))
 
-        if self._full_width:
-            from PySide6.QtWidgets import QSizePolicy
-
-            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-        elif self._icon_only:
-            # icon_only: 把按钮锁成正方形（边长 = 高度，或外部 override）
-            if self._icon_only_side_override is not None:
-                side = int(self._icon_only_side_override)
-            else:
-                size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
-                h = int(size_config["height"].replace("px", ""))
-                padding_y = size_config["padding_y"]
-                side = h + 2 * padding_y
-            from PySide6.QtWidgets import QSizePolicy
-
-            self.setFixedSize(side, side)
-            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
-        else:
-            # 普通按钮：宽度按内容自适应，绝不允许弹性缩小，允许弹性增大
-            from PySide6.QtWidgets import QSizePolicy
-
-            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
-
         self.setMouseTracking(True)
         from PySide6.QtCore import Qt
 
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def _apply_geometry(self):
+        """应用几何策略：sizePolicy + 固定尺寸；仅在 icon_only/side/size/full_width 变化时调用"""
+        from PySide6.QtWidgets import QSizePolicy
+
+        if self._icon_only:
+            side = self._resolve_icon_only_side()
+            self.setFixedSize(side, side)
+            self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
+        elif self._full_width:
+            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        else:
+            # 普通按钮：宽度按内容自适应，绝不允许弹性缩小，允许弹性增大
+            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+
+    def _resolve_icon_only_side(self) -> int:
+        """解析 icon_only 边长：外部 override 优先，否则按尺寸 token 自动算"""
+        if self._icon_only_side_override is not None:
+            return int(self._icon_only_side_override)
+        size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
+        h = int(size_config["height"].replace("px", ""))
+        return h + 2 * size_config["padding_y"]
 
     def _build_qss(self) -> str:
         """构建完整的 QSS 样式表"""
@@ -186,12 +186,18 @@ class Button(QPushButton):
         if self._radius == "full":
             padding_x += 8
 
-        # icon_only: padding 对称 + 清空 min-width，避免压扁 icon
+        # icon_only: padding 对称 + QSS 四向 min/max 锁死正方形
+        # （QSS 盒模型属性会覆盖 setFixedSize 的显式最小值，必须同步给出）
         if self._icon_only:
             padding_x = padding_y  # 左右 padding 等于上下
-            min_width = "0"
+            border = 1 if self._variant in ("bordered", "ghost", "faded") else 0
+            content = self._resolve_icon_only_side() - 2 * padding_y - 2 * border
+            box_constraints = (
+                f"min-width: {content}px; max-width: {content}px; "
+                f"min-height: {content}px; max-height: {content}px;"
+            )
         else:
-            min_width = size_config["min_width"]
+            box_constraints = f"min-width: {size_config['min_width']};"
 
         normal_colors, hover_colors, disabled_colors = self._get_variant_styles(colors)
 
@@ -200,7 +206,7 @@ class Button(QPushButton):
             {normal_colors}
             border-radius: {radius};
             font-size: {size_config['font_size']};
-            min-width: {min_width};
+            {box_constraints}
             padding: {padding_y}px {padding_x}px;
             font-weight: {size_config['font_weight']};
             outline: none;
@@ -443,11 +449,8 @@ class Button(QPushButton):
         if self._icon_size_override is not None:
             icon_size = self._icon_size_override
         elif self._icon_only:
-            # icon_only: icon 占按钮约 50%
-            h = int(size_config["height"].replace("px", ""))
-            padding_y = size_config["padding_y"]
-            side = h + 2 * padding_y
-            icon_size = int(side * 0.5)
+            # icon_only: icon 占按钮约 50%（边长与 _apply_geometry/_build_qss 同源）
+            icon_size = int(self._resolve_icon_only_side() * 0.5)
         else:
             # 带文字的按钮：icon 大小跟 font_size 对齐 + 微增
             font_size = int(size_config["font_size"].replace("px", ""))
@@ -492,6 +495,7 @@ class Button(QPushButton):
     def set_size(self, size: str):
         self._size = size
         self._apply_styles()
+        self._apply_geometry()  # size 影响 icon_only 边长，几何需同步
         self._refresh_icon()
 
     def set_radius(self, radius: str):
@@ -549,6 +553,7 @@ class Button(QPushButton):
         """
         self._icon_only_side_override = side
         self._apply_styles()
+        self._apply_geometry()
 
     def set_icon_only(self, icon_only: bool):
         """切换 icon_only 模式（True 时按钮锁成正方形）"""
@@ -557,9 +562,7 @@ class Button(QPushButton):
             # 解除固定尺寸
             self.setMinimumSize(0, 0)
             self.setMaximumSize(16777215, 16777215)
-            from PySide6.QtWidgets import QSizePolicy
-
-            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self._apply_geometry()
         self._apply_styles()
         self._refresh_icon()
 

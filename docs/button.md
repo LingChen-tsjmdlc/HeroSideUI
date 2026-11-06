@@ -27,18 +27,22 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 ## 构造参数
 
-| 参数             | 类型              | 默认值      | 说明                                                              |
-| ---------------- | ----------------- | ----------- | ----------------------------------------------------------------- |
-| `text`           | `str`             | `""`        | 按钮文字                                                          |
-| `color`          | `str`             | `"primary"` | 颜色主题，见下方 [color 可选值](#color-可选值)                    |
-| `variant`        | `str`             | `"solid"`   | 样式变体，见下方 [variant 可选值](#variant-可选值)                |
-| `size`           | `str`             | `"md"`      | 尺寸，见下方 [size 可选值](#size-可选值)                          |
-| `radius`         | `str \| None`     | `None`      | 圆角，`None` 时跟随尺寸默认值。见 [radius 可选值](#radius-可选值) |
-| `is_disabled`    | `bool`            | `False`     | 禁用状态，禁用后样式变灰且不响应交互                              |
-| `full_width`     | `bool`            | `False`     | 是否撑满父容器宽度（`QSizePolicy.Expanding`）                     |
-| `theme`          | `str`             | `"light"`   | 主题模式：`"light"` 亮色 / `"dark"` 暗色                          |
-| `parent`         | `QObject \| None` | `None`      | Qt 父对象                                                         |
-| `disable_ripple` | `bool`            | `False`     | 通过 `**kwargs` 传入，设为 `True` 关闭水波纹效果                  |
+| 参数             | 类型                    | 默认值      | 说明                                                              |
+| ---------------- | ----------------------- | ----------- | ----------------------------------------------------------------- |
+| `text`           | `str`                   | `""`        | 按钮文字                                                          |
+| `color`          | `str`                   | `"primary"` | 颜色主题，见下方 [color 可选值](#color-可选值)                    |
+| `variant`        | `str`                   | `"solid"`   | 样式变体，见下方 [variant 可选值](#variant-可选值)                |
+| `size`           | `str`                   | `"md"`      | 尺寸，见下方 [size 可选值](#size-可选值)                          |
+| `radius`         | `str \| None`           | `None`      | 圆角，`None` 时跟随尺寸默认值。见 [radius 可选值](#radius-可选值) |
+| `is_disabled`    | `bool`                  | `False`     | 禁用状态，禁用后样式变灰且不响应交互                              |
+| `full_width`     | `bool`                  | `False`     | 是否撑满父容器宽度（`QSizePolicy.Expanding`）                     |
+| `icon_only`      | `bool`                  | `False`     | 纯图标模式：锁成正方形，详见 [icon_only 模式](#icon_only-模式)    |
+| `icon`           | `str \| None`           | `None`      | 内置图标名或 SVG 路径，颜色随变体/主题/hover 自动适配             |
+| `icon_size`      | `int \| None`           | `None`      | 显式指定 icon 渲染尺寸（px）                                      |
+| `icon_color`     | `str \| QColor \| None` | `None`      | 显式指定 icon 颜色（覆盖自动配色）                                |
+| `theme`          | `str`                   | `"auto"`    | 主题模式：`"auto"` 跟随 ThemeProvider / `"light"` / `"dark"`      |
+| `parent`         | `QObject \| None`       | `None`      | Qt 父对象                                                         |
+| `disable_ripple` | `bool`                  | `False`     | 设为 `True` 关闭水波纹效果                                        |
 
 ---
 
@@ -112,15 +116,66 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 ---
 
+## icon_only 模式
+
+`icon_only=True` 时按钮锁成正方形（边长 = 尺寸高度 + 2×纵向 padding，sm 为 30、md 为 46），适合纯图标按钮（工具栏、rail、输入框内嵌按钮）。
+
+```python
+btn = Button(icon_only=True, variant="flat")          # 自动边长（sm → 30x30）
+btn.set_icon_only_side(36)                            # 显式锁定边长
+btn.setIcon(QIcon("my.png"))                          # 传 QIcon = 自己管颜色
+btn.set_icon("heroicons--eye-solid")                  # 传字符串 = 自动配色
+btn.set_icon_color("#d4af37")                         # 覆盖自动配色
+btn.set_icon_size(20)                                 # 覆盖 icon 渲染尺寸
+```
+
+### 尺寸规则（重要）
+
+Button 的几何（sizePolicy / 固定尺寸）与视觉（QSS / 字体）是拆开维护的：
+
+- `set_color` / `set_variant` / `set_theme` / `set_radius` 只重刷视觉，**不会碰任何几何**——构造后用 `setFixedSize` 做的外部定制对这四个 setter 天然安全
+- `set_size` / `set_icon_only` / `set_icon_only_side` 会重新应用几何（size 影响 icon_only 边长），外部固定尺寸会被覆盖
+- `icon_only` 模式下仍推荐用 `set_icon_only_side(side)` 锁边长——它是持久 override，样式重建永远尊重它
+
+### 方形保证
+
+QSS 盒模型属性会覆盖 `setFixedSize` 的显式最小值（实测 minimumWidth 从 46 掉到 12），因此 icon_only 模式下 `_build_qss` 会直接输出四向 `min/max-width/height`（content-box 口径：side − 2×padding，带边框变体再减 2×border），保证任何布局挤压下按钮都是正方形。边长由 `_resolve_icon_only_side()` 统一解析（外部 override 优先），几何、QSS、icon 尺寸三处同源。
+
+---
+
+## 设计保证（原「已知缺陷」，已全部修复）
+
+以下是实战踩坑后落实的三项设计保证：
+
+### 1. 外部几何定制不会被样式 setter 冲掉
+
+几何（sizePolicy / 固定尺寸）与视觉（QSS / 字体）拆分为 `_apply_geometry()` 和 `_apply_styles()`：
+`set_color` / `set_variant` / `set_theme` / `set_radius` 只重跑视觉，构造后用 `setFixedSize`
+做的外部定制对它们天然安全。只有 `set_size` / `set_icon_only` / `set_icon_only_side`
+会重新应用几何。
+
+### 2. icon_only 正方形由 QSS 四向约束内置保证
+
+icon_only 模式下 `_build_qss` 直接输出四向 `min/max-width/height`（content-box 口径），
+不依赖使用方追加；边长统一由 `_resolve_icon_only_side()` 解析，几何 / QSS / icon 尺寸同源。
+
+### 3. 构造签名严格校验未知参数
+
+`disable_ripple` 是显式构造参数，构造签名不含 `**kwargs`——传错参数名（如
+`is_icon_only=True`）会直接抛 `TypeError`，而不是静默不生效。
+
+---
+
 ## 主题模式
 
 通过 `theme` 参数控制亮色/暗色模式。
 
 ```python
-# 亮色模式（默认）
-btn_light = Button("Light", color="primary", variant="flat")
+# auto（构造默认值）：跟随 ThemeProvider 全局主题
+btn_auto = Button("Auto", color="primary", variant="flat")
 
-# 暗色模式
+# 显式固定
+btn_light = Button("Light", color="primary", variant="flat", theme="light")
 btn_dark = Button("Dark", color="primary", variant="flat", theme="dark")
 ```
 
