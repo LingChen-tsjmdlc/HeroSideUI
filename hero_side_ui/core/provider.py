@@ -1,17 +1,7 @@
-"""
-HeroSideUIProvider —— 显式初始化门面（可选）
+"""HeroSideUIProvider：core 全局基础设施的显式初始化门面（可选）。
 
-设计定位：
-- 一行注册全套 core 全局基础设施的**显式入口**，用于：定制主题/字体、关闭某些全局开关、写大型项目时把"启动逻辑"集中在一处。
-- **不强制使用**。HeroSideUI 的"开箱即用"铁律不变——任何组件 ``__init__`` 通过 ``ThemeProvider.instance()`` 触发 ``_boot`` 钩子也能得到完整就绪环境。
-
-显式 vs 隐式：
-- ``HeroSideUIProvider.setup(app, ...)`` → 显式路径，按用户参数初始化，**静默**。
-- 用户没调 setup 直接构造组件 → 隐式路径，以**默认值**初始化，第一次降级会发一条
-  双语 warning 提示存在显式入口（仅打一次，便于诊断/上线后可见）。
-
-非门面：和 React 的 ``<HeroUIProvider>`` 不同——PySide 有 ``QApplication`` 单例 +
-全局 ``QPalette``，不需要 children 包裹模式。本类是"统一启动入口"而非"作用域容器"。
+setup() 显式按参数初始化；未调 setup 直接用组件则隐式以默认值初始化并
+warning 提示一次。非 React 式作用域容器，仅统一启动入口。
 """
 
 from __future__ import annotations
@@ -22,32 +12,7 @@ from PySide6.QtWidgets import QApplication
 
 
 class HeroSideUIProvider:
-    """HeroSideUI 全局基础设施的显式启动门面。
-
-    用法（最小）::
-
-        from PySide6.QtWidgets import QApplication
-        from hero_side_ui import HeroSideUIProvider
-
-        app = QApplication([])
-        HeroSideUIProvider.setup(app)
-        # ... 业务代码 ...
-        app.exec()
-
-    用法（带配置）::
-
-        HeroSideUIProvider.setup(
-            app,
-            theme="light",
-            font_family="Microsoft YaHei",
-            font_base_size=14,
-            smooth_scroll=False,   # 嵌入老项目时关掉
-        )
-
-    幂等：多次调用安全，**最后一次** family/base_size/theme 设置生效（覆盖语义）；
-    smooth_scroll/scroll_style 仅以**第一次**为准（全局 filter 一旦装上不再撤销，
-    需要禁用请用 ``SmoothScroll.disable_global()`` / ``ScrollStyle.remove_global()``）。
-    """
+    """HeroSideUI 全局基础设施的显式启动门面。"""
 
     @classmethod
     def setup(
@@ -79,8 +44,8 @@ class HeroSideUIProvider:
                 ``"libpng warning: iCCP: known incorrect sRGB profile"`` 噪声。
                 默认 True。这条警告来自 Qt 内置 PNG 资源，无害但会刷屏。
 
-        Raises:
-            RuntimeError: 调用前 ``QApplication`` 还没创建。
+        Note:
+            调用前 ``QApplication`` 还没创建时会抛 ``RuntimeError``。
         """
         # 1) 确认 app 存在
         if app is None:

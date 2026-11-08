@@ -18,10 +18,28 @@ if TYPE_CHECKING:
 
 class _GlobalClickCatcher(QObject):
     def __init__(self, owner: "Popover"):
+        """构造全局点击监听器。
+
+        Args:
+            owner: 所属的 Popover 实例，用于查询打开状态与几何。
+        """
         super().__init__(owner)
         self._owner = owner
 
     def eventFilter(self, obj, event):
+        """拦截全局鼠标按下事件，实现"点击外部关闭"。
+
+        Args:
+            obj: 事件目标对象。
+            event: Qt 事件对象。
+
+        Returns:
+            bool: 始终返回 False，不拦截事件传播。
+
+        Note:
+            点到 popover 自身或 trigger 时保持打开，让 trigger 的 click
+            逻辑走 toggle，避免出现"点两次才开关"的体感。
+        """
         if event.type() == QEvent.Type.MouseButtonPress:
             if not self._owner._is_open:
                 return False

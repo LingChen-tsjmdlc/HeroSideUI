@@ -1,18 +1,4 @@
-"""Spinner 组件尺寸配置。
-
-对齐 HeroUI v2 整体尺寸；笔触粗细在 HeroUI 原版 sm=2/md=3/lg=3，但 Qt
-自绘下视觉感更弱（CSS border 与 QPen 渲染厚度不同），所以 lg 提到 4px
-让 size 变大时线条同步变粗。
-
-整体直径:
-  default/simple/gradient/spinner: sm=20 / md=32 / lg=40
-  wave/dots:                       sm=20 / md=32 / lg=48
-
-字体:        sm=12 / md=14 / lg=16
-Border:      sm=2  / md=3  / lg=4   ← 自绘修正过
-Dot 直径:    sm=4  / md=6  / lg=10  ← lg 也调粗一档
-Bar 尺寸:    sm 5×1.5 / md 8×2.5 / lg 12×3.5
-"""
+"""Spinner 尺寸：直径/border/dot/bar 各档；lg 笔触自绘修正加粗一档。"""
 
 SPINNER_SIZES = {
     "sm": {

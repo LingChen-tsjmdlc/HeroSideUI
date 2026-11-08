@@ -1,11 +1,4 @@
-"""Textarea 几何/绝对槽/grip drag mixin（私有）。
-
-负责：
-- ``resizeEvent`` / ``showEvent`` 时的子部件重摆
-- 绝对定位槽（``center_right`` / ``bottom_right``）的几何同步
-- 手动 ``_ResizeGrip`` 拖拽产生的高度调整
-- absolute spacer 宽度计算（避免双槽重叠）
-"""
+"""Textarea 几何 mixin：resize/show 重摆、绝对槽同步、grip 拖拽调高。"""
 
 from ...themes import TEXTAREA_SIZES
 
@@ -17,6 +10,7 @@ class _TextareaLayoutMixin:
     # 事件钩子
     # ============================================================
     def resizeEvent(self, event):
+        """尺寸变化时重算高度并重摆 label 与绝对槽。"""
         super().resizeEvent(event)
         # 宽度变化会影响 wrap → 行数 → 高度
         self._update_textarea_height()
@@ -24,6 +18,7 @@ class _TextareaLayoutMixin:
         self._reposition_absolute_holders()
 
     def showEvent(self, event):
+        """显示时重算高度并重摆 label 与绝对槽。"""
         super().showEvent(event)
         self._update_textarea_height()
         self._reposition_inside_label()
@@ -33,18 +28,10 @@ class _TextareaLayoutMixin:
     # 绝对定位槽（center_right / bottom_right）的实时重摆
     # ============================================================
     def _refresh_abs_spacer_width(self):
-        """计算 _abs_spacer 应占的宽度，让 inner 在 layout 里给绝对定位槽让出空间。
+        """计算 _abs_spacer 宽度，让 layout 给绝对定位槽让位防文字撞按钮。
 
-        center_right / bottom_right 是绝对定位 holder（不在 wrapper layout 里），
-        layout 不知道它们存在，inner 会撑满到 wrapper 右内边距 → 文字 wrap 撞按钮。
-        修复：spacer 在 layout 里"代替"它们占位。
-
-        ⚠️ 减去已在 layout 里占位的部分：
-          - top_right_slot 已经在 layout 里给 top_right_content 让位
-          - clear_btn 已经在 layout 里给清除按钮让位
-          - layout spacing (8px) 已经在 _inner 和 top_right_slot 之间留出空隙
-          这些"已让位"的宽度落在 wrapper 右侧的同一 X 范围内，所以 spacer 只需要补
-          "绝对定位 holder 总宽度 - 已让位部分"，否则会重复让位（双槽时尤其明显）。
+        Note:
+            需减去 top_right/clear 等已在 layout 占位的宽度，避免重复让位。
         """
         gap = 3  # 文字与按钮之间的最小呼吸间距（不可调，跟 input 的 padding_x 配合）
 
@@ -83,13 +70,7 @@ class _TextareaLayoutMixin:
             self._abs_spacer.setFixedWidth(need)
 
     def _reposition_absolute_holders(self):
-        """根据 wrapper 当前几何，重摆 center_right_holder 和 bottom_right_holder。
-
-        在 wrapper Resize / textarea 高度变化 / show / 内容变更后调用。
-        位置规则:
-          - center_right: 距 wrapper 右边 `center_right_offset`px，垂直居中
-          - bottom_right: 距 wrapper 右/底 `bottom_right_offset` (right_px, bottom_px)
-        """
+        """按 wrapper 当前几何重摆 center_right 与 bottom_right 两个绝对槽。"""
         # 重新算 spacer 宽度（内容/sizeHint 可能已变）
         self._refresh_abs_spacer_width()
 
@@ -132,11 +113,7 @@ class _TextareaLayoutMixin:
     # 手动拖动 resize：grip drag_delta 信号回调
     # ============================================================
     def _on_grip_drag(self, dx: int, dy: int):
-        """grip 拖动 → 调整 wrapper 高度/宽度
-
-        进入 manual_height_mode（self._manual_height 不为 None），
-        _update_textarea_height 会优先用此值，绕过 auto-resize。
-        """
+        """grip 拖动调整 wrapper 高度/宽度；进入 manual_height_mode 绕过 auto-resize。"""
         if self._resize_mode is None:
             return
 
@@ -162,6 +139,6 @@ class _TextareaLayoutMixin:
         # horizontal/both 暂不实现宽度拖动（textarea 通常 full_width）
 
     def reset_manual_height(self):
-        """清除手动拖动设置的高度，恢复 auto-resize 行为"""
+        """清除手动拖动设置的高度，恢复 auto-resize 行为。"""
         self._manual_height = None
         self._update_textarea_height()

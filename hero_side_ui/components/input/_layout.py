@@ -1,11 +1,4 @@
-"""Input 组件的几何/layout/label-位置 mixin（私有）。
-
-负责：
-- label_placement 切换时的 layout 重排
-- inside-label 的浮起动画几何同步
-- underline bar 的位置同步
-- resize 事件下的重排
-"""
+"""Input 几何/label 位置 mixin：placement 切换重排、浮动动画几何同步。"""
 
 import shiboken6
 from PySide6.QtCore import QPoint, Qt
@@ -18,10 +11,10 @@ class _InputLayoutMixin:
     """Input 的 layout / 几何 mixin。"""
 
     def _size_config(self) -> dict:
-        """当前尺寸档的 token 表。
+        """取当前尺寸档 token 表。
 
-        DateInput 等复用本 mixin 的组件用自己的尺寸表覆盖这里，
-        避免 label 几何按 Input 的表算、其余按自己的表算而错位。
+        Returns:
+            INPUT_SIZES 中的配置字典；复用方可覆盖为自己的尺寸表。
         """
         return INPUT_SIZES.get(self._size, INPUT_SIZES["md"])
 
@@ -29,12 +22,11 @@ class _InputLayoutMixin:
     # label 位置切换
     # ------------------------------------------------------------
     def _relayout_for_label_placement(self):
-        """根据 label_placement 切换 inside / outside / outside-top / outside-left 的 label 显隐
+        """按 label_placement 重排四种布局的 label 显隐与位置。
 
-        - inside: 浮动 label（_inside_label），浮起终点在 inputWrapper 内顶部
-        - outside: 浮动 label（_inside_label），浮起终点在 inputWrapper 上方外部（飞出 wrapper）
-        - outside-top: 静态 label（_outside_label），始终固定在 inputWrapper 上方
-        - outside-left: 静态 label（_outside_left_label），固定在 inputWrapper 左侧
+        Note:
+            outside-top 用上方静态 label；outside-left 用左侧静态 label；
+            inside 与 outside 共用浮动 label，差别只在浮起终点。
         """
         has_label = self._has_label()
 
@@ -56,9 +48,11 @@ class _InputLayoutMixin:
             self._inside_label.setVisible(True)
 
     def _reposition_inside_label(self):
-        """手动摆放浮动 label 的位置（根据当前动画 progress）
+        """按当前动画 progress 手动摆放浮动 label 的位置。
 
-        用于 inside 和 outside 两种 placement。
+        Note:
+            用于 inside 和 outside 两种 placement；无 label 或
+            其它 placement 时直接返回。
         """
         if not self._has_label() or self._label_placement not in ("inside", "outside"):
             return
@@ -67,13 +61,16 @@ class _InputLayoutMixin:
         self._apply_label_progress(progress)
 
     def _apply_label_progress(self, progress: float):
-        """根据 progress 插值 label 的 geometry / fontSize / color
+        """按进度插值 label 的 geometry / 字号 / 颜色。
 
-        label 的 parent 是 Input 根控件，坐标需基于 Input 根容器。
-        resting: label 位于 inputWrapper 垂直中心（模拟 placeholder 位置）
-        floated:
-            - inside:  label 飞到 inputWrapper 内部左上角
-            - outside: label 飞出 inputWrapper 到达 Input 根顶部（在 wrapper 上方外部）
+        Args:
+            progress: 0 为 resting（wrapper 中线），1 为 floated（浮起终点）。
+
+        Note:
+            进程退出 / 组件销毁时动画可能还剩一帧，底层 C++ 对象已析构，
+            用 shiboken6.isValid 守卫掉这一帧；
+            wrapper 的 parent 可能是 outside_left_row，故需 mapTo 换算。
+            字重按 progress 跳阶：>0.5 medium，否则 normal。
         """
         # 进程退出 / 组件销毁时动画可能还剩一帧未跑完，此时底层 C++ 对象已析构，
         # 再访问 self._wrapper 会抛 RuntimeError。守卫掉这一帧。
@@ -149,13 +146,18 @@ class _InputLayoutMixin:
         self._inside_label.adjustSize()
 
     def _on_label_progress(self, progress: float):
-        """LabelFloatAnimation 的回调"""
+        """LabelFloatAnimation 的进度回调。
+
+        Args:
+            progress: 当前动画进度 0.0 ~ 1.0。
+        """
         self._apply_label_progress(progress)
 
     # ------------------------------------------------------------
     # underline 摆放
     # ------------------------------------------------------------
     def _reposition_underline(self):
+        """把 underlined 变体的彩色展开线贴到 wrapper 底部并置顶。"""
         if self._variant != "underlined":
             return
         w = self._wrapper.width()
@@ -164,11 +166,21 @@ class _InputLayoutMixin:
         self._underline.raise_()
 
     def resizeEvent(self, event):
+        """尺寸变化后重摆 underline 与浮动 label。
+
+        Args:
+            event: Qt 尺寸变化事件。
+        """
         super().resizeEvent(event)
         self._reposition_underline()
         self._reposition_inside_label()
 
     def showEvent(self, event):
+        """首次显示后再摆一次，因为构造期 geometry 尚未生效。
+
+        Args:
+            event: Qt 显示事件。
+        """
         super().showEvent(event)
         # 首次显示后再摆放一次，因为构造期 geometry 尚未生效
         self._reposition_inside_label()

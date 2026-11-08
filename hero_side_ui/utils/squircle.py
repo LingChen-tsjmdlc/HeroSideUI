@@ -1,49 +1,8 @@
-"""
-╔══════════════════════════════════════════════════════════════════════╗
-║  实验性功能 — 未集成到组件库(保留供未来讨论)                         ║
-║                                                                      ║
-║  Superellipse (超椭圆 / Squircle) 路径生成器                         ║
-║                                                                      ║
-║  使用 Lamé 曲线方程生成 iOS 风格的平滑圆角矩形：                     ║
-║      |x/a|^n + |y/b|^n = 1                                           ║
-║                                                                      ║
-║  ── 为什么没有集成到组件库？──                                       ║
-║                                                                      ║
-║  2026-06-01 经完整实现 + PS 叠加验证后的决策：                       ║
-║                                                                      ║
-║    1. 视觉差异在小尺寸组件上不够显著（R=8 时偏差约 24px，            ║
-║       但在按钮等小元素上人眼难以分辨）                               ║
-║    2. 集成成本高：每个圆角组件的 paintEvent 都需要                   ║
-║       drawRoundedRect → squircle_path + drawPath，                   ║
-║       QSS 组件（Button/Alert/Accordion）无法使用                     ║
-║    3. 混合使用会导致视觉不一致：部分组件"鼓角"、部分标准圆角         ║
-║    4. 增加后续每个新组件的维护负担                                   ║
-║                                                                      ║
-║  ── 什么场景下值得重新启用？──                                       ║
-║                                                                      ║
-║    - 大尺寸容器类组件：Card / Modal / Dialog / Sheet                 ║
-║      （R=14~20+ 时差异明显，22px+ 偏差肉眼可见）                     ║
-║    - 品牌 icon/logo 容器                                             ║
-║    - 用户明确要求 iOS 风格的项目                                     ║
-║                                                                      ║
-║  ── 技术细节 ──                                                      ║
-║                                                                      ║
-║  参数映射：                                                          ║
-║    smoothness=0.0 → n=2  (椭圆，退化 = 标准圆角)                     ║
-║    smoothness=0.6 → n=5  (iOS 图标风格)                              ║
-║    smoothness=1.0 → n=10 (接近矩形但角部圆滑)                        ║
-║                                                                      ║
-║  算法演进：                                                          ║
-║    v1: Figma corner smoothing (贝塞尔过渡 + 裁切圆弧)                ║
-║        → 最大偏差 < 1px，PS 叠加验证完全重合 → 废弃                  ║
-║    v2 (当前): Superellipse (Lamé 曲线)                               ║
-║        → 最大偏差 20-24px (R=14, n=5)，视觉差异明显                  ║
-║                                                                      ║
-║  参考：                                                              ║
-║    - Apple iOS icon shape (since iOS 7)                              ║
-║    - "Desperately Seeking Squircles" — Figma Blog                    ║
-║    - Piet Hein's Superellipse                                        ║
-╚══════════════════════════════════════════════════════════════════════╝
+"""Squircle 实验性超椭圆路径生成器（未集成，保留供未来讨论）。
+
+基于 Lamé 曲线 |x/a|^n + |y/b|^n = 1；smoothness 0→n=2（标准圆角）、
+0.6→n=5（iOS 风格）、1→n=10。未集成原因：小尺寸视觉差异不显著、QSS
+组件无法使用、混用导致不一致。适合 R>=20 大容器或明确要 iOS 风格时重启。
 """
 
 import math
@@ -103,14 +62,14 @@ def squircle_path(
       - 超椭圆：整体连续平滑曲线，角部自然外鼓 (G2+)
 
     Args:
-        rect:       矩形区域
-        radius:     圆角半径 hint (px)。用于退化回标准圆角的阈值判断；
-                     超椭圆本身由 smoothness 控制形状，不直接使用此值
-        smoothness: 平滑度/超椭圆指数 [0, 1]
-                    0=椭圆(n=2), 0.6=iOS(n=5), 1=近方(n=10)
+        rect: 矩形区域。
+        radius: 圆角半径 hint (px)。仅用于退化回标准圆角的阈值判断；
+            超椭圆本身由 smoothness 控制形状，不直接使用此值。
+        smoothness: 平滑度/超椭圆指数 [0, 1]；0=椭圆(n=2)、0.6=iOS(n=5)、
+            1=近方(n=10)。
 
     Returns:
-        QPainterPath 可用于 drawPath() 或 setClipPath()
+        QPainterPath 可用于 drawPath() 或 setClipPath()。
     """
     # 退化条件：回到 Qt 原生路径
     if radius <= 0:
@@ -152,11 +111,7 @@ def _pure_superellipse_path(
     b: float,
     n: float,
 ) -> QPainterPath:
-    """纯超椭圆采样路径。
-
-    在整个周长上均匀采样，用折线逼近曲线。
-    采样密度随尺寸和 n 值自适应：n 越大角部越尖锐，需要更密采样。
-    """
+    """纯超椭圆采样路径：周长均匀采样折线逼近，密度随尺寸与 n 自适应。"""
     # 自适应采样数：基础 256 点 + 按 n 补充角部精度
     base_samples = 256
     extra = int(n * 32)  # n 大时角部弯曲剧烈，加采样

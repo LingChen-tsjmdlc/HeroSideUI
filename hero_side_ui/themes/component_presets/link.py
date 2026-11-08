@@ -1,15 +1,4 @@
-"""Link 组件主题预设。
-
-对齐 HeroUI v2 link.ts:
-  base: relative inline-flex items-center
-  size: sm=text-small(14)  md=text-medium(16)  lg=text-large(18)
-  isBlock=true: px-2 py-1 + hover:after rounded-xl(12px) + color/20 浅底
-  isBlock=false: hover:opacity-hover(0.8) + active:opacity-disabled(0.5)
-
-opacity 值来源 default-layout.ts:
-  hoverOpacity = 0.8 (light) / 0.9 (dark)
-  disabledOpacity = 0.5
-"""
+"""Link 预设：字号 14/16/18，block hover 色块 /20，opacity 值来源 default-layout.ts。"""
 
 # 字号 (px) —— 与 SIZE_MAP 对齐
 LINK_SIZES = {

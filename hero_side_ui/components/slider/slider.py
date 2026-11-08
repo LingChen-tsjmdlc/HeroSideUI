@@ -1,12 +1,4 @@
-"""HeroSideUI Slider 组件 — 滑块。
-
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/slider.ts
-
-结构:
-    Slider (QWidget)
-        ├── label_row (label 左 / value 右; vertical 时纵向居中)
-        └── _SliderCanvas (track + filler + step + thumb + mark 全部自绘) 鼠标事件转发回 Slider 处理拖拽
-"""
+"""Slider 滑块组件：label 行 + _SliderCanvas 全自绘（track/filler/thumb/marks）。"""
 
 from __future__ import annotations
 
@@ -55,22 +47,7 @@ _DRAG_PRESS_DURATION = 120  # 拖拽 scale 动画时长 (ms)
 
 
 class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
-    """HeroUI 风格的 Slider 组件
-
-    用法:
-        s = Slider(label="Volume", value=40, min_value=0, max_value=100, step=1, color="primary", size="md")
-        s.value_changed.connect(lambda v: print(v))
-
-    Range 模式（双 thumb）:
-        s = Slider(value=(20, 80), min_value=0, max_value=100)
-
-    Marks（吸附点 + 文字）:
-        s = Slider(marks=[
-            {"value": 20, "label": "20°C"},
-            {"value": 50, "label": "50°C"},
-            {"value": 80, "label": "80°C"},
-        ])
-    """
+    """HeroUI 风格 Slider：单/双 thumb、marks、垂直方向与 tooltip。"""
 
     # 信号
     value_changed = Signal(object)  # float 或 (float, float)
@@ -108,6 +85,43 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造 Slider，归一化初始值与范围并装配 UI。
+
+        Args:
+            value: 初始值，单值或 (lo, hi) 序列；None 时取 min_value。
+            min_value: 取值范围最小值。
+            max_value: 取值范围最大值。
+            step: 步长。
+            label: label 文案。
+            color: 语义色名。
+            size: 尺寸档位。
+            radius: 圆角档位。
+            orientation: 方向，horizontal 或 vertical。
+            is_disabled: 是否禁用。
+            hide_value: 是否隐藏数值文字。
+            hide_thumb: 是否隐藏 thumb。
+            show_outline: 是否显示 thumb 外圈。
+            disable_thumb_scale: 是否关闭拖拽缩放动画。
+            disable_animation: 是否关闭动画。
+            show_steps: 是否显示 step 标记。
+            marks: 刻度序列。
+            start_content: 起始侧插槽，可为 icon 名或控件。
+            end_content: 结束侧插槽，可为 icon 名或控件。
+            top_end_content: label 行末尾插槽。
+            bottom_start_content: 轨道下方左侧插槽。
+            value_formatter: 自定义数值格式化回调。
+            fill_offset: filler 起点偏移。
+            show_tooltip: 是否启用 thumb tooltip。
+            tooltip_props: tooltip 配置字典。
+            enable_wheel: 是否允许滚轮调值。
+            theme: 主题模式，auto 跟随 ThemeProvider。
+            parent: 作为 Qt 父对象的 QWidget。
+
+        Note:
+            max_value <= min_value 或 step <= 0 时抛出 ValueError；orientation
+            非法值回退到 horizontal。单 / range 初始值都会 clamp 到范围并 snap
+            到 step；theme=auto 时向 ThemeProvider 注册。
+        """
         super().__init__(parent)
 
         # ---- 范围 / 步长 ----
@@ -213,12 +227,19 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # cfg
     # ============================================================
     def _cfg(self) -> dict:
+        """返回当前尺寸档位对应的配置字典。"""
         return SLIDER_SIZES.get(self._size, SLIDER_SIZES["md"])
 
     # ============================================================
     # UI 装配
     # ============================================================
     def _setup_ui(self):
+        """按方向装配 label 行、自绘画布与四侧插槽。
+
+        Note:
+            start / end_content 必须挂进 canvas_band 的 layout 才会参与布局；
+            垂直方向按 "下=min / 上=max" 排布两端插槽。
+        """
         is_v = self._orientation == "vertical"
 
         if is_v:
@@ -306,6 +327,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         self._update_size_policy()
 
     def _apply_text_styles(self):
+        """按尺寸档位刷新 label 与数值文字的字号和字重。"""
         cfg = self._cfg()
         self._label.set_size(cfg["label_font_size"])
         self._label.set_weight("medium")
@@ -313,12 +335,14 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         self._value_label.set_weight("normal")
 
     def _update_size_policy(self):
+        """按方向设置 Expanding / Fixed 的尺寸策略。"""
         if self._orientation == "vertical":
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         else:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def _update_canvas_min_size(self):
+        """按 thumb 尺寸、ring 留白与 marks 文字带刷新画布最小尺寸。"""
         cfg = self._cfg()
         thumb = cfg["thumb"]
         # 上下留白取 ring 与 hover 光晕较大者，避免裁剪
@@ -340,6 +364,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 文字刷新
     # ============================================================
     def _refresh_text_labels(self):
+        """刷新 label 与数值文字及其可见性。"""
         self._label.setText(self._label_text or "")
         self._label.setVisible(bool(self._label_text))
 
@@ -358,6 +383,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 拖拽 scale-80 动画
     # ============================================================
     def _animate_press(self, idx: int, target: float):
+        """把指定 thumb 的按压缩放进度过渡到目标值。
+
+        Args:
+            idx: thumb 索引。
+            target: 目标进度，按下为 1、释放为 0。
+        """
         tween_value(
             self,
             f"_drag_runner_{idx}",
@@ -369,6 +400,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         )
 
     def _on_press_step(self, idx: int, v):
+        """写入按压缩放进度并触发画布重绘。"""
         self._drag_press_t[idx] = float(v)
         self._canvas.update()
 
@@ -376,6 +408,20 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 写入 thumb 值（拖拽/键盘/滚轮 共享入口）
     # ============================================================
     def _set_thumb_value(self, idx: int, raw: float, animate_signal: bool = True) -> bool:
+        """写入指定 thumb 的值并刷新显示，值未变化时返回 False。
+
+        Args:
+            idx: thumb 索引。
+            raw: 未经 clamp / snap 的原始值。
+            animate_signal: 是否在变化时派发 value_changed。
+
+        Returns:
+            值确实发生变化时为 True，否则为 False。
+
+        Note:
+            raw 会 clamp 到范围再 snap 到 step；range 模式下 lo / hi 互相钳制
+            以保持有序。
+        """
         new_v = snap_value(clamp_value(raw, self._min, self._max), self._min, self._max, self._step)
         if self._is_range:
             lo, hi = self._value  # type: ignore[misc]
@@ -399,6 +445,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # canvas 鼠标事件（由 _SliderCanvas 转发）
     # ============================================================
     def _track_geom_q(self):
+        """返回当前画布尺寸下的 thumb 轨迹矩形。"""
         return track_geom(
             self._cfg(),
             self._orientation,
@@ -408,6 +455,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         )
 
     def _canvas_mouse_press(self, event):
+        """处理画布按下：命中 thumb 或跳转到点击位置并进入拖拽态。
+
+        Note:
+            禁用态或非左键直接返回；未命中 thumb 时单点模式跳到点击值，range
+            模式让离点击值更近的 thumb 跟过来。
+        """
         if self._is_disabled or event.button() != Qt.MouseButton.LeftButton:
             return
         pt = event.position()
@@ -435,6 +488,11 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         event.accept()
 
     def _canvas_mouse_move(self, event):
+        """处理画布移动：拖拽中跟值，非拖拽时更新 hover 与 tooltip。
+
+        Note:
+            禁用态直接返回；hover 的 thumb 变化时切换对应 tooltip。
+        """
         if self._is_disabled:
             return
         # 拖拽中：跟拖动；非拖拽：实时更新 _hovered_idx 用于 tooltip 触发
@@ -463,6 +521,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
                 self._tooltip_show(new_idx)
 
     def _canvas_mouse_release(self, event):
+        """结束拖拽并派发 change_end，非拖拽态或非左键时忽略。"""
         if self._dragging_idx == -1 or event.button() != Qt.MouseButton.LeftButton:
             return
         idx = self._dragging_idx
@@ -478,6 +537,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 键盘 / 滚轮 / hover
     # ============================================================
     def keyPressEvent(self, event):
+        """处理键盘调值：方向键单步、PageUp/Down 翻页、Home/End 到极值。
+
+        Note:
+            禁用态交回父类；垂直方向以 Up 为增大、Down 为减小；range 模式下
+            Tab 切换聚焦的 thumb。
+        """
         if self._is_disabled:
             return super().keyPressEvent(event)
         idx = self._focused_idx if self._is_range else 0
@@ -521,6 +586,11 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             event.accept()
 
     def wheelEvent(self, event):
+        """滚轮单步调值并发射 change_end。
+
+        Note:
+            禁用态或 enable_wheel 为 False 时交回父类；垂直增量为 0 时忽略。
+        """
         if self._is_disabled or not self._enable_wheel:
             return super().wheelEvent(event)
         d = event.angleDelta().y()
@@ -534,11 +604,13 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         event.accept()
 
     def enterEvent(self, event):
+        """标记 hover 态并触发画布重绘，再交给父类处理事件。"""
         self._hover = True
         self._canvas.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """清除 hover 与 thumb 悬停态并触发重绘，再交给父类处理事件。"""
         self._hover = False
         if self._hovered_idx != -1:
             old_idx = self._hovered_idx
@@ -562,6 +634,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 禁用 / 主题
     # ============================================================
     def _apply_disabled_effect(self, disabled: bool):
+        """按禁用态设置半透明效果与光标。"""
         if disabled:
             eff = QGraphicsOpacityEffect(self)
             eff.setOpacity(0.5)
@@ -573,12 +646,24 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: 主题模式，light / dark 直接生效。
+
+        Returns:
+            解析后的主题名；其它值跟随 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用（auto 模式）"""
+        """在 auto 模式下应用 provider 主题并刷新文字、tooltip 与图标。
+
+        Args:
+            theme: ThemeProvider 下发的当前主题名。
+        """
         self._theme = theme
         self._apply_text_styles()
         self._tooltip_apply_theme(theme)
@@ -592,11 +677,10 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # 内部 helper：side_content 归一化（str → _SliderIconLabel）
     # ============================================================
     def _coerce_side_content(self, x):
-        """start_content / end_content 输入归一化。
+        """归一化 start / end_content 输入：str 包为图标 label、QWidget 原样。
 
-        - None  → None
-        - str   → _SliderIconLabel(icon_name=...)，跟主题自动着色
-        - QWidget → 原样返回（用户自定义控件）
+        Note:
+            既非 None、str 也非 QWidget 时抛出 TypeError。
         """
         if x is None or isinstance(x, QWidget):
             return x

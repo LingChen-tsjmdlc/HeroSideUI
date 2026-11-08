@@ -1,18 +1,7 @@
-"""HeroSideUI TimeInput Component — 分段时间输入。
+"""TimeInput：DateInput 的时间粒度特化，只含时/分/秒/AM-PM/时区段。
 
-基于 HeroUI v2 的 TimeInput 设计。TimeInput = DateInput 的时间粒度特化：
-只显示 时/分/秒/AM-PM/时区 段，不含年/月/日段；外框视觉与交互
-（分段聚焦、逐位输入、上下键回绕、越界标红）完全复用 DateInput。
-
-对齐官方实现的关键决策：
-    - 官方 TimeInput = DateInputGroup + DateInputField，state 换成
-      useTimeFieldState（时间粒度、无日期段），主题复用 dateInput slots；
-      本组件对应地继承 DateInput 并只覆写粒度与段构成。
-    - granularity 仅允许 hour/minute/second，默认 minute（对齐
-      react-aria 的 useTimeFieldState）。
-    - 占位值默认当前时刻（对齐 react-aria：TimeField 的占位起点是
-      now，而 DateField 是 today）。
-    - min/max 约束只作用于时刻部分，日期部分不参与越界判定。
+granularity 仅 hour/minute/second（默认 minute）；占位值默认当前时刻；
+min/max 只约束时刻部分。对齐官方 useTimeFieldState。
 """
 
 from __future__ import annotations
@@ -27,20 +16,11 @@ __all__ = ["TimeInput"]
 
 
 class TimeInput(DateInput):
-    """HeroUI 风格的分段时间输入组件。
+    """HeroUI 风格分段时间输入，与 DateInput 共享全部公共 API。
 
-    与 DateInput 共享全部公共 API（value/set_value/clear/set_hour_cycle/
-    set_min_value/set_max_value/…），差异仅在：
-
-    :cvar _object_name: QSS objectName 为 "heroTimeInput"
-    :cvar _valid_granularities: 仅 hour/minute/second
-    :cvar _default_granularity: 默认 minute
-    :cvar _include_date: 无日期段，段列表只有时间部分
-
-    :param placeholder_value: 占位起点；默认当前时刻
-    :param min_value / max_value: 时刻范围约束，越界标红不静默改写
-    :param hour_cycle: 12 或 24；None 跟随 locale 习惯
-    :param hide_time_zone: 隐藏时区段
+    Note:
+        覆写四个类属性特化：_object_name="heroTimeInput"、粒度仅时间档、
+        默认 minute、无日期段。
     """
 
     _object_name = "heroTimeInput"
@@ -80,6 +60,12 @@ class TimeInput(DateInput):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构建时间输入，未给占位值时以当前时刻（剥离时区）作为占位起点。
+
+        Note:
+            placeholder_value 为空时取 now() 并剥掉时区，避免默认渲染出
+            时区段；其余构造参数原样透传父类 DateInput。
+        """
         if placeholder_value is None:
             # 对齐 react-aria useTimeFieldState：占位起点是当前时刻。
             # now() 自带本机时区，这里剥掉时区，避免默认渲染出时区段

@@ -1,20 +1,8 @@
-"""HeroSideUI NumberInput Component — 数字输入。
+"""NumberInput：Input 全套外框 + 数值层（stepper、键盘滚轮步进、min/max
+夹取、千分位与 percent/currency 格式化）。
 
-基于 HeroUI v2 的 NumberInput 设计。NumberInput = Input 全套外框
-（label 浮动 / wrapper / helper / clear 按钮 / start-end content）
-+ 数值层：垂直 stepper 按钮、上下键与滚轮步进、min/max 夹取、
-千分位与 percent/currency 格式化。
-
-对齐官方实现的关键决策：
-    - 官方 NumberInput 复用 Input 的全部 slots，仅在 innerWrapper 末尾
-      追加 stepperWrapper（两个透明小按钮）；本组件对应继承 Input，
-      把 stepper 插入 wrapper 布局末尾。
-    - step 默认 1；空值步进从 0 起步（0 不在值域内时从最近边界起步），
-      对齐 react-stately useNumberFieldState。
-    - 滚轮在输入框聚焦时生效（对齐 react-aria），is_wheel_disabled 关闭。
-    - formatOptions 取常用子集：style (decimal/percent/currency)、
-      currency、minimum/maximum_fraction_digits、use_grouping；
-      percent 语义为"值即显示数字"（50 → 50%），不做 0-1 换算。
+对齐 react-stately：空值步进从 0 或最近边界起步；percent 语义为值即显示
+数字。stepper 插入 wrapper 布局末尾（同官方 innerWrapper 追加方式）。
 """
 
 from __future__ import annotations
@@ -72,23 +60,19 @@ _STEP_ROUND_DIGITS = 10
 
 
 class NumberInput(Input):
-    """HeroUI 风格的数字输入组件。
+    """HeroUI 风格数字输入，继承 Input 全部 API。
 
-    继承 Input 的全部 API（label 浮动 / 变体 / 颜色 / 尺寸 / clear 按钮 /
-    start-end content / 禁用只读等），在其上增加：
+    Args:
+        value: 初始数值；None 为空。
+        min_value: 值域下界。
+        max_value: 值域上界。
+        step: 步进长度，默认 1。
+        hide_stepper: 隐藏右侧步进按钮组。
+        is_wheel_disabled: 关闭滚轮步进。
+        format_options: 格式化子集（style/currency/小数位/分组）。
 
-    :param value: 初始数值
-    :param min_value / max_value: 值域；blur 提交与步进时夹取
-    :param step: 步进长度（上下键 / 滚轮 / stepper），默认 1
-    :param hide_stepper: 隐藏右侧步进按钮组
-    :param is_wheel_disabled: 关闭滚轮步进
-    :param format_options: 格式化子集，见模块 docstring
-    :cvar _object_name: QSS objectName 为 "heroNumberInput"
-
-    信号：
-    - ``value_changed(object)``：文本可解析为数字时发 float，空/非法发 None
-      （对齐官方 onValueChange 的数值语义）；``text_changed`` / ``cleared``
-      等 Input 原有信号继续可用
+    Signals:
+        value_changed: 可解析发 float，空/非法发 None。
     """
 
     value_changed = Signal(object)
@@ -196,6 +180,14 @@ class NumberInput(Input):
         )
 
     def _currency_symbol(self, code: str) -> str:
+        """查货币符号映射；未收录回退「代码 + 空格」前缀。
+
+        Args:
+            code: ISO 货币代码（如 USD）。
+
+        Returns:
+            str: 货币符号或回退前缀。
+        """
         return _CURRENCY_SYMBOLS.get(code, code + " ")
 
     def _format_number(self, v: float) -> str:
@@ -237,6 +229,14 @@ class NumberInput(Input):
     # 数值状态
     # ============================================================
     def _clamp(self, v: float) -> float:
+        """把值夹到 [min_value, max_value] 区间内。
+
+        Args:
+            v: 待夹取的数值。
+
+        Returns:
+            float: 夹取后的数值。
+        """
         if self._min_value is not None:
             v = max(v, self._min_value)
         if self._max_value is not None:
@@ -261,6 +261,7 @@ class NumberInput(Input):
             self.value_changed.emit(v)
 
     def _on_number_text_changed(self, text: str):
+        """文本实时变化：解析数值、记忆、必要时撤掉自动标红，并广播 value_changed。"""
         v = self._parse_number(text)
         self._numeric_value = v
         if v is not None and self._auto_invalid:
@@ -314,15 +315,33 @@ class NumberInput(Input):
         self.line_edit.setFocus()
 
     def set_step(self, step: float):
+        """设置步进长度（不可为 0）。
+
+        Args:
+            step: 步进长度。
+
+        Raises:
+            ValueError: step 为 0 时。
+        """
         if step == 0:
             raise ValueError("step must not be 0")
         self._step = float(step)
 
     def set_min_value(self, min_value: float | None):
+        """设置值域下界并重新夹取已有值。
+
+        Args:
+            min_value: 下界；None 表示无下界。
+        """
         self._min_value = min_value
         self._resync_to_bounds()
 
     def set_max_value(self, max_value: float | None):
+        """设置值域上界并重新夹取已有值。
+
+        Args:
+            max_value: 上界；None 表示无上界。
+        """
         self._max_value = max_value
         self._resync_to_bounds()
 
@@ -335,6 +354,11 @@ class NumberInput(Input):
             self.line_edit.setText(self._format_number(clamped))
 
     def set_hide_stepper(self, hide: bool):
+        """隐藏/显示右侧步进按钮组（并触发样式刷新）。
+
+        Args:
+            hide: True 隐藏 stepper。
+        """
         self._hide_stepper = hide
         self._apply_styles()
 
@@ -342,14 +366,17 @@ class NumberInput(Input):
     # 状态 setter 联动 stepper
     # ============================================================
     def set_is_disabled(self, disabled: bool):
+        """设置禁用态并联动 stepper 按钮可用性。"""
         super().set_is_disabled(disabled)
         self._stepper.set_buttons_enabled(not disabled and not self._is_readonly)
 
     def set_is_readonly(self, readonly: bool):
+        """设置只读态并联动 stepper 按钮可用性。"""
         super().set_is_readonly(readonly)
         self._stepper.set_buttons_enabled(not self._is_disabled and not readonly)
 
     def set_is_invalid(self, invalid: bool):
+        """设置错误态（记录用户显式标红，覆盖自动标红）。"""
         self._user_invalid = invalid
         super().set_is_invalid(invalid)
 
@@ -357,6 +384,7 @@ class NumberInput(Input):
     # 事件：上下键 / Esc / 滚轮
     # ============================================================
     def eventFilter(self, obj, event):
+        """拦截输入框的上下键/Esc/滚轮，驱动步进与清空（聚焦时滚轮才步进）。"""
         if obj is self.line_edit:
             if event.type() == QEvent.Type.KeyPress:
                 if event.key() == Qt.Key.Key_Up:
@@ -390,6 +418,7 @@ class NumberInput(Input):
     # 样式：stepper 图标色 / 尺寸 / 可用性跟随组件状态
     # ============================================================
     def _apply_styles(self):
+        """样式下发：调父类后额外设置 stepper 图标色 / 尺寸 / 可用性 / 可见性。"""
         super()._apply_styles()
         if not hasattr(self, "_stepper"):
             # 父类 __init__ 首次调用时 stepper 还没建
@@ -410,11 +439,7 @@ class NumberInput(Input):
         self._stepper.setVisible(not self._hide_stepper)
 
     def _size_config(self) -> dict:
-        """Input 尺寸表 + 数字档最小宽度（NUMBER_INPUT_MIN_WIDTHS）。
-
-        数字内容短，min_width 不复用文本档的 240/260/300；通过换表让
-        Input 样式层从构造第一刻起就使用数字档最小宽度，不产生旧值缓存。
-        """
+        """取 Input 尺寸表并把 min_width 换为数字档（60/70/80）。"""
         cfg = dict(super()._size_config())
         cfg["min_width"] = NUMBER_INPUT_MIN_WIDTHS.get(self._size, NUMBER_INPUT_MIN_WIDTHS["md"])
         return cfg

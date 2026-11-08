@@ -1,8 +1,4 @@
-"""AccordionItem — 手风琴子项。
-
-可点击的标题栏 + 可折叠的内容区。会在被 ``Accordion`` 容器内使用，
-也可单独使用（会退化到 splitted 外观）。
-"""
+"""AccordionItem 手风琴子项：可点击标题栏 + 折叠内容区；独立使用退化 splitted。"""
 
 from PySide6.QtCore import (
     Qt,
@@ -25,18 +21,17 @@ from ._indicator import _IndicatorWidget
 
 
 class AccordionItem(QWidget):
-    """手风琴子项 — 包含可点击的标题栏和可折叠的内容区
+    """手风琴子项。
 
-    参数:
-        title: 标题文字
-        subtitle: 副标题文字（可选）
-        content_widget: 折叠内容区的控件（可选，也可后续用 set_content 设置）
-        content_text: 简单文本内容（与 content_widget 二选一）
-        expanded: 初始是否展开
-        is_disabled: 是否禁用
-        start_icon: 标题左侧图标，支持内置图标名如 "heroicons--chevron-right-solid" 或 SVG 文件路径
-        end_icon: 指示器左侧图标，同上
-        parent: Qt 父对象
+    Args:
+        title: 标题文字。
+        subtitle: 副标题（可选）。
+        content_widget: 折叠内容控件（与 content_text 二选一）。
+        content_text: 简单文本内容。
+        expanded: 初始是否展开。
+        is_disabled: 禁用。
+        start_icon: 标题左图标（内置名或 SVG 路径）。
+        end_icon: 替换默认指示器箭头。
     """
 
     # 展开/收起状态变化信号
@@ -54,6 +49,23 @@ class AccordionItem(QWidget):
         end_icon: str | None = None,
         parent: QWidget | None = None,
     ):
+        """创建手风琴子项并构建标题栏与折叠内容区。
+
+        Args:
+            title: 标题文字。
+            subtitle: 副标题，空串时不占位。
+            content_widget: 折叠内容控件，与 content_text 二选一，优先前者。
+            content_text: 简单文本内容。
+            expanded: 初始是否展开。
+            is_disabled: 是否禁用。
+            start_icon: 标题左图标（内置名或 SVG 路径）。
+            end_icon: 替换默认指示器箭头。
+            parent: Qt 父对象。
+
+        Note:
+            主题 / 变体 / 尺寸等样式配置由父级 Accordion 在 add_item 时
+            经 _apply_styles 注入，独立使用时保持默认值退化成 splitted 形态。
+        """
         super().__init__(parent)
         self._title_text = title
         self._subtitle_text = subtitle
@@ -74,7 +86,16 @@ class AccordionItem(QWidget):
         self._setup_ui(content_widget, content_text)
 
     def _setup_ui(self, content_widget: QWidget | None, content_text: str):
-        """构建 UI 结构"""
+        """构建标题栏、折叠内容区与分割线的 UI 结构。
+
+        Args:
+            content_widget: 自定义内容控件，优先于 content_text。
+            content_text: 文本内容，两者都为空时放一个空 Text 占位。
+
+        Note:
+            内容区套 _clip_wrapper 负责 overflow 裁剪，折叠动画由
+            CollapseAnimation 统一管理；箭头旋转动画独立驱动。
+        """
         self.setObjectName("heroAccordionItem")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         layout = QVBoxLayout(self)
@@ -204,7 +225,19 @@ class AccordionItem(QWidget):
         show_divider: bool,
         radius: str = "md",
     ):
-        """应用样式 — 由父级 Accordion 在添加时调用"""
+        """应用父级 Accordion 注入的样式配置。
+
+        Args:
+            theme: 主题名，作为取色依据。
+            variant: light / shadow / bordered / splitted，决定子项 QSS。
+            size: 尺寸档位，决定字号与图标尺寸。
+            show_divider: 是否显示底部分割线。
+            radius: splitted 变体的卡片圆角。
+
+        Note:
+            本方法由父级 Accordion 在 add_item / set_* 时调用，独立使用时
+            不会被触发；_content_label 的 Text 仍是 auto 主题，改色即可。
+        """
         self._theme = theme
         self._variant = variant
         self._size = size
@@ -306,25 +339,41 @@ class AccordionItem(QWidget):
     # ---- 交互 ----
 
     def mousePressEvent(self, event):
-        """点击标题栏切换展开/收起，带按压透明度反馈"""
+        """点击标题栏切换展开/收起，带按压透明度反馈。
+
+        Args:
+            event: Qt 鼠标按下事件。
+
+        Note:
+            仅当点击命中标题栏区域才触发 toggle；禁用态直接忽略。
+        """
         if not self._is_disabled and self._trigger.geometry().contains(event.pos()):
             self._trigger_opacity.setOpacity(0.7)
             self.toggle()
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
-        """松开时恢复 trigger 透明度"""
+        """松开时恢复标题栏透明度。
+
+        Args:
+            event: Qt 鼠标释放事件。
+        """
         self._trigger_opacity.setOpacity(1.0)
         super().mouseReleaseEvent(event)
 
     def toggle(self):
-        """切换展开/收起状态"""
+        """按当前状态切换展开 / 收起。"""
         if self._expanded:
             self.collapse()
         else:
             self.expand()
 
     def expand(self):
+        """展开内容区并旋转指示器到 90°。
+
+        Note:
+            已展开且无动画进行时直接返回；展开后 emit expanded_changed(True)。
+        """
         if self._expanded and not self._collapse_anim.is_animating:
             return
         self._expanded = True
@@ -335,6 +384,11 @@ class AccordionItem(QWidget):
         self.expanded_changed.emit(True)
 
     def collapse(self):
+        """收起内容区并把指示器转回 0°。
+
+        Note:
+            已收起且无动画进行时直接返回；收起后 emit expanded_changed(False)。
+        """
         if not self._expanded and not self._collapse_anim.is_animating:
             return
         self._expanded = False
@@ -347,16 +401,34 @@ class AccordionItem(QWidget):
     # ---- 公共 API ----
 
     def set_title(self, text: str):
+        """更新标题文字。
+
+        Args:
+            text: 新标题。
+        """
         self._title_text = text
         self._title_label.setText(text)
 
     def set_subtitle(self, text: str):
+        """更新副标题，空串时隐藏。
+
+        Args:
+            text: 新副标题；空串时不占位。
+        """
         self._subtitle_text = text
         self._subtitle_label.setText(text)
         self._subtitle_label.setVisible(bool(text))
 
     def set_content(self, widget: QWidget):
-        """设置内容区控件"""
+        """替换内容区控件。
+
+        Args:
+            widget: 新的内容控件。
+
+        Note:
+            旧内容通过 deleteLater 销毁，与 Badge 的不销毁策略不同——
+            内容区默认归 item 所有。
+        """
         content_layout = self._content_container.layout()
         # 清除旧内容
         while content_layout.count():
@@ -366,10 +438,19 @@ class AccordionItem(QWidget):
         content_layout.addWidget(widget)
 
     def is_expanded(self) -> bool:
+        """返回当前展开状态。
+
+        Returns:
+            True 表示已展开（含动画进行中的目标态）。
+        """
         return self._expanded
 
     def set_start_icon(self, icon_name: str):
-        """设置标题左侧图标（SVG 文件名，不含 .svg 后缀）"""
+        """设置标题左侧图标。
+
+        Args:
+            icon_name: SVG 文件名（不含 .svg 后缀）或内置图标名。
+        """
         self._start_icon_name = icon_name
         from ...utils import load_svg_icon
 
@@ -379,6 +460,10 @@ class AccordionItem(QWidget):
         self._start_icon_label.show()
 
     def set_end_icon(self, icon_name: str):
-        """替换指示器图标（默认 heroicons--chevron-right-solid，传入内置图标名或 SVG 路径）"""
+        """替换右侧指示器图标。
+
+        Args:
+            icon_name: 内置图标名或 SVG 路径；默认 heroicons--chevron-right-solid。
+        """
         self._end_icon_name = icon_name
         self._indicator.set_icon(icon_name)

@@ -19,11 +19,17 @@ VALID_SIZES = ("sm", "md", "lg", "small", "medium", "large")
 
 
 def resolve_indicator_color(name: str, theme: str) -> QColor:
-    """spinner 的主色（圆弧/dot/bar 的 bg-{color}），label 也用同色。
+    """取 spinner 主色：default 用 zinc-400，其余 {color}-500；label 同色。
 
-    HeroUI 规则:
-        - default: zinc-400（中性灰，亮暗都看得见）
-        - 其他:    {color}-500
+    Args:
+        name: 颜色名；default 走专用分支，其余按调色板键查找。
+        theme: 亮/暗主题名，仅影响 default 分支。
+
+    Returns:
+        对应的 Qt 颜色对象。
+
+    Note:
+        default 按主题取 500/400 色阶，其余颜色固定取 500；未知颜色名静默回退到 primary，未做校验。
     """
     if name == "default":
         # default 在亮模式偏亮、暗模式偏深，避免和背景同色看不见

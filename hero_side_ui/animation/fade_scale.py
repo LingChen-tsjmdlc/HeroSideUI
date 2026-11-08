@@ -68,9 +68,11 @@ class FadeScaleAnimation(QObject):
             target.setGraphicsEffect(self._effect)
 
     def _get_progress(self) -> float:
+        """返回当前过渡进度。"""
         return self._progress
 
     def _set_progress(self, v: float):
+        """设置过渡进度并应用当前外观。"""
         self._progress = v
         self._apply()
 
@@ -131,6 +133,7 @@ class FadeScaleAnimation(QObject):
         return self._scale_min + (1.0 - self._scale_min) * self._progress
 
     def _apply(self):
+        """按透明度模式应用当前进度并请求重绘。"""
         opacity = self._progress
         if self._opacity_mode == "window":
             self._target.setWindowOpacity(opacity)
@@ -140,6 +143,7 @@ class FadeScaleAnimation(QObject):
         self._target.update()
 
     def _on_finished(self):
+        """按方向发出入场或退场完成信号。"""
         if self._direction == "in":
             self.finished_in.emit()
         elif self._direction == "out":

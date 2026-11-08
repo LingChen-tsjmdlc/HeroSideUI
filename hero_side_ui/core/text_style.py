@@ -1,10 +1,6 @@
-"""文字样式解析工具：颜色 / 字号 / 字重 / QFont 构造。
+"""文字样式解析：颜色/字号/字重/QFont 构造的统一入口（纯函数）。
 
-`Text` 组件与少数无法用子控件承载文字的自绘组件（cursor 动画驱动定位的
-tabs、checkbox 内嵌 label、switch on/off label、divider 文本）共用此模块，
-确保"颜色解析口径 + 字体来源"全项目唯一。
-
-只放纯函数，不持有任何状态。
+Text 与自绘文字组件共用，保证颜色口径与字体来源全项目唯一。
 """
 
 from __future__ import annotations
@@ -144,6 +140,7 @@ def resolve_text_color(color: ColorInput, theme: str) -> QColor:
 
 
 def resolve_text_size(size: SizeInput) -> int:
+    """把字号输入解析为像素值，未知 token 回落到 md。"""
     if isinstance(size, (int, float)):
         return max(1, int(size))
     if isinstance(size, str):
@@ -182,10 +179,15 @@ def make_text_qfont(
     *,
     style_name: bool = True,
 ) -> QFont:
-    """统一字体入口：走 FontProvider，自带 setStyleName 精确选 VF instance。
+    """统一字体入口：走 FontProvider 并 setStyleName 精确选 VF instance。
 
-    style_name=False 供承载富文本（含 <b>/<i>）的 label 用，避免锁死物理档后
-    内联字重被压制。
+    Args:
+        size: 字号 px。
+        weight: 字重。
+        style_name: False 供富文本 label 用，避免内联字重被压制。
+
+    Returns:
+        构造好的 QFont。
     """
     return make_qfont(
         size_px=resolve_text_size(size),
@@ -206,11 +208,7 @@ def make_text_qfont(
 
 
 def _adapt_selection_bg(text_color: QColor, theme: str) -> QColor:
-    """文字色 → 适配的选区底色（亮色出 pastel 淡色 / 暗色出低亮度色）。
-
-    HSL 而非 RGB：同时压饱和度又反转亮度，避免品牌色深色背景出现高饱和药丸色。
-    仅在 selection_adapts_color=True 时启用。
-    """
+    """文字色 → 适配选区底色：HSL 压饱和反转亮度，避免高饱和药丸色。"""
     h = text_color.hueF()
     s = text_color.saturationF()
     if h < 0:
@@ -234,11 +232,16 @@ def selection_palette(
     selection_adapts_color: bool = False,
     text_color: QColor | None = None,
 ) -> tuple[QColor, QColor]:
-    """返回 (选区底色, 选中文字色)。Text/Input/Textarea 等所有可选中文字组件共用。
+    """返回 (选区底色, 选中文字色)，所有可选中文字组件共用。
 
-    默认行为（force_selection_text_color=True 且 selection_adapts_color=False）：
-        - 选中底：半透明 primary-500（亮色 alpha=0.22 / 暗色 alpha=0.35）
-        - 选中字：亮色一律 #18181b / 暗色一律 #fafafa
+    Args:
+        theme: light/dark。
+        force_selection_text_color: 默认 True，选中字用固定对比色。
+        selection_adapts_color: True 时选区底随文字色 adapt。
+        text_color: 当前文字色（adapt 时用）。
+
+    Returns:
+        (QColor, QColor) 元组。
     """
     # ---- 选中底色 ----
     if selection_adapts_color and text_color is not None:

@@ -1,9 +1,4 @@
-"""HeroSideUI Textarea Component — 多行文本输入。
-
-子组件：
-    - ``_TextEdit``  → ``_text_edit.py``
-    - ``_ResizeGrip`` → ``_resize_grip.py``
-"""
+"""Textarea 多行输入组件；子组件 _TextEdit 与 _ResizeGrip。"""
 
 from PySide6.QtCore import (
     QEvent,
@@ -39,27 +34,12 @@ class Textarea(
     _TextareaAutosizeMixin,
     QWidget,
 ):
-    """HeroUI 风格的多行输入框组件
+    """HeroUI 风格多行输入框。
 
-    特性：
-    - 3 种变体 (flat / faded / bordered)，**不支持 underlined**
-    - 6 种颜色 (default / primary / secondary / success / warning / danger)
-    - 3 种尺寸 (sm / md / lg)
-    - 4 种 label 位置 (inside / outside / outside-left / outside-top)
-    - 支持 clear 按钮、top_right / center_right / bottom_right 三个内容槽
-    - 支持禁用、无效、必填、只读
-    - **auto-resize**: 内容驱动高度，[min_rows, max_rows] 范围内自动伸缩；
-      超过 max_rows 出现滚动条
-    - disable_autosize=True 时高度固定在 min_rows
-    - 浮动 label 动画 (200ms ease-out)
-    - 亮暗双主题
-
-    用法:
-        ta = Textarea(label="Description", placeholder="Tell us a bit about yourself...",
-                      min_rows=3, max_rows=8, color="primary")
-        ta.text_changed.connect(lambda t: print(t))
-
-    底层 QTextEdit 通过 .text_edit 属性暴露，可直接调用 Qt 原生 API。
+    Note:
+        仅 flat/faded/bordered 三变体（无 underlined）；auto-resize 在
+        [min_rows, max_rows] 内按内容驱动高度；三个右侧内容槽；底层
+        QTextEdit 经 .text_edit 暴露原生 API。
     """
 
     # 信号（与 HeroUI Textarea 对齐）
@@ -109,6 +89,12 @@ class Textarea(
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构建多行输入框，装配 UI、绑定事件并计算初始高度。
+
+        Note:
+            variant 为 underlined 时静默降级为 flat；resizable 归一为内部
+            mode；theme 为 auto 时注册到 ThemeProvider 跟随主题广播。
+        """
         super().__init__(parent)
 
         # ---- 校验 variant ----
@@ -183,13 +169,7 @@ class Textarea(
 
     @staticmethod
     def _normalize_resize(value) -> str | None:
-        """把 resizable 参数转成内部字符串 mode
-
-        True / "vertical" / "v" → "vertical"
-        "horizontal" / "h" → "horizontal"
-        "both" / "all" → "both"
-        False / None / "none" → None
-        """
+        """把 resizable 参数归一为内部 mode：vertical/horizontal/both 或 None。"""
         if value is False or value is None:
             return None
         if value is True:
@@ -210,6 +190,7 @@ class Textarea(
     # UI 结构
     # ============================================================
     def _setup_ui(self):
+        """搭建根布局、wrapper、三个内容槽、label 动画与 grip。"""
         self.setObjectName("heroTextarea")
 
         # --- 根布局 ---
@@ -366,6 +347,7 @@ class Textarea(
     # 事件绑定
     # ============================================================
     def _bind_events(self):
+        """绑定文本变更、清除按钮与焦点/hover 事件过滤。"""
         self.text_edit.textChanged.connect(self._on_text_changed)
         self._clear_btn.clicked.connect(self._on_clear_clicked)
 
@@ -382,6 +364,7 @@ class Textarea(
         self._inside_label.installEventFilter(self)
 
     def eventFilter(self, obj, event):
+        """处理 text_edit/wrapper/label 的焦点、hover 与点击过滤。"""
         if obj is self.text_edit:
             if event.type() == QEvent.Type.FocusIn:
                 self._is_focused = True
@@ -410,9 +393,11 @@ class Textarea(
         return super().eventFilter(obj, event)
 
     def _on_wrapper_clicked(self, event):
+        """点击 wrapper 时把焦点交给 text_edit。"""
         self.text_edit.setFocus()
 
     def _on_text_changed(self):
+        """文本变更时刷新填充态、label 动画、高度并发出 text_changed。"""
         text = self.text_edit.toPlainText()
         self._update_filled_state()
         self._update_label_animation()
@@ -420,6 +405,7 @@ class Textarea(
         self.text_changed.emit(text)
 
     def _on_clear_clicked(self):
+        """清空文本、聚焦并发出 cleared 信号。"""
         self.text_edit.clear()
         self.text_edit.setFocus()
         self.cleared.emit()
@@ -428,6 +414,7 @@ class Textarea(
     # 状态计算
     # ============================================================
     def _qcolor(self, s) -> QColor:
+        """把颜色字符串或 QColor 转成 QColor，无效值返回全透明。"""
         if isinstance(s, QColor):
             return QColor(s)
         if s is None or s == "" or s == "transparent":
@@ -445,29 +432,26 @@ class Textarea(
         return c if c.isValid() else QColor(0, 0, 0, 0)
 
     def _has_label(self) -> bool:
+        """返回是否配置了 label 文本。"""
         return bool(self._label_text)
 
     def _has_value(self) -> bool:
+        """返回 text_edit 是否含有文本。"""
         return bool(self.text_edit.toPlainText())
 
     def _filled_within(self) -> bool:
-        """Textarea 的特殊语义：label 始终保持浮起状态
-
-        不同于 Input（单行）——单行没值时 label 停在中线装作 placeholder 比较合理；
-        多行场景下输入区本身就有一大片空白，让 label 停在文本第一行中间装 placeholder
-        视觉很奇怪（下面一大片空没东西）。所以：**Textarea 的 label 始终浮起**，
-        等价于"永远当作有 placeholder"——保留聚焦/值/placeholder/start_content 的信号
-        不影响外部逻辑，但浮起条件直接置 True。
-        """
+        """Textarea 特殊语义：label 始终浮起（多行输入区天然留白，不装 placeholder）。"""
         return True
 
     def _update_filled_state(self):
+        """按可清除状态与是否有值刷新 clear 按钮可见性。"""
         if self._is_clearable and not self._is_disabled and not self._is_readonly:
             self._clear_btn.set_visible(self._has_value())
         else:
             self._clear_btn.set_visible(False, animate=False)
 
     def _update_label_animation(self, animate: bool = True):
+        """按填充态驱动 label 浮起动画，非 inside/outside 时跳过。"""
         if self._label_placement not in ("inside", "outside"):
             return
         if not self._has_label():
@@ -479,71 +463,84 @@ class Textarea(
     # 公共 API
     # ============================================================
     def text(self) -> str:
+        """返回当前文本内容。"""
         return self.text_edit.toPlainText()
 
     def set_text(self, text: str):
+        """设置文本内容。"""
         self.text_edit.setPlainText(text)
 
     def clear(self):
+        """清空文本内容。"""
         self.text_edit.clear()
 
     def set_value(self, value: str):
+        """设置文本内容，与 set_text 等价。"""
         self.text_edit.setPlainText(value)
 
     def set_placeholder(self, placeholder: str):
+        """设置占位符并刷新 label 动画。"""
         self._placeholder = placeholder
         self.text_edit.setPlaceholderText(placeholder)
         self._update_label_animation()
 
     def set_label(self, label: str):
+        """设置 label 文本并刷新样式与动画。"""
         self._label_text = label
         self._apply_styles()
         self._update_label_animation()
 
     def set_color(self, color: str):
+        """设置主题色并刷新样式。"""
         self._color = color
         self._apply_styles()
 
     def set_variant(self, variant: str):
+        """设置变体，underlined 时降级为 flat。"""
         if variant == "underlined":
             variant = "flat"
         self._variant = variant
         self._apply_styles()
 
     def set_size(self, size: str):
+        """设置尺寸并刷新样式。"""
         self._size = size
         self._apply_styles()
 
     def set_radius(self, radius: str | None):
+        """设置圆角并刷新样式。"""
         self._radius = radius
         self._apply_styles()
 
     def set_label_placement(self, placement: str):
+        """设置 label 位置并重排布局、样式与动画。"""
         self._label_placement = placement
         self._relayout_for_label_placement()
         self._apply_styles()
         self._update_label_animation()
 
     def set_min_rows(self, rows: int):
+        """设置最小行数并重算高度。"""
         self._min_rows = max(1, int(rows))
         self._max_rows = max(self._max_rows, self._min_rows)
         self._update_textarea_height()
 
     def set_max_rows(self, rows: int):
+        """设置最大行数并重算高度。"""
         self._max_rows = max(self._min_rows, int(rows))
         self._update_textarea_height()
 
     def set_disable_autosize(self, disabled: bool):
+        """设置是否禁用自动高度并重算高度。"""
         self._disable_autosize = disabled
         self._update_textarea_height()
 
     def set_resizable(self, value):
-        """开关/切换手动 grip 拖动
+        """开关/切换手动 grip 拖动。
 
         Args:
-            value: True/False/"vertical"/"horizontal"/"both"
-                   - True 等同 "vertical"
-                   - False 隐藏 grip 并清除 manual_height（恢复 auto-resize）
+            value: True/False/"vertical"/"horizontal"/"both"。True 等同
+                "vertical"；False 隐藏 grip 并清除 manual_height（恢复 auto-resize）。
         """
         new_mode = self._normalize_resize(value)
         self._resize_mode = new_mode
@@ -557,6 +554,7 @@ class Textarea(
             self._reposition_absolute_holders()
 
     def set_theme(self, theme: str):
+        """设置主题，auto 时注册到 ThemeProvider 跟随广播。"""
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -569,93 +567,103 @@ class Textarea(
         self._apply_styles()
 
     def _apply_provider_theme(self, theme: str):
+        """响应 ThemeProvider 的主题广播并刷新样式。"""
         self._theme = theme
         self._apply_styles()
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的明暗主题。
+
+        Args:
+            mode: 主题模式，light / dark / auto。
+
+        Returns:
+            light 或 dark；auto 时取 ThemeProvider 的当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_is_disabled(self, disabled: bool):
+        """设置禁用态并刷新样式。"""
         self._is_disabled = disabled
         self._apply_styles()
 
     def set_is_invalid(self, invalid: bool):
+        """设置非法态并刷新样式。"""
         self._is_invalid = invalid
         self._apply_styles()
 
     def set_is_required(self, required: bool):
+        """设置必填态并刷新样式。"""
         self._is_required = required
         self._apply_styles()
 
     def set_is_readonly(self, readonly: bool):
+        """设置只读态并刷新样式。"""
         self._is_readonly = readonly
         self.text_edit.setReadOnly(readonly)
         self._apply_styles()
 
     def set_is_clearable(self, clearable: bool):
+        """设置是否可清除并刷新样式与填充态。"""
         self._is_clearable = clearable
         self._apply_styles()
         self._update_filled_state()
 
     def set_description(self, description: str):
+        """设置描述文本并刷新样式。"""
         self._description = description
         self._apply_styles()
 
     def set_error_message(self, message: str):
+        """设置错误文本并刷新样式。"""
         self._error_message = message
         self._apply_styles()
 
     def set_top_right_content(self, content, on_click=None):
-        """设置 wrapper 右上角内容（layout 内 AlignTop）
-
-        典型用途: 字数徽章、字符计数器、关闭按钮。
-        与内置的 clear 按钮共存——clear 在 top_right_content 的外侧（更靠右）。
-        """
+        """设置 wrapper 右上角内容（如字数徽章）；与 clear 按钮共存。"""
         self._top_right_content = content
         if on_click is not None:
             self._on_top_right_click = on_click
         self._apply_styles()
 
     def set_center_right_content(self, content, on_click=None):
-        """设置 wrapper 垂直居中（右侧）内容（绝对定位，随 wrapper 高度实时居中）
-
-        典型用途: 始终垂直居中的发送按钮、确认按钮。
-        """
+        """设置 wrapper 垂直居中的绝对定位内容，常用于发送/确认按钮。"""
         self._center_right_content = content
         if on_click is not None:
             self._on_center_right_click = on_click
         self._apply_styles()
 
     def set_bottom_right_content(self, content, on_click=None):
-        """设置 wrapper 右下角内容（绝对定位，类似 Tailwind absolute right-X bottom-X）
-
-        典型用途: 多行 Chat 风格的发送按钮、提交按钮。
-        距右/底偏移由 `bottom_right_offset=(right_px, bottom_px)` 控制（默认 (8, 8)）。
-        """
+        """设置 wrapper 右下角内容（绝对定位，如 Chat 发送按钮）。"""
         self._bottom_right_content = content
         if on_click is not None:
             self._on_bottom_right_click = on_click
         self._apply_styles()
 
     def set_on_top_right_content_click(self, callback):
+        """设置右上角内容的点击回调并刷新样式。"""
         self._on_top_right_click = callback
         self._apply_styles()
 
     def set_on_center_right_content_click(self, callback):
+        """设置垂直居中内容的点击回调并刷新样式。"""
         self._on_center_right_click = callback
         self._apply_styles()
 
     def set_on_bottom_right_content_click(self, callback):
+        """设置右下角内容的点击回调并刷新样式。"""
         self._on_bottom_right_click = callback
         self._apply_styles()
 
     def set_bottom_right_offset(self, right_px: int, bottom_px: int):
+        """设置右下角槽的右/底偏移并重摆绝对槽。"""
         self._bottom_right_offset = (int(right_px), int(bottom_px))
         self._reposition_absolute_holders()
 
     def set_center_right_offset(self, right_px: int):
+        """设置垂直居中槽的右侧偏移并重摆绝对槽。"""
         self._center_right_offset = int(right_px)
         self._reposition_absolute_holders()

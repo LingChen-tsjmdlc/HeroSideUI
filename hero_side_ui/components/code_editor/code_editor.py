@@ -1,14 +1,7 @@
-"""HeroSideUI CodeEditor 组件 —— 可编辑的代码编辑器（多语言高亮）。
+"""CodeEditor 可编辑代码编辑器：QPlainTextEdit + pygments 实时高亮。
 
-基于 ``QPlainTextEdit``（QPlainTextDocumentLayout，纯文本大文档专用布局，
-官方推荐的代码编辑器载体）：等宽字体（内置 Maple Mono）+ 实时语法高亮
-（统一 pygments）+ 行号栏 + Tab 转 4 空格 + 回车保持缩进（冒号行自动多缩进
-一级）。视觉与 CodeBlock 同源（zinc 底 / One Light·Dark 语法色），编辑器
-特有 token 见 ``themes/component_presets/code_editor.py``。
-
-外壳圆角由 paintEvent 绘制，编辑区/行号栏透明底叠在其上；
-主题自治：注册到 ThemeProvider，切换时只换配色不重建编辑区
-（文本/光标/撤销栈保持）。完整 API / 示例见 ``docs/code_editor.md``。
+等宽字体（内置 Maple Mono）+ 行号栏 + Tab 转空格 + 回车保持缩进；
+主题切换只换配色不重建编辑区。API 见 docs/code_editor.md。
 """
 
 from __future__ import annotations
@@ -39,12 +32,27 @@ class _EditArea(QPlainTextEdit):
     """编辑区本体：只管输入行为（Tab/Shift+Tab/回车缩进），外观由 CodeEditor 管。"""
 
     def __init__(self, tab_width: int, parent: QWidget | None = None) -> None:
+        """创建编辑区本体。
+
+        Args:
+            tab_width: Tab 转空格宽度。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._tab_width = tab_width
         self.setLineWrapMode(QPlainTextEdit.LineWrapMode.NoWrap)
         self.setCursorWidth(2)
 
     def keyPressEvent(self, e) -> None:  # type: ignore[override]
+        """接管 Tab / Shift+Tab / 回车的缩进行为。
+
+        Args:
+            e: Qt 键盘事件。
+
+        Note:
+            回车后先清掉 QPlainTextEdit 自带缩进，再统一补目标缩进；
+            冒号结尾的行额外多缩进一级（v1 简化：不判断字符串内）。
+        """
         if e.key() == Qt.Key.Key_Tab and not e.modifiers():
             cursor = self.textCursor()
             if cursor.hasSelection():
@@ -91,7 +99,14 @@ class _EditArea(QPlainTextEdit):
         super().keyPressEvent(e)
 
     def _indent_selection(self, direction: int) -> None:
-        """选区覆盖的行整体增/删一级缩进；无选区时作用于当前行。"""
+        """选区覆盖的行整体增 / 删一级缩进；无选区时作用于当前行。
+
+        Args:
+            direction: +1 增加缩进，-1 减少缩进。
+
+        Note:
+            所有行的修改包在同一个 edit block 里，保证一次撤销可回退。
+        """
         cursor = self.textCursor()
         if not cursor.hasSelection():
             cursor.movePosition(QTextCursor.MoveOperation.StartOfLine)
@@ -113,10 +128,20 @@ class _EditArea(QPlainTextEdit):
         cursor.endEditBlock()
 
     def _insert_block_indent(self, blk: object, text: str) -> None:
+        """在指定 block 行首插入缩进文本。
+
+        Args:
+            blk: 目标 QTextBlock（以 object 标注避免循环依赖）。
+            text: 要插入的空白串。
+        """
         QTextCursor(blk).insertText(text)
 
     def _remove_block_indent(self, blk: object) -> None:
-        """删掉行首最多 tab_width 个空格（或 1 个 tab）。"""
+        """删掉行首最多 tab_width 个空格（或 1 个 tab）。
+
+        Args:
+            blk: 目标 QTextBlock。
+        """
         line = blk.text()
         strip = 0
         for ch in line:
@@ -150,16 +175,15 @@ class CodeEditor(QWidget):
         ed.clear()   # 清空
 
     Args:
-    \n
-        - value:     预填内容
-        - language:  语言（pygments lexer 短名，如 "python" / "json" / "sql" / "javascript"）；识别失败降级纯文本.
-        - font:      代码字体文件路径；None 用内置 Maple Mono NF CN
-        - font_size: 代码字号(px)；None 用默认（CODE_EDITOR_SPEC["font_size"]）
-        - tab_width: Tab 转空格宽度（默认 4）
-        - min_lines: 编辑区最小可见行数（决定最小高度）
-        - max_lines: 最大行数上限（默认 10000）；超出上限的输入会被截断
-        - theme:     "auto" / "light" / "dark"
-        - parent:    父 widget
+        value: 预填内容。
+        language: 语言（pygments lexer 短名，如 "python"/"json"/"sql"/"javascript"）；识别失败降级纯文本。
+        font: 代码字体 ttf 路径；None 用内置 Maple Mono NF CN。
+        font_size: 代码字号(px)；None 用默认。
+        tab_width: Tab 转空格宽度，默认 4。
+        min_lines: 编辑区最小可见行数（决定最小高度）。
+        max_lines: 最大行数上限，默认 10000；超限输入被截断。
+        theme: "auto" / "light" / "dark"。
+        parent: 父 widget。
     """
 
     text_changed = Signal(str)
@@ -178,6 +202,24 @@ class CodeEditor(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建代码编辑器：编辑区 + 行号栏 + 高亮器 + 行数上限。
+
+        Args:
+            value: 预填内容。
+            language: pygments lexer 短名；识别失败降级纯文本。
+            font: 代码字体 ttf 路径；None 用内置 Maple Mono NF CN。
+            font_size: 代码字号（px）；None 用默认。
+            tab_width: Tab 转空格宽度。
+            min_lines: 最小可见行数（决定最小高度）。
+            max_lines: 行数上限；超限输入被截断。
+            theme: auto / light / dark。
+            parent: 父 widget。
+
+        Note:
+            构造末尾主动 opt_out 全局平滑滚动——QPlainTextEdit
+            整行滚动没有中间帧，平滑动画无收益；主题切换只换配色
+            不重建编辑区，文本 / 光标 / 撤销栈全部保留。
+        """
         super().__init__(parent)
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
@@ -243,14 +285,22 @@ class CodeEditor(QWidget):
             pass
 
     def _set_highlighter(self, language: str) -> None:
-        """装配 pygments 高亮器（语言短名；识别失败降级纯文本）。"""
+        """装配 pygments 高亮器（识别失败降级纯文本）。
+
+        Args:
+            language: pygments lexer 短名。
+
+        Note:
+            切换时先把旧高亮器 setDocument(None) 解绑，避免两个
+            QSyntaxHighlighter 同时挂在同一文档上。
+        """
         old = getattr(self, "_highlighter", None)
         if old is not None:
             old.setDocument(None)  # 解绑旧高亮器
         self._highlighter = PygmentsHighlighter(self._edit.document(), language, self._theme)
 
     def _rescan_highlight(self) -> None:
-        """防抖重扫入口（文本变化/切语言/切主题后调用）。"""
+        """防抖重扫入口（文本变化 / 切语言 / 切主题后调用）。"""
         if self._highlighter is not None:
             self._highlighter.rescan()
 
@@ -259,15 +309,30 @@ class CodeEditor(QWidget):
     # ------------------------------------------------------------
 
     def value(self) -> str:
-        """返回编辑器全文。"""
+        """返回编辑器全文。
+
+        Returns:
+            当前纯文本内容。
+        """
         return self._edit.toPlainText()
 
     def text(self) -> str:
-        """value() 的别名（对齐 Input.text()）。"""
+        """value() 的别名（对齐 Input.text()）。
+
+        Returns:
+            当前全文。
+        """
         return self.value()
 
     def set_value(self, value: str) -> None:
-        """整体替换全文（超出 max_lines 的部分截断；进撤销栈，光标移到文首）。"""
+        """整体替换全文并把光标移到文首。
+
+        Args:
+            value: 新全文；超出 max_lines 的部分会被截断。
+
+        Note:
+            setPlainText 进撤销栈；构造期传 initial=True 的截断不重置光标。
+        """
         self._edit.setPlainText(value)
         self._clamp_lines()
         cursor = self._edit.textCursor()
@@ -275,36 +340,74 @@ class CodeEditor(QWidget):
         self._edit.setTextCursor(cursor)
 
     def set_text(self, text: str) -> None:
-        """set_value() 的别名（对齐 Input.set_text()）。"""
+        """set_value() 的别名（对齐 Input.set_text()）。
+
+        Args:
+            text: 新全文。
+        """
         self.set_value(text)
 
     def clear(self) -> None:
+        """清空编辑区全文。"""
         self._edit.clear()
 
     def set_read_only(self, ro: bool) -> None:
+        """切换只读态。
+
+        Args:
+            ro: True 表示只读。
+        """
         self._edit.setReadOnly(ro)
 
     def is_read_only(self) -> bool:
+        """返回是否只读。
+
+        Returns:
+            True 表示编辑区只读。
+        """
         return self._edit.isReadOnly()
 
     def insert_at_cursor(self, text: str) -> None:
+        """在当前光标位置插入文本。
+
+        Args:
+            text: 要插入的文本。
+        """
         self._edit.textCursor().insertText(text)
 
     def set_max_lines(self, max_lines: int) -> None:
-        """改行数上限；当前内容超出时立即截断到新上限。"""
+        """改行数上限；当前内容超出时立即截断到新上限。
+
+        Args:
+            max_lines: 新上限（下限钳制为 1）。
+        """
         self._max_lines = max(1, int(max_lines))
         self._clamp_lines()
 
     def max_lines(self) -> int:
+        """返回当前行数上限。
+
+        Returns:
+            最大允许行数。
+        """
         return self._max_lines
 
     def set_language(self, language: str) -> None:
-        """切换语言高亮（pygments 短名；切换后立即重扫一次）。"""
+        """切换语言高亮（pygments 短名；切换后立即重扫一次）。
+
+        Args:
+            language: pygments lexer 短名。
+        """
         self._language = language
         self._set_highlighter(language)
         self._rescan_highlight()
 
     def set_font_size(self, size_px: int) -> None:
+        """切换字号并刷新字体、行高缓存与最小高度。
+
+        Args:
+            size_px: 新字号（像素）。
+        """
         self._font_size = int(size_px)
         self._edit.setFont(mono_qfont(self._font_size, self._font_path))
         self._invalidate_metrics()
@@ -313,6 +416,11 @@ class CodeEditor(QWidget):
 
     @property
     def theme(self) -> str:
+        """当前实际生效的主题名。
+
+        Returns:
+            light 或 dark（auto 已解析为具体值）。
+        """
         return self._theme
 
     # ------------------------------------------------------------
@@ -320,9 +428,13 @@ class CodeEditor(QWidget):
     # ------------------------------------------------------------
 
     def _clamp_lines(self, initial: bool = False) -> None:
-        """超过 max_lines 时截断尾部，并发射 max_lines_exceeded(被截掉的行数)。
+        """超过 max_lines 时截断尾部，并发射 max_lines_exceeded。
 
-        initial=True 用于构造期：初始 value 超限只截断不重置光标。
+        Args:
+            initial: True 用于构造期（初始 value 超限只截断不重置光标）。
+
+        Note:
+            至少保留一行；信号载荷为被截掉的行数。
         """
         doc = self._edit.document()
         excess = doc.blockCount() - self._max_lines
@@ -343,6 +455,11 @@ class CodeEditor(QWidget):
     # ------------------------------------------------------------
 
     def _on_text_changed(self) -> None:
+        """文本变化回调：截断、发信号、失效行高、同步行号栏、启动防抖重扫。
+
+        Note:
+            防抖窗口 150ms，停顿后才跑 pygments 全文重扫。
+        """
         self._clamp_lines()
         self.text_changed.emit(self.value())
         self._invalidate_metrics()
@@ -350,15 +467,19 @@ class CodeEditor(QWidget):
         self._rescan_timer.start()  # 防抖：停顿 150ms 后重扫（pygments 语言）
 
     def _on_cursor(self) -> None:
+        """光标移动回调：同步行号栏当前行高亮。
+
+        Note:
+            当前行标识只由 gutter_current 承担，编辑区不加背景。
+        """
         # 当前行的标识只由行号栏变色承担（gutter_current），编辑区不加背景
         self._sync_gutter()
 
     def _visible_metrics(self) -> tuple[int, int, int]:
-        """(首个可见块首行在行号栏坐标系里的 y, 首个可见行号, 总行数)。
+        """取 (首行 y, 首行号, 总行数)。
 
-        y = viewport 在编辑区内的顶部偏移（QSS padding-top 造成）+
-        首个可见 block 在 viewport 内的偏移（documentMargin/滚动造成）。
-        少加第一项就是行号整体上移一个 padding 的错位。
+        Returns:
+            首行 y 需叠加 viewport 偏移与 block 偏移，防行号错位。
         """
         edit = self._edit
         first = edit.firstVisibleBlock()
@@ -373,11 +494,10 @@ class CodeEditor(QWidget):
         return top, first_line, total
 
     def _line_height(self) -> int:
-        """编辑区真实行高（带缓存，滚动帧内高频调用）。
+        """取真实行高（带缓存）。
 
-        以首个 block 的 boundingRect 为准（含 documentMargin）；
-        fontMetrics().height() 在改字号后与实际行高不一致，会导致行号错位。
-        缓存在文本/字号变化时失效（见 _invalidate_metrics）。
+        Returns:
+            首 block boundingRect 的高度；空文档回退 fontMetrics().height()。
         """
         if self._lh_cache > 0:
             return self._lh_cache
@@ -389,10 +509,15 @@ class CodeEditor(QWidget):
         return self._lh_cache
 
     def _invalidate_metrics(self) -> None:
-        """文本/字号变化后调用，下一帧重算行高。"""
+        """文本 / 字号变化后调用，下一帧重算行高。"""
         self._lh_cache = 0
 
     def _sync_gutter(self) -> None:
+        """把字体、行高、当前行、可见范围推送给行号栏并自适应其宽度。
+
+        Note:
+            宽度不变时不触碰几何，避免滚动帧里反复布局。
+        """
         line_height = self._line_height()
         top, first_line, total = self._visible_metrics()
         current = self._edit.textCursor().blockNumber() + 1
@@ -416,6 +541,7 @@ class CodeEditor(QWidget):
             self._gutter.setFixedWidth(width)
 
     def _apply_min_height(self) -> None:
+        """按 min_lines × 行高设置编辑区最小高度。"""
         self._edit.setMinimumHeight(self._line_height() * self._min_lines)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
@@ -441,11 +567,27 @@ class CodeEditor(QWidget):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析成实际主题名。
+
+        Args:
+            mode: light / dark / auto。
+
+        Returns:
+            light / dark 原样返回；其余取 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_theme(self, theme: str) -> None:
+        """切换主题，并维护 ThemeProvider 注册状态。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            从 auto 切回固定主题时先 unregister，避免广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -458,10 +600,23 @@ class CodeEditor(QWidget):
         self._rebuild_theme()
 
     def _apply_provider_theme(self, theme: str) -> None:
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，也不改 _theme_mode。
+        """
         self._theme = theme
         self._rebuild_theme()
 
     def _rebuild_theme(self) -> None:
+        """主题变更后只换配色，不重建编辑区。
+
+        Note:
+            文本 / 光标 / 撤销栈全部保留；高亮器 set_theme 内部已含重扫。
+        """
         # 编辑区不重建：文本/光标/撤销栈全保留，只换配色
         self._apply_palette()
         if self._highlighter is not None:
@@ -473,6 +628,11 @@ class CodeEditor(QWidget):
     # ------------------------------------------------------------
 
     def paintEvent(self, event) -> None:  # type: ignore[override]
+        """自绘圆角外壳底色与边框。
+
+        Args:
+            event: Qt 绘制事件。
+        """
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -487,6 +647,11 @@ class CodeEditor(QWidget):
         painter.end()
 
     def resizeEvent(self, event) -> None:  # type: ignore[override]
+        """尺寸变化后同步行号栏可见范围。
+
+        Args:
+            event: Qt 尺寸变化事件。
+        """
         super().resizeEvent(event)
         self._sync_gutter()
 

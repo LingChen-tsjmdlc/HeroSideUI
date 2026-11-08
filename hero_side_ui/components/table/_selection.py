@@ -1,25 +1,24 @@
-"""Table 选中状态机（mixin）。
-
-对齐 HeroUI v2 selectionMode：none / single / multiple。
-single 点击行即选中（点已选项保持）；multiple 点击切换，支持 select-all。
-disallow_empty_selection 时禁止取消最后一项。
-
-宿主必须提供：
-    self._selection_mode (str), self._selected_keys (set[str]),
-    self._disabled_keys (set[str]), self._row_order (list[str] 行 key 顺序),
-    self._disallow_empty_selection (bool),
-    self.selection_changed (Signal(set)), self.row_action (Signal(str)),
-    self._apply_row_states() —— 重绘所有行的选中 / hover 视觉。
-"""
+"""Table 选中状态机 mixin：none/single/multiple，支持 select-all 与必选堵截。"""
 
 from __future__ import annotations
 
 
 class _SelectionMixin:
+    """表格选中状态机 mixin，管理 none/single/multiple 三种模式。"""
+
     def _selectable_keys(self) -> list:
+        """返回未禁用的可选行 key 列表。"""
         return [k for k in self._row_order if k not in self._disabled_keys]
 
     def _on_row_clicked(self, key: str):
+        """处理行点击，按选择模式更新选中项并发出信号。
+
+        Args:
+            key: 被点击的行 key。
+
+        Note:
+            none 模式只发 row_action；禁用行直接返回；必选模式下取消最后一项改为发出 row_action。
+        """
         if self._selection_mode == "none":
             self.row_action.emit(key)
             return
@@ -47,6 +46,11 @@ class _SelectionMixin:
         self.row_action.emit(key)
 
     def _toggle_select_all(self):
+        """切换全选状态并发出变更信号。
+
+        Note:
+            仅 multiple 模式生效；已全选时清空，但必选模式下保持不动。
+        """
         if self._selection_mode != "multiple":
             return
         old = set(self._selected_keys)

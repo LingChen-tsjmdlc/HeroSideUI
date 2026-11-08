@@ -10,6 +10,16 @@ from ...themes import HEROUI_COLORS
 
 
 def _opt(d: dict, *keys, default=None):
+    """按 keys 顺序返回字典中首个命中键的值。
+
+    Args:
+        d: 待查询的字典。
+        *keys: 依次尝试的键名。
+        default: 所有键都未命中时的返回值。
+
+    Returns:
+        首个命中键对应的值，或 default。
+    """
     for k in keys:
         if k in d:
             return d[k]
@@ -17,19 +27,12 @@ def _opt(d: dict, *keys, default=None):
 
 
 def _resolve_unselected_text(theme: str) -> QColor:
-    """未选中 tab 文字色: HeroUI text-default-500"""
+    """返回未选中 tab 的文字色（text-default-500）。"""
     return QColor(HEROUI_COLORS["default"][500])
 
 
 def _resolve_selected_text(variant: str, color: str, theme: str) -> QColor:
-    """选中态 tabContent 颜色:
-    - solid/bordered/light: text-{color}-foreground 即对色的 contrast 文字色
-        * default: light=#000 / dark=#fff
-        * primary/secondary/success/danger: 对比白
-        * warning: 对比黑
-    - underlined: text-{color}（即色的主色 500）
-        * default: light=#000 / dark=#fff（即 foreground）
-    """
+    """取选中态文字色：contrast 色（warning 黑/其余白），underlined 用主色 500。"""
     if variant == "underlined":
         if color == "default":
             return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
@@ -80,19 +83,7 @@ def _resolve_list_border(variant: str, theme: str) -> QColor | None:
 
 
 def _resolve_radius_px(radius: str, size: str, height: int) -> tuple:
-    """返回 (list_radius, tab_radius) 像素值。
-    映射 HeroUI v2 tabs.ts:
-        none -> (0, 0)
-        sm   -> (medium=10, small=6)  我们项目 RADIUS sm=4 md=8 lg=14
-        md   -> (medium, small)
-        lg   -> (large, medium)
-        full -> (height/2, height/2)
-    我们映射:
-        sm/md -> (8, 4)
-        lg    -> (14, 8)
-        none  -> (0, 0)
-        full  -> (height/2, height/2)
-    """
+    """取 (list_radius, tab_radius) 像素对；full 取高度一半。"""
     if radius == "none":
         return (0, 0)
     if radius == "full":

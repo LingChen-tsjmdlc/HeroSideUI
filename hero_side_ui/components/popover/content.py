@@ -10,17 +10,14 @@ from ._constants import DEFAULT_PADDING
 # PopoverContent（插槽，类似 CardBody）
 # ============================================================
 class PopoverContent(QWidget):
-    """Popover 内容插槽 — 任意 widget 都可以塞进来。
-
-    用法::
-
-        pc = PopoverContent()
-        pc.layout().addWidget(QLabel("Hello"))
-        pc.layout().addWidget(some_button)
-        popover.set_content(pc)
-    """
+    """Popover 内容插槽，任意 widget 塞进 layout。"""
 
     def __init__(self, parent: QWidget | None = None):
+        """构造 Popover 内容插槽。
+
+        Args:
+            parent: 父控件，通常为 Popover 自身。
+        """
         super().__init__(parent)
         self.setObjectName("heroPopoverContent")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)

@@ -17,15 +17,7 @@ from .item import ListboxItem
 
 
 class ListboxSection(QWidget):
-    """分组容器。
-
-    用法::
-
-        sec = ListboxSection("Actions", show_divider=True)
-        sec.add_item("Copy", key="copy")
-        sec.add_item("Paste", key="paste")
-        listbox.add_section(sec)
-    """
+    """分组容器：heading + 子 item 列表，可选底部分隔线。"""
 
     def __init__(
         self,
@@ -67,17 +59,37 @@ class ListboxSection(QWidget):
         self._items: list[ListboxItem] = []
 
     def title(self) -> str:
+        """返回当前分组标题。
+
+        Returns:
+            str: 分组 heading 文案（空串表示无标题）。
+        """
         return self._title
 
     def set_title(self, t: str):
+        """设置分组标题（空串隐藏 heading）。
+
+        Args:
+            t: 新标题；为空则隐藏 heading 控件。
+        """
         self._title = t
         self._heading.setText(t)
         self._heading.setVisible(bool(t))
 
     def show_divider(self) -> bool:
+        """是否显示底部分隔线。
+
+        Returns:
+            bool: True 表示在分组底部绘制分隔线。
+        """
         return self._show_divider
 
     def set_show_divider(self, v: bool):
+        """设置是否显示底部分隔线。
+
+        Args:
+            v: 是否显示分隔线；变更后立即触发重绘。
+        """
         self._show_divider = bool(v)
         self.update()
 
@@ -93,6 +105,11 @@ class ListboxSection(QWidget):
         return it
 
     def items(self) -> list[ListboxItem]:
+        """返回分组内的子项列表副本。
+
+        Returns:
+            list[ListboxItem]: 当前分组下的所有 item。
+        """
         return list(self._items)
 
     def _apply_style(
@@ -108,6 +125,19 @@ class ListboxSection(QWidget):
         highlight_on_focus: bool,
         selectable: bool,
     ):
+        """由父 Listbox 注入并套用样式到本分组及其所有子项。
+
+        Args:
+            variant: 视觉变体（如 solid / light / flat）。
+            color: 主题色名（如 default / primary）。
+            size: 尺寸档位（sm / md / lg）。
+            radius: 圆角档位。
+            theme: 主题（light / dark）。
+            disable_animation: 是否关闭过渡动画。
+            hide_selected_icon: 是否隐藏选中勾选图标。
+            highlight_on_focus: 聚焦时是否高亮。
+            selectable: 条目是否可选中。
+        """
         self._theme = theme
         self._size = size
 
@@ -147,6 +177,7 @@ class ListboxSection(QWidget):
         self.update()
 
     def paintEvent(self, e):
+        """重绘事件：在分组底部绘制一条分隔线（若启用）。"""
         if not self._show_divider:
             return
         p = QPainter(self)

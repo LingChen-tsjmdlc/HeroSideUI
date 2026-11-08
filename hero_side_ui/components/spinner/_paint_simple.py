@@ -1,12 +1,4 @@
-"""variant=simple —— Tailwind 经典 loader。
-
-HeroUI SVG 原版结构:
-    <svg viewBox="0 0 24 24" fill="none">
-      <circle cx=12 cy=12 r=10 stroke="currentColor" strokeWidth=4 opacity=0.25 />
-      <path d="M4 12a8 8 0 018-8V0..." fill="currentColor" opacity=0.75 />
-    </svg>
-整体 animate-spin (1s linear infinite)
-"""
+"""simple 变体：Tailwind 经典 loader（25% 底环 + 1/4 实心扇形整体旋转）。"""
 
 from __future__ import annotations
 
@@ -22,7 +14,19 @@ def paint_simple(
     border: float,
     phase: float,
 ):
-    """phase ∈ [0, 1)；驱动器周期 1.0s。"""
+    """绘制 simple 变体：25% 底环加 1/4 实心扇形整体旋转。
+
+    Args:
+        painter: 目标 QPainter，函数内平移旋转并以 save/restore 包裹。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 主色，底环与扇形分别取其 25% 与 75% 透明度。
+        border: 笔触宽度，同时参与扇形内外半径计算。
+        phase: 全局相位，取值 [0, 1)，驱动器周期 1.0s。
+
+    Note:
+        半径按 24px viewBox 等比缩放，故取 w、h 较小边并留 1px 抗锯齿边。
+    """
     side = min(w, h) - 2  # 留 1px 抗锯齿边
     cx = w / 2
     cy = h / 2

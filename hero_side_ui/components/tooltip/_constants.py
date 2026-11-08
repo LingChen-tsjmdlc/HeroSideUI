@@ -1,8 +1,4 @@
-"""Tooltip 私有常量。
-
-为什么独立：tooltip.py 已超 800 行红线，顺势把零散的 ARROW_SIZE / VALID_PLACEMENTS 集中到这里；
-        _position.py 也需要 ARROW_SIZE，避免循环 import 与重复定义。
-"""
+"""Tooltip 私有常量（ARROW_SIZE 等）；独立成文件避免循环 import。"""
 
 from __future__ import annotations
 

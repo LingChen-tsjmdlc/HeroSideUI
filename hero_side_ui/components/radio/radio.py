@@ -1,20 +1,6 @@
-"""HeroSideUI Radio Component
-基于 HeroUI v2 设计风格，保持 PySide 原生 API
+"""Radio 单选组件：wrapper 圆环 + control 内点 + label/description。
 
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/radio.ts
-组件来源: https://github.com/heroui-inc/heroui/tree/main/packages/components/radio
-
-结构 (slots):
-    Radio (继承 RadioBase → QAbstractButton)
-        ├── wrapper  (外圈圆环，带边框)
-        ├── control  (内圆点，选中时缩放+透明度过渡)
-        └── labelWrapper
-            ├── label        (children/text)
-            └── description  (副文本)
-
-特性对齐 HeroUI:
-    - 6 种颜色 / 3 种尺寸 / hover bg / press scale / control 过渡 / disabled / invalid
-    - 双 variant：default（圆点 radio）+ card（卡片选择器，对齐 v2 Custom Styles 示例）
+double variant：default 经典圆点与 card 卡片选择器（对齐 v2 Custom Styles）。
 """
 
 from PySide6.QtCore import QRectF, QSize, Qt
@@ -33,14 +19,10 @@ from ._base import VALID_COLORS, VALID_SIZES, VALID_VARIANTS, RadioBase
 
 
 class Radio(RadioBase):
-    """HeroUI 风格的 Radio 组件
+    """HeroUI 风格 Radio，配合 RadioGroup 互斥；独立使用时可 toggle。
 
-    单选 wrapper —— 配合 RadioGroup 使用时由 group 互斥；独立使用时
-    setCheckable(True) 即可像普通按钮那样 toggle。
-
-    variant:
-        "default" — 经典圆点 radio（label 在右）
-        "card"    — 卡片式选择器（label 在左，圆点在右，对齐 HeroUI v2 Custom Styles）
+    Note:
+        variant 为 card 时改用卡片绘制与尺寸计算，其余走默认圆点布局。
     """
 
     def __init__(
@@ -58,6 +40,25 @@ class Radio(RadioBase):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """初始化 Radio，参数原样转发给 RadioBase。
+
+        Args:
+            text: 显示文本。
+            value: 选中时汇报的值。
+            description: 辅助说明文本。
+            is_selected: 是否初始选中。
+            color: 颜色主题名。
+            size: 尺寸名。
+            variant: 变体名，default 或 card。
+            is_disabled: 是否禁用。
+            is_invalid: 是否处于非法状态。
+            disable_animation: 是否关闭动画。
+            theme: 主题模式，auto/light/dark。
+            parent: Qt 父对象。
+
+        Note:
+            本类不重复做参数校验，构造逻辑全部委托给父类 RadioBase。
+        """
         super().__init__(
             text=text,
             value=value,
@@ -77,10 +78,12 @@ class Radio(RadioBase):
     # 字体
     # ============================================================
     def _label_font(self) -> QFont:
+        """按当前尺寸配置生成标题文本字体。"""
         cfg = self._size_config()
         return make_text_qfont(cfg["label_font_size"], "normal")
 
     def _desc_font(self) -> QFont:
+        """按当前尺寸配置生成说明文本字体。"""
         cfg = self._size_config()
         return make_text_qfont(cfg["desc_font_size"], "normal")
 
@@ -88,15 +91,22 @@ class Radio(RadioBase):
     # 几何
     # ============================================================
     def _refresh_geometry(self):
+        """套用标题字体后委托父类刷新几何。"""
         self.setFont(self._label_font())
         super()._refresh_geometry()
 
     def sizeHint(self) -> QSize:
+        """按变体分派到对应的尺寸计算。"""
         if self._variant == "card":
             return self._card_size_hint()
         return self._default_size_hint()
 
     def _default_size_hint(self) -> QSize:
+        """计算默认圆点布局的推荐尺寸，含 4px 视觉点击热区。
+
+        Returns:
+            由圆环、文本与上下留白组成的 QSize。
+        """
         cfg = self._size_config()
         wrapper = cfg["wrapper"]
         gap = cfg["gap"]
@@ -120,6 +130,11 @@ class Radio(RadioBase):
         return QSize(total_w + pad * 2, total_h + pad * 2)
 
     def _card_size_hint(self) -> QSize:
+        """计算 card 变体的推荐尺寸，宽度不超过配置上限。
+
+        Returns:
+            含内边距与圆点布局的 QSize。
+        """
         cfg = self._size_config()
         wrapper = cfg["wrapper"]
         pad = cfg["card_padding"]
@@ -148,6 +163,11 @@ class Radio(RadioBase):
     # 色彩决策
     # ============================================================
     def _palette(self):
+        """按主题、颜色与状态计算默认变体的绘制色组。
+
+        Returns:
+            边框、选中边框、内点、hover 底色、标题色、说明色的六元组。
+        """
         is_dark = self._theme == "dark"
         dc = HEROUI_COLORS["default"]
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
@@ -182,7 +202,11 @@ class Radio(RadioBase):
         return border, selected_border, control, hover_bg, label_color, desc_color
 
     def _card_palette(self):
-        """卡片变体专用：底色 / 边框 / hover 底色"""
+        """按主题与状态计算卡片变体的底色与边框色。
+
+        Returns:
+            卡片底色、hover 底色、选中边框色的三元组。
+        """
         is_dark = self._theme == "dark"
         dc = HEROUI_COLORS["default"]
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
@@ -204,6 +228,11 @@ class Radio(RadioBase):
     # paintEvent — 完整自绘
     # ============================================================
     def paintEvent(self, event):
+        """按变体分派到对应的自绘流程。
+
+        Args:
+            event: Qt 绘制事件。
+        """
         if self._variant == "card":
             self._paint_card()
         else:
@@ -213,6 +242,11 @@ class Radio(RadioBase):
     # 默认 variant
     # ----------------------------------------------------------------
     def _paint_default(self):
+        """自绘默认圆点变体，含按压缩放与选中渐变。
+
+        Note:
+            内点按 _control_progress 缩放渐显；按压时最多缩小 5%。
+        """
         cfg = self._size_config()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -342,6 +376,11 @@ class Radio(RadioBase):
     # 选中时边框变主色；hover 时切换底色。
     # ----------------------------------------------------------------
     def _paint_card(self):
+        """自绘 card 变体：卡片底、左侧文本与右侧圆点。
+
+        Note:
+            选中边框由底色向主色渐变；按压时最多缩小 3%。
+        """
         cfg = self._size_config()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -496,6 +535,16 @@ class Radio(RadioBase):
     # ============================================================
     @staticmethod
     def _lerp(a: int, b: int, t: float) -> int:
+        """在 a、b 之间按 t 线性插值并裁剪到 0..255。
+
+        Args:
+            a: 起始通道值。
+            b: 目标通道值。
+            t: 插值比例。
+
+        Returns:
+            裁剪后的整数通道值。
+        """
         return max(0, min(255, round(a + (b - a) * t)))
 
 

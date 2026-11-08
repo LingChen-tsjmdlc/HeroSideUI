@@ -22,6 +22,16 @@ from ..button import Button
 # ============================================================
 class _EndContentWidget(QWidget):
     def __init__(self, parent=None):
+        """构建 clear + selector 双按钮槽位。
+
+        Args:
+            parent: Qt 父对象。
+
+        Note:
+            左 margin 8px 让 clear 与输入文本保持间距（历史反馈：缺左边距
+            时 clear 像被裁进文本区）；两个按钮用 HeroSideUI 自己的 Button
+            / SelectorButton，着色与 hover 全部内置自管理。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self._h = QHBoxLayout(self)

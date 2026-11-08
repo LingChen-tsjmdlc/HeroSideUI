@@ -1,9 +1,4 @@
-"""Input 组件的样式计算与应用 mixin（私有）。
-
-把 _apply_styles 及其辅助颜色解析方法（约 500 行）从主组件文件抽出，
-让 input.py 专注于 API + 编排，本文件专注于"如何根据 variant/color/size/theme/state
-推导出每个子部件的 QSS / 字色 / 边框"。
-"""
+"""Input 组件的样式计算与应用 mixin（私有）。"""
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPalette
@@ -27,7 +22,15 @@ class _InputStylingMixin:
     # 样式应用
     # ============================================================
     def _apply_styles(self):
-        """计算并应用全部样式"""
+        """计算并应用全部样式：外框、line_edit、label、图标、clear、helper。
+
+        Note:
+            用户显式接管过宽度时释放 wrapper 的 min_width 并把内部 layout
+            设为 SetNoConstraint，避免 wrapper 真实宽度超出 Input 视口被裁；
+            必须用 QWidget.setMinimumWidth 而非 self.setMinimumWidth，
+            后者被重写为标记 _user_width_locked 会污染守卫位。
+            首次应用不走颜色补间，避免从全透明淡入。
+        """
         is_dark = self._theme == "dark"
         size_config = self._size_config()
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["default"])
@@ -311,17 +314,16 @@ class _InputStylingMixin:
     # 颜色决策
     # ------------------------------------------------------------
     def _flat_bg_colors(self, is_dark: bool, colors: dict, dc: dict):
-        """抽离 flat 变体的三态底色，供 faded(底色) / bordered(默认边框) 复用。
+        """取 flat 三态底色，供 faded / bordered 复用。
 
-        ★ HeroSideUI 规则：
-        - 亮色主题 hover/focus: 朝"压暗"方向走（色阶数字变大，颜色变深）
-          resting {color}-100 → hover {color}-200 → focus {color}-200
-          default: resting default-100 → hover default-200 → focus default-200
-        - 暗色主题 hover/focus: 朝"提亮"方向走（透明度增加，看起来更亮）
-          resting rgba({color}, 0.15) → hover rgba({color}, 0.25) → focus rgba({color}, 0.25)
-          default: resting default-800 → hover default-700 → focus default-700
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
 
-        返回 (bg, bg_hover, bg_focus)。
+        Returns:
+            (bg, bg_hover, bg_focus)；亮色 hover 压暗一档，
+            暗色 hover 提亮（透明度 0.15→0.25）。
         """
         is_default = self._color == "default"
         if is_default:
@@ -349,16 +351,20 @@ class _InputStylingMixin:
         return bg, bg_hover, bg_focus
 
     def _resolve_wrapper_colors(self, is_dark: bool, colors: dict, dc: dict):
-        """返回 (bg, border, border_color, bg_hover, bg_focus, border_hover, border_focus, main_color)
+        """取全套外框颜色八元组。
 
-        HeroSideUI 自定义规则（对 HeroUI 的偏离）:
-        - flat: 同 HeroUI —— 浅彩/浅灰底，hover/focus 略变化。无边框。
-        - faded: **底色使用 flat 的底色**（不再是固定灰 default-100）；
-                 边框行为保留 —— 默认灰，hover/focus 变主色（default 时变 default-400）
-        - bordered: **默认边框 = flat 的底色**（浅彩或浅灰），透明背景；
-                    hover 边框变 {color}-400（暗色 -600），
-                    focus 边框变 {color}-500（暗色保持 -500）。default 时 hover→500 focus→900/50。
-        - underlined: 透明底 + 底部 2px 线（hover 变浅灰），focus 时底部 after 彩条展开。
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            (bg, border, border_color, bg_hover, bg_focus,
+            border_hover, border_focus, main_color)。
+
+        Note:
+            isInvalid 时主色与边框被 danger 覆盖；
+            faded / bordered 的底色策略有意偏离 HeroUI 原生。
         """
         is_default = self._color == "default"
         # 主色: 用于 focus 边框 / underlined after / label
@@ -451,7 +457,17 @@ class _InputStylingMixin:
         )
 
     def _resolve_input_text_color(self, is_dark: bool, colors: dict, dc: dict):
-        """返回 (fg_color, placeholder_color)"""
+        """返回输入文字色与占位符色。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            (fg_color, placeholder_color)；invalid 态走 danger 色，
+            有色变体文字跟主色，default 走中性黑/白。
+        """
         if self._is_invalid:
             d = HEROUI_COLORS["danger"]
             return (
@@ -481,13 +497,31 @@ class _InputStylingMixin:
         return fg, ph
 
     def _resolve_label_resting_color(self, is_dark: bool, colors: dict, dc: dict) -> str:
-        """未浮动时 label 颜色 — HeroUI 默认 text-foreground-500"""
+        """未浮动时 label 颜色 —— HeroUI 默认 text-foreground-500。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典（本方法未使用）。
+            dc: default 色阶字典。
+
+        Returns:
+            十六进制色串；invalid 态为 danger-500。
+        """
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
         return dc[400] if is_dark else dc[500]
 
     def _resolve_label_floated_color(self, is_dark: bool, colors: dict, dc: dict) -> str:
-        """浮动后（聚焦/有值）label 颜色"""
+        """浮动后（聚焦 / 有值）label 颜色。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            十六进制色串；有色变体跟主色，default 聚焦时变深。
+        """
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
         # 有色变体: label 跟主色
@@ -502,6 +536,14 @@ class _InputStylingMixin:
     # 圆角
     # ------------------------------------------------------------
     def _resolve_radius(self, size_config: dict) -> str:
+        """解析外框圆角值。
+
+        Args:
+            size_config: 尺寸 token（default_radius / height / inside_height）。
+
+        Returns:
+            full 按实际生效的 wrapper 高度折算；其余取全局 RADIUS token。
+        """
         radius_key = self._radius or size_config.get("default_radius", "md")
         if radius_key == "full":
             # 按实际生效的 wrapper 高度算半径（inside label 模式下高度更大）
@@ -514,12 +556,17 @@ class _InputStylingMixin:
     # start / end content (图标 or 自定义 widget)
     # ------------------------------------------------------------
     def _render_adornment_icons(self, is_dark, colors, dc, size_config):
-        """渲染 start_content / end_content 到对应槽位。
+        """渲染 start / end_content 到槽位。
 
-        content 规则：
-            - None：隐藏槽位
-            - str：当作图标名/SVG 路径，渲染为图标。如果同时有 on_*_click，则包成可点击按钮
-            - QWidget：直接放入槽位（当作用户自定义组件，比如 Button）
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+            size_config: 尺寸 token（start/end_icon_size）。
+
+        Note:
+            content 规则：None 隐藏；str 图标名（带 on_click 时包按钮）；
+            QWidget 直接放入。
         """
         self._fill_slot(
             slot=self._start_slot,
@@ -541,7 +588,22 @@ class _InputStylingMixin:
         )
 
     def _fill_slot(self, slot, slot_layout, content, on_click, icon_size, is_dark, dc):
-        """把 content 填充到 slot 容器中。"""
+        """把 content 填充到 slot 容器中。
+
+        Args:
+            slot: 槽位 QWidget。
+            slot_layout: 槽位内部 layout。
+            content: None / 图标名字符串 / 用户 QWidget。
+            on_click: 图标点击回调；None 时渲染静态图标。
+            icon_size: 图标边长（像素）。
+            is_dark: 是否深色主题。
+            dc: default 色阶字典。
+
+        Note:
+            用户 QWidget 已在槽位时跳过 teardown+rebuild，避免 FocusOut
+            触发重排时 reparent 正在接收鼠标事件的按钮导致释放事件丢失；
+            内部创建的 widget 带 _hs_internal 标记可安全 deleteLater。
+        """
         # 用户传入的 QWidget 已经在槽位里时跳过 teardown+rebuild，
         # 避免 FocusOut 触发 _apply_styles → _fill_slot 时 reparent
         # 正在接收鼠标事件的 Button，导致 mouseReleaseEvent 丢失。

@@ -1,10 +1,4 @@
-"""Popover paintEvent 与颜色/圆角解析 mixin（私有）。
-
-负责：
-- _bg_color / current_bg_color / _text_color：颜色解析
-- _resolve_radius / _content_rect_size：圆角与内容区尺寸
-- paintEvent: 阴影 + 圆角主体 + 箭头自绘
-"""
+"""Popover paintEvent mixin：颜色/圆角解析 + 阴影主体箭头自绘。"""
 
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
@@ -20,6 +14,11 @@ class _PopoverPaintMixin:
     # 颜色
     # ============================================================
     def _bg_color(self) -> QColor:
+        """解析当前 popover 底色。
+
+        Returns:
+            QColor: default 在亮/暗下取固定灰阶；其余取调色板 500 色。
+        """
         is_dark = self._theme == "dark"
         if self._color == "default":
             return QColor("#ffffff" if not is_dark else "#27272a")
@@ -27,30 +26,19 @@ class _PopoverPaintMixin:
         return QColor(c[500])
 
     def current_bg_color(self) -> QColor:
-        """公共 getter：返回 popover 当前实际底色 (含 color/theme 解析)。
-
-        供子组件（如 ScrollShadow / Autocomplete 列表容器）需要"与 popover 底色严丝
-        合缝融合" 时使用——遍历 parent 链 duck-typing 查找 ``current_bg_color`` 同名
-        方法即可。
-
-        与 Card 的 :meth:`current_bg_color` 同语义、同签名。
-        """
+        """返回当前实际底色，供子组件 duck-typing 融合使用（与 Card 同语义）。"""
         return self._bg_color()
 
     def current_corner_radius(self) -> float:
-        """公共 getter：返回 popover 当前实际圆角半径 (px)。
-
-        供 ScrollShadow 这类需要"把渐变阴影裁剪到圆角矩形内"的子组件使用：
-        阴影 overlay 是矩形 widget，paintEvent 里画的是矩形渐变；当滚到中间时
-        顶/底两条阴影都显示，会把 popover 圆角内的 4 个角染色（看起来像直角）。
-        通过 duck-typing 沿父链找到这个 API → overlay 用 QPainterPath 裁剪到
-        圆角矩形 → 阴影自然跟随圆角内收。
-
-        约定与 ``current_bg_color`` 一致：duck-typing 范式（MEMORY 第 32 条）。
-        """
+        """返回当前实际圆角半径 px，供 ScrollShadow 等子组件裁剪渐变用。"""
         return float(self._resolve_radius())
 
     def _text_color(self) -> QColor:
+        """解析内容文字色（供裸 QLabel 反色使用）。
+
+        Returns:
+            QColor: 默认主题取近黑/近白；warning 取纯黑；彩色取纯白。
+        """
         is_dark = self._theme == "dark"
         if self._color == "default":
             return QColor("#11181c" if not is_dark else "#ecedee")
@@ -62,6 +50,11 @@ class _PopoverPaintMixin:
     # 圆角
     # ============================================================
     def _resolve_radius(self) -> float:
+        """解析圆角半径像素值。
+
+        Returns:
+            float: none=0；full=内容半高；sm/md/lg 取固定映射（4/8/14）。
+        """
         if self._radius == "none":
             return 0.0
         if self._radius == "full":
@@ -71,6 +64,11 @@ class _PopoverPaintMixin:
         return float(key_map.get(self._radius, 14))
 
     def _content_rect_size(self) -> QSize:
+        """计算内容矩形尺寸（扣掉 frame margin 后的实际绘制区域）。
+
+        Returns:
+            QSize: 内容区宽高。
+        """
         m = self._frame_margins()
         return QSize(max(0, self.width() - m[0] - m[2]), max(0, self.height() - m[1] - m[3]))
 
@@ -78,6 +76,16 @@ class _PopoverPaintMixin:
     # 绘制：阴影 + 圆角主体 + 箭头
     # ============================================================
     def paintEvent(self, event):
+        """自绘阴影、圆角主体背景与箭头。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            缩放动画期间（_scale_proxy 活跃）只绘制缩放后的 pixmap，
+            跳过常规绘制；否则按 effective_frame_margins 绘制多层阴影 +
+            圆角主体 + 可选箭头。
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -137,6 +145,13 @@ class _PopoverPaintMixin:
             self._draw_arrow(painter, content_rect, bg)
 
     def _draw_arrow(self, painter: QPainter, content_rect: QRectF, bg: QColor):
+        """根据当前 placement 自绘指向 trigger 的三角形箭头。
+
+        Args:
+            painter: 当前 QPainter。
+            content_rect: 内容矩形（箭头基底贴近其边缘）。
+            bg: 箭头填充色，通常与主体背景一致。
+        """
         place = self._actual_placement
         a = ARROW_SIZE
         path = QPainterPath()

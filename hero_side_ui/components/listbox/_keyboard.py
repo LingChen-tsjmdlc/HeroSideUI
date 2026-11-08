@@ -4,15 +4,17 @@ from PySide6.QtCore import Qt
 
 
 class _KeyboardNavMixin:
-    """方向键 / Home / End / Enter / Space 的导航与激活。
+    """方向键/Home/End/Enter/Space 导航 mixin；宿主提供条目与焦点字段。"""
 
-    宿主必须提供：
-        self._items, self._focused_index, self._on_item_activated
-    """
-
-    # 让 ListboxItem 转发上来的方向键统一从这里入；
-    # 返回 True 表示已消费，调用方应 e.accept() 不再传播。
     def handle_nav_key(self, key) -> bool:
+        """处理方向键 / Home / End / 回车 / 空格 导航。
+
+        Args:
+            key: Qt.Key 枚举值，由 keyPressEvent 转发而来。
+
+        Returns:
+            bool: True 表示已消费该按键（调用方应 e.accept()），False 表示未处理。
+        """
         if key in (Qt.Key_Down, Qt.Key_Up):
             self._move_focus(1 if key == Qt.Key_Down else -1)
             return True
@@ -32,6 +34,11 @@ class _KeyboardNavMixin:
         return False
 
     def keyPressEvent(self, e):
+        """Listbox 自身拿到焦点时的键盘兜底入口。
+
+        Args:
+            e: QKeyEvent，先看是否命中导航键，命中则消费，否则上抛基类。
+        """
         # Listbox 自己拿到焦点时的兜底入口
         if self.handle_nav_key(e.key()):
             e.accept()
@@ -39,23 +46,48 @@ class _KeyboardNavMixin:
         super().keyPressEvent(e)
 
     def focus_first_enabled(self):
+        """把焦点落到第一个可用（未禁用）项。
+
+        Note:
+            供外部（Select / Autocomplete 弹出层打开时）调用。
+        """
         # 给外部（Select/Autocomplete popover 打开时）调用，把焦点落到第一个可用项
         idx = self._first_enabled_index()
         if idx >= 0:
             self._set_focus_index(idx)
 
     def _enabled_indices(self) -> list[int]:
+        """收集所有未禁用项的索引。
+
+        Returns:
+            list[int]: 可用项在 self._items 中的索引列表。
+        """
         return [i for i, it in enumerate(self._items) if not it.is_disabled()]
 
     def _first_enabled_index(self) -> int:
+        """首个可用项的索引。
+
+        Returns:
+            int: 首个未禁用项索引；无可用项时返回 -1。
+        """
         idxs = self._enabled_indices()
         return idxs[0] if idxs else -1
 
     def _last_enabled_index(self) -> int:
+        """末个可用项的索引。
+
+        Returns:
+            int: 最后一个未禁用项索引；无可用项时返回 -1。
+        """
         idxs = self._enabled_indices()
         return idxs[-1] if idxs else -1
 
     def _move_focus(self, step: int):
+        """在可用项之间按步长循环移动焦点。
+
+        Args:
+            step: 移动步长，正数向下、负数向上；支持取模循环。
+        """
         idxs = self._enabled_indices()
         if not idxs:
             return
@@ -67,6 +99,11 @@ class _KeyboardNavMixin:
         self._set_focus_index(idxs[nxt])
 
     def _set_focus_index(self, idx: int):
+        """设置当前焦点项索引并真正把 Qt 焦点交给该项。
+
+        Args:
+            idx: 目标项索引；越界则仅更新记录不转移焦点。
+        """
         self._focused_index = idx
         if 0 <= idx < len(self._items):
             self._items[idx].setFocus(Qt.TabFocusReason)

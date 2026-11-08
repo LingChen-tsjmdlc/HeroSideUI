@@ -1,19 +1,7 @@
-"""Slider 公共 API（setter）Mixin。
+"""Slider 公共 setter Mixin：22 个 set_xxx 方法，不持有状态。
 
-把 22 个 `set_xxx` 方法集中放这里，让主体 `slider.py` 仅保留 `__init__` /
-UI 装配 / 事件协调三件事。Mixin 不持有任何状态——所有 `self._xxx` 字段
-都在 `Slider.__init__` 里建好。
-
-为什么用 Mixin 而非独立函数：
-    - setter 大量调用 `self._canvas.update()` / `self._refresh_text_labels()`
-      等私有方法，写成函数会变成 `func(slider, ...)` 一长串，可读性差；
-    - Mixin 多重继承在 PySide 自绘组件里是项目内常见组合（参见 Tabs/Listbox），
-      `super().__init__(parent)` 链路无副作用。
-
-注意：
-    - Mixin **不要**写 `__init__`，免得参与 MRO 后被意外调用；
-    - `set_value/set_range/set_step` 内部需要 `snap_value/clamp_value`，
-      但这些都是 _geometry.py 的纯函数，直接 import 即可。
+Mixin 不写 __init__ 以免参与 MRO 被意外调用；宿主字段与方法在 Slider
+主类建好后由本 Mixin 调用。
 """
 
 from __future__ import annotations
@@ -35,23 +23,9 @@ __all__ = ["_SliderAPIMixin"]
 class _SliderAPIMixin:
     """Slider 的对外 setter 集合。
 
-    依赖宿主类（Slider）已建好的字段：
-        _value / _min / _max / _step / _is_range
-        _color / _size / _radius / _orientation
-        _is_disabled / _hide_value / _hide_thumb / _show_outline
-        _disable_thumb_scale / _disable_animation / _show_steps
-        _marks / _value_formatter / _fill_offset
-        _start_content_widget / _end_content_widget
-        _theme_mode / _theme
-        _label_text
-        _canvas / _label / _value_label / _label_row_widget / _root
-
-    依赖宿主类的方法：
-        _refresh_text_labels / _apply_text_styles / _apply_disabled_effect
-        _update_canvas_min_size / _setup_ui / _resolve_theme
-
-    依赖宿主类的信号：
-        value_changed
+    Note:
+        依赖宿主已建好的 _value/_color/_canvas 等字段、_refresh_text_labels
+        等方法与 value_changed 信号。
     """
 
     # 这些 attr 仅供 type checker / linter 知道存在；运行时由 Slider.__init__ 建
@@ -65,9 +39,18 @@ class _SliderAPIMixin:
     # 值 / 范围 / 步长
     # ============================================================
     def value(self):
+        """返回当前滑块值。"""
         return self._value
 
     def set_value(self, value):
+        """设置滑块值，按范围与步长归一化后刷新并派发 value_changed。
+
+        Args:
+            value: 单值或 (lo, hi) 序列；序列自动切到 range 模式。
+
+        Note:
+            单值会 clamp 到 [min, max] 再 snap 到 step；range 会先排序两端。
+        """
         if isinstance(value, (tuple, list)):
             self._is_range = True
             lo, hi = float(value[0]), float(value[1])
@@ -98,6 +81,15 @@ class _SliderAPIMixin:
         self.value_changed.emit(self._value)  # type: ignore[attr-defined]
 
     def set_range(self, min_value: float, max_value: float):
+        """重设取值范围并用新范围重新归一化当前值。
+
+        Args:
+            min_value: 新的最小值。
+            max_value: 新的最大值。
+
+        Note:
+            max_value <= min_value 时抛出 ValueError，不修改状态。
+        """
         if max_value <= min_value:
             raise ValueError("max_value must be > min_value")
         self._min = float(min_value)
@@ -105,6 +97,14 @@ class _SliderAPIMixin:
         self.set_value(self._value)
 
     def set_step(self, step: float):
+        """重设步长并用新步长重新归一化当前值。
+
+        Args:
+            step: 新的步长。
+
+        Note:
+            step <= 0 时抛出 ValueError，不修改状态。
+        """
         if step <= 0:
             raise ValueError("step must be positive")
         self._step = float(step)
@@ -114,24 +114,37 @@ class _SliderAPIMixin:
     # 文字 / 颜色 / 尺寸 / 圆角 / 朝向
     # ============================================================
     def set_label(self, label: str):
+        """设置 label 文案并刷新文字标签。"""
         self._label_text = label  # type: ignore[attr-defined]
         self._refresh_text_labels()  # type: ignore[attr-defined]
 
     def set_color(self, color: str):
+        """设置语义色并触发画布重绘。"""
         self._color = color  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_size(self, size: str):
+        """设置尺寸档位并刷新文字样式、画布最小尺寸与重绘。"""
         self._size = size  # type: ignore[attr-defined]
         self._apply_text_styles()  # type: ignore[attr-defined]
         self._update_canvas_min_size()  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_radius(self, radius: str):
+        """设置圆角档位并触发画布重绘。"""
         self._radius = radius  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_orientation(self, orientation: str):
+        """切换水平 / 垂直方向并重建 UI。
+
+        Args:
+            orientation: 目标方向，horizontal 或 vertical。
+
+        Note:
+            非法值或与当前方向相同则直接返回；重建前先把外部传入的插槽
+            widget 解绑，否则旧 layout 销毁时会连锁删除这些 Qt 对象。
+        """
         if (
             orientation not in ("horizontal", "vertical") or orientation == self._orientation  # type: ignore[attr-defined]
         ):
@@ -161,28 +174,35 @@ class _SliderAPIMixin:
     # 标志位
     # ============================================================
     def set_is_disabled(self, disabled: bool):
+        """设置禁用态并下发禁用视觉效果。"""
         self._is_disabled = disabled  # type: ignore[attr-defined]
         self._apply_disabled_effect(disabled)  # type: ignore[attr-defined]
 
     def set_hide_value(self, hide: bool):
+        """设置是否隐藏数值文字并刷新标签。"""
         self._hide_value = hide  # type: ignore[attr-defined]
         self._refresh_text_labels()  # type: ignore[attr-defined]
 
     def set_hide_thumb(self, hide: bool):
+        """设置是否隐藏 thumb 并触发画布重绘。"""
         self._hide_thumb = hide  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_show_outline(self, show: bool):
+        """设置是否显示 thumb 外圈并触发画布重绘。"""
         self._show_outline = show  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_disable_thumb_scale(self, disable: bool):
+        """设置是否关闭拖拽时 thumb 的缩放动画。"""
         self._disable_thumb_scale = disable  # type: ignore[attr-defined]
 
     def set_disable_animation(self, disable: bool):
+        """设置是否关闭动画。"""
         self._disable_animation = disable  # type: ignore[attr-defined]
 
     def set_show_steps(self, show: bool):
+        """设置是否显示 step 标记并触发画布重绘。"""
         self._show_steps = show  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
@@ -190,15 +210,18 @@ class _SliderAPIMixin:
     # marks / formatter / fill_offset
     # ============================================================
     def set_marks(self, marks: Sequence):
+        """解析并设置 marks，刷新画布最小尺寸与重绘。"""
         self._marks = parse_marks(marks or [], self._min, self._max)  # type: ignore[attr-defined]
         self._update_canvas_min_size()  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_value_formatter(self, fn: Callable | None):
+        """设置自定义数值格式化回调并刷新标签。"""
         self._value_formatter = fn  # type: ignore[attr-defined]
         self._refresh_text_labels()  # type: ignore[attr-defined]
 
     def set_fill_offset(self, offset: float | None):
+        """设置 filler 起点偏移并触发画布重绘。"""
         self._fill_offset = offset  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
@@ -226,11 +249,7 @@ class _SliderAPIMixin:
     # 插槽 widget
     # ============================================================
     def set_start_content(self, w: QWidget | str | None):
-        """track 起始侧（水平=左 / 垂直=下，靠近 min）的 icon/widget。
-
-        传 str → 自动包为 _SliderIconLabel，跟主题着色。
-        传 QWidget → 直接使用。
-        """
+        """设置 track 起始侧内容（水平=左/垂直=下，靠近 min）。"""
         if isinstance(w, str):
             w = _SliderIconLabel(w, parent=self)  # type: ignore[arg-type]
         old = self._start_content_widget  # type: ignore[attr-defined]
@@ -254,11 +273,7 @@ class _SliderAPIMixin:
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_end_content(self, w: QWidget | str | None):
-        """track 结束侧（水平=右 / 垂直=上，靠近 max）的 icon/widget。
-
-        传 str → 自动包为 _SliderIconLabel，跟主题着色。
-        传 QWidget → 直接使用。
-        """
+        """设置 track 结束侧内容（水平=右/垂直=上，靠近 max）。"""
         if isinstance(w, str):
             w = _SliderIconLabel(w, parent=self)  # type: ignore[arg-type]
         old = self._end_content_widget  # type: ignore[attr-defined]
@@ -282,11 +297,10 @@ class _SliderAPIMixin:
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_top_end_content(self, w: QWidget | None):
-        """右上角插槽（label 行末尾，例如放 Input 直接输入数值）。
+        """设置右上角插槽（label 行末尾，如放 Input 直输数值）。
 
-        增量更新 _label_row_widget 的内部 layout —— 不重建整个 UI，
-        避免把 _canvas / 用户传入的其他外部 widget 一并销毁
-        （历史 bug：临时 `QWidget().setLayout(self._root)` 转移会连锁删除 Qt 子对象）。
+        Note:
+            增量更新 layout 不重建 UI，避免连锁删除 Qt 子对象。
         """
         # 1) 移除旧 widget
         old = self._top_end_content_widget  # type: ignore[attr-defined]
@@ -305,9 +319,10 @@ class _SliderAPIMixin:
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_bottom_start_content(self, w: QWidget | None):
-        """左下角插槽（轨道下方，例如放 Caption 帮助提示）。
+        """设置左下角插槽（轨道下方，例如放 Caption 帮助提示）。
 
-        增量更新 self._root —— 同样不重建整个 UI。
+        Note:
+            增量更新 self._root，不重建整个 UI。
         """
         old = self._bottom_start_content_widget  # type: ignore[attr-defined]
         if old is not None:
@@ -326,6 +341,11 @@ class _SliderAPIMixin:
     # 主题
     # ============================================================
     def set_theme(self, theme: str):
+        """切换主题模式并刷新文字样式与画布。
+
+        Args:
+            theme: 目标模式；auto 重新注册 ThemeProvider，其他值注销注册。
+        """
         if theme == "auto":
             self._theme_mode = "auto"  # type: ignore[attr-defined]
             self._theme = self._resolve_theme("auto")  # type: ignore[attr-defined]

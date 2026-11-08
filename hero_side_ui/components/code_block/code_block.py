@@ -1,15 +1,5 @@
-"""HeroSideUI CodeBlock 组件 —— 带语法高亮、标题栏、复制按钮的代码块。
-
-复刻前端 CodeBlock：圆角外壳 + 标题栏（文件名 / 多 tab、自动换行开关、复制按钮）
-+ 高亮代码区（可选行号、可选行高亮）。
-
-设计：
-- 代码区底色与语法配色随主题在 One Light / One Dark 间切换；标题栏/外壳走 default 色阶。
-- 高亮用 pygments（缺失则降级纯文本）。
-- 代码字体走 QFont（``setFont``）落地——Qt 富文本 <pre> 的 CSS font-family 不生效，
-  必须设 QFont 才真正应用等宽字体（同 Text 组件思路）。
-- 默认不限高、不滚动：代码区随内容自动全高。仅超长行且未换行时才出现横向滚动。
-主题自治：注册到 ThemeProvider，切换时重刷。完整 API / 示例见 ``docs/code_block.md``。
+"""CodeBlock 代码块：圆角外壳 + 标题栏 + pygments 高亮代码区。
+配色随主题 One Light/Dark 切换；默认全高不滚动。API 见 docs/code_block.md。
 """
 
 from __future__ import annotations
@@ -32,6 +22,14 @@ class _Tab:
     __slots__ = ("code", "highlight_lines", "language", "name")
 
     def __init__(self, name: str, code: str, language: str, highlight_lines: list[int]):
+        """创建 tab 数据。
+
+        Args:
+            name: tab 显示名 / 文件名。
+            code: 源码文本。
+            language: pygments lexer 名。
+            highlight_lines: 需高亮背景的行号（1 基）。
+        """
         self.name = name
         self.code = code
         self.language = language
@@ -84,6 +82,24 @@ class CodeBlock(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建代码块：标题栏 + 富文本高亮代码区。
+
+        Args:
+            code: 单文件模式的源码；传了 tabs 则忽略。
+            language: pygments lexer 名。
+            filename: 标题栏文件名；空则显示语言名。
+            highlight_lines: 需高亮背景的行号（1 基）。
+            font: 代码字体文件路径；None 用内置 Maple Mono NF CN。
+            font_size: 代码字号（px）；None 用 CODE_BLOCK_SPEC 默认值。
+            tabs: 多 tab 列表，每项含 name/code，可选 language/highlight_lines。
+            show_line_numbers: 是否显示行号（自动换行时仍保留）。
+            theme: auto / light / dark。
+            parent: Qt 父对象。
+
+        Note:
+            单文件也归一成一个 _Tab；代码区只开横向滚动，
+            纵向高度随内容全展开。
+        """
         super().__init__(parent)
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
@@ -174,9 +190,15 @@ class CodeBlock(QWidget):
     # 渲染
     # ------------------------------------------------------------
     def _active(self) -> _Tab:
+        """返回当前激活的 tab 数据。
+
+        Returns:
+            当前下标的 _Tab 实例。
+        """
         return self._tabs[self._active_tab]
 
     def _render_code(self) -> None:
+        """按当前主题 / 换行 / 行号设置重绘代码区富文本。"""
         tab = self._active()
         html = build_code_html(
             tab.code,
@@ -191,7 +213,11 @@ class CodeBlock(QWidget):
         self._sync_scroll_height()
 
     def _sync_scroll_height(self) -> None:
-        """把滚动区高度锁到 label 内容高度：纵向不滚动、整块全高。"""
+        """把滚动区高度锁到 label 内容高度：纵向不滚动、整块全高。
+
+        Note:
+            非换行模式需预留一条横向滚动条高度，避免遮住最后一行。
+        """
         h = self._code_label.sizeHint().height()
         # 横向滚动条会占一条高度，非换行模式预留，避免遮住最后一行
         if not self._wrap:
@@ -203,10 +229,20 @@ class CodeBlock(QWidget):
     # 交互回调
     # ------------------------------------------------------------
     def _on_tab(self, idx: int) -> None:
+        """切换激活 tab 并重绘。
+
+        Args:
+            idx: 目标 tab 下标。
+        """
         self._active_tab = idx
         self._render_code()
 
     def _on_wrap(self, wrap: bool) -> None:
+        """切换自动换行并同步横向滚动策略。
+
+        Args:
+            wrap: True 时关闭横向滚动条并软换行。
+        """
         self._wrap = wrap
         # 换行开启时禁横向滚动
         self._scroll.setHorizontalScrollBarPolicy(
@@ -215,6 +251,7 @@ class CodeBlock(QWidget):
         self._render_code()
 
     def _on_copy(self) -> None:
+        """把当前 tab 的源码写入剪贴板并触发按钮反馈。"""
         clipboard = QGuiApplication.clipboard()
         if clipboard is not None:
             clipboard.setText(self._active().code)
@@ -224,6 +261,11 @@ class CodeBlock(QWidget):
     # 外观（外壳圆角 + 分层底色由 paintEvent 绘制）
     # ------------------------------------------------------------
     def _shell_bg(self) -> QColor:
+        """外壳底色。
+
+        Returns:
+            按主题取 neutral 色阶的 QColor。
+        """
         shade = (
             CODE_BLOCK_SPEC["shell_bg_shade_dark"]
             if self._theme == "dark"
@@ -232,6 +274,11 @@ class CodeBlock(QWidget):
         return QColor(HEROUI_COLORS["default"][shade])
 
     def _header_bg(self) -> QColor:
+        """标题栏底色。
+
+        Returns:
+            按主题取 CODE_BLOCK_SPEC 中标题栏色的 QColor。
+        """
         return QColor(
             CODE_BLOCK_SPEC["header_bg_dark"]
             if self._theme == "dark"
@@ -239,6 +286,11 @@ class CodeBlock(QWidget):
         )
 
     def _code_bg(self) -> QColor:
+        """代码区底色。
+
+        Returns:
+            按主题取 CODE_BLOCK_SPEC 中代码区色的 QColor。
+        """
         return QColor(
             CODE_BLOCK_SPEC["code_bg_dark"]
             if self._theme == "dark"
@@ -246,6 +298,15 @@ class CodeBlock(QWidget):
         )
 
     def paintEvent(self, event):  # type: ignore[override]
+        """自绘外壳圆角与标题栏 / 代码区分层底色。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            标题栏顶部圆角、底边直角；代码区底部圆角、顶边直角，
+            靠补 drawRect 把各自朝向圆角的一侧填平。
+        """
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -272,11 +333,27 @@ class CodeBlock(QWidget):
     # ------------------------------------------------------------
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析成实际主题名。
+
+        Args:
+            mode: light / dark / auto。
+
+        Returns:
+            light / dark 原样返回；其余取 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_theme(self, theme: str) -> None:
+        """切换主题并重建标题栏与代码配色。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            从 auto 切回固定主题时先 unregister，避免广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -289,10 +366,24 @@ class CodeBlock(QWidget):
         self._rebuild_theme()
 
     def _apply_provider_theme(self, theme: str) -> None:
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，也不改 _theme_mode。
+        """
         self._theme = theme
         self._rebuild_theme()
 
     def _rebuild_theme(self) -> None:
+        """主题变更后重建标题栏、字体与代码富文本。
+
+        Note:
+            标题栏用 safe_delete 销毁后重建（按钮颜色需在构造时按
+            新主题取色），再插回布局首位。
+        """
         from ...utils import safe_delete
 
         self.layout().removeWidget(self._header)
@@ -315,6 +406,11 @@ class CodeBlock(QWidget):
 
     @property
     def theme(self) -> str:
+        """当前实际生效的主题名。
+
+        Returns:
+            light 或 dark（auto 已解析为具体值）。
+        """
         return self._theme
 
 

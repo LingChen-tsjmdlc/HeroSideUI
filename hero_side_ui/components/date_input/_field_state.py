@@ -1,9 +1,4 @@
-"""段编辑状态机：复刻 react-stately 的 useDateFieldState（零 Qt 依赖）。
-
-职责：持有"每个可编辑段当前值 / 是否仍是占位态"，把键盘动作（逐位输入、
-上下键增减、删除）翻译成新的段值，并在所有段都填好后合成出对外的
-DateTimeValue。段序完全交给 ``_pattern`` 决定，本文件只管值的推演。
-"""
+"""段编辑状态机：复刻 react-stately 的 useDateFieldState（零 Qt 依赖）。"""
 
 from __future__ import annotations
 
@@ -34,10 +29,18 @@ _PLACEHOLDER_CHAR = {
 
 @lru_cache(maxsize=64)
 def _era_names(locale: str, identifier: str) -> tuple:
-    """该历法的纪元名列表。
+    """取该历法的纪元名列表。
 
-    必须走 ``DateFormatSymbols(locale, calendar_type)`` 两参重载：单参重载
-    会无视 locale 里的 @calendar= 关键字，印度历会错拿到公历的 BC/AD。
+    Args:
+        locale: ICU locale 字符串。
+        identifier: ICU 历法标识。
+
+    Returns:
+        本地化纪元名的元组；结果按参数 lru_cache 缓存。
+
+    Note:
+        必须用 DateFormatSymbols 两参重载；单参会无视 locale 的
+        @calendar= 关键字导致印度历错拿公历纪元。
     """
     loc = _locale_for_locale(locale, identifier)
     try:
@@ -49,17 +52,18 @@ def _era_names(locale: str, identifier: str) -> tuple:
 class DateFieldState:
     """DateInput 的段编辑状态机。
 
-    :param value: 受控初始值；None 表示全占位
-    :param placeholder_value: 决定占位时各段的"起点"值（如年份从哪年开始增减）
-    :param granularity: day/hour/minute/second
-    :param hour_cycle: 12 或 24；None 跟随 locale
-    :param locale: ICU locale 字符串
-    :param identifier: ICU 历法标识
-    :param min_value / max_value: 值域约束，段提交时 clamp
-    :param hide_time_zone: 隐藏时区段
-    :param should_force_leading_zeros: 数字段补前导零
-    :param include_date: False 时为纯时间状态机（TimeInput），
-        段列表不含年/月/日，越界判定只比较时刻
+    Args:
+        value: 受控初始值；None 表示全占位。
+        placeholder_value: 占位时各段增减的起点值。
+        granularity: day/hour/minute/second。
+        hour_cycle: 12 或 24；None 跟随 locale。
+        locale: ICU locale 字符串。
+        identifier: ICU 历法标识。
+        min_value: 值域下界，段提交时 clamp。
+        max_value: 值域上界。
+        hide_time_zone: 隐藏时区段。
+        should_force_leading_zeros: 数字段补前导零。
+        include_date: False 时为纯时间状态机（TimeInput）。
     """
 
     def __init__(
@@ -77,6 +81,24 @@ class DateFieldState:
         should_force_leading_zeros: bool = True,
         include_date: bool = True,
     ):
+        """创建段编辑状态机。
+
+        Args:
+            value: 受控初始值；None 表示全占位。
+            placeholder_value: 占位时各段增减的起点值；None 用今天。
+            granularity: day / hour / minute / second。
+            hour_cycle: 12 或 24；None 跟随 locale。
+            locale: ICU locale 字符串。
+            identifier: ICU 历法标识。
+            min_value: 值域下界，段提交时 clamp。
+            max_value: 值域上界。
+            hide_time_zone: 隐藏时区段。
+            should_force_leading_zeros: 数字段补前导零。
+            include_date: False 时为纯时间状态机（TimeInput）。
+
+        Note:
+            时区取自 value 或 placeholder_value，决定 timeZone 段是否出现。
+        """
         self._granularity = granularity
         self._hour_cycle = hour_cycle
         self._locale = locale
@@ -118,31 +140,58 @@ class DateFieldState:
     # ============================================================
     @property
     def specs(self) -> list[SegmentSpec]:
+        """段结构描述列表。
+
+        Returns:
+            按显示顺序排列的 SegmentSpec 列表。
+        """
         return self._specs
 
     @property
     def granularity(self) -> str:
+        """时间粒度。
+
+        Returns:
+            day / hour / minute / second。
+        """
         return self._granularity
 
     @property
     def include_date(self) -> bool:
-        """是否含日期段（False = 纯时间状态机）。"""
+        """是否含日期段。
+
+        Returns:
+            False 表示纯时间状态机（TimeInput 复用）。
+        """
         return self._include_date
 
     @property
     def timezone(self) -> str | None:
+        """当前时区标识。
+
+        Returns:
+            时区字符串；无时区段时为 None。
+        """
         return self._timezone
 
     @property
     def editable_types(self) -> list[str]:
+        """可编辑段类型列表。
+
+        Returns:
+            specs 中 is_editable 为 True 的 type 列表。
+        """
         return [s.type for s in self._specs if s.is_editable]
 
     def is_placeholder(self, seg_type: str) -> bool:
-        """该段是否仍是未填写的占位态。
+        """该段是否仍是占位态。
 
-        era / dayPeriod / timeZone 是派生段（分别由年份、小时、时区决定），
-        用户从不直接"填"它们；只要其依赖段已填就该按已填写着色，
-        否则会出现"04/04/2024 已填但 AM 仍是灰色"的割裂感。
+        Args:
+            seg_type: 段类型。
+
+        Returns:
+            未写入值时为 True；派生段（era / dayPeriod / timeZone）
+            按依赖段判定，timeZone 恒不算占位。
         """
         if seg_type == "timeZone":
             return False
@@ -153,11 +202,19 @@ class DateFieldState:
         return seg_type not in self._values
 
     def has_any_input(self) -> bool:
-        """是否至少填了一个段（用于 label 浮起判断）。"""
+        """是否至少填了一个段（用于 label 浮起判断）。
+
+        Returns:
+            段值表非空时为 True。
+        """
         return bool(self._values)
 
     def is_complete(self) -> bool:
-        """所有可编辑段是否都已填（era/dayPeriod 有默认值不算必填）。"""
+        """所有可编辑段是否都已填。
+
+        Returns:
+            era / dayPeriod / timeZone 有默认值不算必填，其余段全填才为 True。
+        """
         return all(
             t in self._values
             for t in self.editable_types
@@ -168,13 +225,24 @@ class DateFieldState:
     # 值读写
     # ============================================================
     def value(self) -> DateTimeValue | None:
-        """段全填好时返回值对象，否则 None（对齐 HeroUI 的 null 语义）。"""
+        """把当前段组合成值对象。
+
+        Returns:
+            段全填好时返回 DateTimeValue；否则 None（对齐 HeroUI 的 null 语义）。
+        """
         if not self.is_complete():
             return None
         return self._compose()
 
     def set_value(self, value: DateTimeValue | None) -> None:
-        """外部受控赋值：拆解成各段值。"""
+        """外部受控赋值：拆解成各段值。
+
+        Args:
+            value: 新值；None 清空全部段。
+
+        Note:
+            先按当前历法换算；时间相关段按 granularity 决定是否写入。
+        """
         if value is None:
             self._values.clear()
             return
@@ -190,16 +258,22 @@ class DateFieldState:
             self._timezone = v.timezone
 
     def clear(self) -> None:
+        """清空全部段值，回到占位态。"""
         self._values.clear()
 
     def clear_segment(self, seg_type: str) -> None:
+        """清空指定段。
+
+        Args:
+            seg_type: 段类型。
+        """
         self._values.pop(seg_type, None)
 
     def _compose(self) -> DateTimeValue:
         """把当前段值合成 DateTimeValue（不做 clamp）。
 
-        hour 段内部始终存 24 小时值（_set_segment 已按 dayPeriod 归一），
-        此处直接取用即可。
+        Returns:
+            缺席段用占位值兜底的 DateTimeValue。
         """
         ph = self._placeholder
         hour = self._values.get("hour", ph.hour)
@@ -221,7 +295,15 @@ class DateFieldState:
     # 段的显示文本
     # ============================================================
     def segment_text(self, seg_type: str, min_digits: int = 1) -> str:
-        """段的显示文本；占位态返回 mm/dd/yyyy 之类的提示符。"""
+        """段的显示文本；占位态返回 mm / dd / yyyy 之类的提示符。
+
+        Args:
+            seg_type: 段类型。
+            min_digits: pattern 给出的最小位数。
+
+        Returns:
+            已填段返回按宽度补零的字符串；占位段返回重复的占位字符。
+        """
         if seg_type == "timeZone":
             return self._timezone_text()
         if seg_type == "era":
@@ -242,19 +324,33 @@ class DateFieldState:
         return str(raw)
 
     def _display_width(self, seg_type: str, min_digits: int) -> int:
-        """段的显示宽度：年 4 位，其余至少 2 位（对齐 HeroUI 视觉）。
+        """取段显示宽度。
 
-        带 era 段的历法（日本年号等）年份是纪元相对值、天然是小数字，
-        补到 4 位会显示成 令和0003，故此时按 pattern 原始位数走。
+        Args:
+            seg_type: 段类型。
+            min_digits: pattern 给出的最小位数。
+
+        Returns:
+            年 4 位（带 era 历法按 pattern 位数）、其余至少 2 位。
         """
         if seg_type == "year":
             return min_digits if self._has_era_segment() else 4
         return max(2, min_digits)
 
     def _has_era_segment(self) -> bool:
+        """当前段结构是否含 era 段。
+
+        Returns:
+            specs 中存在 type == era 时为 True。
+        """
         return any(s.type == "era" for s in self._specs)
 
     def _timezone_text(self) -> str:
+        """按时区与当前日期格式化时区名。
+
+        Returns:
+            ICU SimpleDateFormat("zzz") 的结果；无时区时返回空串。
+        """
         if not self._timezone:
             return ""
         tz = icu.TimeZone.createTimeZone(self._timezone)
@@ -268,6 +364,11 @@ class DateFieldState:
         return str(fmt.format(cal.getTime()))
 
     def _era_text(self) -> str:
+        """按当前年代值取本地化纪元名。
+
+        Returns:
+            对应纪元名；未填 era 段时按当前日期的 ERA 字段推断。
+        """
         eras = _era_names(self._locale, self._identifier)
         idx = self._values.get("era")
         if idx is None:
@@ -276,6 +377,11 @@ class DateFieldState:
         return str(eras[idx]) if 0 <= idx < len(eras) else ""
 
     def _day_period_text(self) -> str:
+        """取 AM / PM 本地化文本。
+
+        Returns:
+            dayPeriod 段值对应的 ampm 字符串；未填时按当前小时推断。
+        """
         sym = icu.DateFormatSymbols(_locale_for_locale(self._locale, self._identifier))
         ampm = list(sym.getAmPmStrings())
         pm = self._values.get("dayPeriod")
@@ -288,13 +394,21 @@ class DateFieldState:
     # 编辑动作
     # ============================================================
     def _is_hour12(self) -> bool:
-        """当前是否 12 小时制（有 dayPeriod 段即为 12 小时制）。"""
+        """当前是否 12 小时制。
+
+        Returns:
+            specs 中含 dayPeriod 段即为 12 小时制。
+        """
         return any(s.type == "dayPeriod" for s in self._specs)
 
     def segment_range(self, seg_type: str) -> tuple:
         """段的合法取值区间（闭区间）。
 
-        month/day 的上界依赖当前年月，故基于已填段实时计算。
+        Args:
+            seg_type: 段类型。
+
+        Returns:
+            (lo, hi)；month / day 的上界依赖当前年月，基于已填段实时计算。
         """
         if seg_type == "year":
             lo = self._min_value.year if self._min_value else 1
@@ -318,7 +432,15 @@ class DateFieldState:
         return 0, 0
 
     def increment(self, seg_type: str, delta: int = 1) -> None:
-        """上下键增减，越界回绕（对齐 react-aria 的 cycle 行为）。"""
+        """上下键增减，越界回绕（对齐 react-aria 的 cycle 行为）。
+
+        Args:
+            seg_type: 段类型；timeZone 段直接忽略。
+            delta: 增减步长，默认 +1。
+
+        Note:
+            段尚未显式写入时从占位值起步而非从 0，避免第一次按上键跳变。
+        """
         if seg_type == "timeZone":
             return
         lo, hi = self.segment_range(seg_type)
@@ -335,6 +457,15 @@ class DateFieldState:
         self._set_segment(seg_type, new)
 
     def _placeholder_segment_value(self, seg_type: str) -> int:
+        """取段在未写入状态下的起步值。
+
+        Args:
+            seg_type: 段类型。
+
+        Returns:
+            占位值对应字段；dayPeriod 取实际生效小时推导，
+            避免切 AM/PM 跳回占位那一半天。
+        """
         ph = self._placeholder
         if seg_type == "year":
             return ph.year
@@ -356,7 +487,16 @@ class DateFieldState:
         return 0
 
     def _set_segment(self, seg_type: str, raw: int) -> None:
-        """写入段值并做跨段一致性修正（如 2 月 31 日截成 29）。"""
+        """写入段值并做跨段一致性修正。
+
+        Args:
+            seg_type: 段类型。
+            raw: 待写入的原始值。
+
+        Note:
+            12 小时制下输入 1~12 需按当前半天还原成 24 小时值；
+            切 dayPeriod 时同步搬运 hour；改年/月后把 day 截到当月天数。
+        """
         if seg_type == "hour" and self._is_hour12():
             # 12 小时制下用户输的是 1~12，需按当前半天归属还原成 24 小时值
             prev_hour = self._values.get("hour", self._placeholder.hour)
@@ -378,11 +518,17 @@ class DateFieldState:
                 self._values["day"] = max_day
 
     def append_digit(self, seg_type: str, digit: int) -> bool:
-        """逐位输入一个数字，返回该段是否已输满（供调用方自动跳下一段）。
+        """逐位输入一个数字。
 
-        中间态（如 year 段刚输入 "2"）绝不能走 clamp——否则 "2" 会被
-        min_value 夹成 1900，用户根本输不进四位年份。故此处只做范围上界
-        的溢出判断，真正的 clamp 留到段提交（focus out / 切段）时。
+        Args:
+            seg_type: 段类型。
+            digit: 输入的数字字符。
+
+        Returns:
+            该段是否已输满（供自动跳段）。
+
+        Note:
+            中间态不做 clamp，否则两位年份会被 min_value 夹住输不进去。
         """
         if seg_type in ("timeZone", "era", "dayPeriod"):
             return False
@@ -412,10 +558,10 @@ class DateFieldState:
         return done
 
     def commit_segment(self, seg_type: str) -> None:
-        """段编辑结束：把该段夹进自身合法范围（如月份 99 → 12）。
+        """段编辑结束：把该段夹进自身物理范围（如月份 99 → 12）。
 
-        只约束单段自身的物理范围，不把整体值拉进 [min_value, max_value] ——
-        HeroUI 对越界日期的处理是标红提示而非静默改写用户输入。
+        Args:
+            seg_type: 段类型；timeZone 段直接忽略。
         """
         if seg_type in ("timeZone",):
             return
@@ -430,11 +576,11 @@ class DateFieldState:
         self._set_segment(seg_type, min(max(cur, lo), hi))
 
     def is_invalid(self) -> bool:
-        """值是否越界（供组件同步 invalid 视觉）。
+        """值是否越界。
 
-        纯时间状态机（include_date=False）只比较时刻三元组——
-        min/max 约束的日期部分与输入无关，若整值比较会因占位日期
-        落在约束日期之外而恒标红。
+        Returns:
+            含日期段时按 DateTimeValue 全序比较 [min, max]；
+            纯时间状态机只比较 (hour, minute, second) 三元组。
         """
         v = self.value()
         if v is None:

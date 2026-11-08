@@ -1,9 +1,4 @@
-"""Textarea 组件的样式计算与应用 mixin（私有）。
-
-把 _apply_styles 及其辅助颜色/几何刷新方法（约 500 行）从主组件抽出。
-包括："应用 styles 后做对应的几何重排"（label_placement / inside-label
-位置浮动）也归到此 mixin，因为它们是 styling 的延伸。
-"""
+"""Textarea 样式 mixin：_apply_styles 及其颜色/几何刷新延伸（约 500 行）。"""
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QColor, QPalette
@@ -20,6 +15,13 @@ class _TextareaStylingMixin:
     # 样式应用
     # ============================================================
     def _apply_styles(self):
+        """按当前状态刷新 wrapper、text_edit、label 与各插槽的完整样式。
+
+        Note:
+            提前给 text_edit 设字体，保证 fontMetrics.lineSpacing() 在行高
+            计算前取到正确字号；选区调色板与 Text 组件同源，QScrollBar 样式
+            由 ScrollStyle 单例统一管理，此处不写局部 QSS。
+        """
         is_dark = self._theme == "dark"
         size_config = TEXTAREA_SIZES.get(self._size, TEXTAREA_SIZES["md"])
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["default"])
@@ -273,6 +275,7 @@ class _TextareaStylingMixin:
     # 颜色决策（与 Input 完全对齐，复制实现）
     # ------------------------------------------------------------
     def _flat_bg_colors(self, is_dark: bool, colors: dict, dc: dict):
+        """返回 flat/faded 变体在常态/hover/focus 下的背景色三元组。"""
         is_default = self._color == "default"
         if is_default:
             if is_dark:
@@ -295,6 +298,7 @@ class _TextareaStylingMixin:
         return bg, bg_hover, bg_focus
 
     def _resolve_wrapper_colors(self, is_dark: bool, colors: dict, dc: dict):
+        """解析 wrapper 的背景、边框与主色在各状态下的取值。"""
         is_default = self._color == "default"
         main_color = colors[500] if not is_default else (dc[50] if is_dark else dc[900])
 
@@ -372,6 +376,7 @@ class _TextareaStylingMixin:
         )
 
     def _resolve_input_text_color(self, is_dark: bool, colors: dict, dc: dict):
+        """返回输入文字色与占位符色，非法态固定用 danger 主色。"""
         if self._is_invalid:
             d = HEROUI_COLORS["danger"]
             return (
@@ -397,11 +402,13 @@ class _TextareaStylingMixin:
         return fg, ph
 
     def _resolve_label_resting_color(self, is_dark, colors, dc) -> str:
+        """返回 label 静止态颜色，非法态固定用 danger 主色。"""
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
         return dc[400] if is_dark else dc[500]
 
     def _resolve_label_floated_color(self, is_dark, colors, dc) -> str:
+        """返回 label 浮起态颜色，随 color 与 variant 变化。"""
         if self._is_invalid:
             return HEROUI_COLORS["danger"][500]
         if self._color != "default":
@@ -411,6 +418,7 @@ class _TextareaStylingMixin:
         return dc[100] if is_dark else dc[900]
 
     def _resolve_radius(self, size_config: dict) -> str:
+        """返回圆角像素字符串，full 时固定为 20px。"""
         radius_key = self._radius or size_config.get("default_radius", "md")
         if radius_key == "full":
             # textarea 高度可变，full 用一个稳定的大圆角而不是 height/2
@@ -421,6 +429,7 @@ class _TextareaStylingMixin:
     # start / end content
     # ------------------------------------------------------------
     def _render_adornment_icons(self, is_dark, colors, dc, size_config):
+        """填充三个右侧内容槽并重摆绝对定位 holder。"""
         # top_right_slot: 在 layout 内（layout 已管好位置）
         self._fill_slot(
             slot=self._top_right_slot,
@@ -454,6 +463,7 @@ class _TextareaStylingMixin:
         self._reposition_absolute_holders()
 
     def _fill_slot(self, slot, slot_layout, content, on_click, icon_size, is_dark, dc):
+        """清空并重填单个内容槽，widget 直接放入，图标名渲染为按钮或标签。"""
         while slot_layout.count():
             item = slot_layout.takeAt(0)
             w = item.widget()
@@ -504,6 +514,7 @@ class _TextareaStylingMixin:
     # label 位置 & 浮动定位
     # ------------------------------------------------------------
     def _relayout_for_label_placement(self):
+        """按 label_placement 切换三个 label 控件的可见性。"""
         has_label = self._has_label()
         self._outside_label.setVisible(False)
         self._outside_left_label.setVisible(False)
@@ -518,12 +529,14 @@ class _TextareaStylingMixin:
             self._inside_label.setVisible(True)
 
     def _reposition_inside_label(self):
+        """按当前动画进度重摆 inside/outside label。"""
         if not self._has_label() or self._label_placement not in ("inside", "outside"):
             return
         progress = self._label_anim._progress
         self._apply_label_progress(progress)
 
     def _apply_label_progress(self, progress: float):
+        """按动画进度插值 label 的字号、位置与颜色。"""
         size_config = TEXTAREA_SIZES.get(self._size, TEXTAREA_SIZES["md"])
         f_rest = size_config["label_font_size"]
         f_float = size_config["label_float_font_size"]
@@ -592,4 +605,5 @@ class _TextareaStylingMixin:
         self._inside_label.adjustSize()
 
     def _on_label_progress(self, progress: float):
+        """把动画进度回调转给 _apply_label_progress。"""
         self._apply_label_progress(progress)

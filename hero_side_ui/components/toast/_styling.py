@@ -1,12 +1,4 @@
-"""Toast 配色 tokens：variant(flat/bordered/solid) × color(7 色) × theme。
-
-严格对照 HeroUI v2 toast.ts 的 compoundVariants。
-
-暗色换算规则（semantic.ts）：HeroUI 在暗色下对所有语义色做 swapColorValues，
-即把色阶**按索引首尾反转**（50 ↔ 900、100 ↔ 800 … 400 ↔ 500）。本项目
-``HEROUI_COLORS`` 存的是**未 swap** 的原色阶，所以取色统一走 ``_shade()``。
-例外：``DEFAULT``（solid 的底色）直接用原色阶，不参与 swap。
-"""
+"""Toast 配色 token：暗色取色统一走 _shade()（色阶索引镜像反转，DEFAULT 除外）。"""
 
 from __future__ import annotations
 
@@ -43,10 +35,10 @@ def _shade(scale: dict, n: int, is_dark: bool) -> str:
 
 
 def build_toast_styles(variant: str, color: str, theme: str) -> dict:
-    """返回 Toast 各子元素的颜色。
+    """返回各子元素颜色 token。
 
     Keys: base_bg, border_color, border_width, title_color, desc_color,
-          icon_color, close_color, close_hover_color, progress_color
+    icon_color, close_color, close_hover_color, progress_color。
     """
     is_dark = theme == "dark"
     d = HEROUI_COLORS["default"]
@@ -64,6 +56,7 @@ def build_toast_styles(variant: str, color: str, theme: str) -> dict:
 
 
 def _flat(c: dict, d: dict, is_dark: bool, color: str) -> dict:
+    """组装 flat 变体的颜色 token。"""
     if color == "default":
         bg = _CONTENT1["dark" if is_dark else "light"]
         fg = _FOREGROUND["dark" if is_dark else "light"]
@@ -108,6 +101,7 @@ def _flat(c: dict, d: dict, is_dark: bool, color: str) -> dict:
 
 
 def _bordered(c: dict, d: dict, is_dark: bool, color: str) -> dict:
+    """组装 bordered 变体的颜色 token。"""
     bg_key = "dark" if is_dark else "light"
     if color == "default":
         return _pack(
@@ -151,6 +145,7 @@ def _bordered(c: dict, d: dict, is_dark: bool, color: str) -> dict:
 
 
 def _solid(c: dict, d: dict, is_dark: bool, color: str) -> dict:
+    """组装 solid 变体的颜色 token。"""
     bg_key = "dark" if is_dark else "light"
     if color == "default":
         bg = _DEFAULT_SOLID_BG[bg_key]
@@ -186,6 +181,7 @@ def _pack(
     close_hover: str,
     progress: str,
 ) -> dict:
+    """把各子元素颜色打包为 token 字典。"""
     return {
         "base_bg": bg,
         "border_color": border,

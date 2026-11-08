@@ -1,9 +1,4 @@
-"""Calendar 单月日期网格（只含日期格子，星期名由独立 _WeekdayBar 承载）。
-
-只读 state 渲染，不做业务判断。列宽由外部统一传入的 col_width 决定（与星期名条
-一致），日期格子固定 cell_size 在列内居中，从而与星期名对齐且 long 样式不错位。
-cell 复用（同结构换月不销毁重建），行数按 weeks_in_month 动态 4~6 行。
-"""
+"""Calendar 单月网格：只读 state 渲染，cell 复用换月不重建。"""
 
 from __future__ import annotations
 
@@ -26,6 +21,16 @@ class _MonthGrid(QWidget):
     def __init__(
         self, state, sizes: dict, *, color: str, theme: str, col_width: int, parent=None
     ) -> None:
+        """创建单月网格并预建 6×7 个复用 cell。
+
+        Args:
+            state: 实现 _GridState 协议的状态视图。
+            sizes: 尺寸 token（cell_size / grid_pad_x 等）。
+            color: 语义色名。
+            theme: 主题名。
+            col_width: 列宽，与星期名条同源。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._state = state
         self._sizes = sizes
@@ -41,6 +46,7 @@ class _MonthGrid(QWidget):
     # ---- 构建 ---------------------------------------------------------
 
     def _build_ui(self) -> None:
+        """构建 6 行 × 7 列的 cell 网格并接好点击与 hover 转发。"""
         pad = self._sizes["grid_pad_x"]
         cell = self._sizes["cell_size"]
 
@@ -64,10 +70,16 @@ class _MonthGrid(QWidget):
     # ---- 渲染 ---------------------------------------------------------
 
     def render_month(self, month_start: CalendarDate) -> None:
+        """渲染指定月份：只换状态，不重建 cell。
+
+        Args:
+            month_start: 目标月的任意一天。
+        """
         self._month_start = month_start
         self._refresh_cells()
 
     def _refresh_cells(self) -> None:
+        """重算每个 cell 的状态并按周行数控制显隐。"""
         weeks = get_weeks(self._month_start, self._state.first_day_of_week)
         today = CalendarDate.today(self._month_start.identifier)
         font = self._sizes["day_font"]
@@ -87,11 +99,26 @@ class _MonthGrid(QWidget):
     # ---- 事件 ---------------------------------------------------------
 
     def _on_cell_clicked(self, r: int, c: int) -> None:
+        """处理 cell 点击：换算行列回日期后上报。
+
+        Args:
+            r: 行号。
+            c: 列号。
+        """
         cs = self._cell_state_at(r, c)
         if cs and cs.date is not None:
             self.date_clicked.emit(cs.date)
 
     def _cell_state_at(self, r: int, c: int):
+        """取指定行列 cell 的当前状态。
+
+        Args:
+            r: 行号。
+            c: 列号。
+
+        Returns:
+            对应 CellState；越界或空格时为 None。
+        """
         weeks = get_weeks(self._month_start, self._state.first_day_of_week)
         if r < len(weeks):
             date = weeks[r][c]
@@ -101,6 +128,15 @@ class _MonthGrid(QWidget):
         return None
 
     def eventFilter(self, obj, ev):
+        """转发 cell 的 hover 事件（供范围日历预览；单选下无副作用）。
+
+        Args:
+            obj: 被监听的 cell。
+            ev: 当前事件。
+
+        Returns:
+            一律交回父类。
+        """
         # 转发 cell 的 hover（供范围日历预览；单选下无副作用）
         if ev.type() == QEvent.Type.Enter and isinstance(obj, _CalendarCell):
             for r, row in enumerate(self._cells):
@@ -114,11 +150,21 @@ class _MonthGrid(QWidget):
     # ---- 主题 / 颜色 --------------------------------------------------
 
     def set_theme(self, theme: str) -> None:
+        """切换主题并重刷全部 cell。
+
+        Args:
+            theme: 主题名。
+        """
         self._theme = theme
         if self._month_start is not None:
             self._refresh_cells()
 
     def set_color(self, color: str) -> None:
+        """切换语义色并重刷全部 cell。
+
+        Args:
+            color: 语义色名。
+        """
         self._color = color
         if self._month_start is not None:
             self._refresh_cells()

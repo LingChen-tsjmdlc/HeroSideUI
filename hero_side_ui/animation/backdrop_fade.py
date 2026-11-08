@@ -48,9 +48,11 @@ class BackdropFade(QObject):
         self._anim.finished.connect(self._on_finished)
 
     def _get_progress(self) -> float:
+        """返回当前遮罩进度。"""
         return self._progress
 
     def _set_progress(self, v: float):
+        """设置遮罩进度并请求宿主重绘。"""
         self._progress = v
         self._owner.update()
 

@@ -1,19 +1,4 @@
-"""Switch (Toggle) 组件尺寸配置。
-
-对齐 HeroUI v2 Switch 规范 (tailwind class → px):
-    sm: wrapper w-10 h-6  = 40×24, thumb w-4 = 16, pressed w-5  = 20, ms-4 = 16
-    md: wrapper w-12 h-7  = 48×28, thumb w-5 = 20, pressed w-6  = 24, ms-5 = 20  (默认)
-    lg: wrapper w-14 h-8  = 56×32, thumb w-6 = 24, pressed w-7  = 28, ms-6 = 24
-
-其他约定:
-    wrapper 内 padding px-1 = 4px (左右 4px)；wrapper 圆角为胶囊 (height/2)
-    startContent 左边距 start-1.5 = 6px，endContent 右边距 end-1.5 = 6px
-    label gap (ms-2) = 8px
-    thumb icon 字号：sm=12, md=14, lg=16 （与 startContent/endContent 同级）
-
-source:
-    https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/toggle.ts
-"""
+"""Switch 尺寸：wrapper 40×24/48×28/56×32，thumb 16/20/24，内容内边距与 label gap。"""
 
 SWITCH_SIZES = {
     "sm": {

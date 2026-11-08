@@ -1,11 +1,4 @@
-"""Badge color tokens（4 variants × 6 colors × 2 themes）。
-
-配色与 Chip 的 solid/flat/faded/shadow 完全同源（HeroUI colorVariants），
-直接复用 chip._styling 的映射，避免两份映射漂移。
-注意：Badge 的 faded 边框被官方 showOutline variant 恒覆盖
-（showOutline=True → 2px 宿主背景描边；False → border-0），
-因此本函数不产出 border，描边完全由 Badge 组件按 show_outline 决定。
-"""
+"""Badge 配色 token：复用 Chip 同源映射；border 由 show_outline 决定不在此产出。"""
 
 from __future__ import annotations
 
@@ -13,10 +6,16 @@ from ..chip._styling import build_chip_styles
 
 
 def build_badge_styles(variant: str, color: str, theme: str) -> dict:
-    """返回 Badge 角标配色 token。
+    """返回角标配色 token（复用 Chip 同源映射）。
 
-    variant: solid/flat/faded/shadow；color: 6 语义色；theme: light/dark
-    Keys: bg, fg, shadow_color, has_shadow
+    Args:
+        variant: 变体名；非法值回退 solid。
+        color: 语义色名，透传给 chip 的取色器。
+        theme: 主题名，dark 走深色取值。
+
+    Returns:
+        含 bg / fg / shadow_color / has_shadow 的 dict；
+        border 不在此产出，由 Badge 按 show_outline 决定。
     """
     if variant not in ("solid", "flat", "faded", "shadow"):
         variant = "solid"

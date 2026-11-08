@@ -1,17 +1,7 @@
-"""HeroSideUI Popover Component — 弹出层容器（trigger + 浮层）。
+"""Popover 弹出层容器：trigger 任意 QWidget，浮层自动定位并避让屏幕边界。
 
-基于 HeroUI v2 popover。trigger 任意 QWidget，浮层自动定位并避让屏幕边界。
-
-子组件 / mixin 拆分：
-- ``_GlobalClickCatcher`` → ``_click_catcher.py``
-- ``_HostGeometryWatcher`` → ``_host_resize_watcher.py``
-    - ``PopoverContent``      → ``content.py``
-    - ``_Backdrop``           → ``_backdrop.py``
-    - ``_PopoverPaintMixin``    → ``_paint.py``
-    - ``_PopoverGeometryMixin`` → ``_geometry.py``
-    - ``_PopoverTriggerMixin``  → ``_trigger.py``
-    - ``_PopoverScrollMixin``   → ``_scroll.py`` （滚动跟随/关闭/wheel 转发）
-    - ``_PopoverApiMixin``      → ``_api.py``    （动态 setter/theme/状态查询）
+拆分：_click_catcher/_host_resize_watcher/content/_backdrop/_paint/
+_geometry/_trigger/_scroll/_api 各 mixin 与子组件。
 """
 
 from PySide6.QtCore import (
@@ -58,15 +48,12 @@ class Popover(
 ):
     """HeroUI 风格 Popover。
 
-    用法::
-
-        popover = Popover(placement="bottom", color="default")
+    Example:
+        popover = Popover(placement="bottom")
         content = PopoverContent()
-        content.layout().addWidget(QLabel("Hello popover"))
+        content.layout().addWidget(QLabel("Hello"))
         popover.set_content(content)
-
-        popover.attach(my_button)            # 默认 click 切换
-        # 或手动: popover.open(near=my_button); popover.close()
+        popover.attach(my_button)
     """
 
     opened = Signal()
@@ -91,6 +78,26 @@ class Popover(
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造 Popover 弹出层容器。
+
+        Args:
+            color: 底色主题色名（default/primary/...）。
+            size: 尺寸档位（sm/md/lg）。
+            radius: 圆角档位（none/sm/md/lg/full）。
+            shadow: 阴影档位（对应 POPOVER_SHADOWS 配置键）。
+            placement: 弹出方向（12 种 placement 之一）。
+            backdrop: 遮罩类型 transparent/opaque/blur。
+            arrow: 是否显示指向 trigger 的箭头。
+            trigger_scale_on_open: 打开时是否缩放 trigger 作视觉反馈。
+            trigger_variant: trigger 视觉 variant（flat/bordered/...）。
+            allow_flip: 越界时是否自动翻转方向。
+            is_disabled: 初始是否禁用交互。
+            disable_animation: 是否禁用所有开关动画。
+            close_on_scroll: 滚动时关闭（True）还是跟随重定位（False）。
+            blur_quality: blur 模式下滚动重抓的质量档位。
+            theme: 主题模式 auto/light/dark。
+            parent: 父控件。
+        """
         super().__init__(parent)
 
         if placement not in VALID_PLACEMENTS:
@@ -243,6 +250,7 @@ class Popover(
     # 内容插槽
     # ============================================================
     def _set_empty_content(self):
+        """创建默认空内容容器（带 DEFAULT_PADDING 内边距的空 QWidget）。"""
         empty = QWidget()
         empty.setLayout(QVBoxLayout())
         empty.layout().setContentsMargins(
@@ -252,7 +260,14 @@ class Popover(
         self._outer.addWidget(empty)
 
     def set_content(self, widget: QWidget):
-        """替换内容控件。"""
+        """替换内容控件。
+
+        Args:
+            widget: 新的内容控件（任意 QWidget）。
+
+        Note:
+            旧内容若存在将被安全删除；替换后重新应用内容文字色。
+        """
         if self._content is not None:
             self._outer.removeWidget(self._content)
             from ...utils import safe_delete
@@ -263,15 +278,19 @@ class Popover(
         self._apply_content_text_color()
 
     def content(self) -> QWidget | None:
+        """返回当前内容控件。
+
+        Returns:
+            QWidget | None: 当前内容控件，未设置时为默认空容器。
+        """
         return self._content
 
     def _apply_content_text_color(self):
-        """根据当前 color 给内容区里的"顶层裸 QLabel"刷反色。
+        """给内容区顶层裸 QLabel 刷反色；不级联复合组件内部的 label。
 
-        不对子控件（Input/Checkbox 等复合组件）级联 — 它们内部的 QLabel
-        自己有样式逻辑。只遍历 `_content` 的直接子控件，命中是 `QLabel`
-        且没设过 objectName 的（说明是用户手动 addWidget 的普通文字），
-        给它 setStyleSheet 反色。
+        Note:
+            文字色此前被 setStyleSheet 写死为 hex，不会随主题自动切换，
+            故每次主题/颜色变化时需显式重刷；复合组件内部 label 不动。
         """
         if self._content is None:
             return
@@ -300,6 +319,15 @@ class Popover(
     # open / close API （is_open / toggle → _api.py，开关核心仍在主类）
     # ============================================================
     def open(self, near: QWidget | None = None):
+        """打开 popover 并定位到 trigger。
+
+        Args:
+            near: 可选锚点控件，缺省使用 attach 绑定的 trigger。
+
+        Note:
+            处理三种入场情况：首次打开、fade-out 中途取消关闭（reopening）、
+            已稳定打开（直接 bail）。滚动跟随与全局点击监听在首次/重开时连接。
+        """
         # disabled 忽略
         if self._is_disabled:
             return
@@ -408,6 +436,7 @@ class Popover(
                 self._fade.play_in()
 
     def close(self):
+        """关闭 popover（标记 closing 并播放 fade-out，结束后 finalize）。"""
         if not self._is_open:
             return
 
@@ -439,6 +468,12 @@ class Popover(
                 self._fade.play_out()
 
     def _finalize_close(self):
+        """fade-out 结束后的收尾：隐藏、清理状态、断开监听并删除 backdrop。
+
+        Note:
+            若 closing 已被 open() 重置（用户中途再次触发打开），说明这是被
+            抢占的尾声，不应真正关闭，直接返回。
+        """
         if not self._is_open:
             return
         # 如果 _closing 已被 open() 重置为 False（用户中途又触发了打开），
@@ -465,16 +500,10 @@ class Popover(
     # 缩放动画辅助
     # ============================================================
     def _content_is_text_only(self) -> bool:
-        """判断 _content 是否只包含 QLabel（纯文字）。
+        """判断内容是否纯 QLabel（决定动画用 pixmap scale 还是仅 opacity fade）。
 
-        - 没有 content / 没有 layout → True（空内容当文字处理）
-        - layout 里所有直接子控件都是 QLabel → True
-        - 否则 → False（包含 Input/Button/Checkbox 等复合组件）
-
-        pixmap scale 对纯文字很合适，但对复合组件会：
-        - 位图缩放让子组件变模糊
-        - 子组件自己的 hover/focus 动画被冻结进 pixmap
-        所以复合组件场景下只做 opacity fade。
+        Note:
+            复合组件位图缩放会模糊且冻结子动画，故只做透明度过渡。
         """
         if self._content is None:
             return True
@@ -497,12 +526,21 @@ class Popover(
         return True
 
     def _on_anim_in_done(self):
-        """play_in 结束 → 切换回真实内容（恢复交互）。"""
+        """play_in 结束 → 切换回真实内容（恢复交互）。
+
+        Note:
+            纯文字模式下曾用 pixmap 代理缩放隐藏真实内容，此处 end() 恢复。
+        """
         self._scale_proxy.end()
 
     def hideEvent(self, event):
         """保险：无论出于什么原因 hide 了（Qt 内部的切窗口等），
-        都把 _is_open 同步为 False，让 toggle 逻辑下次能正常开。"""
+        都把 _is_open 同步为 False，让 toggle 逻辑下次能正常开。
+
+        Note:
+            同步清理全局监听、backdrop 与滚动监听，并发射 closed 信号，
+            等价于一次隐式 finalize，避免状态卡在"已开"导致 toggle 失效。
+        """
         if self._is_open:
             # 可能是 Qt 自动 hide（如切到其他应用），同步状态
             self._is_open = False

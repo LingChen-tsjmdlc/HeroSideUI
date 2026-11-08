@@ -1,13 +1,4 @@
-"""Tooltip 触发器附着 / hover 调度 / 触发器视觉响应 mixin。
-
-为什么独立：tooltip.py 太大；attach + eventFilter + schedule_open/close +
-apply_trigger_open_state 这些"trigger 交互"逻辑高聚合，迁出后主类专注状态机/装配。
-
-宿主类需要提供：
-    self._trigger, self._is_open, self._closing, self._is_disabled,
-    self._open_delay, self._close_delay, self._open_timer, self._close_timer,
-    self._embedded, self._anchor_ancestor, self._refresh_geometry()
-"""
+"""Tooltip 触发器 mixin：attach/hover 调度/视觉响应，宿主提供定时器等字段。"""
 
 from __future__ import annotations
 
@@ -23,8 +14,9 @@ class _TooltipTriggerMixin:
     def attach(self, trigger: QWidget):
         """把任意 widget 设为触发器（hover 自动触发）。
 
-        embedded 模式下：同时把 tooltip reparent 到 trigger 顶层 ancestor。
-        这样 trigger 随父滚动/移动时 tooltip 自动跟随（Qt 原生能力，零代码）。
+        Note:
+            embedded 模式同时 reparent 到 trigger 顶层 ancestor，
+            随父滚动自动跟随。
         """
         if hasattr(self, "_trigger") and self._trigger is not None and self._trigger is not trigger:  # type: ignore[attr-defined]
             self._trigger.removeEventFilter(self)  # type: ignore[attr-defined]
@@ -39,6 +31,11 @@ class _TooltipTriggerMixin:
             self._anchor_ancestor = top  # type: ignore[attr-defined]
 
     def eventFilter(self, obj, event):
+        """过滤 trigger 与自身的进入、离开及几何变化事件并调度开关。
+
+        Note:
+            测试 teardown 时 Qt 仍可能继续派发事件而对象的 Python 属性已清空，故用 getattr 兜底，并对基类事件链的异常安静放行。
+        """
         # teardown 防御：pytest-qt 在测试 teardown 时会先清 Python __dict__，但 Qt
         # 仍可能继续向 Tooltip 派发事件（自身 paintEvent、祖先 scroll_style/smooth_scroll
         # 链路里的 super().eventFilter 都会触发）。此时直接 self._trigger 会抛
@@ -86,11 +83,7 @@ class _TooltipTriggerMixin:
             return False
 
     def _schedule_open(self):
-        """根据 open_delay 决定立即/延迟打开。
-
-        bail 条件区分"已稳定 open"与"fade-out 中"：
-        fade-out 中 _is_open 仍 True，这时用户再 hover 必须进 _do_open 走 reopening 分支。
-        """
+        """按 open_delay 立即/延迟打开；区分已稳定 open 与 fade-out 中两种 bail。"""
         if self._is_open and not self._closing:  # type: ignore[attr-defined]
             return
         if self._open_delay <= 0:  # type: ignore[attr-defined]

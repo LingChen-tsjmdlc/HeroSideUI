@@ -21,9 +21,11 @@ class StripeFlowAnimation(LoopDriver):
         super().__init__(owner, duration, QEasingCurve.Type.Linear, parent)
 
     def _get_offset(self):
+        """由循环进度换算当前条纹偏移。"""
         return self.value() * self._period
 
     def _set_offset(self, value):
+        """由条纹偏移反推循环进度。"""
         self._set_phase(value / self._period if self._period else 0.0)
 
     offset = Property(float, _get_offset, _set_offset)

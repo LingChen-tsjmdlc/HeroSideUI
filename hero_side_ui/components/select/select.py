@@ -1,12 +1,6 @@
-"""HeroSideUI Select — 下拉选择框（点击触发，不可输入）。
+"""Select 下拉选择框：Autocomplete 的只读降级版。
 
-复刻自 HeroUI v2 ``Select``，是 ``Autocomplete`` 的"降级版"——
-触发钮视觉与 Input 一致，但 line_edit 强制只读，点击只切换 popover。
-组合：Input（trigger） + Popover + ScrollShadow + Listbox。
-
-子组件：
-    - ``_SelectorButton``  → ``_selector_button.py``
-    - ``_EndContentWidget`` → ``_end_content.py``
+组合 Input（trigger，line_edit 强制只读）+ Popover + ScrollShadow + Listbox。
 """
 
 from collections.abc import Iterable
@@ -26,21 +20,7 @@ from ._styling import _SelectStylingMixin
 
 
 class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
-    """HeroUI 风格 Select（点击展开下拉，不能输入）。
-
-    用法::
-
-        sel = Select(
-            label="Favorite Animal",
-            placeholder="Select an animal",
-            items=[
-                {"key": "cat", "label": "Cat"},
-                {"key": "dog", "label": "Dog"},
-            ],
-            default_selected_keys={"cat"},
-        )
-        sel.selection_changed.connect(lambda keys: print("selected:", keys))
-    """
+    """HeroUI 风格 Select（点击展开下拉，不能输入）。"""
 
     # selection_changed 在 single 时发 Optional[str]，multiple 时发 set[str]。
     selection_changed = Signal(object)
@@ -95,6 +75,45 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造 Select，组装 trigger、popover 与 listbox 并同步初始选中。
+
+        Args:
+            items: 初始条目序列，元素可为 dict、tuple 或 ListboxItem。
+            selection_mode: 选择模式，single 或 multiple。
+            selected_keys: 受控的初始选中 key 集合。
+            default_selected_keys: 非受控的初始选中 key 集合。
+            disabled_keys: 初始禁用的 key 集合。
+            disallow_empty_selection: 是否禁止清空到空选中。
+            is_clearable: 是否显示 clear 按钮。
+            selector_icon: chevron 图标名。
+            clear_icon: clear 按钮图标名。
+            disable_selector_icon_rotation: 是否禁用 chevron 开合旋转。
+            empty_content: 列表为空时的占位文案。
+            placeholder: trigger 的占位文案。
+            label: Input 的 label 文本。
+            description: Input 的 description 文本。
+            variant: Input 视觉变体。
+            color: 主题色名。
+            size: 尺寸档位。
+            radius: 圆角档位。
+            label_placement: label 放置方式。
+            start_content: Input 前置内容。
+            is_disabled: 是否禁用。
+            is_invalid: 是否为非法态。
+            is_required: 是否为必填态。
+            is_readonly: 用户语义的只读态。
+            listbox_variant: 透传给 listbox 的视觉变体。
+            listbox_color: 透传给 listbox 的主题色。
+            disable_animation: 是否关闭动画。
+            theme: 主题模式，auto 跟随 ThemeProvider。
+            parent: 作为 Qt 父对象的 QWidget。
+
+        Note:
+            variant / color / size / selection_mode / listbox_variant 的非法值会
+            回退到默认值；listbox_color 非法时回退到 color。is_readonly 记录用户
+            语义的不可改，trigger 内 line_edit 始终设为 readOnly=True 以禁用输入；
+            theme=auto 时向 ThemeProvider 注册。
+        """
         super().__init__(parent)
 
         # ---------- 参数 fallback ----------
@@ -273,17 +292,38 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 主题
     # ============================================================
     def _resolve_theme(self, mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: 主题模式；auto 跟随 ThemeProvider，light / dark 为固定值。
+
+        Returns:
+            解析后的主题名；非法值回退为 light。
+        """
         if mode == "auto":
             return ThemeProvider.instance().current_theme
         return mode if mode in ("light", "dark") else "light"
 
     def _apply_provider_theme(self, theme: str):
+        """在 auto 模式下应用 provider 主题并刷新末尾图标。
+
+        Args:
+            theme: ThemeProvider 下发的当前主题名。
+        """
         if self._theme_mode != "auto":
             return
         self._theme = theme
         self._refresh_end_icons()
 
     def set_theme(self, theme: str):
+        """切换主题模式并把新主题透传给 input / listbox / popover / scroll。
+
+        Args:
+            theme: 目标模式；auto 重新注册 ThemeProvider，light / dark 直接生效。
+
+        Note:
+            非法值直接返回，不改变任何状态。
+        """
         self._theme_mode = theme
         if theme == "auto":
             ThemeProvider.instance().register(self)
@@ -304,7 +344,11 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # Items 装配
     # ============================================================
     def set_items(self, items: Iterable[dict | tuple | ListboxItem]):
-        """重置 items 列表。同 Autocomplete.set_items。"""
+        """重建 items 列表并恢复选中态、trigger 文本与 popover 高度。
+
+        Args:
+            items: 新的条目序列，元素可为 dict、tuple 或 ListboxItem。
+        """
         self._listbox.clear()
         self._items_data.clear()
         for raw in items:
@@ -319,6 +363,14 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._refresh_popover_height(prefer_below=self._is_open)
 
     def _make_item(self, raw) -> ListboxItem:
+        """把 dict / tuple / ListboxItem 归一化为一个 ListboxItem。
+
+        Args:
+            raw: 原始条目，支持 dict、二元组或已有 ListboxItem。
+
+        Returns:
+            归一化后的 ListboxItem；无法识别时以字符串形式作为 key 与 label。
+        """
         if isinstance(raw, ListboxItem):
             return raw
         if isinstance(raw, dict):
@@ -338,15 +390,18 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         return ListboxItem(str(raw), key=str(raw))
 
     def items(self) -> list[ListboxItem]:
+        """返回 listbox 当前的条目列表。"""
         return self._listbox.items()
 
     def item_by_key(self, key: str) -> ListboxItem | None:
+        """按 key 查找并返回对应条目，不存在时返回 None。"""
         return self._listbox.item_by_key(key)
 
     # ============================================================
     # 公共 getter / setter
     # ============================================================
     def selected_keys(self) -> set[str]:
+        """返回当前选中 key 集合的副本。"""
         return set(self._selected_keys)
 
     def selected_key(self) -> str | None:
@@ -356,6 +411,15 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         return next(iter(self._selected_keys))
 
     def set_selected_keys(self, keys: Iterable[str]):
+        """替换当前选中集合并同步 listbox、trigger 文本与信号。
+
+        Args:
+            keys: 新的选中 key 集合。
+
+        Note:
+            single 模式只保留一个 key；disallow_empty_selection=True 且当前有
+            选中时空集请求被拒；与当前选中相同则直接返回，不派发信号。
+        """
         new_keys = set(keys)
         if self._selection_mode == "single" and len(new_keys) > 1:
             new_keys = {next(iter(new_keys))}
@@ -375,19 +439,27 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self.set_selected_keys(set() if key is None else {key})
 
     def is_open(self) -> bool:
+        """返回 popover 是否处于打开状态。"""
         return self._is_open
 
     def selection_mode(self) -> str:
+        """返回当前选择模式，single 或 multiple。"""
         return self._selection_mode
 
     # ============================================================
     # Popover 高度刷新
     # ============================================================
     def _popover_max_height(self) -> int:
+        """按当前尺寸配置返回 popover 的最大高度。"""
         cfg = SELECT_SIZES.get(self._size, SELECT_SIZES["md"])
         return int(cfg["popover_max_height"])
 
     def _available_scroll_height_below(self) -> int:
+        """计算 trigger 下方到屏幕可用区域底部的剩余高度。
+
+        Returns:
+            可用高度（像素）；无主屏时回退到 popover 最大高度。
+        """
         screen = QApplication.primaryScreen()
         if screen is None:
             return self._popover_max_height()
@@ -417,6 +489,11 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             return int(self._listbox.sizeHint().height())
 
     def _refresh_popover_height(self, prefer_below: bool = False) -> None:
+        """按内容高度与屏幕可用空间刷新 scroll 的最小 / 最大高度。
+
+        Args:
+            prefer_below: 是否把 trigger 下方可用高度纳入上限计算。
+        """
         token_max = self._popover_max_height()
         max_h = token_max
         if prefer_below:
@@ -439,6 +516,11 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # Popover 控制
     # ============================================================
     def open(self):
+        """打开 popover 并先按下方可用空间对齐宽度与高度。
+
+        Note:
+            禁用态或已打开时直接返回。
+        """
         if self._is_disabled or self._is_open:
             return
         w = max(self._input.width(), self._input.sizeHint().width())
@@ -448,11 +530,13 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._popover.open(near=self._input)
 
     def close(self):
+        """关闭 popover，未打开时忽略。"""
         if not self._is_open:
             return
         self._popover.close()
 
     def toggle(self):
+        """在打开与关闭之间切换 popover。"""
         if self._is_open:
             self.close()
         else:
@@ -470,6 +554,12 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         return labels
 
     def _sync_trigger_text(self):
+        """按选中项 label 刷新 trigger 文本并兜底复位浮动 label 状态。
+
+        Note:
+            multiple 超过 chip_max 时显示 +N；setText 在重入场景下可能漏掉
+            label 归位，故额外刷新 filled 状态与 label 动画。
+        """
         labels = self._selected_labels()
         if not labels:
             text = ""
@@ -490,8 +580,11 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._input._update_label_animation()
 
     def _emit_selection_payload(self):
-        """selection_changed 发出的 payload：single 给 Optional[str]，
-        multiple 给 set[str]。"""
+        """构造 selection_changed 的载荷，按选择模式返回不同类型。
+
+        Returns:
+            single 模式返回 Optional[str]，multiple 模式返回 set[str]。
+        """
         if self._selection_mode == "single":
             return next(iter(self._selected_keys)) if self._selected_keys else None
         return set(self._selected_keys)
@@ -500,22 +593,27 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 透传 setter
     # ============================================================
     def set_label(self, label: str):
+        """透传设置 label 到内部 Input。"""
         self._input.set_label(label)
 
     def set_placeholder(self, placeholder: str):
+        """记录并透传设置 placeholder 到内部 Input。"""
         self._placeholder = placeholder
         self._input.set_placeholder(placeholder)
 
     def set_description(self, description: str):
+        """透传设置 description 到内部 Input。"""
         self._input.set_description(description)
 
     def set_variant(self, variant: str):
+        """设置并透传 variant 到内部 Input，非法值忽略。"""
         if variant not in self.VALID_VARIANTS:
             return
         self._variant = variant
         self._input.set_variant(variant)
 
     def set_color(self, color: str):
+        """设置并透传 color，必要时同步 listbox 颜色并刷新末尾图标。"""
         if color not in self.VALID_COLORS:
             return
         self._color = color
@@ -525,6 +623,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._refresh_end_icons()
 
     def set_size(self, size: str):
+        """设置并透传 size，刷新 popover 高度、末尾按钮与 trigger 文本。"""
         if size not in self.VALID_SIZES:
             return
         self._size = size
@@ -536,46 +635,56 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._sync_trigger_text()
 
     def set_radius(self, radius: str | None):
+        """透传设置 radius 到内部 Input，非法值忽略。"""
         if radius is not None and radius not in self.VALID_RADII:
             return
         self._input.set_radius(radius)
 
     def set_label_placement(self, p: str):
+        """透传设置 label_placement 到内部 Input。"""
         self._input.set_label_placement(p)
 
     def set_is_disabled(self, v: bool):
+        """设置禁用态并透传给内部 Input，禁用时顺带关闭 popover。"""
         self._is_disabled = bool(v)
         self._input.set_is_disabled(v)
         if self._is_disabled and self._is_open:
             self.close()
 
     def set_is_invalid(self, v: bool):
+        """透传设置 is_invalid 到内部 Input。"""
         self._input.set_is_invalid(v)
 
     def set_is_required(self, v: bool):
+        """透传设置 is_required 到内部 Input。"""
         self._input.set_is_required(v)
 
     def set_is_readonly(self, v: bool):
+        """记录用户语义的只读态并重算 listbox 禁选集合。"""
         self._user_is_readonly = bool(v)
         self._apply_disabled_state()
 
     def set_is_clearable(self, v: bool):
+        """设置 clearable 并刷新 clear 按钮可见性。"""
         self._is_clearable = bool(v)
         self._refresh_clear_visibility()
 
     def set_disallow_empty_selection(self, v: bool):
+        """设置必选语义并透传给 listbox、刷新 clear 可见性。"""
         self._disallow_empty_selection = bool(v)
         self._listbox.set_disallow_empty_selection(self._disallow_empty_selection)
         self._refresh_clear_visibility()
 
     def set_disabled_keys(self, keys: Iterable[str]):
+        """记录禁用的 key 集合并重算 listbox 禁选状态。"""
         self._disabled_keys = set(keys)
         self._apply_disabled_state()
 
     def _apply_disabled_state(self) -> None:
-        """统一计算并下发 listbox disabled keys。
+        """统一计算并下发 listbox 的禁用 key 集合。
 
-        readonly=True 时整表禁选（对齐 HeroUI 语义）。
+        Note:
+            readonly=True 时把所有条目并入禁用集合，实现整表禁选。
         """
         if self._user_is_readonly:
             all_keys = {it.key() for it in self._listbox.items()}
@@ -585,6 +694,12 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._listbox.set_disabled_keys(effective)
 
     def _seed_selected_visual(self) -> None:
+        """把已选条目的勾选指示直接推到稳定终态。
+
+        Note:
+            构造期或 set_items 后 listbox 尚未显示，tween 描勾动画可能来不及
+            跑到终态，导致 trigger 已有选中文本而下拉里没有勾选；这里跳过动画。
+        """
         # 构造期 / set_items 后 listbox 还没显示，set_selected 走的 tween + delay
         # 启动的描勾动画，在首次打开 popover 前若没及时跑到 progress=1 / alpha=1，
         # 用户会看到"trigger 已显示选中文本，但下拉里没√"。这里把已选 item 直接
@@ -596,6 +711,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
                 it.update()
 
     def set_empty_content(self, text: str | None):
+        """记录空态文案并透传给 listbox。"""
         self._empty_content = text
         self._listbox.set_empty_content(text)
 
@@ -604,18 +720,22 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 压过 Input 的 min_width 守卫（默认 260），导致 Input 撑出 Select
     # 边界、chevron 被裁。统一把宽度调用转发给 Input
     def setFixedWidth(self, w: int):
+        """把固定宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
         self._input.setFixedWidth(int(w))
         super().setFixedWidth(int(w))
 
     def setMinimumWidth(self, w: int):
+        """把最小宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
         self._input.setMinimumWidth(int(w))
         super().setMinimumWidth(int(w))
 
     def setMaximumWidth(self, w: int):
+        """把最大宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
         self._input.setMaximumWidth(int(w))
         super().setMaximumWidth(int(w))
 
     def set_disable_selector_icon_rotation(self, v: bool):
+        """设置是否禁用 chevron 旋转并立即复位其角度。"""
         self._disable_selector_icon_rotation = bool(v)
         if v:
             self._end.selector_btn.set_angle(0, animated=False)
@@ -624,6 +744,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             self._end.selector_btn.set_angle(target, animated=False)
 
     def set_selection_mode(self, mode: str):
+        """切换选择模式并透传给 listbox，切到 single 时收敛多选。"""
         if mode not in self.VALID_SELECTION_MODES or mode == self._selection_mode:
             return
         self._selection_mode = mode
@@ -639,6 +760,16 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # Trigger 事件过滤：点击 / 键盘
     # ============================================================
     def eventFilter(self, obj, event):
+        """过滤 trigger 区域的鼠标与键盘事件以控制 popover 与列表焦点。
+
+        Args:
+            obj: 触发事件的对象，仅处理 line_edit / wrapper / 浮动 label。
+            event: 待过滤的 Qt 事件。
+
+        Note:
+            _just_committed 守卫期内的同一帧点击会被吞掉，避免 commit 关闭
+            popover 后自动 FocusIn 再次打开。
+        """
         # ---- 鼠标点击：trigger 内任意位置（line_edit / wrapper / 浮动 label）
         # 都能 toggle popover ----
         if obj in (

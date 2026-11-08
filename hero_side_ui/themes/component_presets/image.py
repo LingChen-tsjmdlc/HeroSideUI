@@ -1,11 +1,4 @@
-"""Image 组件主题预设。
-
-阴影规格对齐 HeroUI v2 官方 shadow-small/medium/large。
-配合 QGraphicsDropShadowEffect 使用：
-    eff.setOffset(0, offset_y)
-    eff.setBlurRadius(blur)
-    eff.setColor(QColor(0, 0, 0, int(opacity * 255)))
-"""
+"""IMAGE_SHADOWS：四档 QGraphicsDropShadowEffect 参数（offset/blur/opacity）。"""
 
 # HeroUI v2 Image 阴影预设
 IMAGE_SHADOWS = {

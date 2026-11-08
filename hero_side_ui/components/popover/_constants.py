@@ -23,4 +23,3 @@ VALID_PLACEMENTS = {
     "right-start",
     "right-end",
 }
-"""合法的 placement 值（12 种 corner/center 组合）。"""

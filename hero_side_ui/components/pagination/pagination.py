@@ -1,14 +1,4 @@
-"""HeroSideUI Pagination 组件 — 复刻 HeroUI v2 Pagination。
-
-子模块:
-    - ``_PaginationItem`` (`./_item.py`): 单个按钮(页码/方向/省略号)
-    - ``_CursorWidget``   (`./_cursor.py`): 滑动 + 弹簧光标
-    - ``_DotsIcon``       (`./_ellipsis_icon.py`): hover 切换 ellipsis ↔ double-chevron
-    - ``compute_pagination_range`` (`./_range.py`): 范围计算
-    - ``_palette / _constants``: 颜色 / 枚举
-
-公共信号: page_changed(int)
-"""
+"""Pagination 分页器；子模块 _item/_cursor/_ellipsis_icon/_range/_palette/_constants。"""
 
 from PySide6.QtCore import QEasingCurve, QRect, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
@@ -70,6 +60,28 @@ class Pagination(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造分页器。
+
+        Args:
+            total: 总页数（≥1）。
+            initial_page: 初始页码。
+            page: 受控页码（优先于 initial_page）。
+            siblings: 当前页两侧兄弟页码数。
+            boundaries: 首尾保留页码数。
+            dots_jump: 点击省略号跳转的页数。
+            variant: 视觉变体（flat/bordered/light/faded）。
+            color: 语义色。
+            size: 尺寸（sm/md/lg）。
+            radius: 圆角档位。
+            is_compact: 紧凑模式（连续胶囊）。
+            is_disabled: 是否禁用。
+            show_controls: 是否显示上一页/下一页控制。
+            loop: 是否首尾循环。
+            disable_animation: 关闭全部动画。
+            disable_cursor_animation: 关闭滑动光标（active 自填充）。
+            theme: auto/light/dark。
+            parent: 父控件。
+        """
         super().__init__(parent)
 
         # ---- 校验 ----
@@ -175,11 +187,13 @@ class Pagination(QWidget):
 
     @staticmethod
     def _validate(name: str, value, valid):
+        """校验参数是否在合法枚举集合内，否则抛 ValueError。"""
         if value not in valid:
             raise ValueError(f"{name} must be one of {tuple(valid)}, got {value!r}")
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体 light/dark。"""
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
@@ -189,9 +203,11 @@ class Pagination(QWidget):
     # ============================================================
 
     def total(self) -> int:
+        """返回总页数。"""
         return self._total
 
     def current_page(self) -> int:
+        """返回当前激活页码。"""
         return self._active_page
 
     def set_page(self, page: int):
@@ -209,6 +225,7 @@ class Pagination(QWidget):
         self.page_changed.emit(self._active_page)
 
     def go_next(self):
+        """跳到下一页（loop 模式在末页回到首页）。"""
         if self._active_page == self._total:
             if self._loop:
                 self.set_page(1)
@@ -216,6 +233,7 @@ class Pagination(QWidget):
         self.set_page(self._active_page + 1)
 
     def go_previous(self):
+        """跳到上一页（loop 模式在首页回到末页）。"""
         if self._active_page == 1:
             if self._loop:
                 self.set_page(self._total)
@@ -223,12 +241,15 @@ class Pagination(QWidget):
         self.set_page(self._active_page - 1)
 
     def go_first(self):
+        """跳到首页。"""
         self.set_page(1)
 
     def go_last(self):
+        """跳到末页。"""
         self.set_page(self._total)
 
     def set_total(self, total: int):
+        """设置总页数（夹取当前页并重建 range）。"""
         t = max(1, int(total))
         if t == self._total:
             return
@@ -239,14 +260,17 @@ class Pagination(QWidget):
         self._move_cursor_to_active(animate=False)
 
     def set_dots_jump(self, n: int):
+        """设置点击省略号的跳转跨度。"""
         self._dots_jump = max(1, int(n))
 
     def set_siblings(self, n: int):
+        """设置当前页两侧兄弟页码数并重建 range。"""
         self._siblings = max(0, int(n))
         self._rebuild_items()
         self._move_cursor_to_active(animate=False)
 
     def set_boundaries(self, n: int):
+        """设置首尾保留页码数并重建 range。"""
         self._boundaries = max(0, int(n))
         self._rebuild_items()
         self._move_cursor_to_active(animate=False)
@@ -256,18 +280,21 @@ class Pagination(QWidget):
     # ============================================================
 
     def set_variant(self, variant: str):
+        """设置视觉变体（校验后刷新 items 样式）。"""
         self._validate("variant", variant, VALID_VARIANTS)
         self._variant = variant
         self._apply_state_to_items()
         self.update()
 
     def set_color(self, color: str):
+        """设置语义色（含 cursor 重新配置）。"""
         self._validate("color", color, VALID_COLORS)
         self._color = color
         self._apply_state_to_items()
         self._configure_cursor()
 
     def set_size(self, size: str):
+        """设置尺寸档位（重排间距/留白并刷新样式与 cursor 位置）。"""
         self._validate("size", size, VALID_SIZES)
         self._size = size
         spacing = 0 if self._is_compact else PAGINATION_SIZES[self._size]["list_gap"]
@@ -277,6 +304,7 @@ class Pagination(QWidget):
         self._reposition_cursor_async()
 
     def set_radius(self, radius: str):
+        """设置圆角档位（含 cursor 重新配置）。"""
         self._validate("radius", radius, VALID_RADII)
         self._radius = radius
         self._apply_state_to_items()
@@ -284,6 +312,7 @@ class Pagination(QWidget):
         self._reposition_cursor_async()
 
     def set_compact(self, compact: bool):
+        """设置紧凑模式（连续胶囊，重排间距并刷新样式）。"""
         self._is_compact = bool(compact)
         spacing = 0 if self._is_compact else PAGINATION_SIZES[self._size]["list_gap"]
         self._items_layout.setSpacing(spacing)
@@ -291,19 +320,23 @@ class Pagination(QWidget):
         self._reposition_cursor_async()
 
     def set_disabled(self, disabled: bool):
+        """设置整体禁用态（半透明 + 关闭交互）。"""
         self._is_disabled = bool(disabled)
         self._apply_disabled_state()
 
     def set_show_controls(self, show: bool):
+        """设置是否显示上一页/下一页控制（重建 range）。"""
         self._show_controls = bool(show)
         self._rebuild_items()
         self._move_cursor_to_active(animate=False)
 
     def set_loop(self, loop: bool):
+        """设置首尾循环（并刷新 prev/next 禁用态）。"""
         self._loop = bool(loop)
         self._update_prev_next_disabled()
 
     def set_disable_animation(self, disable: bool):
+        """关闭全部动画（cursor 停在原位，active 改为自填充）。"""
         self._disable_animation = bool(disable)
         self._disable_cursor_animation = self._disable_cursor_animation or disable
         self._apply_state_to_items()
@@ -313,6 +346,7 @@ class Pagination(QWidget):
         self._move_cursor_to_active(animate=False)
 
     def set_disable_cursor_animation(self, disable: bool):
+        """关闭滑动光标（隐藏 cursor，active item 自填充；否则显示）。"""
         self._disable_cursor_animation = bool(disable) or self._disable_animation
         if self._disable_cursor_animation:
             self._cursor.hide()
@@ -322,6 +356,7 @@ class Pagination(QWidget):
         self._move_cursor_to_active(animate=False)
 
     def set_theme(self, theme: str):
+        """设置主题（auto 跟随 ThemeProvider，light/dark 硬锁）。"""
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -437,6 +472,7 @@ class Pagination(QWidget):
             self._cursor.raise_()
 
     def _apply_state_to_items(self):
+        """把当前视觉状态下发到所有 item，并标记 active 项（关闭 cursor 时自填充）。"""
         for it in self._items:
             it.apply_state(
                 variant=self._variant,
@@ -462,6 +498,7 @@ class Pagination(QWidget):
                 it.setEnabled(self._loop or self._active_page < self._total)
 
     def _on_page_clicked(self, page: int):
+        """页码被点击的回调：跳转到对应页。"""
         if page == self._active_page:
             return
         self.set_page(page)
@@ -490,6 +527,7 @@ class Pagination(QWidget):
             self._cursor.set_page_text(str(self._active_page))
 
     def _initial_cursor_position(self):
+        """首次显示后把 cursor 放到 active 上（静态，无动画）。"""
         if self._disable_cursor_animation:
             return
         self._schedule_cursor_move(animate=False)
@@ -513,9 +551,11 @@ class Pagination(QWidget):
         self._move_cursor_to_active(animate=animate)
 
     def _reposition_cursor_async(self):
+        """异步静态重定位 cursor（尺寸/主题/布局变化后调用）。"""
         self._schedule_cursor_move(animate=False)
 
     def _find_active_item(self) -> _PaginationItem | None:
+        """在 items 中查找当前 active 页对应的 item widget。"""
         for it in self._items:
             if it.item_type() == PaginationItemType.PAGE and it.page() == self._active_page:
                 return it
@@ -600,6 +640,7 @@ class Pagination(QWidget):
         )
 
     def _fade_in_cursor_if_needed(self):
+        """首次显示时按设置对 cursor 做淡入（之后直接设为不透明）。"""
         if self._cursor_opacity_effect is None:
             return
         animated = self._cursor_first_show and not self._disable_animation
@@ -620,6 +661,7 @@ class Pagination(QWidget):
     # ============================================================
 
     def _apply_disabled_state(self):
+        """套用/撤销禁用态：半透明叠层 + 关闭整体交互。"""
         if self._is_disabled:
             eff = QGraphicsOpacityEffect(self)
             eff.setOpacity(0.5)
@@ -634,10 +676,12 @@ class Pagination(QWidget):
     # ============================================================
 
     def resizeEvent(self, ev):
+        """尺寸变化后异步重定位 cursor。"""
         super().resizeEvent(ev)
         self._reposition_cursor_async()
 
     def showEvent(self, ev):
+        """显示后异步重定位 cursor。"""
         super().showEvent(ev)
         self._reposition_cursor_async()
 

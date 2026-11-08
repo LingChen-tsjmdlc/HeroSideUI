@@ -1,13 +1,4 @@
-"""DateInput 组件尺寸配置。
-
-对齐 HeroUI v2 的 date-input.ts：
-  - 高度 sm=32 / md=40 / lg=48；inside label 时 sm=48 / md=56 / lg=64
-  - 段自身 px-0.5 + rounded-md，段间靠负 margin 收紧（-ml-1）
-  - faded / bordered 的 border-width = 2px (border-medium)
-
-尺寸主体沿用 INPUT_SIZES（DateInput 与 Input 共享外框视觉），此处只
-补出段特有的 token，避免两处各写一份高度/字号导致视觉漂移。
-"""
+"""DATE_INPUT token：段 px-0.5 + 负 margin 收紧、border 2px；尺寸主体沿用 INPUT_SIZES。"""
 
 from .input import INPUT_SIZES
 

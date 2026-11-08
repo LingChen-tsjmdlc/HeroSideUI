@@ -1,11 +1,5 @@
-"""Calendar 月/年 snap 滚动选择器（对齐 calendar.ts picker + use-calendar-picker）。
-
-三大交互（对齐官方）：
-  1. 中心吸附：滚动停下后平滑吸附，使最近的项精确居中于高亮条。
-  2. 距离渐隐：离中心越远的项颜色越淡，顶/底两端渐隐（mask 效果，_FadeOverlay 画）。
-  3. 平滑滚动：点击项 / 吸附都用 QVariantAnimation 平滑滚动，非硬跳。
-
-前后各垫 EMPTY_OFFSET 个空项让首尾项也能滚到中央。
+"""Calendar 月/年滚动选择器：中心吸附 + 距离渐隐 + 平滑滚动。
+前后垫空项使首尾也能居中。
 """
 
 from __future__ import annotations
@@ -41,6 +35,17 @@ class _PickerColumn(QScrollArea):
     value_committed = Signal(object)
 
     def __init__(self, items: list[tuple], *, theme: str, align_left: bool, parent=None) -> None:
+        """创建单列 snap 滚动列。
+
+        Args:
+            items: (value, label) 列表。
+            theme: 主题名。
+            align_left: True 左对齐（年列），False 居中（月列）。
+            parent: Qt 父对象。
+
+        Note:
+            前后各垫 _EMPTY_OFFSET 个空项，让首尾项也能滚到居中位。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._theme = theme
@@ -73,6 +78,7 @@ class _PickerColumn(QScrollArea):
         self._build()
 
     def _build(self) -> None:
+        """构建列体：空垫项 + 数据项 + 空垫项的纵向布局。"""
         body = QWidget(self)
         body.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         col = QVBoxLayout(body)
@@ -97,6 +103,15 @@ class _PickerColumn(QScrollArea):
         self.setWidget(body)
 
     def _make_row(self, label: str, value) -> _PickerItem:
+        """构造单个 picker 项并接好点击。
+
+        Args:
+            label: 显示文本。
+            value: 项的值；None 表示空垫项。
+
+        Returns:
+            已连接 clicked 的 _PickerItem。
+        """
         row = _PickerItem(label, value, theme=self._theme)
         row.clicked.connect(self._on_item_clicked)
         return row
@@ -104,12 +119,30 @@ class _PickerColumn(QScrollArea):
     # ---- 滚动 / 吸附 --------------------------------------------------
 
     def _center_y(self) -> float:
+        """视口中心的绝对 y 坐标。
+
+        Returns:
+            滚动值 + 视口高度一半。
+        """
         return self.verticalScrollBar().value() + self.viewport().height() / 2
 
     def _row_center(self, row) -> float:
+        """某行中心的绝对 y 坐标。
+
+        Args:
+            row: 目标行 widget。
+
+        Returns:
+            行 pos.y + 行高一半。
+        """
         return row.pos().y() + row.height() / 2
 
     def _nearest_index(self) -> int:
+        """找离视口中心最近的数据项下标。
+
+        Returns:
+            距离最小项的 index；无行时为 0。
+        """
         center = self._center_y()
         best_i, best_d = 0, None
         for i, row in enumerate(self._rows):
@@ -119,28 +152,57 @@ class _PickerColumn(QScrollArea):
         return best_i
 
     def _on_scroll(self, _v: int) -> None:
+        """滚动回调：刷新颜色梯度并重启停止判定计时。
+
+        Args:
+            _v: 滚动条当前值（未使用）。
+        """
         self._update_item_colors()
         if not self._snapping:
             self._settle.start()
 
     def _snap_to_nearest(self) -> None:
+        """滚动停止后吸附到最近项并提交其值。"""
         if not self._rows:
             return
         idx = self._nearest_index()
         self._animate_center(idx, emit=True)
 
     def _on_item_clicked(self, value) -> None:
+        """处理项点击：滚动该项到中心并提交。
+
+        Args:
+            value: 被点击项的值。
+        """
         idx = self._value_to_index.get(value)
         if idx is not None:
             self._animate_center(idx, emit=True)
 
     def _target_for(self, idx: int) -> int:
+        """计算把第 idx 项滚到中心所需的滚动值。
+
+        Args:
+            idx: 目标项下标。
+
+        Returns:
+            钳制在滚动条范围内的目标滚动值。
+        """
         row = self._rows[idx]
         target = int(self._row_center(row) - self.viewport().height() / 2)
         bar = self.verticalScrollBar()
         return max(bar.minimum(), min(bar.maximum(), target))
 
     def _animate_center(self, idx: int, *, emit: bool) -> None:
+        """用补间把第 idx 项滚到中心。
+
+        Args:
+            idx: 目标项下标。
+            emit: 结束后是否 emit value_committed。
+
+        Note:
+            _snapping 标记抑制吸附期间 _on_scroll 重启 settle 计时，
+            防止吸附动画被判定为新的用户滚动。
+        """
         target = self._target_for(idx)
         bar = self.verticalScrollBar()
         self._snapping = True
@@ -163,6 +225,12 @@ class _PickerColumn(QScrollArea):
         )
 
     def scroll_to_value(self, value, *, animated: bool) -> None:
+        """滚动到指定值（不提交）。
+
+        Args:
+            value: 目标值；不存在时忽略。
+            animated: True 播放滚动动画，False 直接跳转。
+        """
         idx = self._value_to_index.get(value)
         if idx is None:
             return
@@ -180,6 +248,11 @@ class _PickerColumn(QScrollArea):
             row.set_distance(dist)
 
     def set_theme(self, theme: str) -> None:
+        """切换主题并联动全部项与颜色梯度。
+
+        Args:
+            theme: 主题名。
+        """
         self._theme = theme
         for row in self._rows:
             row.set_theme(theme)
@@ -192,6 +265,14 @@ class _PickerItem(Text):
     clicked = Signal(object)
 
     def __init__(self, label: str, value, *, theme: str, parent=None) -> None:
+        """创建 picker 单项。
+
+        Args:
+            label: 显示文本。
+            value: 项的值；None 为空垫项（不可点、不渐隐）。
+            theme: 主题名。
+            parent: Qt 父对象。
+        """
         super().__init__(
             label,
             size=18,
@@ -208,12 +289,21 @@ class _PickerItem(Text):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def mouseReleaseEvent(self, ev) -> None:
+        """鼠标释放：仍在项内且非空垫项时发 clicked。
+
+        Args:
+            ev: Qt 鼠标释放事件。
+        """
         if self._value is not None and self.rect().contains(ev.pos()):
             self.clicked.emit(self._value)
         super().mouseReleaseEvent(ev)
 
     def set_distance(self, dist: float) -> None:
-        """dist=0 中心（最深），越大越淡。"""
+        """按距中心距离设置文字深浅与字重。
+
+        Args:
+            dist: 距离（0 中心最深，越大越淡）。
+        """
         if self._value is None:
             return
         if dist < 0.5:
@@ -234,15 +324,31 @@ class _FadeOverlay(QWidget):
     """顶/底渐隐遮罩（content1 色 → 透明），透明鼠标事件，覆盖在滚动列之上。"""
 
     def __init__(self, theme: str, parent=None) -> None:
+        """创建透明鼠标事件的渐隐遮罩。
+
+        Args:
+            theme: 主题名。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._theme = theme
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def set_theme(self, theme: str) -> None:
+        """切换主题色并重绘。
+
+        Args:
+            theme: 主题名。
+        """
         self._theme = theme
         self.update()
 
     def paintEvent(self, ev) -> None:
+        """绘制顶 / 底两条 content1 → 透明的线性渐变。
+
+        Args:
+            ev: Qt 绘制事件。
+        """
         p = QPainter(self)
         base = pal.surface_content1(self._theme)
         w, h = self.width(), self.height()
@@ -278,6 +384,18 @@ class _CalendarPicker(QWidget):
         theme: str,
         parent=None,
     ) -> None:
+        """创建月 + 年两列选择器。
+
+        Args:
+            sizes: 尺寸 token（grid_pad_x 等）。
+            month_items: (value, label) 月份项。
+            year_items: (value, label) 年份项。
+            theme: 主题名。
+            parent: Qt 父对象。
+
+        Note:
+            中国习惯年在左、月在右；中央高亮条与顶底渐隐由本类自绘。
+        """
         super().__init__(parent)
         self._sizes = sizes
         self._theme = theme
@@ -298,11 +416,21 @@ class _CalendarPicker(QWidget):
         self._fade = _FadeOverlay(theme, self)
 
     def resizeEvent(self, ev) -> None:
+        """尺寸变化后让渐隐遮罩铺满并置顶。
+
+        Args:
+            ev: Qt 尺寸变化事件。
+        """
         self._fade.setGeometry(0, 0, self.width(), self.height())
         self._fade.raise_()
         super().resizeEvent(ev)
 
     def paintEvent(self, ev) -> None:
+        """绘制 content1 底色与中央高亮条。
+
+        Args:
+            ev: Qt 绘制事件。
+        """
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         p.fillRect(self.rect(), pal.surface_content1(self._theme))
@@ -315,11 +443,21 @@ class _CalendarPicker(QWidget):
         p.end()
 
     def set_current(self, month: int, year: int) -> None:
+        """把两列滚到当前月 / 年（不提交）。
+
+        Args:
+            month: 当前月（1~12）。
+            year: 当前年。
+
+        Note:
+            延迟到布局 settle 后再定位——构造/展开瞬间 row.pos 尚未算出。
+        """
         # 延迟到布局 settle 后再定位（构造/展开瞬间 row.pos 尚未算出）
         self._pending = (month, year)
         QTimer.singleShot(0, self, self._apply_current)
 
     def _apply_current(self) -> None:
+        """执行 set_current 延迟的定位。"""
         month, year = self._pending
         self._month_col.scroll_to_value(month, animated=False)
         self._year_col.scroll_to_value(year, animated=False)
@@ -327,6 +465,11 @@ class _CalendarPicker(QWidget):
         self._year_col._update_item_colors()
 
     def set_theme(self, theme: str) -> None:
+        """切换主题并联动两列与遮罩。
+
+        Args:
+            theme: 主题名。
+        """
         self._theme = theme
         self._month_col.set_theme(theme)
         self._year_col.set_theme(theme)

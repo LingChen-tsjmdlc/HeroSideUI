@@ -31,9 +31,11 @@ class UnderlineBar(QWidget):
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
     def _get_progress(self) -> float:
+        """返回当前展开进度。"""
         return self._progress
 
     def _set_progress(self, value: float):
+        """设置展开进度并请求重绘。"""
         self._progress = max(0.0, min(1.0, value))
         self.update()
 
@@ -80,6 +82,7 @@ class UnderlineBar(QWidget):
             self.update()
 
     def paintEvent(self, event):
+        """从中心绘制当前进度对应的下划线。"""
         if self._progress <= 0:
             return
         painter = QPainter(self)

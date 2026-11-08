@@ -1,14 +1,4 @@
-"""variant=gradient —— 圆环跑径向 conical 渐变（透明 → 主色）。
-
-HeroUI 原版做法（CSS）:
-    bg-gradient-to-b from-transparent via-transparent to-{color}
-    + mask: radial-gradient(closest-side, transparent calc(100%-3px), black calc(100%-3px))
-    + animate-spinner-linear-spin 1s linear infinite
-
-Qt 等价做法:
-    QConicalGradient 起始角随 phase 变化，从 transparent 平滑过渡到 indicator-500，
-    在外圆区填充，再用一个内圆"挖空"留下 border-width 厚的圆环。
-"""
+"""gradient 变体：QConicalGradient 透明→主色，内圆挖空留环。"""
 
 from __future__ import annotations
 
@@ -30,7 +20,19 @@ def paint_gradient(
     border: float,
     phase: float,
 ):
-    """phase ∈ [0, 1)；驱动器周期 1.0s。"""
+    """绘制 gradient 变体：锥形渐变圆环，头部实色、拖尾淡出到透明。
+
+    Args:
+        painter: 目标 QPainter，函数内改写画笔与画刷。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 主色，头部实色与透明端都由它派生。
+        border: 圆环线宽，用于计算内圆半径。
+        phase: 全局相位，取值 [0, 1)，驱动器周期 1.0s。
+
+    Note:
+        圆环由 QPainterPath 的 even-odd 填充规则挖空；外半径不大于内半径时直接返回，不做绘制。
+    """
     side = min(w, h)
     cx = w / 2
     cy = h / 2

@@ -1,15 +1,5 @@
-"""HeroSideUI AvatarGroup — HeroUI v2 AvatarGroup PySide6 复刻。
-
-组件来源: https://github.com/heroui-inc/heroui/tree/main/packages/components/avatar
-样式来源: packages/core/theme/src/components/avatar.ts (avatarGroup slot)
-
-行为:
-- 子 Avatar 绝对定位横向重叠堆叠（越靠后的头像 z 越高，压在前面之上）。
-- hover 其中一个 → 该头像向左平移 hover_shift 让开缝隙（带动画），移出后复位。
-- 最多显示 max 个，超出以 "+N" 计数头像收尾（total 可覆盖 N）。
-- 组级 color/radius/size/is_bordered/is_disabled 下发给所有子 Avatar。
-- is_grid 时改为网格排布（正间距，不重叠）。
-- render_count 可自定义计数控件工厂。
+"""AvatarGroup 头像组：绝对定位重叠堆叠、hover 让位、超量 +N 折叠。
+组级样式下发给子 Avatar；is_grid 切网格排布。
 """
 
 from __future__ import annotations
@@ -44,15 +34,14 @@ class AvatarGroup(QWidget):
         AvatarGroup(avatars, is_grid=True, max=7)
 
     Args:
-        avatars:     Avatar 实例列表
-        max:         最多显示数量（默认 5），超出以 "+N" 计数收尾
-        total:       手动指定"未显示数量"，覆盖自动计算
-        color/radius/size/is_bordered/is_disabled:
-                     组级默认，下发给子 Avatar
-        is_grid:     网格排布（正间距，不重叠）
+        avatars: Avatar 实例列表
+        max: 最多显示数量（默认 5），超出以 "+N" 计数收尾
+        total: 手动指定"未显示数量"，覆盖自动计算
+        color: 组级语义色，下发给子 Avatar（radius/size/is_bordered/is_disabled 同理）
+        is_grid: 网格排布（正间距，不重叠）
         render_count: 自定义计数控件工厂 fn(count)->QWidget
         disable_animation: 关闭 hover 平移动画
-        theme:       auto / light / dark
+        theme: auto / light / dark
     """
 
     def __init__(
@@ -71,6 +60,23 @@ class AvatarGroup(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建头像组并按堆叠 / 网格模式布局。
+
+        Args:
+            avatars: Avatar 实例列表。
+            max: 最多显示数量，超出以 +N 计数收尾。
+            total: 手动指定未显示数量，覆盖自动计算。
+            color: 组级语义色，None 表示不下发。
+            radius: 组级圆角，None 不下发。
+            size: 组级尺寸，None 不下发。
+            is_bordered: 组级描边开关。
+            is_disabled: 组级禁用开关。
+            is_grid: True 走网格排布（正间距不重叠）。
+            render_count: 自定义计数控件工厂 fn(count) -> QWidget。
+            disable_animation: 关闭 hover 平移动画。
+            theme: auto / light / dark。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self.setObjectName("HeroAvatarGroup")
 
@@ -96,7 +102,14 @@ class AvatarGroup(QWidget):
 
     # ============================================================
     def _apply_group_props(self, av: Avatar):
-        """把组级默认下发给子 Avatar。"""
+        """把组级默认下发给子 Avatar。
+
+        Args:
+            av: 要应用组级配置的子头像。
+
+        Note:
+            color / radius / size 为 None 时不下发，保留子级自身设定。
+        """
         if self._color is not None:
             av.set_color(self._color)
         if self._radius is not None:
@@ -109,6 +122,11 @@ class AvatarGroup(QWidget):
             av.set_theme(self._theme)
 
     def _remaining_count(self) -> int:
+        """计算未显示的头像数量。
+
+        Returns:
+            total 优先；其次 len(avatars) - max；都不可用时为 -1（不显示计数）。
+        """
         if self._total is not None:
             return self._total
         if self._max is not None:
@@ -116,11 +134,17 @@ class AvatarGroup(QWidget):
         return -1
 
     def _visible_avatars(self) -> list[Avatar]:
+        """返回参与显示的头像切片。
+
+        Returns:
+            前 max 个头像；max 为 None 时全部返回。
+        """
         if self._max is None:
             return self._avatars
         return self._avatars[: self._max]
 
     def _build(self):
+        """按 is_grid 分派到网格或堆叠布局。"""
         if self._is_grid:
             self._build_grid()
         else:
@@ -130,6 +154,13 @@ class AvatarGroup(QWidget):
     # 堆叠模式（绝对定位重叠 + hover 平移）
     # ============================================================
     def _build_stack(self):
+        """堆叠布局：绝对定位重叠排布 + hover 让位 + +N 计数收尾。
+
+        Note:
+            头像外径直接问 Avatar 自身几何（box + 描边外圈），不依赖
+            width() 时序；整组高度只由头像决定，计数控件居中不撑高；
+            左侧留 AVATAR_GROUP_HOVER_SHIFT 防首个头像左移越界。
+        """
         # 分别收集头像与可选计数控件：头像重叠堆叠，计数控件另作小间距排在末尾
         avatars: list[Avatar] = []
         for av in self._visible_avatars():
@@ -206,6 +237,15 @@ class AvatarGroup(QWidget):
             w.raise_()
 
     def eventFilter(self, obj, event):
+        """监听堆叠模式头像的 Enter / Leave 触发让位平移。
+
+        Args:
+            obj: 被监听的子 widget。
+            event: 当前事件。
+
+        Returns:
+            一律交回父类；本过滤器只触发副作用。
+        """
         # 仅堆叠模式处理 hover 平移
         if not self._is_grid and obj in self._base_x:
             if event.type() == QEvent.Type.Enter:
@@ -215,6 +255,16 @@ class AvatarGroup(QWidget):
         return super().eventFilter(obj, event)
 
     def _hover_shift(self, w: QWidget, enter: bool):
+        """hover 进出时平移头像为其让位。
+
+        Args:
+            w: 触发事件的头像。
+            enter: True 左移让位，False 归位。
+
+        Note:
+            enter 时立即 raise_ 便于看到被压住的头像；leave 的平移动画
+            结束后由 _restore_z_order 恢复自然 z 序。
+        """
         base = self._base_x.get(w)
         if base is None:
             return
@@ -231,6 +281,7 @@ class AvatarGroup(QWidget):
         )
 
     def _restore_z_order(self):
+        """复位到自然堆叠 z 序：越靠后的头像 z 越高（正序 raise）。"""
         # 复位到自然堆叠：越靠后的头像 z 越高（正序 raise）
         for w in self._items:
             w.raise_()
@@ -239,6 +290,7 @@ class AvatarGroup(QWidget):
     # 网格模式
     # ============================================================
     def _build_grid(self):
+        """网格布局：固定列数、正间距排布，超出同样以 +N 收尾。"""
         layout = QGridLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(AVATAR_GROUP_GRID_GAP)
@@ -265,7 +317,14 @@ class AvatarGroup(QWidget):
         self._layout = layout
 
     def _make_count(self, count: int) -> QWidget:
-        """计数收尾控件：默认一个 name='+N' 的 Avatar。"""
+        """构造计数收尾控件。
+
+        Args:
+            count: 未显示的头像数量。
+
+        Returns:
+            自定义 render_count 工厂的结果；默认是 name='+N' 的 Avatar。
+        """
         if self._render_count is not None:
             return self._render_count(count)
         av = Avatar(
@@ -284,12 +343,27 @@ class AvatarGroup(QWidget):
     # 公共访问器
     # ============================================================
     def avatars(self) -> list[Avatar]:
+        """返回全部子头像（含未显示的）。
+
+        Returns:
+            内部列表的浅拷贝。
+        """
         return list(self._avatars)
 
     def remaining_count(self) -> int:
+        """返回未显示的头像数量。
+
+        Returns:
+            _remaining_count 的计算结果；-1 表示不可计算。
+        """
         return self._remaining_count()
 
     def count_widget(self) -> QWidget | None:
+        """返回 +N 计数控件。
+
+        Returns:
+            当前的计数控件；未创建时为 None。
+        """
         return self._count_widget
 
 

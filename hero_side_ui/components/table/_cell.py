@@ -1,12 +1,6 @@
-"""Table 单元格（自绘）。
+"""Table 单元格：自绘 before 行条背景并按行列位置拼接圆角。
 
-对齐 HeroUI v2 table.ts 的 ``td`` slot：每个单元格自己绘制 ``before`` 行条背景
-（选中 / hover / 斑马纹），并根据"首列/尾列 + 首行/中行/尾行 + 是否多选"拼接圆角，
-还原 HeroUI 的 ``rounded-s-lg`` / ``rounded-ss-lg`` 等角拼接逻辑。
-
-单元格内容是真正的子 widget（Text 或用户自定义 QWidget），放在 cell 内部 layout 中，
-绘制在 before 背景之上。行状态由父 Table 通过 ``set_row_state`` 推入，状态变化时
-cell 平滑过渡 before 背景色。
+内容为真子 widget；行状态由父 Table 经 set_row_state 推入。
 """
 
 from __future__ import annotations
@@ -41,12 +35,21 @@ def _corner_radii(
     is_last_col: bool,
     r: int,
 ) -> tuple[int, int, int, int]:
-    """计算 before 行条四角圆角 (tl, tr, br, bl)，对齐 table.ts。
+    """按行列位置计算行条四角各自的圆角半径。
 
-    - 单选 / 无选择：每行独立药丸 —— 首列左两角圆、尾列右两角圆（first:before:rounded-s-lg）。
-    - 多选 / hover：整块连续 —— 仅表格首行上两角圆、尾行下两角圆，中间行全直角
-      （isMultiSelectable：group-data-[first]/last/middle）。这样连续选中区是一整块，
-      不会每行都鼓起圆角形成起伏边缘。
+    Args:
+        is_multi: 是否多选模式。
+        is_first_row: 是否首行。
+        is_last_row: 是否末行。
+        is_first_col: 是否首列。
+        is_last_col: 是否末列。
+        r: 圆角半径像素值。
+
+    Returns:
+        依次对应左上、右上、右下、左下的圆角半径四元组。
+
+    Note:
+        单选每行独立药丸，仅首列与末列带圆角；多选时圆角只出现在整张表四个外角。
     """
     tl = tr = br = bl = 0
     if not is_multi:
@@ -95,6 +98,16 @@ class _TableCell(QWidget):
     """表格数据单元格。内容 widget + 自绘 before 行条背景。"""
 
     def __init__(self, content=None, *, align: str = "start", parent=None):
+        """创建单元格并装入内容 widget。
+
+        Args:
+            content: 单元格内容；str 包成 Text，QWidget 直接放置，None 为空。
+            align: 内容对齐方式。
+            parent: 父级 QWidget。
+
+        Note:
+            竖直策略用 Preferred 而非 Fixed，避免选中条左右高度不齐；align 非法值回退到 start。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         # 竖直 Preferred（非 Fixed）：让本格被 QGridLayout 拉伸填满整行高度。
@@ -161,12 +174,7 @@ class _TableCell(QWidget):
         self._refresh_content_style()
 
     def update_content(self, content):
-        """行复用专用：尽量原地更新内容，避免销毁重建子 widget。
-
-        - 当前是 Text 且新内容是纯文本 → 只 set_text（最省，不动 widget 树）。
-        - 其余情况（QWidget 内容、类型不匹配）→ 回退到 set_content 重建。
-        复用能显著降低翻页 / 滚动时的重建开销。
-        """
+        """行复用：Text→纯文本只 set_text，其余回退 set_content 重建。"""
         if isinstance(self._content, Text) and not isinstance(content, QWidget):
             self._content.setText(str(content) if content is not None else "")
             self._refresh_content_style()
@@ -174,6 +182,7 @@ class _TableCell(QWidget):
         self.set_content(content)
 
     def content(self) -> QWidget | None:
+        """返回当前内容 widget，空单元格返回 None。"""
         return self._content
 
     # ------------------------------------------------------------
@@ -191,16 +200,31 @@ class _TableCell(QWidget):
         self._row_key = row_key
 
     def enterEvent(self, e):
+        """进入单元格时向所属行上报 hover。
+
+        Args:
+            e: Qt 进入事件。
+        """
         if self._hover_report and self._row_key is not None:
             self._hover_report(self._row_key, True)
         super().enterEvent(e)
 
     def leaveEvent(self, e):
+        """离开单元格时向所属行上报 hover 结束。
+
+        Args:
+            e: Qt 离开事件。
+        """
         if self._hover_report and self._row_key is not None:
             self._hover_report(self._row_key, False)
         super().leaveEvent(e)
 
     def mouseReleaseEvent(self, e):
+        """左键在格内释放时向所属行上报点击。
+
+        Args:
+            e: Qt 鼠标释放事件。
+        """
         if (
             self._click_report
             and self._row_key is not None
@@ -226,6 +250,22 @@ class _TableCell(QWidget):
         align: str,
         disable_animation: bool,
     ):
+        """注入父 Table 的样式维度并刷新布局与内容样式。
+
+        Args:
+            color: 语义色。
+            size: 尺寸档位。
+            theme: 主题名。
+            radius: 圆角档位。
+            is_striped: 是否斑马纹。
+            is_compact: 是否紧凑模式。
+            is_multi: 是否多选模式。
+            align: 内容对齐方式。
+            disable_animation: 是否关闭过渡动画。
+
+        Note:
+            样式维度全未变时按 _style_sig 幂等跳过，避免虚拟滚动每帧重算。
+        """
         # 幂等守卫：样式维度全未变时跳过整段重设——虚拟滚动每帧每格都调本方法，
         # 但滚动只换内容不换样式（内容走 update_content、行状态走 set_row_state，
         # 均独立于此）。跳过可省下 margins/sizeHint/height/字体/颜色的高频重算。
@@ -275,6 +315,14 @@ class _TableCell(QWidget):
     def set_position(
         self, *, is_first_row: bool, is_last_row: bool, is_first_col: bool, is_last_col: bool
     ):
+        """设置单元格在表中的行列位置标记。
+
+        Args:
+            is_first_row: 是否首行。
+            is_last_row: 是否末行。
+            is_first_col: 是否首列。
+            is_last_col: 是否末列。
+        """
         self._is_first_row = is_first_row
         self._is_last_row = is_last_row
         self._is_first_col = is_first_col
@@ -284,6 +332,18 @@ class _TableCell(QWidget):
     def set_row_state(
         self, *, hover: bool, selected: bool, odd: bool, disabled: bool, animated: bool = True
     ):
+        """推入行状态并按需刷新背景与字色。
+
+        Args:
+            hover: 是否悬停。
+            selected: 是否选中。
+            odd: 是否奇数行。
+            disabled: 是否禁用。
+            animated: 背景色变化是否使用过渡动画。
+
+        Note:
+            仅背景或字色真正变化时才重算，避免单纯 hover 触发整行字体重建。
+        """
         bg_changed = (
             hover != self._row_hover
             or selected != self._row_selected
@@ -347,6 +407,11 @@ class _TableCell(QWidget):
         return QColor(_TRANSPARENT)
 
     def _refresh_before(self, *, animated: bool):
+        """把 before 背景色过渡到目标色。
+
+        Args:
+            animated: 是否启用过渡动画。
+        """
         start, end = aligned_color_pair(self._cur_before, self._target_before())
         tween_value(
             self,
@@ -359,6 +424,11 @@ class _TableCell(QWidget):
         )
 
     def _on_before_step(self, c):
+        """接收背景色动画帧并触发重绘。
+
+        Args:
+            c: 当前动画颜色值。
+        """
         self._cur_before = QColor(c)
         self.update()
 
@@ -366,6 +436,14 @@ class _TableCell(QWidget):
     # 绘制
     # ------------------------------------------------------------
     def paintEvent(self, e):
+        """按行列圆角自绘 before 行条背景。
+
+        Args:
+            e: Qt 绘制事件，本实现不读取。
+
+        Note:
+            当前背景色全透明时直接返回，不做绘制。
+        """
         if self._cur_before.alpha() <= 0:
             return
         cfg_r = pal.resolve_radius_px(self._radius, self.height())

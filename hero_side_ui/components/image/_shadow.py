@@ -1,9 +1,4 @@
-"""HeroSideUI Image — 阴影/模糊边距计算与 QGraphicsDropShadowEffect 应用。
-
-阴影主要朝下扩散（offset_y > 0），上方仅留少量富余；
-isBlurred 副本 scale 1.18 + translate-y 6 也需要四向不对称留白。
-将这些纯计算抽到独立模块，主类只关心调用结果。
-"""
+"""Image 阴影/模糊边距纯计算：主朝下扩散，四向不对称留白。"""
 
 from __future__ import annotations
 
@@ -16,7 +11,17 @@ from ._styling import resolve_shadow
 def make_shadow_effect(
     parent: QWidget, shadow: str, remove_wrapper: bool
 ) -> QGraphicsDropShadowEffect | None:
-    """构造 QGraphicsDropShadowEffect，无阴影/移除 wrapper 时返回 None。"""
+    """构造投影效果。
+
+    Args:
+        parent: 效果的 QObject 父对象。
+        shadow: 阴影档位名。
+        remove_wrapper: 是否移除 wrapper（此时不需要阴影）。
+
+    Returns:
+        已设 offset / blur / 颜色的 QGraphicsDropShadowEffect；
+        无阴影或 remove_wrapper 时返回 None。
+    """
     cfg = resolve_shadow(shadow)
     if cfg["opacity"] <= 0 or remove_wrapper:
         return None
@@ -28,7 +33,15 @@ def make_shadow_effect(
 
 
 def shadow_margin(shadow: str, remove_wrapper: bool) -> int:
-    """阴影向外扩散需要的预算像素（与 Card 同算式）。"""
+    """阴影向外扩散需要的预算像素（与 Card 同算式）。
+
+    Args:
+        shadow: 阴影档位名。
+        remove_wrapper: 是否移除 wrapper。
+
+    Returns:
+        blur 半径一半 + |offset_y| + 2；无阴影或 remove_wrapper 时为 0。
+    """
     if remove_wrapper:
         return 0
     cfg = resolve_shadow(shadow)
@@ -38,7 +51,15 @@ def shadow_margin(shadow: str, remove_wrapper: bool) -> int:
 
 
 def blur_margin(is_blurred: bool, remove_wrapper: bool) -> int:
-    """isBlurred 副本向外溢出需要的预算像素。"""
+    """isBlurred 副本向外溢出需要的预算像素。
+
+    Args:
+        is_blurred: 是否启用模糊副本。
+        remove_wrapper: 是否移除 wrapper。
+
+    Returns:
+        固定 18px（副本 scale 1.18 + blur 半径 16×0.5）；不需要时为 0。
+    """
     if remove_wrapper or not is_blurred:
         return 0
     # 副本 scale 1.18 + blur 半径 16 × 0.5
@@ -48,10 +69,16 @@ def blur_margin(is_blurred: bool, remove_wrapper: bool) -> int:
 def content_margins(
     shadow: str, is_blurred: bool, remove_wrapper: bool
 ) -> tuple[int, int, int, int]:
-    """图像可视区距 wrapper 边缘的四向 margin (top, right, bottom, left)。
+    """取图像可视区四向 margin。
 
-    阴影主要向下扩散，因此顶/底/侧三向独立计算后再与 isBlurred 取最大值。
-    多 shadow 档位水平排列时顶边能自然对齐。
+    Args:
+        shadow: 阴影档位名。
+        is_blurred: 是否启用模糊副本。
+        remove_wrapper: 是否移除 wrapper。
+
+    Returns:
+        (top, right, bottom, left)；阴影向下扩散，与 isBlurred
+        需求逐向取最大值；remove_wrapper 时全 0。
     """
     if remove_wrapper:
         return (0, 0, 0, 0)

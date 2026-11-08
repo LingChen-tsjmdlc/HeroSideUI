@@ -1,12 +1,4 @@
-"""Textarea 组件尺寸配置。
-
-对齐 HeroUI v2 的 Textarea 规范，**继承自 Input** 但有以下差异：
-  - 多行布局：高度由 minRows / maxRows 动态计算，不再固定
-  - row_height：单行文字高度（按字号 × 1.5 行距估算）
-  - textarea_padding_top / textarea_padding_bottom：文本上下内边距（替代 inside_padding_y / padding_y 在文本周围的应用）
-  - inside_textarea_top_space：inside label 模式下文本顶部预留空间（容纳浮起 label）
-  - 不支持 underlined 变体（HeroUI Textarea 没有这个变体）
-"""
+"""Textarea 尺寸：继承 INPUT_SIZES，补 row_height/文本 padding/inside 顶部预留；无 underlined。"""
 
 TEXTAREA_SIZES = {
     "sm": {

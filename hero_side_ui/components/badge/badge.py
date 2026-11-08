@@ -1,11 +1,4 @@
-"""HeroSideUI Badge — 徽章 (HeroUI v2)。完整 API/示例见 docs/badge.md。
-
-结构对照官方 badge.tsx：base（inline-flex 包裹 children）+ badge（absolute 角标）。
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/badge.ts
-
-isDot（content 为空）与 isOneChar（content 单字符）均由 content 自动判定，
-与官方 String(content).length 逻辑一致。
-"""
+"""Badge 徽章：包裹 QWidget 并叠角标；isDot/isOneChar 由 content 自动判定。"""
 
 from __future__ import annotations
 
@@ -39,7 +32,14 @@ ANIM_DURATION = 300
 
 
 def _to_qcolor(css: str) -> QColor:
-    """把 HEX 或 rgba() 字符串转 QColor（QColor 构造不吃 rgba() 函数式写法）。"""
+    """把 HEX 或 rgba() 字符串转成 QColor。
+
+    Args:
+        css: HEX 或 rgba(r,g,b,a) 形式的颜色字符串。
+
+    Returns:
+        对应的 QColor；rgba 写法需手工解析，因为 QColor 构造不认函数式写法。
+    """
     c = QColor(css)
     if c.isValid():
         return c
@@ -53,13 +53,16 @@ def _to_qcolor(css: str) -> QColor:
 class _BadgeMark(QWidget):
     """角标容器：自绘圆角底色 + 描边。
 
-    不用 QSS 的原因（对照实验实证）：容器 setStyleSheet 设背景后，样式链会把
-    背景色染给内嵌 Text 子件的文字渲染（白字变底色 + 1px 重影），自绘绕开。
-
-    set_mark_style(bg, border_color, border_width, radius) 四参全量下发。
+    Note:
+        不用 QSS——样式链会把背景染给内嵌 Text 文字（白字变底色+重影）。
     """
 
     def __init__(self, parent: QWidget | None = None):
+        """初始化自绘参数，全部样式等 set_mark_style 写入。
+
+        Args:
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._bg: QColor | None = None
         self._border_color: QColor | None = None
@@ -69,6 +72,14 @@ class _BadgeMark(QWidget):
     def set_mark_style(
         self, bg: QColor, border_color: QColor | None, border_width: int, radius: int
     ):
+        """写入角标自绘参数并触发重绘。
+
+        Args:
+            bg: 底色。
+            border_color: 描边色；None 表示无边框。
+            border_width: 描边宽度，单位像素。
+            radius: 圆角半径，单位像素。
+        """
         # 形参：bg 底色；border_color 描边色（None 无边框）；border_width 描边宽；radius 圆角
         self._bg = bg
         self._border_color = border_color
@@ -77,6 +88,15 @@ class _BadgeMark(QWidget):
         self.update()
 
     def paintEvent(self, event):
+        """自绘圆角底色与描边。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            有描边时把矩形内缩半笔宽，避免线条画到边界外被裁剪；
+            _bg 未设置（构造后尚未 set_mark_style）时直接返回。
+        """
         if self._bg is None:
             return
         p = QPainter(self)
@@ -95,12 +115,7 @@ class _BadgeMark(QWidget):
 
 
 class Badge(QWidget):
-    """HeroUI 风格徽章 — 包裹一个 QWidget 并在其角上叠加角标。用法::
-
-    Badge(Avatar(...), content="5", color="danger")
-    Badge(Button("消息"), content="99+", placement="top-right", variant="flat")
-    Badge(widget, content="", color="success")          # 空内容 → 圆点
-    """
+    """HeroUI 风格徽章：包裹一个 QWidget 并在其角上叠加角标。"""
 
     def __init__(
         self,
@@ -117,6 +132,22 @@ class Badge(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建徽章容器并装配角标。
+
+        Args:
+            widget: 被包裹的内容 widget，可为 None 后续用 set_widget 设置。
+            content: 角标文本；空串为圆点、单字符为正方形。
+            color: 语义色。
+            variant: 视觉变体，非法值回退 solid。
+            size: 尺寸档位，非法值回退 md。
+            shape: 角标形状，非法值回退 rectangle。
+            placement: 角标位置，非法值回退 top-right。
+            show_outline: 是否画 2px 宿主背景色描边。
+            is_invisible: 构造时是否隐藏角标。
+            disable_animation: 是否关闭显隐过渡。
+            theme: 主题名；auto 时跟随 ThemeProvider。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self.setObjectName("HeroBadge")
 
@@ -150,17 +181,32 @@ class Badge(QWidget):
 
     @property
     def _is_dot(self) -> bool:
+        """角标是否为圆点形态。
+
+        Returns:
+            content 为空串时为 True，对齐 HeroUI 的 isDot 判定。
+        """
         # 官方 isDot: String(content)?.length === 0
         return len(self._content) == 0
 
     @property
     def _is_one_char(self) -> bool:
+        """角标是否为单字符正方形形态。
+
+        Returns:
+            content 长度为 1 时为 True，对齐 HeroUI 的 isOneChar 判定。
+        """
         # 官方 isOneChar: String(content)?.length === 1
         return len(self._content) == 1
 
     # ---- build ----
 
     def _build_ui(self):
+        """装配零边距主布局与绝对定位的角标容器。
+
+        角标用 _BadgeMark 自绘而不是 QSS，避免样式链把背景染给内嵌的
+        Text 子件造成白字重影；它不走布局，几何由 _update_badge_geometry 算。
+        """
         # 被包裹内容：布局零边距，Badge 尺寸完全跟随 children
         self._layout = QHBoxLayout(self)
         self._layout.setContentsMargins(0, 0, 0, 0)
@@ -188,7 +234,11 @@ class Badge(QWidget):
     # ---- badge geometry ----
 
     def _update_badge_size(self):
-        """按 content 形态固定角标尺寸：圆点/正方形/圆角矩形。"""
+        """按 content 形态固定角标尺寸：圆点 / 正方形 / 圆角矩形。
+
+        多字符时用字宽加两侧 padding 估算宽度，并以 multi_height 兜底，
+        保证短文本也是胶囊形。尺寸变化后同步刷新预留边距。
+        """
         cfg = BADGE_SIZES[self._size]
         if self._is_dot:
             side = cfg["dot"]
@@ -203,11 +253,19 @@ class Badge(QWidget):
         self._update_badge_margin()
 
     def _badge_margin(self) -> int:
-        """四周预留边距 = 角标半径（中心悬边缘时最大悬出量），防被父裁剪。"""
+        """计算四周预留边距。
+
+        Returns:
+            角标半径（中心悬在内容边缘时的最大悬出量），用于防止被父裁剪。
+        """
         return (max(self._badge.width(), self._badge.height()) + 1) // 2
 
     def _update_badge_margin(self):
-        """角标尺寸变化时同步预留边距；updateGeometry 通知父布局重排。"""
+        """角标尺寸变化时同步预留边距，并通知父布局重排。
+
+        Note:
+            新旧边距相同就直接返回，避免 updateGeometry 触发无意义的重排循环。
+        """
         m = self._badge_margin()
         cm = self._layout.contentsMargins()
         if cm.left() == m and cm.top() == m:
@@ -216,11 +274,15 @@ class Badge(QWidget):
         self.updateGeometry()
 
     def _update_badge_geometry(self):
-        """官方 placement×shape 定位。rectangle：角标中心悬在内容边缘的 5%
-        锚点上（x/y 独立百分比）；circle：角标中心在 45° 对角线上、悬出内容
-        外接圆边 0.65 倍角标半径（咬合恒为 0.35 倍角标半径，不随内容尺寸漂移；
-        官方 10% 矩形锚点在大尺寸圆形内容上会脱离圆边）。
-        基准是被包裹件的实际矩形；无被包裹件时退回预留边距内的矩形。"""
+        """按 placement × shape 定位角标并钳制在容器内。
+
+        rectangle 用内容边缘百分比锚点；circle 用 45° 对角线圆贴合模型，
+        咬合恒为 0.35 倍角标半径，不随内容尺寸漂移。
+
+        Note:
+            预留边距只保证 sizeHint，父布局拉伸后锚点会外移，所以最后
+            必须把坐标钳到 [0, width/height - 角标尺寸] 区间并 raise_() 置顶。
+        """
         if self._widget is not None and not self._widget.geometry().isNull():
             rect = self._widget.geometry()
         else:
@@ -248,10 +310,24 @@ class Badge(QWidget):
         self._badge.raise_()
 
     def resizeEvent(self, event):
+        """尺寸变化后重算角标几何。
+
+        Args:
+            event: Qt 尺寸变化事件。
+        """
         super().resizeEvent(event)
         self._update_badge_geometry()
 
     def showEvent(self, event):
+        """显示前再校正一次角标几何。
+
+        Args:
+            event: Qt 显示事件。
+
+        Note:
+            构造期 width() 是 640×480 的垃圾值；若布局此后没再 resize
+            （尺寸恰与 hint 一致），角标会停在陈旧位置。
+        """
         super().showEvent(event)
         # 构造期 self.width() 是 640x480 垃圾值；若布局此后没再 resize 本组件
         # （尺寸恰与 hint 一致时），角标会停在陈旧位置，显示前再校正一次
@@ -260,6 +336,11 @@ class Badge(QWidget):
     # ---- styles ----
 
     def _apply_styles(self):
+        """重算配色、角标尺寸、描边与图形效果，并刷新几何。
+
+        show_outline 为 True 时用宿主背景色画 2px 描边；为 False 时连
+        faded 变体的边框也一并去掉。圆角恒取角标短边一半（rounded-full）。
+        """
         self._styles = build_badge_styles(self._variant, self._color, self._theme)
         self._update_badge_size()
 
@@ -285,6 +366,12 @@ class Badge(QWidget):
         self._update_badge_geometry()
 
     def _apply_badge_effect(self):
+        """稳定态下按 has_shadow 应用投影，否则清掉旧效果。
+
+        Note:
+            显隐动画期间 _anim 非空，此时 opacity effect 归动画持有，
+            本方法直接返回；动画结束后由 _on_anim_finished 回调恢复。
+        """
         # 单效果约束：invisible 动画期间持有 opacity effect，结束后由
         # _on_anim_finished 恢复；稳定态下 shadow variant 用投影
         if self._anim is not None:
@@ -303,6 +390,15 @@ class Badge(QWidget):
     # ---- visibility animation ----
 
     def _animate_visibility(self, show: bool):
+        """用 opacity 过渡播放角标显隐。
+
+        Args:
+            show: True 为淡入、False 为淡出。
+
+        Note:
+            先 stop_tween 抢占 _anim 通道，避免连续切换时旧动画回调
+            把可见性写回旧值；全程保持 setVisible(True)，结束后才定稿。
+        """
         stop_tween(self, "_anim")
         effect = QGraphicsOpacityEffect(self._badge)
         self._badge.setGraphicsEffect(effect)
@@ -319,6 +415,11 @@ class Badge(QWidget):
         )
 
     def _on_anim_finished(self, show: bool):
+        """显隐动画收尾：定稿可见性并恢复稳定态效果。
+
+        Args:
+            show: 本次动画的目标可见状态。
+        """
         self._anim = None
         self._badge.setVisible(show)
         self._apply_badge_effect()
@@ -326,7 +427,15 @@ class Badge(QWidget):
     # ---- wrapped widget ----
 
     def set_widget(self, widget: QWidget | None):
-        """替换被包裹的内容；旧 widget 从布局移除并脱离父级（不销毁）。"""
+        """替换被包裹的内容 widget。
+
+        Args:
+            widget: 新的内容 widget；None 表示只移除旧内容。
+
+        Note:
+            旧 widget 从布局移除并脱离父级但不销毁，交由调用方管理生命周期；
+            传入同一对象时直接返回，避免无意义的重排。
+        """
         old = self._widget
         if old is widget:
             return
@@ -342,28 +451,57 @@ class Badge(QWidget):
         self._update_badge_geometry()
 
     def widget(self) -> QWidget | None:
+        """返回当前被包裹的内容 widget。
+
+        Returns:
+            当前内容 widget；未设置时为 None。
+        """
         return self._widget
 
     # ---- setters ----
 
     def set_content(self, content: str):
-        """更新角标内容；空串 → 圆点，单字符 → 正方形，多字符 → 圆角矩形。"""
+        """更新角标文本并重算形态。
+
+        Args:
+            content: 新文本；空串 → 圆点，单字符 → 正方形，多字符 → 圆角矩形。
+        """
         self._content = str(content)
         self._label.setText(self._content)
         self._apply_styles()
 
     def content(self) -> str:
+        """返回当前角标文本。
+
+        Returns:
+            当前文本；构造时已统一转成 str。
+        """
         return self._content
 
     def set_color(self, color: str):
+        """切换语义色并重算配色。
+
+        Args:
+            color: 语义色名。
+        """
         self._color = color
         self._apply_styles()
 
     def set_variant(self, variant: str):
+        """切换视觉变体并重算配色。
+
+        Args:
+            variant: 变体名。
+        """
         self._variant = variant
         self._apply_styles()
 
     def set_size(self, size: str):
+        """切换尺寸档位并同步角标字号。
+
+        Args:
+            size: 档位名；不在 BADGE_SIZES 中时直接忽略本次调用。
+        """
         if size not in BADGE_SIZES:
             return
         self._size = size
@@ -371,18 +509,42 @@ class Badge(QWidget):
         self._apply_styles()
 
     def set_shape(self, shape: str):
+        """切换角标形状并重算几何。
+
+        Args:
+            shape: 形状名；circle 走 45° 对角线贴合，rectangle 走边缘锚点。
+        """
         self._shape = shape
         self._update_badge_geometry()
 
     def set_placement(self, placement: str):
+        """切换角标位置并重算几何。
+
+        Args:
+            placement: 位置名，如 top-right / bottom-left。
+        """
         self._placement = placement
         self._update_badge_geometry()
 
     def set_show_outline(self, show: bool):
+        """切换是否绘制宿主背景色描边。
+
+        Args:
+            show: False 时连 faded 变体的边框也一并去掉。
+        """
         self._show_outline = bool(show)
         self._apply_styles()
 
     def set_invisible(self, invisible: bool):
+        """切换角标显隐，按配置决定直接切换还是播动画。
+
+        Args:
+            invisible: True 表示隐藏角标。
+
+        Note:
+            状态未变时直接返回；禁用动画时先抢占 _anim 通道再直接 setVisible，
+            避免残留动画回调把可见性写回旧值。
+        """
         invisible = bool(invisible)
         if invisible == self._is_invisible:
             return
@@ -395,14 +557,32 @@ class Badge(QWidget):
             self._animate_visibility(not invisible)
 
     def is_invisible(self) -> bool:
+        """返回角标当前是否处于隐藏状态。
+
+        Returns:
+            _is_invisible 的当前值。
+        """
         return self._is_invisible
 
     def set_disable_animation(self, disabled: bool):
+        """切换显隐过渡开关。
+
+        Args:
+            disabled: True 表示后续显隐直接切换、不播 opacity 动画。
+        """
         self._disable_animation = bool(disabled)
 
     # ---- theme ----
 
     def set_theme(self, theme: str):
+        """切换主题，并维护 ThemeProvider 的注册状态。
+
+        Args:
+            theme: 主题名，或 auto 表示跟随全局主题。
+
+        Note:
+            从 auto 切回固定主题时先 unregister，避免后续广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = ThemeProvider.instance().current_theme
@@ -416,7 +596,14 @@ class Badge(QWidget):
         self._apply_styles()
 
     def _apply_provider_theme(self, theme: str):
-        # ThemeProvider 广播专用入口：不重新 register/unregister。
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，也不改 _theme_mode。
+        """
         self._theme = theme
         self._label.set_theme(theme)
         self._apply_styles()

@@ -1,8 +1,4 @@
-"""DatePicker 组件 — DateInput + Calendar + Popover 的组合。
-
-以 DateInput 为基底，在 start/end 槽位注入日历图标按钮；点击按钮 toggle
-Popover 弹出 Calendar，选择日期后写回 DateInput。粒度不含时间时选完即关闭。
-"""
+"""DatePicker：DateInput + 日历按钮 + Popover(Calendar)，选完写回。"""
 
 from __future__ import annotations
 
@@ -34,6 +30,12 @@ _TIME_GRANULARITIES = ("hour", "minute", "second")
 # 避免 surface_base(dark #0b0d12) 与 Popover 实心底(dark #27272a) 冲突透出。
 class _PopoverCalendar(Calendar):
     def _apply_styles(self) -> None:
+        """覆写日期区底色使其与 Popover 实心底一致。
+
+        Note:
+            避免 surface_base(dark #0b0d12) 与 Popover 实心底
+            (dark #27272a) 冲突透出；header 仍用 content1。
+        """
         super()._apply_styles()
         # 覆写日期区底色为 Popover 同款（light #ffffff / dark #27272a）
         from ...themes import RADIUS
@@ -59,13 +61,13 @@ class _PopoverCalendar(Calendar):
 class DatePicker(QWidget):
     """日期选择器：分段输入 + 日历弹窗。
 
-    :param value: 初始值
-    :param granularity: 精度，day/hour/minute/second
-    :param selector_button_placement: 日历按钮位置，"start" 或 "end"
-    :param visible_months: 日历同时显示的月份数
-    :param show_month_and_year_pickers: 显示月/年选择器（仅单月生效）
-    :param calendar_header_default_expanded: 月/年选择器默认展开
-    :param popover_placement: 弹层相对按钮的方位
+    Args:
+        value: 初始值。
+        granularity: day/hour/minute/second。
+        selector_button_placement: 日历按钮位置 start/end。
+        visible_months: 日历并排月数。
+        show_month_and_year_pickers: 显示月/年选择器（仅单月）。
+        popover_placement: 弹层方位。
     """
 
     value_changed = Signal(object)
@@ -112,6 +114,51 @@ class DatePicker(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建日期选择器：DateInput + 日历按钮 + Popover(Calendar)。
+
+        Args:
+            label: 标签文本。
+            value: 初始值。
+            placeholder_value: 占位段增减的起点值。
+            variant: 输入框外框变体。
+            color: 语义色。
+            size: 尺寸档位。
+            radius: 圆角档位。
+            label_placement: 标签位置。
+            granularity: day / hour / minute / second。
+            hour_cycle: 12 / 24；None 跟随 locale。
+            hide_time_zone: 隐藏时区段。
+            should_force_leading_zeros: 数字段补前导零。
+            min_value: 值域下界。
+            max_value: 值域上界。
+            locale: ICU locale 字符串。
+            calendar: ICU 历法标识。
+            is_disabled: 禁用。
+            is_invalid: 错误态。
+            is_required: 必填星号。
+            is_readonly: 只读。
+            full_width: 是否横向撑满。
+            description: 描述文本。
+            error_message: 错误提示文本。
+            selector_button_placement: 日历按钮位置 start / end。
+            visible_months: 日历并排月数。
+            first_day_of_week: 周起点。
+            weekday_style: 星期名宽度 narrow / short / long。
+            page_behavior: 翻页步长策略。
+            show_month_and_year_pickers: 显示月/年选择器（仅单月）。
+            is_date_unavailable: 自定义不可用日期判定。
+            calendar_top_content: 日历上方自定义内容。
+            calendar_bottom_content: 日历下方自定义内容。
+            calendar_header_default_expanded: 初始展开月/年选择器。
+            popover_placement: 弹层方位。
+            disable_animation: 关闭动画。
+            theme: auto / light / dark。
+            parent: Qt 父对象。
+
+        Note:
+            popover attach 用 event="manual"，只登记 trigger 供定位，
+            点击由按钮 clicked 驱动，避免与 Popover 事件过滤器重复 toggle。
+        """
         super().__init__(parent)
         self.setObjectName("HeroDatePicker")
 
@@ -216,6 +263,7 @@ class DatePicker(QWidget):
     # ----------------------------------------------------------------
 
     def _on_selector_click(self):
+        """点击日历按钮：切换弹层开合；禁用时忽略。"""
         if self._date_input.is_disabled():
             return
         if self._popover.is_open():
@@ -224,7 +272,15 @@ class DatePicker(QWidget):
             self._popover.open(near=self)
 
     def _on_calendar_change(self, cal_date: CalendarDate | None):
-        """日历选中 → 写回 DateInput。"""
+        """日历选中 → 写回 DateInput。
+
+        Args:
+            cal_date: 新选中的日期；None 忽略。
+
+        Note:
+            _syncing 守卫防止写回触发的 value_changed 再反向同步；
+            纯日期粒度（无时间）选完自动收起弹层。
+        """
         if self._syncing or cal_date is None:
             return
         self._syncing = True
@@ -245,7 +301,14 @@ class DatePicker(QWidget):
             self._popover.close()
 
     def _on_input_change(self, dt_val: DateTimeValue | None):
-        """手动输入 → 同步日历高亮并对外广播。"""
+        """手动输入 → 同步日历高亮并对外广播。
+
+        Args:
+            dt_val: 输入框当前值；None 时不改日历。
+
+        Note:
+            _syncing 守卫打断「输入 → 日历 → 输入」回环。
+        """
         if self._syncing:
             return
         self._syncing = True
@@ -261,9 +324,22 @@ class DatePicker(QWidget):
     # ----------------------------------------------------------------
 
     def value(self) -> DateTimeValue | None:
+        """返回当前值。
+
+        Returns:
+            DateInput 的值对象；未填满时为 None。
+        """
         return self._date_input.value()
 
     def set_value(self, value: DateTimeValue | None):
+        """受控赋值：同步输入框与日历并发出 value_changed。
+
+        Args:
+            value: 新值；None 清空输入框。
+
+        Note:
+            全程标记 _syncing，避免两个方向的回调互相触发。
+        """
         self._syncing = True
         try:
             self._date_input.set_value(value)
@@ -274,31 +350,59 @@ class DatePicker(QWidget):
         self.value_changed.emit(self._date_input.value())
 
     def clear(self):
+        """清空输入框（回到全部占位段）。"""
         self._date_input.clear()
 
     def set_is_disabled(self, disabled: bool):
+        """切换禁用态并联动按钮与弹层。
+
+        Args:
+            disabled: True 时禁用输入与按钮并收起弹层。
+        """
         self._date_input.set_is_disabled(disabled)
         self._selector_btn.setEnabled(not disabled)
         if disabled:
             self._popover.close()
 
     def is_disabled(self) -> bool:
+        """返回是否禁用。
+
+        Returns:
+            True 表示整体禁用。
+        """
         return self._date_input.is_disabled()
 
     def open_calendar(self):
+        """程序化打开日历弹层（禁用时忽略）。"""
         if not self._date_input.is_disabled():
             self._popover.open(near=self)
 
     def close_calendar(self):
+        """关闭日历弹层。"""
         self._popover.close()
 
     def is_calendar_open(self) -> bool:
+        """日历弹层是否展开。
+
+        Returns:
+            True 表示弹层当前可见。
+        """
         return self._popover.is_open()
 
     @property
     def date_input(self) -> DateInput:
+        """暴露内部分段输入框。
+
+        Returns:
+            组合使用的 DateInput 实例。
+        """
         return self._date_input
 
     @property
     def calendar_widget(self) -> Calendar:
+        """暴露内部日历组件。
+
+        Returns:
+            Popover 内的 Calendar 实例。
+        """
         return self._calendar

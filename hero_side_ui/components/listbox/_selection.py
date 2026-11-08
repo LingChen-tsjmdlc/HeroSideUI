@@ -2,15 +2,18 @@
 
 
 class _SelectionMixin:
-    """点击选中切换 + 必选堵截规则。
-
-    宿主必须提供：
-        self._selection_mode, self._selected_keys, self._items,
-        self._disallow_empty_selection, self.item_by_key,
-        self.selection_changed (Signal), self.action (Signal)
-    """
+    """点击选中切换 + 必选堵截 mixin；宿主提供模式/信号等字段。"""
 
     def _on_item_activated(self, key: str):
+        """响应某一项被激活（点击/回车），更新选中集合并广播信号。
+
+        Args:
+            key: 被激活项的 key。
+
+        Note:
+            必选（disallow_empty_selection）语义下，禁止把最后一项取消；
+            互斥逻辑后统一发射 selection_changed（集合变化时）与 action 信号。
+        """
         # 必选语义：禁止把最后一项取消（多选剩 1 + 点的就是它，单选已天然 pass）
         if (
             self._disallow_empty_selection
@@ -50,6 +53,14 @@ class _SelectionMixin:
         self.action.emit(key)
 
     def _should_block_item_toggle(self, it) -> bool:
+        """判断点击该 item 是否会导致必选集合变空（应被拦截）。
+
+        Args:
+            it: 待判断的 ListboxItem。
+
+        Returns:
+            bool: True 表示应拦截此次 toggle（会清空必选），False 表示允许。
+        """
         # 必选下：点击会让 selection 变空时返回 True
         if not self._disallow_empty_selection:
             return False

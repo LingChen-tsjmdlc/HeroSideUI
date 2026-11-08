@@ -18,6 +18,7 @@ class _TabList(QFrame):
     """tabList 容器，内部布局放 cursor + tabs。"""
 
     def __init__(self, parent=None):
+        """初始化容器，设置自绘背景属性与默认样式值。"""
         super().__init__(parent)
         self._variant = "solid"
         self._theme = "light"
@@ -29,6 +30,14 @@ class _TabList(QFrame):
         self.setAutoFillBackground(False)
 
     def configure(self, *, variant=None, theme=None, radius_px=None, border_width=None):
+        """更新容器外观配置并解析背景色与边框色。
+
+        Args:
+            variant: 变体名，决定是否画背景与边框。
+            theme: 明暗主题名。
+            radius_px: 圆角半径，单位为像素。
+            border_width: 边框宽度，单位为像素。
+        """
         if variant is not None:
             self._variant = variant
         if theme is not None:
@@ -42,6 +51,7 @@ class _TabList(QFrame):
         self.update()
 
     def paintEvent(self, ev):
+        """自绘容器背景、圆角与可选边框。"""
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing, True)
 

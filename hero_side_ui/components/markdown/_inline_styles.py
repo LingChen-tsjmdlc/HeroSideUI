@@ -1,11 +1,6 @@
-"""行内样式声明式配置：一份 dict → 编译成富文本 span/anchor 的样式模板。
+"""行内样式声明式配置：inline_styles dict 编译为富文本样式模板。
 
-对标 react-markdown 的 ``components``：用户构造 ``Markdown`` 时传一次 ``inline_styles``，
-之后流式进来的任何文本都按此配置渲染。所有行内格式（strong/em/s/code/link）**只画样式、
-不拆 widget**，故整段始终是单个富文本 ``Text``，连续框选、换行正常。
-
-配置值一律用 HeroUI 语义 token（``primary`` / ``default-100``）或 HEX / rgba，由
-``resolve_text_color`` 统一解析成 CSS 可用色串——不写死颜色、随主题解析。
+行内格式只画样式不拆 widget；配置值用 HeroUI token/HEX，随主题解析。
 """
 
 from __future__ import annotations
@@ -28,11 +23,7 @@ def _css_weight(weight) -> str:
 
 
 def _default_styles(theme: str) -> dict[str, dict]:
-    """内置默认样式（不传 inline_styles 时使用）。
-
-    code 对齐 Chip(variant="flat", default)，link 对齐 Link(color="primary")。
-    code 底色比正文明显并带边框，取自 MARKDOWN_INLINE_CODE 色阶 token。
-    """
+    """内置默认样式：code 对齐 flat Chip，link 对齐 primary Link。"""
     default = HEROUI_COLORS["default"]
     spec = MARKDOWN_INLINE_CODE
     if theme == "dark":
@@ -70,6 +61,12 @@ class InlineStyleSheet:
     """
 
     def __init__(self, theme: str, user_styles: dict[str, dict] | None = None):
+        """构造样式表：合并默认样式与用户覆盖样式。
+
+        Args:
+            theme: 主题（light/dark），决定默认 code 配色。
+            user_styles: 用户覆盖的行内样式 dict（按节点类型分键）。
+        """
         self._theme = theme
         merged = _default_styles(theme)
         if user_styles:
@@ -82,6 +79,14 @@ class InlineStyleSheet:
 
     # ---- 行内格式 ----
     def strong(self, inner: str) -> str:
+        """渲染加粗片段。
+
+        Args:
+            inner: 内部已渲染的 HTML。
+
+        Returns:
+            str: 包裹了 font-weight 的 <span> 片段。
+        """
         spec = self._styles.get("strong", {})
         css = []
         if spec.get("weight", "bold") != "normal":
@@ -91,6 +96,14 @@ class InlineStyleSheet:
         return f'<span style="{"; ".join(css)};">{inner}</span>'
 
     def em(self, inner: str) -> str:
+        """渲染斜体片段（默认锁 medium 字重补偿合成伪斜体偏细）。
+
+        Args:
+            inner: 内部已渲染的 HTML。
+
+        Returns:
+            str: 包裹了 italic + 字重的 <span> 片段。
+        """
         spec = self._styles.get("em", {})
         css = ["font-style:italic"] if spec.get("italic", True) else []
         # VF 无原生 italic face，Qt 剪切合成伪斜体会让笔画偏细，故默认锁 medium
@@ -101,6 +114,14 @@ class InlineStyleSheet:
         return f'<span style="{"; ".join(css)};">{inner}</span>'
 
     def s(self, inner: str) -> str:
+        """渲染删除线片段。
+
+        Args:
+            inner: 内部已渲染的 HTML。
+
+        Returns:
+            str: 包裹了 line-through 的 <span> 片段。
+        """
         spec = self._styles.get("s", {})
         css = ["text-decoration:line-through"] if spec.get("strike", True) else []
         if "color" in spec:
@@ -108,6 +129,14 @@ class InlineStyleSheet:
         return f'<span style="{"; ".join(css)};">{inner}</span>'
 
     def code(self, text: str) -> str:
+        """渲染行内代码片段（对齐 flat Chip 观感）。
+
+        Args:
+            text: 原始代码文本（会转义）。
+
+        Returns:
+            str: 带背景/边框/圆角的 <code> 片段。
+        """
         spec = self._styles.get("code", {})
         css = ["font-family:Consolas,'Courier New',monospace"]
         if "bg" in spec:
@@ -121,6 +150,15 @@ class InlineStyleSheet:
         return f'<code style="{"; ".join(css)};">&nbsp;{text}&nbsp;</code>'
 
     def link(self, inner: str, href: str) -> str:
+        """渲染链接片段。
+
+        Args:
+            inner: 链接显示文本（已渲染 HTML）。
+            href: 链接地址（会转义）。
+
+        Returns:
+            str: <a> 链接片段。
+        """
         spec = self._styles.get("link", {})
         color = spec.get("color", HEROUI_COLORS["primary"][500])
         css = [f"color:{_css_color(color, self._theme)}"]
@@ -129,12 +167,13 @@ class InlineStyleSheet:
         return f'<a href="{href}" style="{"; ".join(css)};">{inner}</a>'
 
     def wrap(self, inner: str, fmt) -> str:
-        """把 strong/em/s 的组合格式解析成单个 span。
+        """把 strong/em/s 组合格式解析成单个 span。
 
-        用单 span 而非嵌套，避免内层 font-weight 覆盖外层：字重按优先级取——
-        有 strong 取 bold；否则 em 取 medium 抵消 VF 合成斜体的视觉变细。
+        Note:
+            单 span 防嵌套覆盖；字重按优先级取（strong>em）。
 
-        fmt: 含 "strong"/"em"/"s" 的集合。
+        Args:
+            fmt: 含 strong/em/s 的集合。
         """
         if not fmt or not inner:
             return inner

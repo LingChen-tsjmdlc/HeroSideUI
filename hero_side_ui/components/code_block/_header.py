@@ -1,8 +1,4 @@
-"""CodeBlock 标题栏：左侧文件名 / 多 tab，右侧自动换行开关 + 复制按钮。
-
-纯视觉 + 交互转发：tab 切换、wrap 切换、复制都以信号/回调抛给宿主 CodeBlock，
-自身不持有代码内容。所有子 widget 显式传 parent，避免无父瞬间闪窗。
-"""
+"""CodeBlock 标题栏：文件名/多 tab + 换行开关 + 复制按钮，交互全转发宿主。"""
 
 from __future__ import annotations
 
@@ -38,6 +34,20 @@ class _CodeHeaderBar(QWidget):
         on_copy: Callable[[], None],
         parent: QWidget | None = None,
     ):
+        """创建标题栏：左侧 tab/文件名、右侧换行开关与复制按钮。
+
+        Args:
+            filename: 单文件模式的文件名 / 语言标签。
+            tabs: 多 tab 模式的 tab 名列表；非空时优先显示 tab。
+            theme: 当前主题名。
+            on_tab: 切换 tab 回调 fn(index)。
+            on_wrap: 切换自动换行回调 fn(enabled)。
+            on_copy: 点击复制回调 fn()。
+            parent: Qt 父对象。
+
+        Note:
+            交互全部转发宿主，本类不持有代码内容。
+        """
         super().__init__(parent)
         self._theme = theme
         self._tabs = tabs
@@ -111,17 +121,24 @@ class _CodeHeaderBar(QWidget):
 
     # ---- tab ----
     def _select_tab(self, idx: int) -> None:
+        """切换激活 tab 并通知宿主。
+
+        Args:
+            idx: 目标 tab 下标。
+        """
         self._active_tab = idx
         self._sync_tab_styles()
         self._on_tab(idx)
 
     def _sync_tab_styles(self) -> None:
+        """同步 tab 按钮视觉：激活项 flat 实底、其余 light。"""
         # 选中 tab 用 flat 实底，其余 light；靠切 variant 表达激活态
         for i, btn in enumerate(self._tab_buttons):
             btn.set_variant("flat" if i == self._active_tab else "light")
 
     # ---- wrap ----
     def _toggle_wrap(self) -> None:
+        """切换自动换行开关，用 primary 色标激活并通知宿主。"""
         self._wrap = not self._wrap
         # 激活态用 primary 色，未激活回 default
         self._wrap_btn.set_color("primary" if self._wrap else "default")
@@ -135,6 +152,7 @@ class _CodeHeaderBar(QWidget):
         QTimer.singleShot(2000, self._restore_copy_icon)
 
     def _restore_copy_icon(self) -> None:
+        """把复制按钮还原为 copy 图标与 default 色。"""
         self._copy_btn.set_icon("lucide--copy")
         self._copy_btn.set_color("default")
 

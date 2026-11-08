@@ -1,8 +1,4 @@
-"""Autocomplete 键盘导航 / 事件过滤 mixin（私有）。
-
-eventFilter 拦截 Input 上的键盘事件（Up/Down/Home/End/Enter/Escape）；
-_handle_arrow / _visible_items / _activate_focused_item 实现导航语义。
-"""
+"""Autocomplete 键盘导航 mixin：eventFilter 拦截方向键/Enter/Esc 并实现导航。"""
 
 from PySide6.QtCore import QEvent, Qt
 
@@ -16,6 +12,19 @@ class _AutocompleteKeyboardMixin:
     # 键盘 / 焦点 拦截
     # ============================================================
     def eventFilter(self, obj, event):
+        """拦截 line_edit 的焦点与键盘事件，驱动 popover 与导航。
+
+        Args:
+            obj: 被监听的 QObject（input 的 line_edit）。
+            event: 当前事件。
+
+        Returns:
+            True 表示事件已消费不再传播；其余交回父类。
+
+        Note:
+            FocusIn 命中 _just_committed 守卫时只解锁不重开 popover；
+            方向键 / Home / End / Enter / Esc 在 popover 打开时全部接管。
+        """
         if obj is self._input.line_edit:
             etype = event.type()
             if etype == QEvent.FocusIn:
@@ -83,11 +92,30 @@ class _AutocompleteKeyboardMixin:
         return super().eventFilter(obj, event)
 
     def _visible_items(self) -> list[ListboxItem]:
+        """返回当前可见且未禁用的 listbox 项。
+
+        Returns:
+            可见项列表，顺序与 items() 一致。
+
+        Note:
+            用 not isHidden() 而非 isVisible() —— popover 关闭时 isVisible
+            会因祖先 hide 返回 False，而 hide_state（被 _apply_filter 隐藏）
+            才是导航关心的语义。
+        """
         # 用 not isHidden() 而非 isVisible() —— popover 关闭时 isVisible 会因祖先 hide
         # 返回 False，但 hide_state（即被 _apply_filter setVisible(False)）才是我们关心的
         return [it for it in self._listbox.items() if not it.isHidden() and not it.is_disabled()]
 
     def _handle_arrow(self, down: bool):
+        """处理上 / 下方向键的焦点导航。
+
+        Args:
+            down: True 为向下移动，False 为向上。
+
+        Note:
+            popover 关闭时先打开并聚焦第一个可见项；无焦点项时向下落到
+            首项、向上落到末项；其余情况在可见项内循环移动。
+        """
         if not self._is_open:
             self.open(trigger="input")
             # 第一个可见项默认聚焦
@@ -112,6 +140,11 @@ class _AutocompleteKeyboardMixin:
         self._listbox._set_focus_index(self._listbox.items().index(target))
 
     def _activate_focused_item(self):
+        """激活（提交）当前有焦点的可见项。
+
+        Note:
+            无焦点项时退化为第一个可见项，与方向键导航的初始聚焦一致。
+        """
         vis = self._visible_items()
         if not vis:
             return

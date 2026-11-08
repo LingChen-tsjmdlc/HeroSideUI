@@ -1,13 +1,4 @@
-"""Checkbox 组件尺寸配置。
-
-对齐 HeroUI v2 的 checkbox 规范:
-    sm: 16x16 box + text-small + icon 12x8 + me-2 + radius = RADIUS.md * 0.5
-    md: 20x20 box + text-medium + icon 16x12 + me-2 + radius = RADIUS.md * 0.6  (默认)
-    lg: 24x24 box + text-large + icon 20x16 + me-2 + radius = RADIUS.md * 0.7
-
-box_radius_ratio 会在运行时 * RADIUS["md"] 计算像素值；显式传入 radius 时
-(none/sm/md/lg/full)，则改用 RADIUS 常量或 full 特殊处理。
-"""
+"""Checkbox 尺寸：box 16/20/24，radius 按 RADIUS.md 比例 0.5/0.6/0.7 运行时算。"""
 
 CHECKBOX_SIZES = {
     "sm": {

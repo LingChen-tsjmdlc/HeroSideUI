@@ -1,9 +1,4 @@
-"""_LineEdit — Input 内部的 QLineEdit 子类（私有）。
-
-负责：
-- palette.Base 透明（避免 Fusion 风格画白底覆盖父级背景）
-- 焦点事件与 readonly 状态共享
-"""
+"""_LineEdit：palette.Base 透明的 QLineEdit，防 Fusion 画白底。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
@@ -16,13 +11,21 @@ from PySide6.QtWidgets import QLineEdit, QWidget
 class _LineEdit(QLineEdit):
     """无边框透明背景的 QLineEdit，融入 _InputWrapper 底色。
 
-    - setFrame(False): 去掉默认边框
-    - palette.Base = transparent: 阻止 Qt Fusion 的 PE_PanelLineEdit 绘制白色背景
-      （背景完全由外层 _InputWrapper paintEvent 负责）
-    - _apply_styles 里每次 setPalette 时必须同步保持 Base = transparent
+    Note:
+        背景完全由 wrapper paintEvent 负责；每次 setPalette 须保持
+        Base=transparent。
     """
 
     def __init__(self, parent: QWidget | None = None):
+        """创建无边框透明背景的输入框。
+
+        Args:
+            parent: Qt 父对象。
+
+        Note:
+            关掉 frame 与 Mac 焦点框，并把 palette.Base 设为全透明，
+            防止 Fusion 画白底盖住 wrapper 的自绘背景。
+        """
         super().__init__(parent)
         self.setFrame(False)
         self.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)

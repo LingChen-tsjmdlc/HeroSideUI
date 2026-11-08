@@ -1,57 +1,7 @@
-"""
-HeroSideUI - StatePalette
-=========================
+"""StatePalette：按 (variant, color, theme, state) 解析状态颜色的纯静态工具。
 
-跨组件复用的"状态颜色解析器"：
-给定 ``(variant, color, theme, state)``，返回该状态下应该用的 QColor。
-
-设计目标
---------
-原本 listbox / autocomplete / checkbox 等组件各自在文件顶部写了一堆
-``_hover_bg``/``_text_hover``/``_hover_border`` 之类的私有函数，逻辑高度重叠
-但拷贝散落，导致：
-
-1. **巨头组件膨胀**（listbox 顶部光颜色函数就 13 个、~150 行）。
-2. **复用反模式**：autocomplete 嵌入 listbox 时把这套逻辑抄了第二份。
-3. **修一个色阶要改 N 个文件**，容易漏。
-
-把它们集中到 ``core/state_palette.py``，对组件提供高层意图 API：
-
-.. code-block:: python
-
-    from hero_side_ui.core import StatePalette
-
-    bg = StatePalette.bg("flat", "primary", "dark", "hover")
-    fg = StatePalette.text("flat", "primary", "dark", "hover")
-    bd = StatePalette.border("bordered", "primary", "light", "hover")
-
-设计要点
---------
-- **纯静态方法 + 纯函数**：无状态、无单例。完全无副作用，可被任何组件直接调。
-- **返回 QColor**：组件自绘场景（``QPainter``）天然适用；走 QSS 的组件（如 button）自己 ``QColor.name(QColor.HexArgb)`` 转字符串。
-- **覆盖 6 variants × 6 colors × 2 themes × 5 states**：和 HeroUI menu/listbox token 一致。
-- **暗色 hover 比 HeroUI 提一档**：菜单容器（Popover 暗色底 `#27272a`）比 HeroUI 的
-  content1(`#18181b`) 亮一档，照搬 HeroUI 原值会让 hover 与容器同色，见 ``_STEP_UP``。
-
-States
-~~~~~~
-- ``"resting"`` - 默认（未 hover、未 focused、未 selected）
-- ``"hover"`` - 光标悬停
-- ``"focus"`` - 键盘 focus（视觉上等同 hover，方便组件简化）
-- ``"selected"`` - 选中态（在 listbox / autocomplete / checkbox 中表现不同）
-- ``"disabled"`` - 禁用态
-
-Variants
-~~~~~~~~
-``"solid"``, ``"shadow"``, ``"flat"``, ``"faded"``, ``"bordered"``, ``"light"``
-
-Colors
-~~~~~~
-``"default"``, ``"primary"``, ``"secondary"``, ``"success"``, ``"warning"``, ``"danger"``
-
-Themes
-~~~~~~
-``"light"`` / ``"dark"``（``"auto"`` 由组件层在订阅 ``ThemeProvider`` 时解析为具体值）。
+states: resting/hover/focus/selected/disabled；variants: solid/shadow/flat/
+faded/bordered/light；暗色 hover 比 HeroUI 提一档以适配 Popover 底色。
 """
 
 from __future__ import annotations
@@ -108,26 +58,7 @@ _FLAT_ALPHA = {"light": 0.40, "dark": 0.70}
 
 
 class StatePalette:
-    """状态颜色解析器（无状态，纯静态方法）。
-
-    组件用法::
-
-        # 自绘背景
-        bg = StatePalette.bg(self._variant, self._color, theme, "hover")
-        painter.fillPath(path, bg)
-
-        # 拼 QSS
-        bg_hex = StatePalette.bg("flat", "primary", "dark", "hover").name(
-            QColor.NameFormat.HexArgb
-        )
-
-    Notes:
-        所有方法都是 ``@staticmethod``，没有实例化语义。这样做的好处：
-
-        - 组件代码无需 import + 持有 palette 对象
-        - 内部纯函数，性能等同于直接调全局函数
-        - 命名空间清晰（``StatePalette.bg`` vs 一堆顶层 ``resolve_bg``）
-    """
+    """状态颜色解析器（无状态，纯静态方法）。"""
 
     # --------------------------------------------------------
     # 背景色
@@ -215,10 +146,16 @@ class StatePalette:
 
     @staticmethod
     def text(variant: str, color: str, theme: str, state: str = "resting") -> QColor:
-        """item 主标题字色。
+        """取 item 主标题字色。
 
-        - ``resting`` / ``disabled`` 返回中性默认色（``text_default``）。
-        - ``hover`` / ``focus`` / ``selected`` 走"高亮态"逻辑，依赖 variant×color。
+        Args:
+            variant: 样式变体。
+            color: 语义色。
+            theme: "light" 或 "dark"。
+            state: resting/hover/focus/selected/disabled。
+
+        Returns:
+            resting/disabled 返回中性默认色；高亮态依赖 variant×color。
         """
         if state in ("resting", "disabled"):
             return StatePalette.text_default(theme)
@@ -272,10 +209,13 @@ class StatePalette:
 
     @staticmethod
     def text_description(theme: str) -> QColor:
-        """description / empty 占位的次级文字色。
+        """取次级文字色（description/empty 占位）。
 
-        light: default-500（中性灰，白底清晰）
-        dark:  default-400（提亮一档，深底才看得清；default-500 在 #0B0D12 上几乎不可见）
+        Args:
+            theme: "light" 或 "dark"。
+
+        Returns:
+            light 为 default-500；dark 提亮为 default-400。
         """
         if theme == "dark":
             return QColor(HEROUI_COLORS["default"][400])

@@ -1,35 +1,6 @@
-"""
-HeroSideUI ThemeSwitcher Component
-亮暗色主题切换按钮 — 一键切换全局主题
+"""ThemeSwitcher 主题切换按钮：内嵌太阳/月亮 icon，点击 toggle 全局主题。
 
-使用 HeroSideUI 自己的 Button 组件，内嵌太阳/月亮 icon，
-点击后调用 ThemeProvider.toggle() 切换全局主题。
-
-用法:
-    from hero_side_ui import ThemeSwitcher
-
-    # 默认: 亮色显示太阳（金黄），暗色显示月亮（蓝色）
-    switcher = ThemeSwitcher()
-
-    # 自定义颜色
-    switcher = ThemeSwitcher(
-        sun_color="#FF8800",
-        moon_color="#88CCFF",
-    )
-
-    # 自定义 icon（传内置图标名或 SVG 路径）
-    switcher = ThemeSwitcher(
-        sun_icon="heroicons--sun-solid",
-        moon_icon="C:/my/moon.svg",
-    )
-
-    # 自定义 Button 外观
-    switcher = ThemeSwitcher(
-        variant="flat",
-        color="default",
-        size="md",
-        radius="full",
-    )
+基于 Button 实现，支持自定义 icon/颜色/尺寸/圆角。
 """
 
 from typing import ClassVar
@@ -51,26 +22,11 @@ DEFAULT_MOON_COLOR = "#7DD3FC"  # 蓝色（sky-300，柔和的月光蓝）
 
 
 class ThemeSwitcher(Button):
-    """主题切换按钮
+    """主题切换按钮，点击切换全局亮暗主题并同步太阳/月亮 icon。
 
-    继承自 HeroSideUI 的 Button，点击后自动调用
-    ``ThemeProvider.instance().toggle()`` 切换全局亮暗色。
-
-    会根据 ThemeProvider 当前主题自动切换显示的 icon：
-    - 亮色模式 → 显示太阳 icon（默认金黄色）
-    - 暗色模式 → 显示月亮 icon（默认蓝色）
-
-    Args:
-        sun_icon: 亮色模式的 icon — 内置图标名或 SVG 路径。默认 sun-solid。
-        moon_icon: 暗色模式的 icon — 内置图标名或 SVG 路径。默认 moon-clear-fill。
-        sun_color: 太阳 icon 颜色（HEX 字符串或 QColor）。默认金黄 `#F5A524`。
-        moon_color: 月亮 icon 颜色（HEX 字符串或 QColor）。默认蓝 `#7DD3FC`。
-        icon_size: icon 像素尺寸。默认根据 Button size 自动选择（sm=14/md=16/lg=18）。
-        variant: Button 样式变体。默认 `"flat"`（柔和的半透明底色）。
-        color: Button 颜色（影响 hover 等）。默认 `"default"`。
-        size: Button 尺寸 (`"sm"`/`"md"`/`"lg"`)。默认 `"md"`。
-        radius: Button 圆角。默认 `"full"`（圆形按钮，最适合图标按钮）。
-        其余参数透传给 Button（icon_only 被强制为 True）。
+    Note:
+        始终以 auto 主题运行，set_theme 被覆写为不锁死主题；点击通过
+        ThemeProvider.instance().toggle() 切换，icon 随主题广播刷新。
     """
 
     # 不同 size 的默认 icon 像素尺寸（约占按钮 50%）
@@ -89,6 +45,24 @@ class ThemeSwitcher(Button):
         radius: str | None = "full",
         parent: QObject | None = None,
     ):
+        """创建主题切换按钮，强制以 icon_only 圆形按钮承载主题 icon。
+
+        Args:
+            sun_icon: 亮色模式 icon，内置图标名或 SVG 路径。
+            moon_icon: 暗色模式 icon，内置图标名或 SVG 路径。
+            sun_color: 太阳 icon 颜色，HEX 字符串或 QColor。
+            moon_color: 月亮 icon 颜色，HEX 字符串或 QColor。
+            icon_size: icon 像素尺寸；未传时按 Button size 选默认值。
+            variant: Button 样式变体。
+            color: Button 颜色。
+            size: Button 尺寸，sm / md / lg。
+            radius: Button 圆角。
+            parent: Qt 父对象。
+
+        Note:
+            icon_only 被强制为 True，theme 固定为 auto；icon 依当前主题
+            在太阳/月亮间切换。
+        """
         super().__init__(
             text="",
             color=color,
@@ -119,17 +93,18 @@ class ThemeSwitcher(Button):
     # 主题切换
     # ============================================================
     def _on_clicked(self):
+        """调用 ThemeProvider 切换全局亮暗主题。"""
         ThemeProvider.instance().toggle()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播主题时被调用 —— 同时刷新 icon"""
+        """ThemeProvider 广播主题时被调用 —— 同时刷新 icon。"""
         # 调父类的 provider 主题应用（更新 Button 自身 light/dark 样式）
         super()._apply_provider_theme(theme)
         # 再刷新 icon（基于 theme 决定显示太阳还是月亮）
         self._refresh_icon()
 
     def _refresh_icon(self):
-        """根据当前实际主题刷新 icon"""
+        """根据当前实际主题刷新 icon。"""
         theme = self._theme
         if theme == "dark":
             pixmap = load_svg_icon(
@@ -149,33 +124,38 @@ class ThemeSwitcher(Button):
     # 公共 API
     # ============================================================
     def set_sun_icon(self, name_or_path: str):
-        """设置亮色模式的 icon（内置图标名或 SVG 路径）"""
+        """设置亮色模式的 icon（内置图标名或 SVG 路径）。"""
         self._sun_icon_src = name_or_path
         self._refresh_icon()
 
     def set_moon_icon(self, name_or_path: str):
-        """设置暗色模式的 icon"""
+        """设置暗色模式的 icon。"""
         self._moon_icon_src = name_or_path
         self._refresh_icon()
 
     def set_sun_color(self, color: "str | QColor"):
-        """设置太阳 icon 颜色"""
+        """设置太阳 icon 颜色。"""
         self._sun_color = QColor(color) if not isinstance(color, QColor) else color
         self._refresh_icon()
 
     def set_moon_color(self, color: "str | QColor"):
-        """设置月亮 icon 颜色"""
+        """设置月亮 icon 颜色。"""
         self._moon_color = QColor(color) if not isinstance(color, QColor) else color
         self._refresh_icon()
 
     def set_icon_size(self, size_px: int):
-        """设置 icon 像素尺寸"""
+        """设置 icon 像素尺寸。"""
         self._icon_size = int(size_px)
         self.setIconSize(QSize(self._icon_size, self._icon_size))
         self._refresh_icon()
 
     # 重写 set_theme：ThemeSwitcher 始终是 auto，不允许硬锁
     def set_theme(self, theme: str):
+        """强制按 auto 主题运行并刷新 icon。
+
+        Note:
+            ThemeSwitcher 不允许硬锁主题，忽略传入的 theme 走 auto 路径。
+        """
         # 始终走 auto 路径，并刷新 icon
         super().set_theme("auto")
         self._refresh_icon()

@@ -58,9 +58,11 @@ class LoopDriver(QObject):
         owner.destroyed.connect(self.stop)
 
     def _get_phase(self):
+        """返回当前循环进度。"""
         return self._phase
 
     def _set_phase(self, value):
+        """设置循环进度并请求宿主重绘。"""
         self._phase = float(value)
         owner = self._owner_ref()
         if owner is not None and isValid(owner):
@@ -100,6 +102,7 @@ class LoopDriver(QObject):
         return self._anim.state() == self._anim.State.Running
 
     def _sync(self):
+        """按请求与宿主可见性启动或停止循环。"""
         owner = self._owner_ref()
         if self._requested and owner is not None and isValid(owner) and owner.isVisible():
             if not self.is_running():

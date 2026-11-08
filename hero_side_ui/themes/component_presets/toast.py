@@ -1,12 +1,4 @@
-"""Toast 组件主题预设。
-
-对齐 HeroUI v2 toast.ts：默认 flat / radius md / shadow sm / 宽 356px，
-6 个 placement，堆叠折叠时每层露出 8px。
-
-字段说明:
-    TOAST_SPEC       - 布局与动效的全局数值（px / ms）
-    TOAST_SHADOWS    - 4 档阴影，走多层半透明圆角矩形自绘（与 Popover 同思路）
-"""
+"""TOAST_SPEC（宽 356、折叠露出 8px、动效时长）与 TOAST_SHADOWS 四档。"""
 
 TOAST_SPEC = {
     # ---- 尺寸 ----

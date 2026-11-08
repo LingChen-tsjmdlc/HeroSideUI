@@ -1,12 +1,4 @@
-"""Input 组件尺寸配置。
-
-对齐 HeroUI v2 的 Input 规范：
-  - 默认 outside label 时高度: sm=32 / md=40 / lg=48
-  - inside label 时高度会变高: sm=48 / md=56 / lg=64
-  - faded / bordered 的 border-width = 2px (border-medium)
-  - underlined 的 border-bottom-width = 2px
-  - clear button 从 scale 0.9 opacity 0 → scale 1.0 opacity 0.7 (HeroUI peer-data-[filled=true])
-"""
+"""INPUT_SIZES：outside 32/40/48、inside 48/56/64，border 2px，clear 按钮动画参数。"""
 
 INPUT_SIZES = {
     "sm": {

@@ -1,18 +1,5 @@
-"""过滤 libpng 写到 fd=2 (stderr) 的无害噪声警告（私有）。
-
-背景：
-    Qt 6 / Windows 加载某些内置 PNG 资源时，libpng 通过 C 的 fwrite 直接
-    向 fd=2 写出 ``libpng warning: iCCP: known incorrect sRGB profile``。
-    这条警告完全无害，但每个组件实例化都会触发一次，刷屏严重。
-    libpng 直接写 fd=2，Python 的 ``sys.stderr`` 替换拦不住它，必须做 OS 级
-    fd 重定向才能截断。
-
-实现：
-    把原 fd=2 dup 到 pipe 的 write 端，启一条 daemon 线程不断读 pipe，按行
-    过滤后再写回**真正的**原 stderr。Python 层 ``sys.stderr`` 不动，避免影响
-    其他正常的 Python warning / traceback。
-
-可关闭：``HeroSideUIProvider.setup(filter_libpng_warnings=False)``。
+"""过滤 libpng 写 fd=2 的无害 iCCP 警告：OS 级 dup 管道 + daemon 线程按行过滤，
+Python sys.stderr 不动。可经 setup(filter_libpng_warnings=False) 关闭。
 """
 
 from __future__ import annotations
@@ -49,6 +36,7 @@ def install() -> None:
         return
 
     def _pump():
+        """从 pipe 逐行读取，丢弃命中前缀的警告后写回原始 stderr fd。"""
         # 从 pipe 读取，按行过滤后写回原始 stderr fd
         buf = b""
         while True:

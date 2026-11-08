@@ -1,8 +1,4 @@
-"""HeroSideUI icon resource boundary; rendering is owned by pyside-iconify.
-
-Bundled SVGs are the only source of built-in data. Neither this module nor its
-consumers change the dependency's network policy or global defaults.
-"""
+"""Icon 资源边界：内置 SVG 唯一来源，渲染归 pyside-iconify；不改其网络策略。"""
 
 from PySide6.QtGui import QIcon, QPixmap
 from pyside_iconify import IconNotFoundError
@@ -22,12 +18,12 @@ __all__ = [
 
 
 def get_icon(icon: IconSource, *, size=None, stroke_width: float | None = None, **options) -> QIcon:
-    """Return a native QIcon; other options are validated by pyside-iconify."""
+    """返回原生 QIcon，其余选项交由 pyside-iconify 校验。"""
     return _get_icon(resolve_icon(icon, stroke_width=stroke_width), size=size, **options)
 
 
 def get_pixmap(
     icon: IconSource, *, size=None, stroke_width: float | None = None, **options
 ) -> QPixmap:
-    """Return a static snapshot. Preload remote names or use Icon for live loading."""
+    """返回静态 QPixmap 快照，远程图标名需先预加载。"""
     return _get_pixmap(resolve_icon(icon, stroke_width=stroke_width), size=size, **options)

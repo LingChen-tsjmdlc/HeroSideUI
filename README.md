@@ -324,6 +324,9 @@ uv run pre-commit install --hook-type commit-msg --hook-type pre-commit
 - **Ruff lint + format**（pre-commit 阶段，自动修复暂存区文件）
   - 规则配置见 [`ruff.toml`](ruff.toml)；CI 中同版本兜底检查
   - 提交时自动执行 import 排序、未用导入清理、现代化语法转换与统一格式化
+- **单文件行数上限 (避免屎山代码推挤)**（铁律 8，`.hooks/check_file_lines.py`）
+  - 物理行数 ≤ 1000；口径与逐文件登记见 [`REFACTORING.md`](REFACTORING.md) 13.7
+  - 仅由 pre-commit 在提交时检查（CI 不做行数检查），阈值只有一处 `MAX_LINES = 1000`
 - **版本号自动递增**（post-commit 阶段，`.hooks/commit_msg_bump.py`）
   - 默认提交 → `z+1`（0.0.1 → 0.0.2）
   - 消息末尾加 `(y)` → `y+1`（0.0.2 → 0.1.0）
@@ -342,6 +345,14 @@ uvx ruff format hero_side_ui/ examples/ tests/     # 格式化
 ```
 
 规则集：E/W/F（错误）+ I（import 排序）+ UP（现代化语法）+ B（bugbear）+ SIM（简化）+ RUF，中文全角标点与 Qt 惯用写法已按 `ruff.toml` 中的注释逐条豁免。
+
+单文件物理行数上限 1000 行（铁律 8 v2，口径见 `REFACTORING.md` 13.7）：
+
+```bash
+python .hooks/check_file_lines.py $(find hero_side_ui examples tests .hooks -name "*.py")
+```
+
+pre-commit 会在提交时自动检查暂存文件；CI 不做行数检查，全量复核用上面的命令。
 
 ---
 

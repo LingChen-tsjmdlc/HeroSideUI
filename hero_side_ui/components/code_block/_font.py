@@ -1,11 +1,5 @@
-"""等宽字体加载：默认内置 Maple Mono NF CN，支持用户传自定义字体路径。
-
-CodeBlock 代码区需要等宽字体保证对齐。这里独立于 FontProvider（它只管正文 VF），
-按需把 ttf 注册进 QFontDatabase 并缓存 family 名。无 QGuiApplication 时不加载
-（返回 monospace 兜底栈），避免 import 期 access violation。
-
-关键：Qt 富文本 <pre> 的 CSS font-family 常不生效，真正让字体落地要靠 QFont +
-widget.setFont()。故这里同时提供 family 名与构造好的 QFont。
+"""等宽字体加载：默认内置 Maple Mono，独立于 FontProvider；无 QGuiApplication
+时返回 monospace 兜底。同时提供 family 名与构造好的 QFont。
 """
 
 from __future__ import annotations
@@ -26,7 +20,18 @@ _LOADED: dict[str, str] = {}
 
 
 def _load_font_family(path: Path) -> str | None:
-    """注册 ttf 并返回主 family 名；失败或无 app 返回 None。"""
+    """注册 ttf 并返回主 family 名。
+
+    Args:
+        path: 字体文件路径。
+
+    Returns:
+        已注册的 family 名；无 QGuiApplication、文件不存在、
+        注册失败或无可用 family 时返回 None。
+
+    Note:
+        结果按路径缓存进 _LOADED，避免重复 addApplicationFont。
+    """
     if QGuiApplication.instance() is None:
         return None
     key = os.fspath(path)
@@ -45,16 +50,30 @@ def _load_font_family(path: Path) -> str | None:
 
 
 def mono_family(font_path: str | None = None) -> str:
-    """返回代码区等宽字体的主 family 名（加载失败回退 Consolas）。"""
+    """返回代码区等宽字体的主 family 名。
+
+    Args:
+        font_path: 自定义字体路径；None 用内置 Maple Mono。
+
+    Returns:
+        已加载字体的 family 名；加载失败回退 Consolas。
+    """
     path = Path(font_path) if font_path else _FONTS_DIR / _DEFAULT_MONO_FILE
     return _load_font_family(path) or _FALLBACK_MONO_FAMILY
 
 
 def mono_qfont(size_px: int, font_path: str | None = None) -> QFont:
-    """构造代码区用的 QFont（真正让等宽字体落地的入口）。
+    """构造代码区 QFont。
 
-    显式锁 Normal 字重：不设的话 QFont 在有多个 weight 变体的 family 上可能
-    挑到偏细的一档，表现为"字体太细"。
+    Args:
+        size_px: 字号，单位像素。
+        font_path: 自定义字体路径；None 用内置 Maple Mono。
+
+    Returns:
+        固定间距、Monospace style hint 的 QFont。
+
+    Note:
+        显式锁 Normal 字重，防止字体族里挑到偏细变体。
     """
     font = QFont(mono_family(font_path))
     font.setPixelSize(size_px)

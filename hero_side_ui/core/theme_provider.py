@@ -1,13 +1,4 @@
-"""
-HeroSideUI 全局主题管理器 (ThemeProvider)
-
-负责管理整个应用的亮暗色模式，支持：
-- auto 模式（跟随系统）
-- light / dark 强制模式
-- 一键切换 (toggle)
-- 系统主题变化实时响应（Qt 6.5+ colorSchemeChanged）
-- 通过 weakref 避免组件内存泄漏
-"""
+"""全局主题管理器：auto/light/dark 三模式、一键切换与系统主题实时跟随。"""
 
 from __future__ import annotations
 
@@ -22,31 +13,11 @@ VALID_THEMES = ("light", "dark")
 
 
 class ThemeProvider(QObject):
-    """
-    全局主题管理器（单例）
+    """全局主题管理器（单例）。
 
-    用法：
-        # 获取单例
-        provider = ThemeProvider.instance()
-
-        # 一键切换
-        provider.toggle()
-
-        # 设置模式
-        provider.set_mode("auto")    # 跟随系统
-        provider.set_mode("light")   # 强制亮色
-        provider.set_mode("dark")    # 强制暗色
-
-        # 监听变化
-        provider.theme_changed.connect(lambda t: print("now:", t))
-
-        # 当前实际生效的主题
-        print(provider.current_theme)  # "light" 或 "dark"
-
-    注册策略：
-        - 组件 theme="auto" 时会自动注册到 provider，跟随全局切换
-        - 组件 theme="light"/"dark" 时是硬锁，不参与全局切换
-        - register() 用 weakref，组件销毁时自动清理
+    Note:
+        组件 theme="auto" 自动注册并跟随全局切换；"light"/"dark" 硬锁不注册。
+        register 使用 weakref，组件销毁时自动清理。
     """
 
     # 当实际生效主题变化时发射 ("light" / "dark")
@@ -58,6 +29,7 @@ class ThemeProvider(QObject):
     _instance: ThemeProvider | None = None
 
     def __init__(self):
+        """初始化主题模式、系统检测结果与组件弱引用集合。"""
         super().__init__()
 
         self._mode: str = "auto"
@@ -82,18 +54,14 @@ class ThemeProvider(QObject):
 
     @classmethod
     def instance(cls) -> ThemeProvider:
-        """获取全局单例。第一次调用时懒初始化。
+        """获取全局单例，首次调用懒初始化并触发 core 基础设施启动。
 
-        单例首次创建后会触发 core 全局基础设施启动钩子（``_boot.ensure_core_ready``），
-        它统一激活 FontProvider / ScrollStyle / SmoothScroll 等兄弟模块——
-        组件 ``__init__`` 注册到 ``ThemeProvider.instance()`` 即获全套就绪，零样板。
+        Returns:
+            ThemeProvider 单例。
 
-        ThemeProvider 自身只管主题，不直接知道兄弟模块名字（职责单一）。
-        激活顺序与具体模块名集中在 ``core/_boot.py``，新增 core 模块时改那里即可。
-
-        注意：钩子必须在 ``cls._instance`` 赋值**之后**调用——兄弟模块的
-        ``__init__`` 可能反过来调 ``ThemeProvider.instance()``，赋值早一步
-        才能直接命中已 cache 的单例，避免无限递归。
+        Note:
+            启动钩子见 core/_boot.py；钩子必须在 _instance 赋值后调用，
+            避免兄弟模块初始化时的无限递归。
         """
         if cls._instance is None:
             cls._instance = ThemeProvider()
@@ -113,11 +81,10 @@ class ThemeProvider(QObject):
 
     @property
     def current_theme(self) -> str:
-        """当前实际生效的主题：'light' | 'dark'
+        """返回当前实际生效的主题。
 
-        - mode == "auto"  → 系统检测结果
-        - mode == "light" → "light"
-        - mode == "dark"  → "dark"
+        Returns:
+            "light" 或 "dark"；auto 模式时取系统检测结果。
         """
         return self._current_theme
 
@@ -126,13 +93,10 @@ class ThemeProvider(QObject):
     # ============================================================
 
     def set_mode(self, mode: str) -> None:
-        """设置主题模式
+        """设置主题模式并广播给已注册组件。
 
-        - "auto" : 跟随系统
-        - "light": 强制亮色
-        - "dark" : 强制暗色
-
-        模式变化后，自动广播给所有已注册组件。
+        Args:
+            mode: "auto"（跟随系统）、"light" 或 "dark"。
         """
         if mode not in VALID_MODES:
             raise ValueError(f"Invalid mode: {mode!r}, expected one of {VALID_MODES}")
@@ -145,22 +109,16 @@ class ThemeProvider(QObject):
         self._refresh_theme()
 
     def toggle(self) -> None:
-        """一键切换：在 light 和 dark 之间反转
-
-        切换后会进入手动模式（light/dark），不再跟随系统。
-        如果当前是 auto 模式，会基于当前实际主题反转。
-        """
+        """在 light 与 dark 间反转；切换后退出 auto 模式。"""
         new_mode = "dark" if self._current_theme == "light" else "light"
         self.set_mode(new_mode)
 
     def register(self, widget) -> None:
-        """注册组件到主题管理器
+        """注册组件以跟随全局主题切换。
 
-        组件需要有 set_theme(theme: str) 方法。
-        推荐组件同时实现 _apply_provider_theme(theme: str) 用于 provider 广播，
-        避免触发 set_theme 中的注册/取消注册逻辑。
-
-        使用 weakref，组件销毁时自动剔除，无需手动 unregister。
+        Args:
+            widget: 需提供 set_theme(theme) 方法；推荐同时实现
+                _apply_provider_theme(theme) 供广播路径使用。
         """
         if not hasattr(widget, "set_theme"):
             raise TypeError(
@@ -188,11 +146,7 @@ class ThemeProvider(QObject):
     # ============================================================
 
     def _detect_system_theme(self) -> str:
-        """检测当前系统的亮暗色模式
-
-        优先用 Qt 6.5+ 的 styleHints().colorScheme()，
-        回退用 QPalette 亮度判断。
-        """
+        """检测系统亮暗色：优先 Qt 6.5+ colorScheme()，回退 QPalette 亮度。"""
         app = QApplication.instance() or QGuiApplication.instance()
         if app is not None:
             # Qt 6.5+ 提供原生 colorScheme()
@@ -264,16 +218,11 @@ class ThemeProvider(QObject):
         self.theme_changed.emit(new_theme)
 
     def _sync_app_palette(self) -> None:
-        """把当前主题同步到 QApplication 全局 palette
+        """把当前主题同步到 QApplication 全局 palette（仅 Window/WindowText）。
 
-        这是"开箱即用"的关键：用户写 QMainWindow/QWidget 不需要注册到
-        ThemeProvider，因为 Qt 默认 palette 机制会让所有子 widget 的
-        背景/文字色跟随 QApplication.palette()。
-
-        只改 Window/WindowText 两个 role，不碰其他：
-        - Base/Text：Input `_LineEdit` palette.Base 挖空 bug（见 MEMORY.md 22/23/24）
-        - Button/ButtonText：HeroSideUI 的 Button/Checkbox/TabItem 都自绘不读 palette
-            Button role，写它属于越权干预 Qt 原生按钮——不是组件库的职责。
+        Note:
+            使未注册的原生窗口也跟随主题；不碰 Base/Text/Button 等 role，
+            避免干预组件自绘与原生按钮。
         """
         app = QApplication.instance()
         if app is None:
@@ -301,10 +250,10 @@ class ThemeProvider(QObject):
         app.setPalette(pal)
 
     def set_auto_app_palette(self, enabled: bool) -> None:
-        """开关"主题变化时自动同步 QApplication palette"
+        """开关"主题变化时自动同步 QApplication palette"。
 
-        默认 True（开箱即用）。关闭后 ThemeProvider 仅管注册组件，
-        不改全局 palette，由用户自己负责。
+        Args:
+            enabled: False 时 ThemeProvider 不再改全局 palette。
         """
         self._auto_app_palette = bool(enabled)
         if self._auto_app_palette:

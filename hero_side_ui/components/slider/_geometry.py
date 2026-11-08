@@ -1,13 +1,4 @@
-"""Slider 几何计算（纯函数）。
-
-所有计算都基于 canvas 坐标系。参数显式传入（cfg 字典 + orientation + 标志位 +
-当前值），不依赖 self —— 方便单测、方便 _paint.py 复用。
-
-约定：
-    - cfg: SLIDER_SIZES[size] 字典（含 thumb / track_thickness / mark_offset / mark_font_size）
-    - orientation: "horizontal" / "vertical"
-    - canvas_size: (width, height)
-"""
+"""Slider 几何纯函数：基于 canvas 坐标系，参数显式传入不依赖 self。"""
 
 from __future__ import annotations
 
@@ -43,7 +34,7 @@ __all__ = [
 
 
 def marks_band_size(cfg: dict) -> int:
-    """marks 文字带的高度（行高 + mark_offset 间距）"""
+    """计算 marks 文字带高度（行高加 mark_offset 间距）。"""
     fm = QFontMetrics(make_text_qfont(cfg["mark_font_size"], "normal"))
     return fm.height() + cfg["mark_offset"]
 
@@ -55,11 +46,7 @@ def track_geom(
     canvas_h: float,
     has_marks: bool,
 ) -> QRectF:
-    """canvas 坐标系下 track 矩形。
-
-    水平：左右各留 thumb 半径 + ring 余量；marks 占下方 mark_band。
-    垂直：上下各留 thumb 半径 + ring 余量；marks 占右侧。
-    """
+    """取 thumb 圆心轨迹矩形（供 thumb_centers/ratio_at_pos 计算）。"""
     thumb = cfg["thumb"]
     thickness = cfg["track_thickness"]
     margin = thumb / 2 + RING_WIDTH + RING_GAP
@@ -85,21 +72,11 @@ def track_visual_geom(
     canvas_h: float,
     has_marks: bool,
 ) -> QRectF:
-    """track 的"绘制用"矩形（专供 _paint 用）。
+    """取 track 绘制矩形：沿主轴两端外延 (thumb-thickness)/2。
 
-    `track_geom` 返回的是"thumb 圆心轨迹"矩形（端点 = thumb 在 0%/100% 时的圆心），
-    用于 `thumb_centers` / `ratio_at_pos` 等位置计算 —— 这些必须保持不变。
-
-    但在 `radius=full` + 大尺寸时，如果 track 底色和 filler 也只画到 thumb 圆心，
-    thumb 圆形伸出圆心那段（半径 thumb/2）会和 track 之间出现尖缝隙（圆角 thumb 的
-    左/右半圆边缘 vs 矩形 track 的端部）。
-
-    HeroUI 的解法是 `border-x-[thumb/2] border-x-transparent` —— 让 track 在两端
-    各预留 thumb/2 宽的"透明 border"，filler 把 border 染色后就刚好钻到 thumb 下方。
-
-    我们用等价的 PySide 几何修正：track 的可视矩形沿主轴方向**两端各向外延伸
-    `(thumb - thickness) / 2`**，让 track 圆角端 (radius = thickness/2) 的最外
-    像素正好落在 thumb 外缘。这样 thumb 任何半径模式下与 track 都是无缝衔接的。
+    Note:
+        外延使 track 圆角端落在 thumb 外缘，消除 radius=full 时的尖缝隙；
+        等价 HeroUI 的 border-x-transparent 方案。
     """
     inner = track_geom(cfg, orientation, canvas_w, canvas_h, has_marks)
     thumb = cfg["thumb"]
@@ -123,12 +100,14 @@ def track_visual_geom(
 
 
 def ratio_of(v: float, vmin: float, vmax: float) -> float:
+    """把值线性映射为 0..1 比例，越界时截断。"""
     if vmax <= vmin:
         return 0.0
     return max(0.0, min(1.0, (v - vmin) / (vmax - vmin)))
 
 
 def value_at_ratio(r: float, vmin: float, vmax: float) -> float:
+    """把 0..1 比例线性映射回值，r 越界时截断。"""
     r = max(0.0, min(1.0, r))
     return vmin + r * (vmax - vmin)
 
@@ -143,7 +122,8 @@ def thumb_centers(
 ) -> list[QPointF]:
     """根据当前值计算 thumb 中心坐标列表。
 
-    垂直方向 "下=min / 上=max"（HeroUI flex-col-reverse 视觉）。
+    Note:
+        垂直方向遵循 "下=min / 上=max"，对齐 HeroUI 的 flex-col-reverse 视觉。
     """
     if orientation == "vertical":
         cx = track.center().x()
@@ -203,8 +183,11 @@ def ratio_at_pos(pt: QPointF, track: QRectF, orientation: str) -> float:
 
 
 def resolve_thumb_radius(radius_token: str, thumb_size: float) -> float:
-    """thumb 圆角（对齐 HeroUI tailwind-variants）：
-    none → 0；sm → small/2；md → medium/2；lg → large/1.5；full → thumb/2 (圆)
+    """把圆角档位解析为 thumb 的像素圆角。
+
+    Note:
+        对齐 HeroUI tailwind-variants：none 为 0，sm / md 取对应半径的一半，
+        lg 取 large/1.5，full 为 thumb 半径（正圆）。
     """
     r = radius_token
     if r in ("none", "no"):
@@ -219,6 +202,7 @@ def resolve_thumb_radius(radius_token: str, thumb_size: float) -> float:
 
 
 def clamp_value(v: float, vmin: float, vmax: float) -> float:
+    """把值截断到 [vmin, vmax] 区间。"""
     return max(vmin, min(vmax, v))
 
 

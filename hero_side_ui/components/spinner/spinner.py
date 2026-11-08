@@ -1,21 +1,4 @@
-"""HeroUI 风格 Spinner 主组件。
-
-参数与公开 API：
-
-    Spinner(
-        variant="default",         # default / simple / gradient / spinner / wave / dots
-        color="primary",           # current / white / default / primary / secondary / success / warning / danger
-        size="md",                 # sm / md / lg
-        label="",                  # 下方/右侧的可选文字
-        label_color="foreground",  # foreground / primary / secondary / success / warning / danger
-        theme="auto",              # auto / light / dark
-        parent=None,
-    )
-
-    set_variant / set_color / set_size / set_label / set_label_color / set_theme
-
-注意：Spinner 永远是循环动画（loading 指示器），没有 is_indeterminate 概念。
-"""
+"""Spinner 主组件：variant/color/size/label/label_color/theme。"""
 
 from __future__ import annotations
 
@@ -50,12 +33,26 @@ class _SpinnerCanvas(QWidget):
     """承担 paintEvent 的"画布"子部件。"""
 
     def __init__(self, owner: Spinner, parent: QWidget | None = None):
+        """绑定持有者 Spinner 并创建画布。
+
+        Args:
+            owner: 提供尺寸、颜色与相位数据的 Spinner 实例。
+            parent: 父级 QWidget。
+        """
         super().__init__(parent)
         self._owner = owner
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
     def paintEvent(self, event):
+        """按 variant 把绘制分派到对应的 paint_* 函数。
+
+        Args:
+            event: Qt 绘制事件，本实现不读取。
+
+        Note:
+            宽高非正时直接返回；仅 default 变体读取第二条驱动器 _driver_b。
+        """
         owner = self._owner
         w = self.width()
         h = self.height()
@@ -142,6 +139,19 @@ class Spinner(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """按变体与外观配置创建 loading 指示器。
+
+        Args:
+            variant: 变体名，共 6 种。
+            color: 颜色名。
+            size: 尺寸档位。
+            label: 可选标签文字，空字符串表示不显示。
+            theme: 主题模式，auto 时跟随系统主题。
+            parent: 父级 QWidget。
+
+        Note:
+            variant、color、size 的非法值分别回退到 default、primary、md；auto 主题会向 ThemeProvider 注册接收广播。
+        """
         super().__init__(parent)
 
         self._variant = self._validate_variant(variant)
@@ -170,6 +180,7 @@ class Spinner(QWidget):
 
     # ----- 组装 UI -----
     def _setup_ui(self):
+        """创建画布与标签并装入居中纵向布局。"""
         self._canvas = _SpinnerCanvas(owner=self)
         self._label = Text("", selectable=False)
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -186,15 +197,18 @@ class Spinner(QWidget):
 
     # ----- 派生信息 -----
     def _size_cfg(self) -> dict:
+        """返回当前尺寸档位的配置字典。"""
         return SPINNER_SIZES.get(self._size, SPINNER_SIZES["md"])
 
     def _canvas_diameter(self) -> int:
+        """返回画布直径；wave/dots 变体使用专用直径档位。"""
         cfg = self._size_cfg()
         if self._variant in ("wave", "dots"):
             return int(cfg["diameter_wave_dots"])
         return int(cfg["diameter"])
 
     def _indicator_color(self) -> QColor:
+        """返回当前颜色与主题对应的主色 QColor。"""
         return resolve_indicator_color(self._color, self._theme)
 
     def _label_qcolor(self) -> QColor:
@@ -203,6 +217,7 @@ class Spinner(QWidget):
 
     # ----- 应用样式 / 文字 -----
     def _apply_styles(self):
+        """按当前尺寸刷新画布固定尺寸、标签字号与颜色。"""
         d = self._canvas_diameter()
         self._canvas.setFixedSize(d, d)
         cfg = self._size_cfg()
@@ -212,10 +227,12 @@ class Spinner(QWidget):
         self._canvas.update()
 
     def _refresh_label(self):
+        """按标签文字刷新文本与可见性。"""
         self._label.setText(self._label_text or "")
         self._label.setVisible(bool(self._label_text))
 
     def _apply_durations(self):
+        """按变体设置各相位驱动器的周期。"""
         # HeroUI 各 variant 的官方周期
         if self._variant == "default":
             self._driver_a.set_duration(800)
@@ -232,6 +249,17 @@ class Spinner(QWidget):
     # ----- 主题 -----
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: light、dark 或 auto。
+
+        Returns:
+            具体主题名；auto 时取 ThemeProvider 当前主题。
+
+        Note:
+            mode 非 light/dark 时一律按 auto 处理，未做校验。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
@@ -244,16 +272,46 @@ class Spinner(QWidget):
     # ----- 校验 -----
     @staticmethod
     def _validate_variant(v: str) -> str:
+        """校验变体名并返回可用的变体。
+
+        Args:
+            v: 待校验的变体名。
+
+        Returns:
+            校验后的变体名。
+
+        Note:
+            v 不在 VALID_VARIANTS 时回退到 default，未做报错。
+        """
         return v if v in VALID_VARIANTS else "default"
 
     @staticmethod
     def _validate_color(c: str) -> str:
+        """校验颜色名并返回可用的颜色。
+
+        Args:
+            c: 待校验的颜色名。
+
+        Returns:
+            校验后的颜色名。
+
+        Note:
+            c 不在 VALID_COLORS 时回退到 primary，未做报错。
+        """
         return c if c in VALID_COLORS else "primary"
 
     # ============================================================
     # 公共 API
     # ============================================================
     def set_variant(self, variant: str):
+        """切换变体并同步驱动器与样式。
+
+        Args:
+            variant: 目标变体名。
+
+        Note:
+            非法或同名变体直接返回；切入 default 时启动 _driver_b，切出时停止。
+        """
         if variant not in VALID_VARIANTS:
             return
         if variant == self._variant:
@@ -269,20 +327,49 @@ class Spinner(QWidget):
         self._apply_styles()
 
     def set_color(self, color: str):
+        """设置颜色并刷新标签配色。
+
+        Args:
+            color: 目标颜色名。
+
+        Note:
+            非法颜色名由 _validate_color 回退到 primary。
+        """
         self._color = self._validate_color(color)
         self._apply_styles()  # label 跟随主色刷新
 
     def set_size(self, size: str):
+        """设置尺寸档位并刷新样式。
+
+        Args:
+            size: 目标尺寸档位。
+
+        Note:
+            size 不在 SPINNER_SIZES 时直接返回，不改动当前尺寸。
+        """
         if size not in SPINNER_SIZES:
             return
         self._size = size
         self._apply_styles()
 
     def set_label(self, label: str):
+        """设置标签文字并刷新可见性。
+
+        Args:
+            label: 标签文字，空字符串表示隐藏标签。
+        """
         self._label_text = label
         self._refresh_label()
 
     def set_theme(self, theme: str):
+        """设置主题模式并刷新样式。
+
+        Args:
+            theme: 主题名或 auto。
+
+        Note:
+            auto 会向 ThemeProvider 注册，从 auto 切到固定主题时注销；非 auto 值原样作为主题名，未做校验。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -296,15 +383,19 @@ class Spinner(QWidget):
 
     # 便捷 getters
     def variant(self) -> str:
+        """返回当前变体名。"""
         return self._variant
 
     def color(self) -> str:
+        """返回当前颜色名。"""
         return self._color
 
     def size(self) -> str:
+        """返回当前尺寸档位。"""
         return self._size
 
     def label(self) -> str:
+        """返回当前标签文字。"""
         return self._label_text
 
 

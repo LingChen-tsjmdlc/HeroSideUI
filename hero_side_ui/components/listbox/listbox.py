@@ -1,16 +1,6 @@
-"""HeroSideUI Listbox 主容器。
+"""Listbox 主容器：top/bottom content + item/section 列表 + 空态。
 
-结构::
-
-    Listbox (QWidget)
-        ├── topContent     (可选)
-        ├── _list (list slot)
-        │     ├── ListboxItem / ListboxSection ...
-        │     └── _empty_widget (默认隐藏)
-        └── bottomContent  (可选)
-
-子模块:
-    item.py / section.py / _empty.py / _keyboard.py / _selection.py
+子模块：item.py/section.py/_empty.py/_keyboard.py/_selection.py。
 """
 
 from __future__ import annotations
@@ -38,11 +28,9 @@ from .section import ListboxSection
 class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     """HeroUI 风格列表框。
 
-    用法::
-
-        lb = Listbox(variant="flat", color="primary", selection_mode="single")
-        lb.add_item("New", key="new", description="Create a new file")
-        lb.action.connect(lambda key: print("activated", key))
+    Example:
+        lb = Listbox(selection_mode="single")
+        lb.add_item("New", key="new")
     """
 
     selection_changed = Signal(set)
@@ -75,6 +63,27 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         theme: str = "auto",
         parent=None,
     ):
+        """初始化列表框。
+
+        Args:
+            variant: 视觉变体（solid/shadow/bordered/flat/faded/light）。
+            color: 主题色（default/primary/secondary/success/warning/danger）。
+            size: 尺寸（sm/md/lg）。
+            radius: 圆角档位；None 回落 size token。
+            selection_mode: 选中模式（none/single/multiple）。
+            selected_keys: 初始选中 key 集合。
+            disabled_keys: 初始禁用 key 集合。
+            disallow_empty_selection: 必选 —— 至少保留一项被选中。
+            empty_content: 空态文案（None/"" 走默认 icon+双语，非空走单行文字）。
+            hide_selected_icon: 是否隐藏选中勾选图标。
+            should_highlight_on_focus: 聚焦时是否高亮。
+            disable_animation: 是否关闭过渡动画。
+            is_disabled: 整个列表是否禁用（整体半透明，保留键盘焦点语义）。
+            top_content: 列表上方附加内容控件。
+            bottom_content: 列表下方附加内容控件。
+            theme: 主题（auto/light/dark）；auto 跟随 ThemeProvider。
+            parent: 父控件。
+        """
         super().__init__(parent)
 
         if variant not in self.VALID_VARIANTS:
@@ -156,11 +165,27 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # 主题
     # ------------------------------------------------------------
     def _resolve_theme(self, mode: str) -> str:
+        """把主题模式解析为具体 light/dark。
+
+        Args:
+            mode: auto / light / dark。
+
+        Returns:
+            str: 解析后的实际主题；未知模式回落 light。
+        """
         if mode == "auto":
             return ThemeProvider.instance().current_theme
         return mode if mode in ("light", "dark") else "light"
 
     def _apply_provider_theme(self, theme: str):
+        """ThemeProvider 回调：auto 模式下跟随全局主题切换。
+
+        Args:
+            theme: ThemeProvider 广播的新主题（light/dark）。
+
+        Note:
+            需显式重建空态 widget，否则其缓存的 icon/文字配色仍是旧主题。
+        """
         if self._theme_mode != "auto":
             return
         self._theme = theme
@@ -171,6 +196,14 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self.update()
 
     def set_theme(self, theme: str):
+        """设置主题（auto/light/dark）。
+
+        Args:
+            theme: auto 跟随全局并注册 ThemeProvider；light/dark 硬锁主题；其它值忽略。
+
+        Note:
+            auto 与 light/dark 互斥：后者会注销 auto 注册。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             ThemeProvider.instance().register(self)
@@ -187,6 +220,11 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # 装配 API
     # ------------------------------------------------------------
     def set_top_content(self, w: QWidget | None):
+        """设置列表上方附加内容（替换旧的）。
+
+        Args:
+            w: 新控件；None 表示清空。
+        """
         if self._top_content is not None:
             self._outer.removeWidget(self._top_content)
             safe_delete(self._top_content)
@@ -196,6 +234,11 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
             self._outer.insertWidget(0, w)
 
     def set_bottom_content(self, w: QWidget | None):
+        """设置列表下方附加内容（替换旧的）。
+
+        Args:
+            w: 新控件；None 表示清空。
+        """
         if self._bottom_content is not None:
             self._outer.removeWidget(self._bottom_content)
             safe_delete(self._bottom_content)
@@ -243,6 +286,15 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         return it
 
     def add_section(self, sec_or_title, *, show_divider: bool = False) -> ListboxSection:
+        """追加一个分组（ListboxSection）。
+
+        Args:
+            sec_or_title: 已构造的 ListboxSection，或分组标题字符串。
+            show_divider: 分组底部是否显示分隔线。
+
+        Returns:
+            ListboxSection: 被加入的分组实例。
+        """
         if isinstance(sec_or_title, ListboxSection):
             sec = sec_or_title
         else:
@@ -262,6 +314,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         return sec
 
     def clear(self):
+        """清空所有 item 与 section，并重置选中集合。"""
         for it in list(self._items):
             safe_delete(it)
         self._items.clear()
@@ -272,15 +325,33 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._refresh_empty()
 
     def items(self) -> list[ListboxItem]:
+        """返回所有顶层 item 列表副本。
+
+        Returns:
+            list[ListboxItem]: 当前列表项（含分组内项）。
+        """
         return list(self._items)
 
     def item_by_key(self, key: str) -> ListboxItem | None:
+        """按 key 查找 item。
+
+        Args:
+            key: 目标 item 的 key。
+
+        Returns:
+            ListboxItem | None: 命中的 item 或 None。
+        """
         for it in self._items:
             if it.key() == key:
                 return it
         return None
 
     def _attach_item(self, it: ListboxItem):
+        """把 item 接入 Listbox：同步禁用/选中态、注入 toggle 守卫、连接信号。
+
+        Args:
+            it: 待接入的 ListboxItem。
+        """
         if it.key() in self._disabled_keys:
             it.set_disabled(True)
         if it.key() in self._selected_keys and self._selection_mode != "none":
@@ -293,9 +364,19 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # 选中 / 禁用 API
     # ------------------------------------------------------------
     def selection_mode(self) -> str:
+        """返回当前选中模式。
+
+        Returns:
+            str: none / single / multiple。
+        """
         return self._selection_mode
 
     def set_selection_mode(self, mode: str):
+        """设置选中模式（非法值忽略）。
+
+        Args:
+            mode: none / single / multiple；切到 none 会清空全部选中态。
+        """
         if mode not in self.VALID_SELECTION_MODES:
             return
         self._selection_mode = mode
@@ -306,15 +387,33 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._propagate_style()
 
     def disallow_empty_selection(self) -> bool:
+        """是否启用必选（禁止清空选择）。
+
+        Returns:
+            bool: True 表示至少保留一项被选中。
+        """
         return self._disallow_empty_selection
 
     def set_disallow_empty_selection(self, v: bool):
+        """设置是否必选。
+
+        Args:
+            v: True 启用必选。"""
         self._disallow_empty_selection = bool(v)
 
     def selected_keys(self) -> set[str]:
+        """返回当前选中 key 的副本。"""
         return set(self._selected_keys)
 
     def set_selected_keys(self, keys: Iterable[str]):
+        """以编程方式设置选中集合。
+
+        Args:
+            keys: 要选中的 key 集合。
+
+        Note:
+            single 模式只保留首个 key；none 模式下调用无效。
+        """
         keys = set(keys)
         if self._selection_mode == "none":
             return
@@ -332,17 +431,32 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
             self.selection_changed.emit(set(self._selected_keys))
 
     def disabled_keys(self) -> set[str]:
+        """返回当前禁用 key 的副本。"""
         return set(self._disabled_keys)
 
     def set_disabled_keys(self, keys: Iterable[str]):
+        """设置禁用 key 集合并刷新各项 enabled 状态。
+
+        Args:
+            keys: 要禁用的 key 集合。
+        """
         self._disabled_keys = set(keys)
         for it in self._items:
             it.set_disabled(it.key() in self._disabled_keys)
 
     def is_disabled(self) -> bool:
+        """返回整个列表是否禁用。
+
+        Returns:
+            bool: True 表示整体禁用（半透明）。
+        """
         return self._is_disabled
 
     def set_is_disabled(self, v: bool):
+        """设置整个列表禁用态（整体半透明，保留键盘焦点语义）。
+
+        Args:
+            v: True 禁用。"""
         self._is_disabled = bool(v)
         # opacity effect 一刀切，不动 enabled 保留键盘焦点语义
         if not hasattr(self, "_disabled_effect"):
@@ -356,18 +470,33 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # 动态属性 setter
     # ------------------------------------------------------------
     def set_variant(self, v: str):
+        """设置视觉变体（非法值忽略）。
+
+        Args:
+            v: solid/shadow/bordered/flat/faded/light。
+        """
         if v not in self.VALID_VARIANTS:
             return
         self._variant = v
         self._propagate_style()
 
     def set_color(self, c: str):
+        """设置主题色（非法值忽略）。
+
+        Args:
+            c: default/primary/secondary/success/warning/danger。
+        """
         if c not in self.VALID_COLORS:
             return
         self._color = c
         self._propagate_style()
 
     def set_size(self, s: str):
+        """设置尺寸档位并同步外层/列表 layout 与空态高度。
+
+        Args:
+            s: sm / md / lg。
+        """
         if s not in self.VALID_SIZES:
             return
         self._size = s
@@ -384,6 +513,11 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._propagate_style()
 
     def set_radius(self, r: str | None):
+        """设置圆角档位（None 回落 size token）。
+
+        Args:
+            r: RADIUS 表内档位或 "full"；非法值忽略。
+        """
         # None = 回落 size token（item_radius）；"full" 是动态半高，不在 RADIUS 表内
         if r is not None and r not in RADIUS and r != "full":
             return
@@ -391,14 +525,26 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._propagate_style()
 
     def set_hide_selected_icon(self, v: bool):
+        """设置是否隐藏选中勾选图标。
+
+        Args:
+            v: True 隐藏。"""
         self._hide_selected_icon = bool(v)
         self._propagate_style()
 
     def set_should_highlight_on_focus(self, v: bool):
+        """设置聚焦时是否高亮。
+
+        Args:
+            v: True 启用聚焦高亮。"""
         self._highlight_on_focus = bool(v)
         self._propagate_style()
 
     def set_disable_animation(self, v: bool):
+        """设置是否关闭过渡动画。
+
+        Args:
+            v: True 关闭动画。"""
         self._disable_animation = bool(v)
         self._propagate_style()
 
@@ -406,6 +552,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # 样式下发
     # ------------------------------------------------------------
     def _propagate_style(self):
+        """把当前 variant/color/size/radius/theme 等统一样式下发到所有 item 与 section。"""
         cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
         self._list_v.setSpacing(cfg["list_gap"])
         self._outer.setSpacing(cfg["group_gap"])

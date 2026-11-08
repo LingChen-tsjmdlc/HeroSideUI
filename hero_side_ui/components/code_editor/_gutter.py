@@ -1,8 +1,4 @@
-"""行号栏（gutter）：QWidget 自绘，与编辑区同字体/同行距/同步滚动。
-
-画法：每行一个行号，右对齐；当前行用正文色、其余用弱化色。宽度随
-最大行号位数自适应（如 1→9 占一位，10→99 占两位）。
-"""
+"""行号栏：自绘右对齐行号，宽度随最大位数自适应，与编辑区同步滚动。"""
 
 from __future__ import annotations
 
@@ -14,13 +10,15 @@ from ...themes import CODE_EDITOR_LINE
 
 
 class _Gutter(QWidget):
-    """编辑器左侧行号栏。
-
-    由 CodeEditor 持有并驱动：字体/行高/当前行/首个可见块由编辑器同步，
-    本类只负责画。不要单独使用。
-    """
+    """编辑器左侧行号栏，由 CodeEditor 驱动，本类只负责画。"""
 
     def __init__(self, editor: CodeEditor, parent: QWidget | None = None) -> None:  # noqa: F821
+        """创建行号栏。
+
+        Args:
+            editor: 宿主 CodeEditor，用于读取块布局与滚动状态。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._editor = editor
         self._font: QFont | None = None
@@ -40,7 +38,16 @@ class _Gutter(QWidget):
         visible_from: int,
         visible_to: int,
     ) -> None:
-        """编辑器在光标移动/滚动/字号变化时推送状态并触发重绘。"""
+        """编辑器在光标移动 / 滚动 / 字号变化时推送状态并触发重绘。
+
+        Args:
+            font: 当前等宽字体。
+            line_height: 单行高度（像素）。
+            current_line: 光标所在行号。
+            first_block_top: 首个可见块内容区的 y 偏移。
+            visible_from: 首个可见行号。
+            visible_to: 末个可见行号。
+        """
         self._font = font
         self._line_height = line_height
         self._current_line = current_line
@@ -50,10 +57,20 @@ class _Gutter(QWidget):
         self.update()
 
     def set_theme(self, theme: str) -> None:
+        """切换行号栏主题并重绘。
+
+        Args:
+            theme: light / dark。
+        """
         self._theme = theme
         self.update()
 
     def paintEvent(self, event) -> None:  # type: ignore[override]
+        """自绘可见区右对齐行号，当前行用高亮色。
+
+        Args:
+            event: Qt 绘制事件。
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, False)
         line_cfg = CODE_EDITOR_LINE["dark" if self._theme == "dark" else "light"]
@@ -81,6 +98,11 @@ class _Gutter(QWidget):
         painter.end()
 
     def sizeHint(self) -> QSize:  # type: ignore[override]
+        """行号栏推荐宽度。
+
+        Returns:
+            按主题取 CODE_EDITOR_LINE 的 gutter_width，高度为 0（由宿主定）。
+        """
         max(2, len(str(max(self._visible_to, 99))))
         cfg = CODE_EDITOR_LINE["dark" if self._theme == "dark" else "light"]
         return QSize(cfg["gutter_width"], 0)

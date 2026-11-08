@@ -1,13 +1,4 @@
-"""Radio 组件尺寸配置。
-
-对齐 HeroUI v2 的 radio 规范:
-    sm: wrapper 16x16 + control 6x6  + label text-small  + description text-tiny
-    md: wrapper 20x20 + control 8x8  + label text-medium + description text-small  (默认)
-    lg: wrapper 24x24 + control 10x10 + label text-large  + description text-medium
-
-card 变体新增:
-    card_padding / card_radius / card_max_width / card_gap (label↔wrapper 间距)
-"""
+"""Radio 尺寸：wrapper 16/20/24、control 6/8/10；card 变体附加 padding/radius/gap。"""
 
 RADIO_SIZES = {
     "sm": {

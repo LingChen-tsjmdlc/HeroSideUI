@@ -16,34 +16,14 @@ if TYPE_CHECKING:
 # Backdrop
 # ============================================================
 class _Backdrop(QWidget):
-    """遮罩层 — 作为 **host window 的子 widget**，只覆盖 host 的客户区；
-    不会遮到其他应用、其他屏幕。
+    """遮罩层，作为 host window 的子 widget 只覆盖客户区。
 
-    kind:
-        transparent — 透明遮罩（只用于拦截/不拦截点击）
-        opaque      — 黑色 50% 遮罩
-        blur        — 对 host 客户区做静态截屏 + 高斯模糊作为背景，再叠 30% 黑
+    kind: transparent 透明 / opaque 黑 50% / blur 静态模糊快照叠 30% 黑。
 
-    淡入淡出由 `BackdropFade` 驱动（paintEvent 里 `setOpacity(progress)`）。
-
-    **static snapshot 说明**：`blur` 模式默认是 `show()` 之前 `prepare_blur_snapshot`
-    抓一次高质量高斯（QGraphicsBlurEffect QualityHint）；之后 host 内容变化不会
-    自动反映到 backdrop 上。这对 Popover 短期开关场景已够用。
-
-    **滚动重抓场景**（blur）：由外部（Popover）在滚动节流帧调 `refresh_blur_fast()`。
-    `blur_quality` 4 档（其中前 3 档都是金字塔 box blur，按中心极限定理 N 次盒滤波
-    叠加趋近高斯；level 越高边缘越柔和但成本线性增）：
-
-    | 档位         | 算法                              | 帧时（1080p） |
-    | ------------ | --------------------------------- | ------------- |
-    | ``low``      | 2 级金字塔                        | ~5-7ms        |
-    | ``fast``（默认） | 3 级金字塔                    | ~8-12ms       |
-    | ``great``    | 4 级金字塔                        | ~12-16ms      |
-    | ``high``     | QGraphicsBlurEffect QualityHint   | ~30-60ms      |
-
-    边际收益：3→4 级肉眼可辨（fast→great 推荐升档场景）；4→真高斯（``high``）
-    柔和度仍有提升但代价跳变。默认 ``fast`` 是甜区。**注意：曾有 5 级金字塔档
-    （balanced）已删除——CLT 上 N=10 已超过真高斯的视觉模糊度，反而失真。**
+    Note:
+        blur 为打开瞬间的静态快照；滚动帧由外部调 refresh_blur_fast() 重抓。
+        blur_quality 档位: low=2 级 / fast=3 级(默认) / great=4 级金字塔 /
+        high=QGraphicsBlurEffect；级数越高越柔和但成本线性增。
     """
 
     # blur_quality → 金字塔级数映射；'high' 走 QGraphicsBlurEffect 不在此表。
@@ -66,6 +46,17 @@ class _Backdrop(QWidget):
         host: QWidget | None = None,
         blur_quality: str = "fast",
     ):
+        """构造遮罩层（作为 host 的子 widget，仅覆盖客户区）。
+
+        Args:
+            kind: transparent 透明穿透 / opaque 黑 50% / blur 模糊快照叠 30% 黑。
+            host: 宿主窗口，作为 parent 限制遮罩范围。
+            blur_quality: low/fast/great 金字塔级数或 high 真高斯；非法值抛 ValueError。
+
+        Note:
+            以 host 为 parent（非独立顶层窗口）；transparent 模式设
+            WA_TransparentForMouseEvents 实现事件穿透。
+        """
         # 关键：parent = host，不是独立顶层窗口
         super().__init__(host)
         self._kind = kind
@@ -144,6 +135,12 @@ class _Backdrop(QWidget):
             return
 
     def closeEvent(self, event):
+        """关闭时主动移除 host 上的事件监听，避免悬挂引用。
+
+        Note:
+            backdrop deleteLater 后 host 仍持 eventFilter 引用会导致悬空回调，
+            故在关闭前显式 removeEventFilter。
+        """
         # host 还活着的话主动 remove，避免 backdrop deleteLater 后 host 仍持悬挂引用。
         host = self._host
         if host is not None:
@@ -154,9 +151,11 @@ class _Backdrop(QWidget):
         super().closeEvent(event)
 
     def play_in(self):
+        """触发遮罩淡入动画。"""
         self._fade.play_in()
 
     def play_out(self):
+        """触发遮罩淡出动画（结束后由 Popover 负责删除本遮罩）。"""
         self._fade.play_out()
 
     def prepare_blur_snapshot(self):
@@ -199,17 +198,7 @@ class _Backdrop(QWidget):
         self._blur_pixmap = blurred
 
     def refresh_blur_fast(self):
-        """滚动节流帧重抓模糊。按 `blur_quality` 选路径：
-
-        - ``high`` → `_apply_gaussian_blur(pm)`：QGraphicsBlurEffect QualityHint，
-          与初始 snapshot 同算法；最柔和但单帧 ~30-60ms，可能掉帧。
-        - 其余 3 档 → `_apply_pyramid_box_blur(pm, w, h, levels)`：每级 1/2
-          SmoothTransformation downsample 再 upsample，按中心极限定理 N 次盒滤波
-          叠加趋近高斯。levels=2/3/4 对应 low/fast/great。
-
-        坑：单次大比例 downsample（如 1/4 一刀切）= 大窗口盒滤波 → 块边/马赛克。
-        金字塔的渐进多级 1/2 缩放天然规避（每级窗口都很小）。
-        """
+        """滚动节流帧重抓模糊：high 走真高斯，其余按档位走金字塔盒滤波。"""
         if self._kind != "blur" or self._host is None:
             return
 
@@ -249,19 +238,16 @@ class _Backdrop(QWidget):
 
     @staticmethod
     def _apply_pyramid_box_blur(pm, w: int, h: int, levels: int):
-        """N 级金字塔 box blur —— 每级 1/2 SmoothTransformation 双线性 down
-        到 1/2^levels，再对称 up 还原；CLT 上 N 次盒滤波叠加趋近高斯，
-        每级缩放窗口很小无块边。
+        """N 级金字塔盒滤波：逐级 1/2 缩小再对称还原，叠加趋近高斯。
 
-        levels 取值 2..4，分别对应 blur_quality 的 low/fast/great：
-          - 2 → 1/2→1/4 →up→up，~5-7ms，最快但边缘略糙。
-          - 3 → 多一级 1/8，~8-12ms，**默认 fast 档**。
-          - 4 → 多一级 1/16，~12-16ms，great 档；细腻度肉眼可辨。
+        Args:
+            pm: 待模糊的截图。
+            w: 宽。
+            h: 高。
+            levels: 2..4，对应 low/fast/great。
 
-        坑（已踩）：单次大比例 downsample（如 1/4 一刀切）= 大窗口盒滤波 →
-        块边/马赛克。必须渐进多级 1/2 缩放（UE/Unity bloom/DOF 标配做法）。
-        坑（已踩）：曾有 5 级（balanced）档，CLT 上 N=10 已超过 16px QGraphicsBlurEffect
-        的视觉模糊度——视觉"过度模糊失真"反而比真高斯还糊，已删除。
+        Note:
+            必须渐进多级 1/2 缩放；单次大比例缩放会产生块边马赛克。
         """
         smooth = Qt.TransformationMode.SmoothTransformation
         keep = Qt.AspectRatioMode.IgnoreAspectRatio
@@ -311,6 +297,15 @@ class _Backdrop(QWidget):
         return blurred
 
     def paintEvent(self, event):
+        """自绘遮罩层（按 kind 绘制模糊快照或纯色半透明覆盖）。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            transparent 模式直接返回（事件穿透）；_suppress_paint 为 True 时
+            跳过绘制，避免 grab 快照把自身黑层叠入造成"越滚越黑"。
+        """
         if self._kind == "transparent":
             return
         # grab 期间跳过自己的绘制，避免被抢进下一轮 snapshot 造成黑色累积。
@@ -330,16 +325,12 @@ class _Backdrop(QWidget):
             painter.fillRect(self.rect(), QColor(0, 0, 0, 76))
 
     def mousePressEvent(self, event):
+        """点击遮罩 → 发射 clicked 信号（由 Popover 决定是否关闭）。"""
         self.clicked.emit()
         super().mousePressEvent(event)
 
     def wheelEvent(self, event):
-        """opaque/blur backdrop 默认拦截所有鼠标事件，导致用户在 popover 打开期间
-        无法滚动主页面。这里把 wheel 事件抛给 Popover 处理（关闭 + 可选转发到
-        祖先 ScrollArea）。
-
-        accept 让 Qt 不再向上冒泡 —— 我们自己已经决定了如何处理。
-        """
+        """把 wheel 事件交给 Popover 处理（关闭 + 可选转发祖先滚动区），并 accept 阻止冒泡。"""
         # transparent 模式不会进到这里（WA_TransparentForMouseEvents=True，
         # wheelEvent 都不会派发给我们）。
         # 只传 angleDelta（主要轴 + 方向），Popover 重建事件转发。

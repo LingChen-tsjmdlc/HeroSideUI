@@ -1,12 +1,5 @@
-"""
-HeroUI v2 官方颜色系统
-
-颜色来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/colors/
-每种颜色包含 50-900 共 10 个色阶
-
-`default` = HeroUI 官方使用的 zinc 色阶（略带冷色调）
-`neutral` = Tailwind v3 neutral 色阶（纯灰，无色相偏移）
-    专给"中性元素"（如滚动条 handle）用，不参与组件语义色（Button/Tabs 不接受 neutral）
+"""HeroUI v2 颜色系统：6 语义色 × 10 阶 + neutral（纯灰，专给滚动条等
+中性元素，不参与组件语义色）。
 """
 
 HEROUI_COLORS = {

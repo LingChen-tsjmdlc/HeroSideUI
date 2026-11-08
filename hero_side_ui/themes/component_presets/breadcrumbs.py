@@ -1,10 +1,4 @@
-"""Breadcrumbs 组件尺寸配置。
-
-对照 HeroUI breadcrumbs.ts：
-- item 字号：sm text-tiny(12) / md text-small(14) / lg text-medium(16)
-- solid/bordered 列表内边距：sm px-2 py-1 / md px-2.5 py-1.5 / lg px-3 py-2
-- separator：px-1(4)
-"""
+"""Breadcrumbs 尺寸：字号 12/14/16，solid/bordered 内边距与分隔符间距。"""
 
 BREADCRUMBS_SIZES = {
     "sm": {"font": 12, "padding_x": 8, "padding_y": 4},

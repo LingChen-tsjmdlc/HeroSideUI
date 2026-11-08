@@ -1,7 +1,5 @@
-"""CircularProgress — 环形进度指示器。
-
-显示 0-100% 的环形进度。`is_indeterminate=True` 时整圈以 30% 长度的弧
-持续旋转，作为加载指示。
+"""CircularProgress 环形进度：SVG ring + 中心 value + 下方 label。
+indeterminate 时 30% 弧持续旋转。
 """
 
 from PySide6.QtCore import (
@@ -24,7 +22,14 @@ from ..text import Text
 
 
 def _indicator_hex(name: str) -> str:
-    """对应 HeroUI 的 `bg-{color}` (primary-500 / default-400)。"""
+    """把进度条颜色名映射为 HeroUI 的 `bg-{color}` 色值（primary-500 / default-400）。
+
+    Args:
+        name: 语义色名（default/primary/...）。
+
+    Returns:
+        str: 对应调色板的十六进制色值。
+    """
     if name == "default":
         return HEROUI_COLORS["default"][400]
     return HEROUI_COLORS.get(name, HEROUI_COLORS["primary"])[500]
@@ -34,13 +39,7 @@ def _indicator_hex(name: str) -> str:
 # CircularProgress
 # ============================================================
 class CircularProgress(QWidget):
-    """HeroUI 风格的圆形进度条
-
-    结构: SVG ring (track + indicator arc) + 中心 value + 下方 label。
-
-    参数同 Progress，除了没有 radius/is_striped。
-    is_indeterminate=True 时，整圈以 30% 长度的弧持续旋转。
-    """
+    """HeroUI 风格圆形进度条；参数同 Progress（无 radius/is_striped）。"""
 
     def __init__(
         self,
@@ -59,6 +58,28 @@ class CircularProgress(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造环形进度条。
+
+        Args:
+            value: 初始进度值（会被夹紧到 [min, max]）。
+            min_value: 范围下界。
+            max_value: 范围上界。
+            label: 下方说明文字。
+            show_value_label: 是否在环心显示百分比。
+            value_label_formatter: 自定义值格式化回调 (value, min, max)。
+            color: 语义色名。
+            size: sm/md/lg 尺寸档位。
+            stroke_width: 环线宽（px），None 取尺寸默认。
+            is_indeterminate: 未定态（旋转弧）。
+            is_disabled: 禁用（半透明 + 禁用手势）。
+            disable_animation: 关闭过渡动画。
+            theme: light/dark/auto。
+            parent: 父控件。
+
+        Note:
+            无 radius/is_striped（与线性 Progress 不同）；indeterminate 下
+            用 SpinAnimation 驱动 30% 弧持续旋转。
+        """
         super().__init__(parent)
 
         self._min = min_value
@@ -101,9 +122,19 @@ class CircularProgress(QWidget):
 
     # ----- Qt properties -----
     def _get_ratio(self) -> float:
+        """返回当前动画进度比（供 anim_ratio Qt 属性读取）。
+
+        Returns:
+            float: 0..1 的进度比。
+        """
         return self._anim_ratio
 
     def _set_ratio(self, v: float):
+        """设置动画进度比并触发重绘与 value label 同步。
+
+        Args:
+            v: 新的进度比（0..1）。
+        """
         self._anim_ratio = v
         self._svg.update()
         # 同步 value label
@@ -114,6 +145,7 @@ class CircularProgress(QWidget):
 
     # ----- UI 组装 -----
     def _setup_ui(self):
+        """组装 SVG 自绘层 + 中心 value label + 下方 label 的布局。"""
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
 
         layout = QVBoxLayout(self)
@@ -138,6 +170,7 @@ class CircularProgress(QWidget):
         layout.addWidget(self._label, 0, Qt.AlignmentFlag.AlignHCenter)
 
     def _apply_styles(self):
+        """根据 size/color/theme 应用 SVG 尺寸、value/label 字号与颜色。"""
         cfg = CIRCULAR_PROGRESS_SIZES.get(self._size, CIRCULAR_PROGRESS_SIZES["md"])
         text_color = self._text_color()
 
@@ -151,6 +184,7 @@ class CircularProgress(QWidget):
         self._svg.update()
 
     def _refresh_text_labels(self):
+        """刷新下方 label 与中心 value label 的文本与可见性。"""
         self._label.setText(self._label_text or "")
         self._label.setVisible(bool(self._label_text))
 
@@ -162,6 +196,14 @@ class CircularProgress(QWidget):
             self._value_label.hide()
 
     def _format_value_from_ratio(self, ratio: float) -> str:
+        """把进度比格式化为显示文本（百分比或自定义 formatter）。
+
+        Args:
+            ratio: 进度比（0..1）。
+
+        Returns:
+            str: 格式化后的文本（默认百分比，自定义 formatter 走回调）。
+        """
         if self._formatter is not None:
             v = self._min + ratio * (self._max - self._min)
             return str(self._formatter(v, self._min, self._max))
@@ -169,14 +211,29 @@ class CircularProgress(QWidget):
 
     # ----- 色彩 / 尺寸 -----
     def _progress_ratio(self) -> float:
+        """把当前 value 换算为 0..1 进度比。
+
+        Returns:
+            float: 进度比（范围外被夹紧到 0/1）。
+        """
         if self._max <= self._min:
             return 0.0
         return max(0.0, min(1.0, (self._value - self._min) / (self._max - self._min)))
 
     def _indicator_color(self) -> QColor:
+        """返回进度弧（indicator）颜色。
+
+        Returns:
+            QColor: 由 _indicator_hex 解析的色。
+        """
         return QColor(_indicator_hex(self._color))
 
     def _track_color(self) -> QColor:
+        """返回轨道（track）底色（亮/暗下 default 300/600 半透明）。
+
+        Returns:
+            QColor: 半透明灰。
+        """
         is_dark = self._theme == "dark"
         base = HEROUI_COLORS["default"][600 if is_dark else 300]
         c = QColor(base)
@@ -184,9 +241,19 @@ class CircularProgress(QWidget):
         return c
 
     def _text_color(self) -> str:
+        """返回文字色（暗色浅、亮色深）。
+
+        Returns:
+            str: 十六进制色值。
+        """
         return "#ecedee" if self._theme == "dark" else "#18181b"
 
     def _stroke_width(self) -> float:
+        """返回环线宽度（px），优先用自定义覆盖值。
+
+        Returns:
+            float: 线宽。
+        """
         cfg = CIRCULAR_PROGRESS_SIZES.get(self._size, CIRCULAR_PROGRESS_SIZES["md"])
         if self._stroke_override is not None:
             return float(self._stroke_override)
@@ -194,6 +261,11 @@ class CircularProgress(QWidget):
 
     # ----- 禁用 -----
     def _apply_disabled_effect(self, disabled: bool):
+        """应用/移除禁用视觉效果（半透明 + 禁用手势）。
+
+        Args:
+            disabled: True 进入禁用态。
+        """
         if disabled:
             eff = QGraphicsOpacityEffect(self)
             eff.setOpacity(0.5)
@@ -205,9 +277,19 @@ class CircularProgress(QWidget):
 
     # ----- 公共 API -----
     def value(self) -> float:
+        """返回当前进度值。
+
+        Returns:
+            float: 当前 value（已夹紧到 [min, max]）。
+        """
         return self._value
 
     def set_value(self, v: float):
+        """设置进度值（夹紧到范围）并播放过渡动画。
+
+        Args:
+            v: 目标进度值。
+        """
         self._value = max(self._min, min(self._max, v))
         self._refresh_text_labels()
         if not self._is_indeterminate:
@@ -221,6 +303,12 @@ class CircularProgress(QWidget):
             )
 
     def set_range(self, min_value: float, max_value: float):
+        """设置进度范围并重新夹紧当前值。
+
+        Args:
+            min_value: 新的下界。
+            max_value: 新的上界。
+        """
         self._min = min_value
         self._max = max_value
         self._value = max(self._min, min(self._max, self._value))
@@ -228,14 +316,32 @@ class CircularProgress(QWidget):
         self._refresh_text_labels()
 
     def set_color(self, color: str):
+        """设置语义色并立即重绘。
+
+        Args:
+            color: 语义色名。
+        """
         self._color = color
         self._svg.update()
 
     def set_size(self, size: str):
+        """设置尺寸档位并刷新样式。
+
+        Args:
+            size: sm/md/lg。
+        """
         self._size = size
         self._apply_styles()
 
     def set_theme(self, theme: str):
+        """设置主题模式（auto/light/dark）。
+
+        Args:
+            theme: auto 订阅 ThemeProvider 广播；light/dark 固定。
+
+        Note:
+            切换后刷新样式（SVG/文字色随主题变化）。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_cp_theme("auto")
@@ -248,17 +354,34 @@ class CircularProgress(QWidget):
         self._apply_styles()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
+        """ThemeProvider 广播回调，应用新主题。
+
+        Args:
+            theme: 由 ThemeProvider 广播的目标主题（light/dark）。
+        """
         self._theme = theme
         self._apply_styles()
 
     @staticmethod
     def _resolve_cp_theme(mode: str) -> str:
+        """解析主题模式为实际主题。
+
+        Args:
+            mode: auto/light/dark。
+
+        Returns:
+            str: light 或 dark。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_is_indeterminate(self, indet: bool):
+        """切换未定态（旋转弧）。
+
+        Args:
+            indet: True 进入未定态，启动 SpinAnimation。
+        """
         self._is_indeterminate = indet
         if indet:
             self._spin.start()
@@ -268,27 +391,57 @@ class CircularProgress(QWidget):
         self._svg.update()
 
     def set_is_disabled(self, disabled: bool):
+        """设置禁用状态。
+
+        Args:
+            disabled: True 进入禁用态。
+        """
         self._is_disabled = disabled
         self._apply_disabled_effect(disabled)
 
     def set_label(self, label: str):
+        """设置下方说明文字。
+
+        Args:
+            label: 文字内容。
+        """
         self._label_text = label
         self._refresh_text_labels()
 
     def set_show_value_label(self, show: bool):
+        """设置是否在环心显示进度值。
+
+        Args:
+            show: True 显示百分比/自定义文本。
+        """
         self._show_value = show
         self._refresh_text_labels()
 
 
 class _CircularSvg(QWidget):
-    """圆形进度条的自绘核心（track + indicator arc）"""
+    """圆形进度条的自绘核心（track + indicator arc）。"""
 
     def __init__(self, owner: "CircularProgress", parent: QWidget | None = None):
+        """构造自绘 SVG 核心。
+
+        Args:
+            owner: 所属的 CircularProgress，用于读取颜色/进度/旋转角度。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._owner = owner
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def paintEvent(self, event):
+        """自绘 track 圈与 indicator 弧（含未定态旋转）。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            indeterminate 下取 SpinAnimation 角度绘制 30% 弧；
+            确定态按 anim_ratio 绘制对应比例弧，从 12 点钟顺时针。
+        """
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 

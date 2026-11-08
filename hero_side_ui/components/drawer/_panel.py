@@ -1,21 +1,4 @@
-"""
-HeroSideUI Drawer 组件 — 侧滑面板（私有）
-
-结构:
-    _DrawerPanel (QWidget, objectName="heroDrawer"，QSS 背景 + 圆角 + 边框)
-        ├── content  (QWidget，对外内容容器，已带 QVBoxLayout)
-        └── close 按钮（parent=panel，按 modal closeButton 的
-                       absolute top-1 end-1 浮在右上角）
-
-圆角按 placement 削平贴边那一侧（HeroUI drawer.ts）：
-    top → rounded-t-none / right → rounded-r-none
-    bottom → rounded-b-none / left → rounded-l-none
-size=full 时四角全平（!rounded-none）。
-
-样式来源:
-    https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/drawer.ts
-    https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/modal.ts
-"""
+"""_DrawerPanel 侧滑面板：QSS 背景 + 贴边侧削平圆角 + 内容容器 + 关闭按钮。"""
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPalette
@@ -28,7 +11,14 @@ from ..button import Button
 
 
 def _radius_px(key: str) -> int:
-    """把 radius token（值为 "8px" 这类字符串）转成像素整数。"""
+    """把 radius token（值为 "8px" 这类字符串）转成像素整数。
+
+    Args:
+        key: 圆角档位名。
+
+    Returns:
+        对应像素值；解析失败回退 14。
+    """
     raw = str(RADIUS.get(key, RADIUS["lg"]))
     try:
         return int(raw.rstrip("px"))
@@ -42,6 +32,16 @@ class _DrawerPanel(QWidget):
     close_requested = Signal()
 
     def __init__(self, theme: str = "auto", parent: QWidget | None = None):
+        """创建侧滑面板外壳与内容容器。
+
+        Args:
+            theme: auto / light / dark。
+            parent: Qt 父对象。
+
+        Note:
+            QWidget 子类的 QSS 背景必须显式开 WA_StyledBackground 才绘制；
+            内容从顶部堆叠（对齐 HeroUI drawer 的 flex-start，不垂直居中）。
+        """
         super().__init__(parent)
         self.setObjectName("heroDrawer")
         self._theme_mode = theme
@@ -76,17 +76,29 @@ class _DrawerPanel(QWidget):
     # 内容容器
     # ============================================================
     def content_widget(self) -> QWidget:
-        """对外开放的内容容器 —— 用户往它的 layout 里塞任意组件。"""
+        """对外开放的内容容器。
+
+        Returns:
+            用户应把自定义组件加进其 layout 的 QWidget。
+        """
         return self._content
 
     def _content_mutated(self):
-        """内容增删后同步刷新几何缓存 —— 布局的 invalidate()/activate() 只发异步
-        LayoutRequest、不碰 hint 缓存，唯有对 content 调 updateGeometry() 才同步
-        失效其几何缓存并通知父布局，保证打开中追加内容后面板 sizeHint 立即可用。"""
+        """内容增删后同步刷新几何缓存。
+
+        Note:
+            布局的 invalidate / activate 只发异步 LayoutRequest、不碰 hint
+            缓存；唯有对 content 调 updateGeometry() 才同步失效并通知父布局，
+            保证打开中追加内容后面板 sizeHint 立即可用。
+        """
         self._content.updateGeometry()
 
     def add_widget(self, widget: QWidget):
-        """向内容容器追加一个组件。"""
+        """向内容容器追加一个组件。
+
+        Args:
+            widget: 待追加的 QWidget；None 忽略。
+        """
         if widget is None:
             return
         self._content_layout.addWidget(widget)
@@ -94,7 +106,14 @@ class _DrawerPanel(QWidget):
         self._content_mutated()
 
     def set_content(self, widget: QWidget | None):
-        """用单个组件替换全部内容（旧的会被销毁）。"""
+        """用单个组件替换全部内容。
+
+        Args:
+            widget: 新内容；None 只清空。
+
+        Note:
+            旧内容由 clear_layout 销毁。
+        """
         clear_layout(self._content_layout)
         if widget is not None:
             widget.setParent(self._content)
@@ -103,7 +122,7 @@ class _DrawerPanel(QWidget):
         self._content_mutated()
 
     def clear_content(self):
-        """清空内容容器。"""
+        """清空内容容器并刷新几何缓存。"""
         clear_layout(self._content_layout)
         self._content_mutated()
 
@@ -111,11 +130,15 @@ class _DrawerPanel(QWidget):
     # 样式
     # ============================================================
     def apply_style(self, radius: str, placement: str, is_full: bool):
-        """按 radius / placement / size 刷新面板外观。
+        """按 radius/placement/size 刷新面板外观。
 
-        radius    - none | sm | md | lg
-        placement - left | right | top | bottom（决定削平哪一侧）
-        is_full   - size=full 时四角全平
+        Args:
+            radius: none/sm/md/lg。
+            placement: 贴边方向，决定削平哪一侧。
+            is_full: size=full 时四角全平。
+
+        Note:
+            同时同步 palette.Window，让子孙 widget 能读到面板实际底色。
         """
         self._radius = radius
         self._placement = placement
@@ -161,23 +184,45 @@ class _DrawerPanel(QWidget):
         self.update()
 
     def _bg(self) -> QColor:
-        """面板底色 —— HeroUI bg-content1（无独立 token，用 default 色阶换算）。"""
+        """面板底色。
+
+        Returns:
+            HeroUI bg-content1（无独立 token，用 default 色阶换算）：
+            暗色 default-900、亮色 #ffffff。
+        """
         dc = HEROUI_COLORS["default"]
         return QColor(dc[900]) if self._theme == "dark" else QColor("#ffffff")
 
     def bg_color(self) -> QColor:
-        """返回面板当前底色，供需要与面板融合的子组件读取。"""
+        """返回面板当前底色，供需要与面板融合的子组件读取。
+
+        Returns:
+            _bg() 的副本 QColor。
+        """
         return QColor(self._bg())
 
     # ============================================================
     # 关闭按钮
     # ============================================================
     def set_hide_close_button(self, hide: bool):
+        """切换关闭按钮显隐。
+
+        Args:
+            hide: True 隐藏关闭按钮。
+        """
         self._hide_close = bool(hide)
         self._sync_close_button()
 
     def set_close_button(self, widget: QWidget | None):
-        """换成自定义关闭按钮；传 None 恢复内置默认按钮。"""
+        """换成自定义关闭按钮。
+
+        Args:
+            widget: 新按钮；None 恢复内置默认按钮。
+
+        Note:
+            先挂父再显示，避免无父 widget 被系统当成顶层窗口闪一帧；
+            若新按钮带 clicked 信号则自动接上 close_requested。
+        """
         if self._close_btn is not None:
             safe_delete(self._close_btn)
             self._close_btn = None
@@ -194,7 +239,12 @@ class _DrawerPanel(QWidget):
         self._sync_close_button()
 
     def _sync_close_button(self):
-        """按 hide_close_button 决定是否创建 / 显示关闭按钮。"""
+        """按 hide_close_button 决定是否创建 / 显示关闭按钮。
+
+        Note:
+            隐藏时只 setVisible(False) 不销毁；显示时按需补建默认按钮，
+            并 raise_() 保证浮在内容之上。
+        """
         if self._hide_close:
             if self._close_btn is not None:
                 self._close_btn.setVisible(False)
@@ -205,7 +255,11 @@ class _DrawerPanel(QWidget):
         self._close_btn.raise_()
 
     def _ensure_default_close_button(self):
-        """内置关闭按钮 —— modal.ts 的 closeButton 规格（icon_only 圆形 light）。"""
+        """内置关闭按钮 —— modal.ts 的 closeButton 规格（icon_only 圆形 light）。
+
+        Note:
+            clicked 带 checked 参数，用 lambda *_ 丢掉避免把 bool 传进信号。
+        """
         btn = Button(
             icon="heroicons--x-mark",
             icon_only=True,
@@ -224,7 +278,12 @@ class _DrawerPanel(QWidget):
         self._place_close_button()
 
     def _place_close_button(self):
-        """关闭按钮绝对定位到右上角（top-1 / end-1）。"""
+        """关闭按钮绝对定位到右上角（top-1 / end-1）。
+
+        Note:
+            构造期未显示的 widget 的 width/height 是 640×480 默认值不可信；
+            用户锁定过尺寸（min==max）就尊重，否则按 sizeHint 收敛。
+        """
         btn = self._close_btn
         if btn is None:
             return
@@ -244,6 +303,11 @@ class _DrawerPanel(QWidget):
     # 主题
     # ============================================================
     def set_theme(self, theme: str):
+        """切换主题并重刷面板与内置关闭按钮。
+
+        Args:
+            theme: auto / light / dark。
+        """
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
         self.apply_style(self._radius, self._placement, self._is_full)
@@ -251,7 +315,14 @@ class _DrawerPanel(QWidget):
             self._close_btn.set_theme(self._theme)
 
     def apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用 —— 只改色，不重复注册。"""
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口只改色，不重复注册、不改 _theme_mode。
+        """
         self._theme = theme
         self.apply_style(self._radius, self._placement, self._is_full)
         if isinstance(self._close_btn, Button):
@@ -259,11 +330,24 @@ class _DrawerPanel(QWidget):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析成实际主题名。
+
+        Args:
+            mode: light / dark / auto。
+
+        Returns:
+            light / dark 原样返回；其余取 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     # ============================================================
     def resizeEvent(self, event):
+        """尺寸变化后重新摆放右上角关闭按钮。
+
+        Args:
+            event: Qt 尺寸变化事件。
+        """
         super().resizeEvent(event)
         self._place_close_button()

@@ -15,14 +15,10 @@ from ._helpers import _resolve_cursor_fill
 
 
 class _CursorWidget(QWidget):
-    """绝对定位的指示器层。父是 TabList。
-
-    根据 variant 绘制不同形态:
-      - solid/bordered/light: 整块圆角矩形 + (color=default 时画 shadow-small)
-      - underlined: 底部 2px 80% 宽度的水平线（垂直方向布局时改为右/左侧 2px 线）
-    """
+    """绝对定位指示器层：按 variant 画圆角块或底部 2px 80% 宽下划线。"""
 
     def __init__(self, parent=None):
+        """初始化指示器层，设置鼠标事件穿透与默认外观参数。"""
         super().__init__(parent)
         self.setAttribute(Qt.WA_TransparentForMouseEvents, True)
         self._variant = "solid"
@@ -44,6 +40,17 @@ class _CursorWidget(QWidget):
         underline_h=None,
         underline_ratio=None,
     ):
+        """批量更新指示器外观配置并触发重绘。
+
+        Args:
+            variant: 变体名，决定绘制圆角块或下划线。
+            color: 主题色名。
+            theme: 明暗主题名。
+            radius_px: 圆角半径，单位为像素。
+            placement: tabList 所处方位。
+            underline_h: 下划线厚度，单位为像素。
+            underline_ratio: 下划线占对应边长的比例。
+        """
         if variant is not None:
             self._variant = variant
         if color is not None:
@@ -61,6 +68,7 @@ class _CursorWidget(QWidget):
         self.update()
 
     def paintEvent(self, ev):
+        """按当前 variant 自绘圆角块或下划线，尺寸非正时跳过。"""
         if self.width() <= 0 or self.height() <= 0:
             return
         p = QPainter(self)
@@ -74,6 +82,7 @@ class _CursorWidget(QWidget):
         p.end()
 
     def _paint_filled(self, p: QPainter):
+        """绘制圆角矩形填充，default 亮色时额外叠加柔和阴影。"""
         rect = QRectF(0, 0, self.width(), self.height())
         fill = _resolve_cursor_fill(self._variant, self._color, self._theme)
         if fill is None:
@@ -99,6 +108,7 @@ class _CursorWidget(QWidget):
         p.fillPath(path, fill)
 
     def _paint_underline(self, p: QPainter):
+        """按 placement 在底边或侧边绘制下划线或竖线。"""
         line_color = _resolve_cursor_fill(self._variant, self._color, self._theme)
         if line_color is None:
             return

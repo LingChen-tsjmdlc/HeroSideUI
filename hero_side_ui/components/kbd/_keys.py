@@ -1,10 +1,4 @@
-"""Kbd 组件按键 token 映射。
-
-对齐 HeroUI v2 packages/components/kbd/src/utils.ts 的语义，并扩展：
-  - 新增 ``backspace`` (⌫) 与 HeroUI 的 ``delete`` (Forward Delete, 垃圾桶) 区分
-  - ``fn`` / ``alt`` 走 platform 路由，mac / win 各自 icon
-  - ``platform="auto"`` 时由 sys.platform 决定，可强制 ``"mac" / "win" / "linux"``
-"""
+"""Kbd 按键 token 映射：区分 backspace/delete；fn/alt 走平台路由。"""
 
 import sys
 
@@ -111,7 +105,11 @@ _PLATFORM_ICON_MAP = {
 
 
 def _detect_platform() -> str:
-    """根据 sys.platform 推断当前平台 token。"""
+    """根据 sys.platform 推断当前平台 token。
+
+    Returns:
+        str: "mac" / "win" / "linux"。
+    """
     p = sys.platform
     if p == "darwin":
         return "mac"
@@ -123,7 +121,12 @@ def _detect_platform() -> str:
 def resolve_icon(key: str, platform: str = "auto") -> str | None:
     """根据 key + platform 取实际 icon name；找不到返回 None。
 
-    platform: "auto" / "mac" / "win" / "linux"。
+    Args:
+        key: KbdKey 名称（如 "command" / "enter"）。
+        platform: "auto" / "mac" / "win" / "linux"，auto 时按当前系统推断。
+
+    Returns:
+        str | None: 实际 SVG icon 名；无对应图标返回 None。
     """
     if platform == "auto":
         platform = _detect_platform()

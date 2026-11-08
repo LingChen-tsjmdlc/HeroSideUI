@@ -1,15 +1,5 @@
-"""Markdown 组件主题预设。
-
-Markdown 大量复用现成组件（Title/Body/Link/Table/Image/Divider），它们各自的
-preset 已管好样式；这里只放 Markdown 独有、其它组件没有的视觉规格：
-
-- HEADING_SPEC：h1-h6 → (size token, weight)，喂给 Text
-- MARKDOWN_SPACING：块级元素垂直间距
-- MARKDOWN_LIST：列表缩进与无序符号
-- MARKDOWN_QUOTE：引用块左侧竖条与缩进
-- MARKDOWN_INLINE_CODE：行内 code 的底色/文字色 token（走 default 色阶 + alpha）
-
-颜色一律引用 colors.py 的 default 色阶，不写死 HEX。
+"""Markdown 独有规格：HEADING_SPEC、块间距、列表缩进、引用竖条、行内 code token。
+颜色引用 default 色阶不写死 HEX。
 """
 
 # h1-h6 → (字号 token, 字重)；token 取自 core.text_style.SIZE_MAP

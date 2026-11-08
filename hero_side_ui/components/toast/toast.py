@@ -1,10 +1,6 @@
-"""HeroSideUI Toast — 单条轻提示卡片（HeroUI v2 toast.ts）。
+"""Toast 单条卡片：icon + 标题/描述 + end_content，倒计时进度与拖拽关闭。
 
-结构：icon + (title / description) + end_content，右上角关闭按钮常显；
-倒计时可显示进度覆层（覆盖整卡从左推进），支持拖拽关闭。
-
-单卡只负责绘制 / 内容 / 倒计时；堆叠定位与进出场编排见 ``_region.py``，
-全局队列见 ``_provider.py``。
+堆叠与进出场见 _region.py；全局队列见 _provider.py。
 """
 
 from __future__ import annotations
@@ -84,6 +80,32 @@ class Toast(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """初始化 Toast 卡片并构建子控件与倒计时。
+
+        Args:
+            title: 卡片标题文本。
+            description: 卡片描述文本。
+            color: 语义配色名。
+            variant: 卡片外观变体。
+            radius: 圆角档位。
+            shadow: 阴影档位。
+            severity: 语义级别，用于选取默认图标。
+            icon: 自定义图标名；None 时按 severity 或 color 选取。
+            hide_icon: 为 True 时隐藏图标。
+            hide_close_button: 为 True 时隐藏关闭按钮。
+            end_content: 追加到卡片右侧的自定义控件。
+            timeout: 自动关闭时间（毫秒）；None 取预设值，非正数表示不自动关闭。
+            should_show_timeout_progress: 为 True 时绘制倒计时进度覆层。
+            is_loading: 为 True 时以 Spinner 代替图标。
+            on_close: 关闭时触发的回调。
+            disable_animation: 为 True 时关闭动画。
+            placement: 卡片弹出方位。
+            theme: 主题模式（light / dark / auto）。
+            parent: Qt 父对象。
+
+        Note:
+            timeout 为 None 时取 TOAST_SPEC 预设值，非正数表示不自动关闭；theme 为 auto 时向 ThemeProvider 注册以跟随主题切换。
+        """
         super().__init__(parent)
         self.setObjectName("HeroToast")
 
@@ -138,6 +160,7 @@ class Toast(QWidget):
     # ============================================================
 
     def _build_ui(self, description: str):
+        """搭建卡片内部的图标、文本列与关闭按钮布局。"""
         spec = TOAST_SPEC
         pad = self._shadow_pad()
 
@@ -238,14 +261,17 @@ class Toast(QWidget):
 
     @property
     def pad_top(self) -> int:
+        """返回卡片顶部为阴影预留的空间。"""
         return self._shadow_pad()
 
     @property
     def pad_bottom(self) -> int:
+        """返回卡片底部为阴影预留的空间。"""
         return self._shadow_pad()
 
     @property
     def pad_left(self) -> int:
+        """返回卡片左侧为阴影预留的空间。"""
         return self._shadow_pad()
 
     def content_height(self) -> int:
@@ -253,6 +279,7 @@ class Toast(QWidget):
         return max(0, self.height() - 2 * self._shadow_pad())
 
     def _content_rect(self) -> QRectF:
+        """返回扣除阴影留白与折叠内缩后的内容矩形。"""
         pad = self._shadow_pad()
         return QRectF(
             pad + self._width_inset,
@@ -262,26 +289,29 @@ class Toast(QWidget):
         )
 
     def _resolve_radius(self) -> float:
+        """解析当前圆角档位对应的像素半径。"""
         if self._radius == "full":
             return self.content_height() / 2.0
         return float(RADIUS.get(self._radius, RADIUS["md"]).rstrip("px"))
 
     def sizeHint(self):
+        """返回卡片的建议尺寸。"""
         return QSize(
             TOAST_SPEC["width"] + 2 * self._shadow_pad(),
             self.height() if self.height() > 0 else 64,
         )
 
     def resizeEvent(self, event):
+        """尺寸变化时触发内部重排。"""
         super().resizeEvent(event)
         self._relayout()
 
     def _relayout(self):
-        """按内容重算高度、标题截断、关闭按钮与 Spinner 位置。
+        """按内容重算高度与各子件位置。
 
-        高度手动累加而不用 layout sizeHint：wordWrap QLabel 的 sizeHint 有
-        "尽量方形"倾向，长描述会被虚增一截；描述行高必须按实际可用宽走
-        heightForWidth。layout margins 已含阴影外扩（pad + padding）。
+        Note:
+            高度手动累加——wordWrap QLabel 的 sizeHint 有虚增倾向，
+            描述行高需按可用宽走 heightForWidth。
         """
         if self._fade_pixmap is not None:
             return
@@ -315,12 +345,7 @@ class Toast(QWidget):
         self._spinner.move(self._icon_label.x(), self._icon_label.y())
 
     def _text_avail_width(self) -> int:
-        """文本列真实宽度（标题截断与描述换行估算共用）。
-
-        构造期尚未被 region 定宽（width 还是 Qt 默认 100）：按临时宽度算
-        elide 会得到空串，故回落到 sizeHint 宽；region resize 后
-        resizeEvent 会按真实宽度重算。
-        """
+        """取文本列真实宽度；构造期未定宽时回落 sizeHint。"""
         w = max(self.width(), self.sizeHint().width())
         pad = self._shadow_pad()
         rect_w = max(0.0, w - 2 * pad - 2 * self._width_inset)
@@ -371,6 +396,7 @@ class Toast(QWidget):
     # ============================================================
 
     def paintEvent(self, event):
+        """绘制卡片外观，淡入淡出期间改画半透明快照。"""
         # 淡入淡出期间：子件已隐藏，改画半透明快照
         if self._fade_pixmap is not None:
             if self._paint_opacity <= 0.001:
@@ -443,6 +469,7 @@ class Toast(QWidget):
     # ============================================================
 
     def _apply_styles(self):
+        """重建颜色 token 并应用到标题、描述、关闭按钮与图标。"""
         self._styles = build_toast_styles(self._variant, self._color, self._theme)
         s = self._styles
         self._title_label.set_color(s["title_color"])
@@ -452,12 +479,14 @@ class Toast(QWidget):
         self.update()
 
     def _resolve_icon_name(self) -> str | None:
+        """返回当前应显示的图标名，自定义图标优先。"""
         if self._icon_src:
             return self._icon_src
         key = self._severity or self._color
         return TOAST_SEVERITY_ICONS.get(key, TOAST_SEVERITY_ICONS["default"])
 
     def _refresh_icon(self):
+        """按隐藏或加载状态刷新图标与 Spinner 的显示。"""
         if self._hide_icon or self._loading:
             self._icon_label.hide()
             return
@@ -504,10 +533,12 @@ class Toast(QWidget):
         self._paused = paused
 
     def stop_countdown(self):
+        """停止倒计时并清除暂停态。"""
         self._timer.stop()
         self._paused = False
 
     def _on_tick(self):
+        """更新倒计时进度，到点发出 timeout_reached 信号。"""
         elapsed = self._elapsed_before + (0 if self._paused else self._clock.elapsed())
         if self._timeout <= 0:
             return
@@ -523,10 +554,12 @@ class Toast(QWidget):
     # ============================================================
 
     def enterEvent(self, event):
+        """进入卡片时发出 hover_changed(True) 信号。"""
         self.hover_changed.emit(True)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """离开卡片时发出 hover_changed(False) 信号；拖拽中跳过。"""
         if self._drag_origin is not None:
             super().leaveEvent(event)
             return
@@ -534,6 +567,7 @@ class Toast(QWidget):
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):
+        """记录拖拽起点并发出 drag_started 信号。"""
         if event.button() == Qt.MouseButton.LeftButton:
             self._drag_origin = event.globalPosition().toPoint()
             self._drag_delta = QPoint()
@@ -541,6 +575,7 @@ class Toast(QWidget):
         super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """拖拽中计算位移并发出 drag_moved 信号。"""
         if self._drag_origin is None:
             super().mouseMoveEvent(event)
             return
@@ -549,6 +584,7 @@ class Toast(QWidget):
         super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """拖拽结束时发出 drag_finished 信号并清理拖拽态。"""
         if self._drag_origin is None:
             super().mouseReleaseEvent(event)
             return
@@ -569,6 +605,7 @@ class Toast(QWidget):
         return dx <= -TOAST_SPEC["swipe_threshold_x"]
 
     def _on_close_clicked(self):
+        """关闭按钮点击：停倒计时、执行回调并发出 closed 信号。"""
         self.stop_countdown()
         if self._on_close:
             self._on_close()
@@ -583,6 +620,7 @@ class Toast(QWidget):
         return shiboken6.isValid(self)
 
     def set_opacity(self, value: float):
+        """设置整卡绘制透明度。"""
         self._set_paint_opacity(value)
 
     # ============================================================
@@ -590,9 +628,11 @@ class Toast(QWidget):
     # ============================================================
 
     def _get_paint_opacity(self) -> float:
+        """返回当前整卡绘制透明度。"""
         return self._paint_opacity
 
     def _set_paint_opacity(self, value: float):
+        """钳制并应用整卡绘制透明度，必要时启用或结束快照。"""
         value = max(0.0, min(1.0, float(value)))
         if abs(value - self._paint_opacity) < 0.001:
             return
@@ -625,10 +665,7 @@ class Toast(QWidget):
         self.update()
 
     def _apply_child_visible(self, w, visible: bool):
-        """快照淡入淡出期间子件显隐由快照接管：只记录意图，不动 widget。
-
-        否则中途 setVisible(True) 的子件（如 set_folded 恢复关闭按钮）会
-        以全不透明叠在半透明快照上，入场卡上出现实心 X。"""
+        """快照淡入淡出期间只记录子件显隐意图，不动 widget（防实心 X 重影）。"""
         if self._fade_pixmap is not None:
             if visible and w not in self._snapshot_visible:
                 self._snapshot_visible.append(w)
@@ -656,14 +693,17 @@ class Toast(QWidget):
         self.update()
 
     def _get_width_inset(self) -> float:
+        """返回当前背景左右内缩量。"""
         return self._width_inset
 
     def _set_width_inset_prop(self, value: float):
+        """设置背景左右内缩量，供 Qt 属性动画调用。"""
         self.set_width_inset(value)
 
     width_inset = Property(float, _get_width_inset, _set_width_inset_prop)
 
     def animate_width_inset(self, target: float):
+        """把背景内缩量动画过渡到目标值。"""
         tween_property(
             self,
             "_inset_anim",
@@ -678,6 +718,7 @@ class Toast(QWidget):
         self._relayout()
 
     def set_placement(self, placement: str):
+        """设置卡片弹出方位。"""
         self._placement = placement
 
     def set_loading(self, loading: bool):
@@ -695,6 +736,7 @@ class Toast(QWidget):
         self.content_changed.emit()
 
     def set_title(self, title: str):
+        """更新标题文本并重排、通知外层。"""
         if not self._alive():
             return
         self._title_text = title
@@ -703,6 +745,7 @@ class Toast(QWidget):
         self.content_changed.emit()
 
     def set_description(self, description: str):
+        """更新描述文本并重排、通知外层。"""
         if not self._alive():
             return
         self._desc_label.setText(description)
@@ -711,6 +754,7 @@ class Toast(QWidget):
         self.content_changed.emit()
 
     def set_end_content(self, widget: QWidget | None):
+        """替换卡片右侧的自定义控件并重排。"""
         if not self._alive():
             return
         if self._end_content is not None:
@@ -728,24 +772,28 @@ class Toast(QWidget):
         self.content_changed.emit()
 
     def set_color(self, color: str):
+        """更新语义配色并重新应用样式。"""
         if not self._alive():
             return
         self._color = color
         self._apply_styles()
 
     def set_variant(self, variant: str):
+        """更新外观变体并重新应用样式。"""
         if not self._alive():
             return
         self._variant = variant
         self._apply_styles()
 
     def set_radius(self, radius: str):
+        """更新圆角档位并请求重绘。"""
         if not self._alive():
             return
         self._radius = radius
         self.update()
 
     def set_shadow(self, shadow: str):
+        """更新阴影档位并重排、请求重绘。"""
         if not self._alive():
             return
         self._shadow = shadow
@@ -753,6 +801,7 @@ class Toast(QWidget):
         self.update()
 
     def set_hide_icon(self, hide: bool):
+        """设置是否隐藏图标并刷新图标显示。"""
         if not self._alive():
             return
         self._hide_icon = hide
@@ -760,6 +809,7 @@ class Toast(QWidget):
         self._relayout()
 
     def set_hide_close_button(self, hide: bool):
+        """设置是否隐藏关闭按钮并刷新其可见性。"""
         if not self._alive():
             return
         self._hide_close = hide
@@ -774,15 +824,18 @@ class Toast(QWidget):
         self._refresh_close_visibility()
 
     def _refresh_close_visibility(self):
+        """按隐藏标志与折叠态刷新关闭按钮可见性。"""
         self._apply_child_visible(self._close_btn, not self._hide_close and not self._folded)
 
     def set_show_timeout_progress(self, show: bool):
+        """设置是否绘制倒计时进度覆层并请求重绘。"""
         if not self._alive():
             return
         self._show_progress = show
         self.update()
 
     def set_theme(self, theme: str):
+        """切换主题模式，auto 时向 ThemeProvider 注册或注销。"""
         if not self._alive():
             return
         if theme == "auto":
@@ -797,6 +850,7 @@ class Toast(QWidget):
         self._apply_provider_theme(self._theme)
 
     def _apply_provider_theme(self, theme: str):
+        """应用主题到各子控件并重建样式。"""
         self._theme = theme
         self._title_label.set_theme(theme)
         self._desc_label.set_theme(theme)
@@ -805,6 +859,7 @@ class Toast(QWidget):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的 light 或 dark 值。"""
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme

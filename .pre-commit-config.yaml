@@ -5,6 +5,17 @@ repos:
   # 注意: 版本号自动递增已移至 .git/hooks/post-commit，
   # 不再通过 pre-commit 框架管理（post-commit 阶段 + amend 方式）。
 
+  # 铁律 8（口径见 REFACTORING.md 13.7）：单文件物理行数 ≤ 1000
+  # 仅在本地提交阶段拦截，CI 不重复检查
+  - repo: local
+    hooks:
+      - id: check-file-lines
+        name: File Lines | 单文件行数上限检查
+        entry: python .hooks/check_file_lines.py
+        language: system
+        types: [python]
+        pass_filenames: true
+
   # ============================================================
   # Ruff — lint + format（等价 TS 生态 ESLint + Prettier）
   # 规则配置见 ruff.toml；版本升级改 rev 后跑 pre-commit install 一次即可

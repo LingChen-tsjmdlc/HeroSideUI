@@ -1,14 +1,6 @@
-"""行内真 widget 的逃生舱容器 ``_InlineFlow``（默认不启用）。
+"""行内真 widget 逃生舱容器 _InlineFlow：仅用户显式传 inline_widgets 时启用。
 
-**仅当用户显式传 ``inline_widgets``** 指定某类行内元素要渲染成独立 QWidget（如 citation
-角标这类需要点击/hover 的特例）时，含该类元素的段落才降级为本容器。默认 99% 场景走单个
-富文本 ``Text``，连续框选、换行正常，根本不进这里。
-
-选区取舍
-    只有真 widget 会打断选区。两个 widget 之间的连续文字合并成一个富文本 ``Text``（其内部
-    连续可选），仅跨 widget 边界断开（Qt 选区依赖单一 QTextControl，不跨独立 widget）。
-    文字块 ``WordWrap=False``：在 FlowLayout 里按自然宽度摆放、由 FlowLayout 在块之间换行，
-    避免开 WordWrap 后被 FlowLayout 挤成又窄又高的一列。子项创建全部显式传 parent。
+只有真 widget 处打断选区，之间的连续文字仍合并为富文本块。
 """
 
 from __future__ import annotations
@@ -37,16 +29,15 @@ _FORMAT_TYPES = ("strong", "em", "s")
 class InlineWidgetContext:
     """传给 inline_widget 工厂的上下文。
 
-    属性：
-        type:    节点类型（code_inline / link / image / ...）
-        content: 节点纯文本（= text 别名）
-        text:    节点纯文本
-        href:    链接地址（仅 link）
-        src/alt: 图片地址 / 替代文本（仅 image）
-        theme:   当前主题
-        parent:  应作为返回 widget 父级的容器
-    方法：
-        default(): 退回该类型的内置默认 QWidget
+    Attributes:
+        type: 节点类型。
+        content: 节点纯文本（= text 别名）。
+        text: 节点纯文本。
+        href: 链接地址（仅 link）。
+        src: 图片地址（仅 image）。
+        alt: 替代文本（仅 image）。
+        theme: 当前主题。
+        parent: 应作为返回 widget 父级的容器。
     """
 
     def __init__(
@@ -57,6 +48,15 @@ class InlineWidgetContext:
         parent: QWidget,
         default_fn: Callable[[], QWidget],
     ):
+        """构造行内 widget 上下文。
+
+        Args:
+            node: 当前行内语法树节点。
+            plain: 节点纯文本。
+            theme: 当前主题。
+            parent: 应作为返回 widget 父级的容器。
+            default_fn: 内置默认 widget 工厂，调用即返回默认 widget。
+        """
         self.type = node.type
         self.content = plain
         self.text = plain
@@ -69,6 +69,11 @@ class InlineWidgetContext:
         self._default_fn = default_fn
 
     def default(self) -> QWidget:
+        """调用内置默认 widget 工厂。
+
+        Returns:
+            QWidget: 默认渲染的 widget。
+        """
         return self._default_fn()
 
 
@@ -76,6 +81,14 @@ InlineWidget = Callable[[InlineWidgetContext], QWidget]
 
 
 def _plain_text(node: SyntaxTreeNode) -> str:
+    """递归取节点纯文本（text / code_inline 取 content，其余取子节点拼接）。
+
+    Args:
+        node: 语法树节点。
+
+    Returns:
+        str: 拼接后的纯文本。
+    """
     if node.type in ("text", "code_inline"):
         return node.content
     return "".join(_plain_text(c) for c in node.children)
@@ -119,6 +132,16 @@ class _InlineFlow(QWidget):
         sheet: InlineStyleSheet | None = None,
         footnote_texts: dict[str, str] | None = None,
     ):
+        """构建流式段落：遍历行内节点，文字累积为富文本块、widget 型处插入真 widget。
+
+        Args:
+            inline: 段落的 inline 语法树节点。
+            theme: 当前主题。
+            inline_widgets: 用户自定义 widget 工厂（按节点类型分键）。
+            parent: 父控件。
+            sheet: 行内样式表；缺省按主题新建。
+            footnote_texts: 脚注文本映射（显示序号 → 正文）。
+        """
         super().__init__(parent)
         self._theme = theme
         self._inline_widgets = inline_widgets or {}
@@ -133,6 +156,7 @@ class _InlineFlow(QWidget):
 
     # ---- 遍历：非 widget 累积 HTML，widget 处 flush ----
     def _emit_children(self, node: SyntaxTreeNode, fmt: frozenset) -> None:
+        """递归遍历行内节点：widget 型 flush 文字并插入 widget，其余累积为 HTML。"""
         for child in node.children:
             t = child.type
             if t in self._wtypes:
@@ -154,9 +178,27 @@ class _InlineFlow(QWidget):
                 self._emit_children(child, fmt)
 
     def _wrap_fmt(self, inner: str, fmt: frozenset) -> str:
+        """按累计格式集合包裹 inner HTML。
+
+        Args:
+            inner: 待包裹文本。
+            fmt: 已累计的 strong/em/s 集合。
+
+        Returns:
+            str: 包裹后的 HTML 片段。
+        """
         return self._sheet.wrap(inner, fmt)
 
     def _render_inline_html(self, node: SyntaxTreeNode, fmt: frozenset) -> str:
+        """递归渲染 link 内部子节点为 HTML（处理嵌套 strong/em/code）。
+
+        Args:
+            node: 行内节点（通常是 link）。
+            fmt: 已累计格式集合。
+
+        Returns:
+            str: 内层 HTML 片段。
+        """
         parts: list[str] = []
         for c in node.children:
             if c.type == "text":
@@ -187,6 +229,11 @@ class _InlineFlow(QWidget):
 
     # ---- widget 型行内 ----
     def _add_widget(self, node: SyntaxTreeNode) -> None:
+        """将 widget 型行内节点渲染为真实 widget 并加入流式布局。
+
+        Args:
+            node: widget 型行内节点（如 footnote_ref / code_inline / link / image）。
+        """
         plain = _plain_text(node)
         default_fn = self._make_default_fn(node, plain)
         override = self._inline_widgets.get(node.type)
@@ -204,6 +251,7 @@ class _InlineFlow(QWidget):
         self._flow.addWidget(widget)
 
     def _make_default_fn(self, node: SyntaxTreeNode, plain: str) -> Callable[[], QWidget]:
+        """返回节点默认 widget 工厂（footnote_ref→角标，code→Chip，link→Link，image→Image）。"""
         t = node.type
         theme = self._theme
 

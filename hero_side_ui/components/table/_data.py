@@ -1,12 +1,4 @@
-"""Table 数据装配 API（mixin）：列定义 / 行增删 / 渲染回调。
-
-把 set_columns / add_row / set_rows / clear / set_render_cell 等数据入口从主体抽出。
-这些方法负责更新内部数据状态后触发 ``_rebuild``。
-
-宿主 Table 需提供：_columns/_row_order/_row_data/_row_disabled_flags/
-_render_cell/_selected_keys/_user_disabled_keys/_disabled_keys/_hover_key
-以及 _rebuild 方法。
-"""
+"""Table 数据装配 mixin：列定义/行增删/渲染回调，更新后触发 _rebuild。"""
 
 from __future__ import annotations
 
@@ -16,15 +8,13 @@ from ._constants import VALID_ALIGNS
 
 
 class _DataMixin:
+    """表格数据装配 mixin，负责列定义、行增删与渲染回调。"""
+
     # ------------------------------------------------------------
     # 列
     # ------------------------------------------------------------
     def set_columns(self, columns: list):
-        """设置列定义。
-
-        每列是 dict：``{"key", "label", "align"?, "allows_sorting"?, "width"?}``。
-        列定义与当前完全一致时跳过重建（翻页/刷新常重复传同一份列，避免白白全量重建）。
-        """
+        """设置列定义；与当前一致时跳过重建（翻页场景优化）。"""
         normalized = []
         for col in columns:
             normalized.append(
@@ -44,17 +34,14 @@ class _DataMixin:
         self._rebuild()
 
     def columns(self) -> list:
+        """返回当前列定义的副本。"""
         return list(self._columns)
 
     # ------------------------------------------------------------
     # 行
     # ------------------------------------------------------------
     def add_row(self, key: str, cells, *, is_disabled: bool = False):
-        """追加一行。
-
-        ``cells`` 可为 dict（col_key -> 值）或 list（按列顺序）。值可为 str 或 QWidget。
-        若设置了 render_cell 回调，则忽略此处传入值的渲染，交由回调生成内容。
-        """
+        """追加一行；cells 可为 dict 或 list，值可为 str 或 QWidget。"""
         key = str(key)
         if key in self._row_data:
             return
@@ -88,6 +75,17 @@ class _DataMixin:
         self._disabled_keys = set(self._user_disabled_keys) | inline
 
     def _normalize_cells(self, cells) -> dict:
+        """把行单元格归一化为按列 key 索引的字典。
+
+        Args:
+            cells: 单元格值；dict 直接复制，list 按列顺序映射。
+
+        Returns:
+            以列 key 为键的单元格字典。
+
+        Note:
+            list 按列顺序映射且用 strict=False，长度不匹配时静默截断，未做校验。
+        """
         if isinstance(cells, dict):
             return dict(cells)
         # list：按列顺序映射
@@ -97,6 +95,7 @@ class _DataMixin:
         return result
 
     def clear(self):
+        """清空所有行、选中项与悬停态并触发重建。"""
         self._row_order = []
         self._row_data = {}
         self._row_disabled_flags = {}
@@ -111,9 +110,19 @@ class _DataMixin:
         self._rebuild()
 
     def rows(self) -> list:
+        """返回当前行 key 顺序的副本。"""
         return list(self._row_order)
 
     def _make_cell_content(self, row_key: str, col_key: str):
+        """按行与列 key 生成单元格内容。
+
+        Args:
+            row_key: 行 key。
+            col_key: 列 key。
+
+        Returns:
+            原始值；设置了 _render_cell 时返回其回调结果。
+        """
         value = self._row_data.get(row_key, {}).get(col_key, "")
         if self._render_cell is not None:
             return self._render_cell(row_key, col_key, value)

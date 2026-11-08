@@ -1,12 +1,4 @@
-"""Image isBlurred 副本图层。
-
-对应 HeroUI:
-    blur-lg (≈ 16px) + scale-105 + saturate-150 + opacity-30 + translate-y-1
-
-用一份 saturated 后的 QPixmap 配合 QGraphicsBlurEffect 实现。
-默认 blur 半径调为 10px（比 HeroUI 原生更温和），
-可通过 blur_amount 倍率调整。
-"""
+"""Image isBlurred 副本图层：saturated pixmap + 模糊，默认 10px 可倍率调。"""
 
 from __future__ import annotations
 
@@ -23,7 +15,15 @@ _DEFAULT_BLUR_RADIUS = 10.0
 
 
 def _saturate(image: QImage, factor: float = 1.5) -> QImage:
-    """模拟 CSS saturate(150%)：基于 HSV-S 通道缩放每个像素。"""
+    """模拟 CSS saturate(150%)：基于 HSV-S 通道缩放每个像素。
+
+    Args:
+        image: 源 QImage。
+        factor: 饱和度倍率，默认 1.5。
+
+    Returns:
+        转为 ARGB32 并逐像素调整饱和度后的新 QImage；空图原样返回。
+    """
     if image.isNull():
         return image
     img = image.convertToFormat(QImage.Format.Format_ARGB32)
@@ -39,7 +39,15 @@ def _saturate(image: QImage, factor: float = 1.5) -> QImage:
 
 
 def _apply_alpha(pixmap: QPixmap, alpha: float) -> QPixmap:
-    """整图 alpha 预乘——用 DestinationIn 涂半透明遮罩。"""
+    """整图 alpha 预乘。
+
+    Args:
+        pixmap: 源 QPixmap。
+        alpha: 目标不透明度 0.0 ~ 1.0。
+
+    Returns:
+        用 DestinationIn 涂半透明遮罩后的新 QPixmap；空图原样返回。
+    """
     if pixmap.isNull():
         return pixmap
     out = QPixmap(pixmap.size())
@@ -54,7 +62,14 @@ def _apply_alpha(pixmap: QPixmap, alpha: float) -> QPixmap:
 
 
 def _shrink_for_processing(pm: QPixmap) -> QPixmap:
-    """把图缩到 _MAX_PROCESS_SIZE 内，便于像素级 saturate。"""
+    """把图缩到 _MAX_PROCESS_SIZE 内，便于像素级 saturate。
+
+    Args:
+        pm: 源 QPixmap。
+
+    Returns:
+        保持宽高比缩到 200px 内的 QPixmap；原本就不超长的原样返回。
+    """
     if pm.isNull():
         return pm
     if max(pm.width(), pm.height()) <= _MAX_PROCESS_SIZE:
@@ -75,6 +90,12 @@ class BlurredImage(QLabel):
         parent: QWidget | None = None,
         blur_amount: float = 1.0,
     ):
+        """创建模糊副本图层。
+
+        Args:
+            parent: Qt 父对象。
+            blur_amount: 模糊强度倍率；默认 1.0 对应 10px 半径。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setScaledContents(True)
@@ -88,11 +109,19 @@ class BlurredImage(QLabel):
         self._processed: QPixmap | None = None
 
     def set_blur_amount(self, amount: float):
-        """运行期调整模糊强度倍率。"""
+        """运行期调整模糊强度倍率。
+
+        Args:
+            amount: 新倍率；负值按 0 处理。
+        """
         self._blur.setBlurRadius(_DEFAULT_BLUR_RADIUS * max(0.0, float(amount)))
 
     def set_source(self, pixmap: QPixmap):
-        """设置图源；内部做 shrink → saturate(1.5) → alpha=0.3 预处理。"""
+        """设置图源并做 shrink → saturate(1.5) → alpha=0.3 预处理。
+
+        Args:
+            pixmap: 源 QPixmap；None 或空图时清空图层。
+        """
         if pixmap is None or pixmap.isNull():
             self._processed = None
             self.clear()

@@ -1,21 +1,4 @@
-"""Table 颜色解析纯函数。对齐 HeroUI v2 table.ts 的 slots/variants 颜色 token。
-
-table.ts 关键映射:
-  - th: bg-default-100, text-foreground-500（hover text-foreground-400）
-  - td before（选中行条）: color variant 决定
-      default  before:bg-default/60   selected text-default-foreground
-      primary  before:bg-primary/20   selected text-primary
-      secondary before:bg-secondary/20 selected text-secondary
-      success  before:bg-success/20   selected text-success-600 / dark success
-      warning  before:bg-warning/20   selected text-warning-600 / dark warning
-      danger   before:bg-danger/20    selected text-danger / dark danger-500
-  - isSelectable hover（未选中行）: before:bg-default-100 opacity-70
-  - isStriped 奇数行: before:bg-default-100
-  - disabled 行: text-foreground-300
-
-wrapper（content1 背景 + 阴影 + 圆角）改由现成 Card 组件承载，本模块不再自绘。
-所有函数无状态、返回 QColor / int，供自绘 QPainter 直接用。
-"""
+"""Table 颜色纯函数：th/选中行条/hover/斑马/禁用 token，对齐 table.ts。"""
 
 from __future__ import annotations
 
@@ -42,15 +25,33 @@ _TRANSPARENT = QColor(0, 0, 0, 0)
 
 
 def wrapper_bg(theme: str) -> QColor:
-    """表体实心底色（content1）。light: #ffffff；dark: default-900。
+    """返回表体实心底色。
 
-    滚动区内必须有一层不透明底，否则半透明行条叠在未清空缓冲上会黑底 + 重影。
+    Args:
+        theme: 主题名；light 取白色，dark 取 default-900。
+
+    Returns:
+        恒为不透明的 QColor 底色。
+
+    Note:
+        滚动区内必须铺不透明底，否则半透明行条叠在未清空缓冲上会黑底加重影。
     """
     dc = HEROUI_COLORS["default"]
     return QColor("#ffffff") if theme == "light" else QColor(dc[900])
 
 
 def _pal(color: str) -> dict:
+    """按语义色名取调色板，未知色回退 default。
+
+    Args:
+        color: 语义色名。
+
+    Returns:
+        对应的调色板字典。
+
+    Note:
+        color 不在 HEROUI_COLORS 时回退到 default，未做校验。
+    """
     return HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
 
 
@@ -86,9 +87,17 @@ def cell_text_disabled(theme: str) -> QColor:
 
 
 def selected_before_bg(color: str, theme: str) -> QColor:
-    """选中行条背景色（td data-selected before:bg-*）。
+    """返回选中行条的背景色。
 
-    default 走 default/60；其余语义色走 color-500/20。
+    Args:
+        color: 语义色名。
+        theme: 主题名。
+
+    Returns:
+        带透明度的 QColor。
+
+    Note:
+        default 取 default 色阶并设 0.45 透明度，其余语义色取 500 并设 0.20。
     """
     if color == "default":
         c = QColor(HEROUI_COLORS["default"][400 if theme == "light" else 600])

@@ -1,40 +1,7 @@
-"""
-HeroSideUI 全局滚动条样式管理器 (ScrollStyle)
+"""ScrollStyle：全局滚动条样式（细线 + hover 动画加粗变色，随主题切换）。
 
-为整个应用提供统一的细线条滚动条样式，支持 hover 时**带动画过渡**地变粗 + 变色，
-并在 ThemeProvider 主题切换时自动跟随。
-
-设计参照 HeroUI 的"细线 + hover 加粗 + hover 加深"风格：
-    - 默认细 6px，hover 加粗 +2px = 8px（ease-out，duration 默认 150ms）
-    - 默认色用 default 色阶 300 (亮) / 700 (暗)，hover 加深到 400 / 600
-    - 颜色支持 default / primary / secondary / success / warning / danger（同 Button 等组件）
-
-实现两层架构：
-    1) **静态层**：`apply_global()` 注入 QApplication QSS（无 :hover 选择器，
-       只设默认状态）。这层让所有 QScrollBar 都先有正确的"细 + 暗"初始外观。
-    2) **动画层**：QApplication eventFilter 拦截所有 QScrollBar 的 Enter/Leave 事件，
-       为每条 bar 启动 QVariantAnimation 在 0→1 间插值。回调里把 thickness 和
-       handle 颜色按进度算出，setStyleSheet 局部覆盖到那条 bar 上，达成丝滑过渡。
-
-为什么不用 QSS `:hover`？
-    - Qt QSS 的 `QScrollBar:hover { width: ... }` 不会触发布局重算（width 只在
-      widget 创建时被读一次）
-    - QSS 不支持 transition（CSS 的过渡能力，Qt 没实现）
-    - 所以必须用 Python 动画驱动，逐帧重设 stylesheet
-
-用法：
-    from hero_side_ui import ScrollStyle, ThemeProvider
-    ThemeProvider.instance()
-    ScrollStyle.instance().apply_global()  # 一行接入
-
-    # 配置
-    ScrollStyle.instance().set_thickness(8)
-    ScrollStyle.instance().set_hover_thickness_delta(3)
-    ScrollStyle.instance().set_color("primary")
-    ScrollStyle.instance().set_duration(200)  # 动画时长（ms）
-
-主题联动：
-    ScrollStyle 监听 ThemeProvider.theme_changed，主题切换时自动重新 apply_global()
+两层实现：QSS 静态层给默认外观；事件过滤器动画层逐帧插值 handle 粗细
+与颜色（QSS 无 transition 能力，必须 Python 驱动）。
 """
 
 from __future__ import annotations
@@ -68,6 +35,7 @@ class ScrollStyle(QObject):
 
     @classmethod
     def instance(cls) -> ScrollStyle:
+        """获取单例并幂等激活全局滚动条样式。"""
         if cls._instance is None:
             cls._instance = cls()
         # 幂等自动激活（仿 FontProvider.ensure_loaded 模式）：
@@ -77,10 +45,10 @@ class ScrollStyle(QObject):
         return cls._instance
 
     def ensure_applied(self) -> bool:
-        """幂等激活：已装则跳、QApplication 不在则跳（不标志位，等 app 起来再试）。
+        """幂等激活：已装则跳过；QApplication 未就绪时不置标志，等下次再试。
 
-        设计参考 FontProvider.ensure_loaded。core 内部以及任何 instance() 调用者都
-        会隔空触发这个函数；ThemeProvider 初始化时也会调一次。
+        Returns:
+            是否已安装。
         """
         if self._applied:
             return True
@@ -90,6 +58,7 @@ class ScrollStyle(QObject):
         return True
 
     def __init__(self):
+        """初始化默认配置并订阅主题变更。"""
         super().__init__()
         # 默认配置
         self._thickness: int = 6
@@ -119,24 +88,36 @@ class ScrollStyle(QObject):
     # 配置 setter
     # ============================================================
     def set_thickness(self, px: int):
+        """设置滚动条基准粗细。"""
         self._thickness = max(2, int(px))
         self._reapply_if_active()
 
     def set_hover_thickness_delta(self, delta_px: int):
+        """设置 hover 时增加的粗细量。"""
         self._hover_thickness_delta = max(0, int(delta_px))
         self._reapply_if_active()
 
     def set_color(self, color: str):
+        """设置全局滚动条语义色。
+
+        Args:
+            color: 目标语义色名。
+
+        Note:
+            色名须在 VALID_COLORS 内，否则抛 ValueError。
+        """
         if color not in VALID_COLORS:
             raise ValueError(f"color must be one of {VALID_COLORS}, got {color!r}")
         self._color = color
         self._reapply_if_active()
 
     def set_min_handle_length(self, px: int):
+        """设置 handle 最小长度。"""
         self._min_handle_length = max(8, int(px))
         self._reapply_if_active()
 
     def set_track_padding(self, px: int):
+        """设置轨道内边距。"""
         self._track_padding = max(0, int(px))
         self._reapply_if_active()
 
@@ -145,6 +126,7 @@ class ScrollStyle(QObject):
         self._duration = max(0, int(ms))
 
     def set_easing(self, easing: QEasingCurve.Type):
+        """设置 hover 动画缓动曲线。"""
         self._easing = easing
 
     def set_shadow_alpha(self, *, light: int | None = None, dark: int | None = None):
@@ -167,35 +149,32 @@ class ScrollStyle(QObject):
     # ============================================================
     @property
     def thickness(self) -> int:
+        """当前滚动条基准粗细。"""
         return self._thickness
 
     @property
     def hover_thickness(self) -> int:
+        """hover 状态下的滚动条粗细。"""
         return self._thickness + self._hover_thickness_delta
 
     @property
     def color(self) -> str:
+        """当前全局滚动条语义色。"""
         return self._color
 
     # ============================================================
     # 单条 bar 颜色覆盖（典型用例: Textarea 让滚动条跟随自己的 color 属性）
     # ============================================================
     def set_bar_color(self, bar: QScrollBar, color: str | None):
-        """给单条 QScrollBar 注册一个颜色意图，覆盖全局 self._color
+        """给单条 QScrollBar 注册颜色意图，覆盖全局色。
 
         Args:
-            bar: 目标 QScrollBar 实例（如 textarea.plain_text_edit.verticalScrollBar()）
-            color: 颜色名（"primary" / "default" / ...）；传 None 撤销覆盖回到全局色
+            bar: 目标 QScrollBar 实例。
+            color: 颜色名；None 撤销覆盖回到全局色。
 
-        生效时机：
-            - 立即重新计算该 bar 的当前 stylesheet（不动画）
-            - 之后 hover 进出动画也会读这个 color
-
-        使用模式（在组件 _apply_styles 末尾）：
-            from hero_side_ui import ScrollStyle
-            ScrollStyle.instance().set_bar_color(
-                self.plain_text_edit.verticalScrollBar(), self._color
-            )
+        Note:
+            立即重算该 bar 当前 stylesheet（不动画），之后 hover 动画也读此色。
+            典型用法在组件 _apply_styles 末尾调用。
         """
         if color is not None and color not in VALID_COLORS:
             raise ValueError(f"color must be one of {VALID_COLORS}, got {color!r}")
@@ -215,6 +194,7 @@ class ScrollStyle(QObject):
         return c
 
     def _bar_uses_custom_color(self, bar: QScrollBar) -> bool:
+        """判断该 bar 是否使用了自定义颜色。"""
         c = bar.property("_hs_scroll_color")
         return c is not None and c != "" and c in VALID_COLORS and c != self._color
 
@@ -239,12 +219,14 @@ class ScrollStyle(QObject):
     # 颜色 ramp：亮色 300→400，暗色 700→600
     # ============================================================
     def _resolve_handle_colors(self, color: str, is_dark: bool) -> tuple[QColor, QColor]:
+        """按主题解析 handle 的 normal 与 hover 颜色。"""
         ramp = HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
         if is_dark:
             return QColor(ramp[700]), QColor(ramp[600])
         return QColor(ramp[300]), QColor(ramp[400])
 
     def _is_dark(self) -> bool:
+        """判断当前主题是否为暗色。"""
         try:
             return ThemeProvider.instance().current_theme == "dark"
         except Exception:
@@ -270,10 +252,10 @@ class ScrollStyle(QObject):
         改 margin 就能"加粗"，不必触发 layout 重算（QSS width 不能动态生效）。
 
         Args:
-            thickness: 当前视觉粗细
-            handle_color: 当前 handle 填充色
-            border_color: 当前 border 颜色（含 alpha），None = 不画 border
-                          —— 用 alpha 渐变模拟"hover 时阴影消失"
+            thickness: 当前视觉粗细。
+            handle_color: 当前 handle 填充色。
+            border_color: 当前 border 颜色（含 alpha）；None 不画 border，
+                alpha 渐变模拟 hover 时阴影消失。
         """
         ht = self.hover_thickness  # widget 实际 width 永远 = 最大值
         margin_lr = max(0, (ht - thickness) // 2)
@@ -334,15 +316,14 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
         """.strip()
 
     def build_qss(self, color: str | None = None, is_dark: bool | None = None) -> str:
-        """对外公开的 QSS 生成方法（默认 normal 状态，无 hover 信息）
+        """生成 normal 态 QSS 片段供组件局部复用（无 hover 过渡）。
 
-        组件想要把这套样式应用到自己的 widget 上时调用此方法。例如：
-            qss = ScrollStyle.instance().build_qss(color="primary")
-            my_widget.setStyleSheet(my_widget.styleSheet() + qss)
+        Args:
+            color: 语义色；缺省用全局配置。
+            is_dark: 主题；缺省用当前主题。
 
-        注意：通过 build_qss 出来的 QSS 没有 hover 动画（无法靠 QSS 实现）。
-        如果想让该 widget 也有 hover 过渡，让 ScrollStyle.apply_global() 全局生效即可，
-        animation_filter 会自动作用到该 widget 内的 QScrollBar。
+        Returns:
+            QSS 字符串。
         """
         c = color if color is not None else self._color
         is_d = is_dark if is_dark is not None else self._is_dark()
@@ -402,6 +383,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             self._reapply_bar_style(bar, cur)
 
     def remove_global(self):
+        """移除全局 QSS 并卸载 hover 动画 eventFilter。"""
         app = QApplication.instance()
         if app is None:
             return
@@ -421,6 +403,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
     # 动画层：QApplication eventFilter
     # ============================================================
     def eventFilter(self, obj, event):
+        """拦截 QScrollBar 的 Enter/Leave 以驱动 hover 动画。"""
         # 只关心 QScrollBar 的 Enter/Leave
         if isinstance(obj, QScrollBar):
             t = event.type()
@@ -448,6 +431,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             return
 
         def _on_step(p: float):
+            """按动画进度重绘该 bar 并写回进度值。"""
             self._apply_progress_to_bar(bar, p, normal_color, hover_color)
             setattr(bar, progress_attr, p)
 
@@ -517,9 +501,11 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
     # 内部
     # ============================================================
     def _reapply_if_active(self):
+        """在已激活时重新应用全局样式。"""
         if self._applied:
             self.apply_global()
 
     def _on_theme_changed(self, _theme: str):
+        """主题变化时重新应用全局样式。"""
         if self._applied:
             self.apply_global()

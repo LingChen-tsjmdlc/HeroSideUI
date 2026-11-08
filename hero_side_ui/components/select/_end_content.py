@@ -8,7 +8,14 @@ from ..button import Button
 
 
 class _EndContentWidget(QWidget):
+    """Select 触发钮右侧的 clear / chevron 复合槽。"""
+
     def __init__(self, parent=None):
+        """搭建 clear 按钮与 selector 按钮的水平布局。
+
+        Args:
+            parent: 作为 Qt 父对象的 QWidget。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WA_TranslucentBackground, True)
         self._h = QHBoxLayout(self)

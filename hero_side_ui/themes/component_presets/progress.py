@@ -1,16 +1,4 @@
-"""Progress / CircularProgress 组件尺寸配置。
-
-对齐 HeroUI v2 的规范:
-  Linear Progress:
-    sm: track h-1 (≈ 4px)  + text-small (13px)
-    md: track h-3 (≈ 12px) + text-medium (14px)   ← 默认
-    lg: track h-5 (≈ 20px) + text-large (16px)
-
-  Circular Progress (直径 / 环粗细随 size 同步变化):
-    sm: 32×32  + stroke 3.5
-    md: 44×44  + stroke 5.0                    ← 默认
-    lg: 56×56  + stroke 7.0
-"""
+"""Progress 尺寸：线性 track 4/12/20；环形 32/44/56 + stroke 3.5/5/7。"""
 
 PROGRESS_SIZES = {
     "sm": {

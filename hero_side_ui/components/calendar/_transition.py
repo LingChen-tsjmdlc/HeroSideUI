@@ -1,9 +1,4 @@
-"""Calendar 翻页滑动过渡（对齐 HeroUI framer slideVariants）。
-
-翻页时：把旧网格 grab 成 pixmap 叠一层，新网格立即渲染在底层，然后旧层向
-direction 反向滑出、新层从 direction 方向滑入，结束销毁旧层。纯 setPixmap 的
-QLabel 覆盖层无交互子控件、不加 QGraphicsEffect，规避离屏渲染错位。
-"""
+"""Calendar 翻页滑动：旧网格截图覆盖层滑出、新网格底层滑入。"""
 
 from __future__ import annotations
 
@@ -20,6 +15,12 @@ class _SlideTransition:
     """管理单个网格容器的翻页滑动。宿主需提供一个固定尺寸的 viewport widget。"""
 
     def __init__(self, viewport: QWidget, content: QWidget) -> None:
+        """创建滑动过渡管理器。
+
+        Args:
+            viewport: 固定尺寸的视口 widget。
+            content: 被滑动的网格内容 widget。
+        """
         self._viewport = viewport
         self._content = content
         self._overlay: QLabel | None = None
@@ -27,9 +28,25 @@ class _SlideTransition:
         self._anim_out: QPropertyAnimation | None = None
 
     def is_active(self) -> bool:
+        """当前是否正在播放过渡。
+
+        Returns:
+            旧网格截图覆盖层存在时为 True。
+        """
         return self._overlay is not None
 
     def run(self, direction: int, on_render_new) -> None:
+        """播放一次翻页滑动。
+
+        Args:
+            direction: +1 向后翻（新网格从右侧滑入），-1 向前翻。
+            on_render_new: 渲染新网格内容的回调，在覆盖层就位后调用。
+
+        Note:
+            先把旧网格截图盖在上层，再渲染新内容并把新网格移到屏外，
+            随后两条 tween 同时把新网格滑入、旧截图滑出；
+            视口尺寸未定（<=0）时直接渲染，跳过动画。
+        """
         width = self._viewport.width()
         height = self._viewport.height()
         self._finish()
@@ -63,6 +80,12 @@ class _SlideTransition:
         )
 
     def _finish(self) -> None:
+        """抢占并停止两条补间、销毁覆盖层、把内容归位。
+
+        Note:
+            作为 out 动画的 on_finished 回调，也供 run 开头清理上一次
+            未结束的过渡，避免覆盖层堆叠。
+        """
         stop_tween(self._viewport, "_calendar_slide_in")
         stop_tween(self._viewport, "_calendar_slide_out")
         self._anim_in = self._anim_out = None
@@ -72,4 +95,5 @@ class _SlideTransition:
         self._content.move(0, self._content.y())
 
     def stop(self) -> None:
+        """立即结束当前过渡并恢复稳定态。"""
         self._finish()

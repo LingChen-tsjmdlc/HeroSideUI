@@ -144,9 +144,11 @@ class CheckDrawAnimation(QObject):
         self._pending_target = None
 
     def _get_progress(self) -> float:
+        """返回当前描绘进度。"""
         return self._progress
 
     def _set_progress(self, v: float):
+        """设置描绘进度并通知回调。"""
         v = max(0.0, min(1.0, float(v)))
         if v == self._progress:
             return

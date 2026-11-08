@@ -1,33 +1,8 @@
-"""
-HeroSideUI Tooltip Component
-基于 HeroUI v2 设计风格
+"""Tooltip 组件：hover 触发的轻量提示，Popover 的无遮罩简化版。
 
-样式来源: https://v2.heroui.com/docs/components/tooltip
-设计意图: Tooltip = Popover 的 hover-only 简化版，不带 Backdrop
-
-两种模式:
-    1. 顶层模式（默认 embedded=False）：
-        Tooltip (顶层 QWidget, Qt.Tool; paintEvent 自绘背景 + 圆角 + 阴影 + 箭头)
-        适合 hover 静态按钮 / 文字提示等不需要跟随父滚动的常规场景。
-
-    2. embedded 模式（embedded=True）：
-        Tooltip 作为 trigger.window() 的子 widget；不设 windowFlags，无独立顶层窗口。
-        适合需要"跟随父滚动 / 父移动"或避免顶层窗口首帧闪烁的场景（如 Slider thumb tooltip）。父子坐标关系让其自动跟随，零代码。
-
-    Tooltip.attach(trigger_widget) 让任意 QWidget 当触发器，hover 自动显隐。
-    支持 12 种 placement、auto flip。
-
-特性:
-    - 7 种颜色（default 即白底；其他色为 solid 主色背景）
-    - 3 种尺寸（控制内容字号 / 默认 padding）
-    - 5 种圆角（none/sm/md/lg/full）
-    - 4 种阴影（none/sm/md/lg）
-    - 12 种 placement
-    - offset: 控制 tooltip 与 trigger 的距离（默认 7px）
-    - open_delay / close_delay: 打开/关闭延迟（默认 0ms / 150ms）
-    - show_arrow: 是否显示箭头（默认 False）
-    - trigger_scale_on_open: 打开时给 trigger 设动态属性
-    - 打开/关闭动画: opacity 0 ↔ 1 + pixmap scale 0.9 ↔ 1 时长 in=200ms / out=150ms（顶层模式用 windowOpacity；embedded 模式用 QGraphicsOpacityEffect）
+两种模式：顶层模式（默认，Qt.Tool 窗口）与 embedded 模式（宿主窗口子
+widget，跟随父移动，适合 Slider thumb 等场景）。支持 12 placement、
+auto-flip、箭头与显隐延迟。
 """
 
 from PySide6.QtCore import (
@@ -59,21 +34,7 @@ class Tooltip(
     _TooltipScrollFollowMixin,
     QWidget,
 ):
-    """HeroUI 风格 Tooltip — hover 触发的轻量信息提示。
-
-    用法::
-
-        tooltip = Tooltip(content="Hello tooltip", placement="top")
-        tooltip.attach(my_button)
-
-    或自定义内容::
-
-        custom_widget = QWidget()
-        # ... 配置 custom_widget ...
-        tooltip = Tooltip(placement="bottom")
-        tooltip.set_content(custom_widget)
-        tooltip.attach(my_button)
-    """
+    """HeroUI 风格 Tooltip — hover 触发的轻量信息提示。"""
 
     opened = Signal()
     closed = Signal()
@@ -97,6 +58,29 @@ class Tooltip(
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """初始化 Tooltip 并建立内容、定时器与显隐动画。
+
+        Args:
+            content: 初始内容，可为文本、widget 或 None。
+            color: 语义配色名。
+            size: 尺寸档位。
+            radius: 圆角档位。
+            shadow: 阴影档位。
+            placement: 期望弹出方位。
+            offset: 与 trigger 边缘的额外距离（像素）。
+            open_delay: 打开延迟（毫秒）。
+            close_delay: 关闭延迟（毫秒）。
+            show_arrow: 为 True 时绘制箭头。
+            trigger_scale_on_open: 为 True 时给 trigger 设置打开态视觉反馈。
+            is_disabled: 为 True 时禁用 tooltip。
+            disable_animation: 为 True 时关闭显隐动画。
+            embedded: 为 True 时作为宿主子 widget 而非顶层窗口。
+            theme: 主题模式（light / dark / auto）。
+            parent: Qt 父对象。
+
+        Note:
+            placement 不在合法集合时回落到 top；顶层模式通过 windowOpacity 淡入淡出，embedded 模式作为子 widget 改用 QGraphicsOpacityEffect。
+        """
         super().__init__(parent)
 
         if placement not in VALID_PLACEMENTS:
@@ -213,6 +197,7 @@ class Tooltip(
     # 内容
     # ============================================================
     def _set_empty_content(self):
+        """设置空内容占位控件。"""
         empty = QWidget()
         empty.setLayout(QVBoxLayout())
         pad = TOOLTIP_SIZES.get(self._size, TOOLTIP_SIZES["md"])["padding"]
@@ -272,12 +257,7 @@ class Tooltip(
         self.move(pos)
 
     def _apply_content_text_color(self):
-        """给内容里的裸 QLabel/Text 刷反色。
-
-        Text 是 QLabel 子类，优先走 set_color（不需 setStyleSheet，不会覆盖 padding）；
-        裸 QLabel 仍走 setStyleSheet 兑底。这里是为了兼容用户给 set_content() 传入的
-        自定义 widget 中的裸 QLabel。
-        """
+        """给内容里的裸 QLabel/Text 刷反色；Text 走 set_color，裸 QLabel 走 QSS。"""
         if self._content is None:
             return
         text_hex = self._text_color().name()
@@ -365,6 +345,7 @@ class Tooltip(
             self._fade.play_out()
 
     def _finalize_close(self):
+        """收尾关闭：隐藏窗口、结束缩放代理并断开滚动监听。"""
         if not self._is_open:
             return
         # _closing 被 _do_open 重置为 False = reopening 已抢占，该信号是尾声，跳过
@@ -379,6 +360,7 @@ class Tooltip(
 
     # 公共 API
     def is_open(self) -> bool:
+        """返回 tooltip 当前是否处于打开态。"""
         return self._is_open
 
     def open(self):
@@ -395,6 +377,7 @@ class Tooltip(
     # 缩放动画辅助
     # ============================================================
     def _content_is_text_only(self) -> bool:
+        """判断内容是否仅含文本标签，供缩放代理决定是否启用。"""
         if self._content is None:
             return True
         layout = self._content.layout()
@@ -412,9 +395,11 @@ class Tooltip(
         return True
 
     def _on_anim_in_done(self):
+        """入场动画结束回调：结束缩放代理。"""
         self._scale_proxy.end()
 
     def hideEvent(self, event):
+        """隐藏时同步清理打开态、缩放代理与滚动监听。"""
         if self._is_open:
             self._is_open = False
             self._closing = False
@@ -431,13 +416,20 @@ class Tooltip(
     # 几何（thin wrapper：纯几何计算在 _position.py）
     # ============================================================
     def _frame_margins(self) -> tuple:
+        """返回当前阴影、箭头与方位下四边让出的空间。"""
         return _pos.frame_margins(self._shadow, self._show_arrow, self._actual_placement)
 
     def _calc_position(self, trigger: QWidget) -> QPoint:
         """计算 tooltip 坐标（含 auto-flip）。
 
-        重要：每次计算都从 self._placement 重新出发，不使用上次的 _actual_placement——
-        避免上次 flip 后 margins/sizeHint 被污染留到这次的中间态。
+        Args:
+            trigger: 触发控件。
+
+        Returns:
+            目标左上角坐标。
+
+        Note:
+            每次从 _placement 重新出发，避免上次 flip 的中间态污染。
         """
         # 先 reset 到用户设定的 placement，重置 margins + sizeHint。
         # 这是为了让 flip 检测基于清洁初始态，不被上次 flip 的状态干扰
@@ -488,6 +480,7 @@ class Tooltip(
 
     @staticmethod
     def _flip_placement(p: str) -> str:
+        """翻转主方位并保留 -start/-end 后缀。"""
         return _pos.flip_placement(p)
 
     # ============================================================
@@ -498,24 +491,33 @@ class Tooltip(
     # 公共动态 API
     # ============================================================
     def set_color(self, color: str):
+        """更新语义配色、刷新内容文字色并请求重绘。"""
         self._color = color
         self.update()
         self._apply_content_text_color()
 
     def set_size(self, size: str):
+        """更新尺寸档位并请求重绘。"""
         self._size = size
         self.update()
 
     def set_radius(self, radius: str):
+        """更新圆角档位并请求重绘。"""
         self._radius = radius
         self.update()
 
     def set_shadow(self, shadow: str):
+        """更新阴影档位、重设内容边距并请求重绘。"""
         self._shadow = shadow
         self._outer.setContentsMargins(*self._frame_margins())
         self.update()
 
     def set_placement(self, placement: str):
+        """更新弹出方位并同步边距与重绘。
+
+        Note:
+            placement 不在合法集合时忽略本次设置。
+        """
         if placement in VALID_PLACEMENTS:
             self._placement = placement
             self._actual_placement = placement
@@ -535,11 +537,17 @@ class Tooltip(
         self._close_delay = delay
 
     def set_show_arrow(self, enabled: bool):
+        """设置是否显示箭头并同步边距与重绘。"""
         self._show_arrow = enabled
         self._outer.setContentsMargins(*self._frame_margins())
         self.update()
 
     def set_theme(self, theme: str):
+        """切换主题模式，auto 时向 ThemeProvider 注册或注销。
+
+        Note:
+            内容里 QLabel 的文字色是创建时写死的 hex，不会自动跟随主题，切换后必须显式重刷。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -555,7 +563,7 @@ class Tooltip(
         self.update()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
+        """ThemeProvider 广播专用。"""
         self._theme = theme
         # 同 set_theme:必须刷新 QLabel 文字色以匹配新主题。
         self._apply_content_text_color()
@@ -563,11 +571,13 @@ class Tooltip(
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的 light 或 dark 值。"""
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_is_disabled(self, disabled: bool):
+        """设置禁用状态；禁用时若已打开则立即关闭。"""
         self._is_disabled = disabled
         if disabled and self._is_open:
             self.close()

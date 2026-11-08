@@ -1,10 +1,4 @@
-"""HeroSideUI Tabs Component — 标签页容器。
-
-子组件：
-    - ``_CursorWidget`` → ``_cursor.py`` （选中态滑动光标）
-    - ``TabItem``       → ``item.py``    （单个标签）
-    - ``_TabList``      → ``_tab_list.py``（标签容器）
-"""
+"""Tabs 标签页容器；子组件 _CursorWidget/TabItem/_TabList。"""
 
 from PySide6.QtCore import (
     QRect,
@@ -44,7 +38,8 @@ from .item import TabItem
 class Tabs(QWidget):
     """HeroUI Tabs 组件 —— 完整复刻。
 
-    选中变更信号: selection_changed(int index, str key)
+    Note:
+        选中变更信号为 selection_changed(int index, str key)。
     """
 
     CURSOR_ANIM_DURATION = 250
@@ -66,6 +61,25 @@ class Tabs(QWidget):
         disable_animation: bool = False,
         parent: QWidget | None = None,
     ):
+        """构建 Tabs 容器并装配 tabList、cursor、按钮组与面板栈。
+
+        Args:
+            items: 初始标签列表，元素可为 str / tuple / dict。
+            variant: 变体名。
+            color: 主题色名。
+            size: 尺寸名。
+            radius: 圆角名；underlined 时强制为 none。
+            placement: tabList 所处方位。
+            theme: 明暗主题名或 auto。
+            full_width: 是否让标签水平铺满。
+            is_disabled: 是否整体禁用。
+            disable_animation: 是否禁用动画。
+            parent: Qt 父对象。
+
+        Note:
+            variant / color / size / placement / theme 取值非法时抛 ValueError；
+            theme 为 auto 时注册到 ThemeProvider 跟随主题广播。
+        """
         super().__init__(parent)
 
         # 校验
@@ -177,14 +191,19 @@ class Tabs(QWidget):
         end_icon=None,
         custom: QWidget | None = None,
     ) -> TabItem:
-        """添加一个 tab。
+        """添加一个 tab（纯文本 / icon+文本 / custom widget 三档）。
 
-        三档插槽：
-          1. 纯文本: ``add_tab("Photos")``
-          2. icon + 文本: ``add_tab("Photos", start_icon="heroicons--photo-solid")``
-          3. 完全自定义 tab 标签: ``add_tab(custom=my_widget)``（``title`` 仅作 key fallback）
+        Args:
+            title: 标签标题。
+            content: 面板内容 widget；未传时给一个空 QWidget。
+            key: 唯一标识。
+            disabled: 是否禁用该 tab。
+            start_icon: 起始图标来源。
+            end_icon: 结束图标来源。
+            custom: 自定义内容 widget，传入即进入 custom 模式。
 
-        ``content`` 始终是 panel 内容（任意 QWidget），独立于 tab 标签外观。
+        Returns:
+            新建并已加入布局的 TabItem。
         """
         tab = TabItem(
             title,
@@ -218,6 +237,7 @@ class Tabs(QWidget):
         return tab
 
     def remove_tab(self, index: int):
+        """移除指定位置的 tab 及其面板，越界时忽略。"""
         if not 0 <= index < len(self._tabs):
             return
         tab = self._tabs.pop(index)
@@ -237,27 +257,33 @@ class Tabs(QWidget):
             self.set_selected(self._current_index, animate=False)
 
     def clear(self):
+        """清空所有 tab 与面板并重置当前索引。"""
         while self._tabs:
             self.remove_tab(0)
         self._current_index = -1
 
     def count(self) -> int:
+        """返回当前 tab 数量。"""
         return len(self._tabs)
 
     def tab_at(self, index: int) -> TabItem | None:
+        """返回指定位置的 TabItem，越界时返回 None。"""
         if 0 <= index < len(self._tabs):
             return self._tabs[index]
         return None
 
     def panel_at(self, index: int) -> QWidget | None:
+        """返回指定位置的面板 widget，越界时返回 None。"""
         if 0 <= index < len(self._panels):
             return self._panels[index]
         return None
 
     def current_index(self) -> int:
+        """返回当前选中索引，未选中时为 -1。"""
         return self._current_index
 
     def current_key(self) -> str | None:
+        """返回当前选中 tab 的 key，未选中时返回 None。"""
         if 0 <= self._current_index < len(self._tabs):
             return self._tabs[self._current_index].key()
         return None
@@ -305,13 +331,25 @@ class Tabs(QWidget):
     # -------- 动态 setter --------
 
     def _validate(self, name: str, value: str, valid):
+        """校验取值是否属于合法集合。
+
+        Args:
+            name: 参数名，用于报错信息。
+            value: 待校验的取值。
+            valid: 合法取值集合。
+
+        Note:
+            取值不在集合内时抛 ValueError，由各动态 setter 调用。
+        """
         if value not in valid:
             raise ValueError(f"{name} must be one of {tuple(valid)}")
 
     def _reposition_cursor_async(self):
+        """在下一个事件循环异步重定位 cursor。"""
         QTimer.singleShot(0, lambda: self._move_cursor_to(self._current_index, animate=False))
 
     def set_variant(self, variant: str):
+        """设置变体并刷新样式，underlined 时强制无圆角。"""
         self._validate("variant", variant, VALID_VARIANTS)
         self._variant = variant
         if variant == "underlined":
@@ -320,11 +358,13 @@ class Tabs(QWidget):
         self._move_cursor_to(self._current_index, animate=False)
 
     def set_color(self, color: str):
+        """设置主题色并刷新样式。"""
         self._validate("color", color, VALID_COLORS)
         self._color = color
         self._apply_styles()
 
     def set_size(self, size: str):
+        """设置尺寸并刷新间距、样式与 cursor 位置。"""
         self._validate("size", size, VALID_SIZES)
         self._size = size
         self._list_layout.setSpacing(TABS_SIZES[size]["list_gap"])
@@ -332,6 +372,7 @@ class Tabs(QWidget):
         self._reposition_cursor_async()
 
     def set_radius(self, radius: str):
+        """设置圆角并刷新样式，underlined 时强制为 none。"""
         self._validate("radius", radius, VALID_RADIUS)
         if self._variant == "underlined":
             radius = "none"
@@ -340,6 +381,7 @@ class Tabs(QWidget):
         self._reposition_cursor_async()
 
     def set_placement(self, placement: str):
+        """设置方位并重新排列布局。"""
         self._validate("placement", placement, VALID_PLACEMENTS)
         self._placement = placement
         self._apply_placement()
@@ -347,6 +389,7 @@ class Tabs(QWidget):
         self._reposition_cursor_async()
 
     def set_theme(self, theme: str):
+        """设置主题，auto 时注册到 ThemeProvider 跟随广播。"""
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -360,25 +403,36 @@ class Tabs(QWidget):
         self._apply_styles()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
+        """响应 ThemeProvider 的主题广播并刷新样式。"""
         self._theme = theme
         self._apply_styles()
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的明暗主题。
+
+        Args:
+            mode: 主题模式，light / dark / auto。
+
+        Returns:
+            light 或 dark；auto 时取 ThemeProvider 的当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_full_width(self, full: bool):
+        """设置是否让 tab 水平铺满并刷新样式。"""
         self._full_width = bool(full)
         self._apply_styles()
 
     def set_disabled(self, disabled: bool):
+        """设置整体禁用状态并刷新透明与点击。"""
         self._is_disabled = bool(disabled)
         self._apply_disabled_state()
 
     def set_disable_animation(self, disable: bool):
+        """设置是否禁用动画并同步到所有 tab。"""
         self._disable_animation = bool(disable)
         for t in self._tabs:
             t._disable_animation = self._disable_animation
@@ -505,6 +559,7 @@ class Tabs(QWidget):
             self._list.setEnabled(True)
 
     def _on_id_clicked(self, idx: int):
+        """响应 button id 点击，切换到对应 tab。"""
         if not 0 <= idx < len(self._tabs):
             return
         if self._tabs[idx].is_disabled():
@@ -514,6 +569,7 @@ class Tabs(QWidget):
         self.set_selected(idx)
 
     def _auto_select_first(self):
+        """自动选中第一个未禁用的 tab，禁用动画。"""
         if self._current_index == -1 and self._tabs:
             for i, t in enumerate(self._tabs):
                 if not t.is_disabled():
@@ -521,6 +577,7 @@ class Tabs(QWidget):
                     break
 
     def _move_cursor_to(self, index: int, *, animate: bool):
+        """把 cursor 过渡到指定 tab 的几何位置，越界时隐藏。"""
         if not 0 <= index < len(self._tabs):
             stop_tween(self._cursor, "_cursor_anim_runner")
             self._cursor.hide()
@@ -537,11 +594,13 @@ class Tabs(QWidget):
         self._cursor.lower()
 
     def resizeEvent(self, ev):
+        """尺寸变化时异步重定位 cursor。"""
         super().resizeEvent(ev)
         # 让 cursor 紧跟当前 tab 的几何
         self._reposition_cursor_async()
 
     def showEvent(self, ev):
+        """显示时异步重定位 cursor。"""
         super().showEvent(ev)
         self._reposition_cursor_async()
 

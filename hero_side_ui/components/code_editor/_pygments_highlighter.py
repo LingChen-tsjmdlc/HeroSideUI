@@ -1,13 +1,5 @@
-"""pygments 驱动的通用语法高亮器（QSyntaxHighlighter 适配）。
-
-复用 ``code_block/_highlight.py`` 的现成管线：``_token_color``（语义 token →
-颜色，与 CodeBlock 完全同源）与 ``lex``（pygments 流式切词）。这里只做
-QSyntaxHighlighter 的桥接：
-
-pygments lexer 是流式（跨行 token 由 lexer 状态推进），无法直接映射到按
-block 回调；策略是文档变化时全文 lex 一遍，把结果缓存成"每 block 的
-(start, end, color) 片段"，``highlightBlock`` 查缓存上色。护栏：超过
-``_MAX_LEX_LINES`` 行不重扫（保留旧缓存），避免超大粘贴卡 UI。
+"""QSyntaxHighlighter 桥接：文档变化全文 lex 缓存成每 block 片段，
+highlightBlock 查缓存上色；超 _MAX_LEX_LINES 不重扫防卡 UI。
 """
 
 from __future__ import annotations
@@ -30,6 +22,14 @@ class PygmentsHighlighter(QSyntaxHighlighter):
     """
 
     def __init__(self, doc: QTextDocument, language: str, theme: str) -> None:
+        """创建高亮器并按语言取 lexer。
+
+        Args:
+            doc: 编辑器的 QTextDocument。
+            language: pygments lexer 短名（python / json / sql 等）；
+                识别失败时降级为无高亮纯文本。
+            theme: light / dark。
+        """
         super().__init__(doc)
         self._theme = theme
         self._lexer = None
@@ -45,11 +45,21 @@ class PygmentsHighlighter(QSyntaxHighlighter):
     # -- 对外 --------------------------------------------------------------
 
     def set_theme(self, theme: str) -> None:
+        """切换主题：清格式缓存后全文重扫。
+
+        Args:
+            theme: light / dark。
+        """
         self._theme = theme
         self._fmt_cache.clear()
         self.rescan()
 
     def set_language(self, language: str) -> None:
+        """切换语言并重建高亮缓存。
+
+        Args:
+            language: pygments lexer 短名；识别失败降级纯文本。
+        """
         try:
             from pygments.lexers import get_lexer_by_name
 
@@ -60,7 +70,12 @@ class PygmentsHighlighter(QSyntaxHighlighter):
         self.rehighlight()
 
     def rescan(self) -> None:
-        """全文跑一遍 lexer 重建缓存并重画（识别失败/超行数上限时跳过）。"""
+        """全文跑一遍 lexer 重建缓存并重画。
+
+        Note:
+            lexer 为空或文档块数超过 _MAX_LEX_LINES 时直接跳过，
+            避免大文件重扫卡住 UI。
+        """
         if self._lexer is None:
             return
         doc = self.document()
@@ -101,6 +116,14 @@ class PygmentsHighlighter(QSyntaxHighlighter):
     # -- 内部 --------------------------------------------------------------
 
     def _fmt(self, hex_color: str) -> QTextCharFormat:
+        """取（或缓存构造）某个颜色对应的文本格式。
+
+        Args:
+            hex_color: 十六进制颜色字符串。
+
+        Returns:
+            已设置前景色的 QTextCharFormat，按颜色缓存复用。
+        """
         fmt = self._fmt_cache.get(hex_color)
         if fmt is None:
             fmt = QTextCharFormat()
@@ -111,6 +134,11 @@ class PygmentsHighlighter(QSyntaxHighlighter):
     # QSyntaxHighlighter 接口 ----------------------------------------------
 
     def highlightBlock(self, text: str) -> None:  # type: ignore[override]
+        """QSyntaxHighlighter 回调：查缓存给当前 block 上色。
+
+        Args:
+            text: 当前 block 的文本（未直接使用，位置依缓存记录）。
+        """
         spans = self._cache.get(self.currentBlock().blockNumber())
         if not spans:
             return

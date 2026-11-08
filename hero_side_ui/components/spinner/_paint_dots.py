@@ -1,15 +1,4 @@
-"""variant=wave / dots —— 3 个圆点。
-
-HeroUI 原版 CSS:
-    wave:  @keyframes sway { 0%/100%{translateY(0)} 50%{translateY(-150%)} }
-           750ms ease infinite, dot[i].delay = 250ms*i
-    dots:  @keyframes blink { 0%/100%{opacity:.2} 20%{opacity:1} }
-           1.4s linear infinite, dot[i].delay = 200ms*i
-
-驱动器:
-    wave: 周期 750ms
-    dots: 周期 1.4s
-"""
+"""wave/dots 变体：3 圆点上下波动（750ms）或间歇闪烁（1.4s）。"""
 
 from __future__ import annotations
 
@@ -22,13 +11,27 @@ N_DOTS = 3
 
 
 def _sway_y(local_phase: float) -> float:
-    """sway: 0%→0, 50%→-1.5, 100%→0；类 cos 形"""
+    """按正弦曲线计算单个圆点的纵向起伏偏移。
+
+    Args:
+        local_phase: 单个圆点的局部相位，取值 [0, 1)。
+
+    Returns:
+        以 dot_size 为单位的纵向偏移，取负值表示向上。
+    """
     # sin(π*p)*1.5 在 0/1 处为 0、0.5 处为 1.5；正方向是上 → 取负
     return -math.sin(math.pi * local_phase) * 1.5
 
 
 def _blink_alpha(local_phase: float) -> float:
-    """blink: 0%→0.2, 20%→1, 100%→0.2  线性段。"""
+    """按分段线性曲线计算单个圆点的闪烁透明度。
+
+    Args:
+        local_phase: 单个圆点的局部相位，取值 [0, 1)。
+
+    Returns:
+        透明度 alpha，由 0.2 线性升至 20% 相位处的 1.0，再线性回落到 0.2。
+    """
     if local_phase <= 0.2:
         return 0.2 + (local_phase / 0.2) * 0.8
     return 1.0 - ((local_phase - 0.2) / 0.8) * 0.8
@@ -42,8 +45,19 @@ def paint_wave(
     dot_size: float,
     phase: float,
 ):
-    """phase ∈ [0, 1)；驱动器周期 0.75s。HeroUI 在 wave/dots 上把 wrapper 平移
-    一段以让 dot 向下扎根，这里我们居中，用动画偏移 -1.5*dot_size 营造起伏。"""
+    """绘制 wave 变体：3 个圆点按相位错开做上下起伏。
+
+    Args:
+        painter: 目标 QPainter，函数内 save/restore 包裹状态修改。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 圆点主色。
+        dot_size: 单个圆点尺寸，同时作为起伏偏移量单位。
+        phase: 全局相位，取值 [0, 1)，驱动器周期 0.75s。
+
+    Note:
+        HeroUI 靠 wrapper 平移让圆点扎根，这里改为居中，由 _sway_y 的负向峰值偏移营造起伏。
+    """
     cx = w / 2.0
     cy = h / 2.0
     delay = 250.0 / 750.0  # = 1/3
@@ -74,7 +88,16 @@ def paint_dots(
     dot_size: float,
     phase: float,
 ):
-    """phase ∈ [0, 1)；驱动器周期 1.4s。"""
+    """绘制 dots 变体：3 个圆点按相位错开做间歇闪烁。
+
+    Args:
+        painter: 目标 QPainter，函数内 save/restore 包裹状态修改。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 圆点主色，逐帧派生并改写透明度。
+        dot_size: 单个圆点尺寸。
+        phase: 全局相位，取值 [0, 1)，驱动器周期 1.4s。
+    """
     cx = w / 2.0
     cy = h / 2.0
     delay = 200.0 / 1400.0  # ≈ 0.143

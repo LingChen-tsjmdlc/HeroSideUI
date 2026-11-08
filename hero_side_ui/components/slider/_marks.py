@@ -1,10 +1,4 @@
-"""Slider marks 解析 + 数值文字格式化（纯函数）。
-
-marks 三种输入格式：
-    - dict: {"value": 50, "label": "1/2"}
-    - tuple: (50, "1/2") 或 (50,)
-    - number: 50 → label="50"
-"""
+"""marks 解析（dict/tuple/number 三格式）与 value 文字格式化（纯函数）。"""
 
 from __future__ import annotations
 
@@ -43,8 +37,10 @@ def parse_marks(
 
 
 def fmt_num(v: float, step: float) -> str:
-    """按 step 决定小数位数：
-    step >= 1 且 v 接近整数 → 整数显示；否则取 step 的小数位数。
+    """按 step 决定数值的小数位数并格式化。
+
+    Note:
+        step >= 1 且 v 接近整数时按整数显示；否则取 step 的小数位数。
     """
     if step >= 1 and abs(v - round(v)) < 1e-9:
         return str(round(v))
@@ -58,11 +54,7 @@ def format_value(
     step: float,
     formatter: Callable[[ValueT], str] | None = None,
 ) -> str:
-    """格式化顶部 value 文字：
-    1) 优先使用用户自定义 formatter
-    2) range 模式 "lo – hi"
-    3) 否则按 step 精度的纯数字
-    """
+    """格式化顶部 value：自定义 formatter 优先，range 拼 "lo – hi"，否则按 step 精度。"""
     if formatter is not None:
         try:
             return str(formatter(value))

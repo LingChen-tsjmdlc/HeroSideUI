@@ -1,8 +1,5 @@
-"""Compatibility entry for static SVG snapshots, rendered by pyside-iconify.
-
-The legacy API deliberately retains size-by-size, DPR=1 snapshots, transparent
-missing icons, original SVG colors and the Provider-aware default contrast.
-New widgets use hero_side_ui.Icon; new rendering code uses hero_side_ui.icons.
+"""旧静态快照兼容入口，转调 icons/ 资源边界；保留 DPR=1 契约。
+新组件用 Icon；新渲染代码用 hero_side_ui.icons。
 """
 
 from PySide6.QtCore import QSize, Qt
@@ -12,6 +9,7 @@ from ..icons import IconNotFoundError, get_icon, resolve_icon
 
 
 def _resolve_theme_aware_color() -> str:
+    """按当前主题返回适配的文字色。"""
     # Retained at the compatibility boundary; resource/rendering modules do not
     # query Providers or install global facilities.
     from ..core import ThemeProvider
@@ -25,11 +23,7 @@ def load_svg_icon(
     color=None,
     stroke_width: int | float | None = None,
 ) -> QPixmap:
-    """Return the legacy static snapshot; remote names should be preloaded.
-
-    Bundled names, Iconify names already available locally and external SVG paths
-    all use the shared icon resource boundary. Use Icon for live asynchronous icons.
-    """
+    """返回旧式静态快照；远程名需先预加载，新场景用 Icon。"""
     try:
         resolved = resolve_icon(name_or_path, stroke_width=stroke_width)
     except (FileNotFoundError, IconNotFoundError):

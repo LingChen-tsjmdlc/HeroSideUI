@@ -1,17 +1,4 @@
-"""Drawer 组件主题预设。
-
-对齐 HeroUI v2 drawer.ts（size / placement）+ modal.ts（radius / 关闭按钮 /
-backdrop）：默认 size md / radius lg / placement right / backdrop opaque，
-入场 200ms easeOut、出场 100ms easeIn。
-
-字段说明:
-    DRAWER_SPEC  - 内边距、关闭按钮与动效的全局数值（px / ms）
-    DRAWER_SIZES - 10 档 size 的主/副轴上限（rem × 16）；0 表示铺满宿主
-
-遮罩的配色与淡入淡出时长由 ``components/popover/_backdrop.py`` 的 _Backdrop
-统一负责（opaque 黑 50% / blur 模糊 + 黑 30%，淡入 260ms、淡出 200ms），
-这里只留一个与淡出同步的收尾时长。
-"""
+"""DRAWER_SPEC（全局数值）与 DRAWER_SIZES（10 档主/副轴上限）；遮罩配色归 popover/_backdrop。"""
 
 DRAWER_SPEC = {
     # ---- 内容区（modal: header/body px-6 py-4，body gap-3）----

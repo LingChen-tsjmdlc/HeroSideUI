@@ -1,11 +1,4 @@
-"""_TextEdit — Textarea 内部 QTextEdit 子类（私有）。
-
-负责：
-- ``palette.Base`` 透明（避免 Fusion 风格画白底）
-- ``setAcceptRichText(False)`` 强制纯文本输入
-- ``document().setDocumentMargin(0)`` 文字紧贴 viewport 顶
-- 暴露 focus_in / focus_out 信号
-"""
+"""_TextEdit：palette.Base 透明 + 纯文本 + margin 0 + focus 信号的 QTextEdit。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
@@ -18,17 +11,13 @@ from PySide6.QtWidgets import QTextEdit, QWidget
 class _TextEdit(QTextEdit):
     """无边框透明背景的 QTextEdit，融入 _InputWrapper 底色。
 
-    选用 QTextEdit 而不是 QPlainTextEdit 的核心原因：
-        QPlainTextEdit 的 verticalScrollBar.value 单位 = 行号（block index），
-        是整数，没有"半行"概念，所以拖动 scrollbar 永远跳行（Qt 框架级限制，
-        无法通过 hooks 解决）。QTextEdit 的 scrollbar 是像素单位，拖动天然平滑。
-
-    - setFrameStyle(NoFrame): 去掉默认 frame
-    - palette.Base = transparent: 防止 Fusion 风格画白底
-    - viewport setAutoFillBackground(False) + palette.Base 透明 同步
+    Note:
+        选 QTextEdit 而非 QPlainTextEdit——后者 scrollbar 单位是行号
+        整数，拖动永远跳行（框架级限制）。
     """
 
     def __init__(self, parent: QWidget | None = None):
+        """初始化透明无边框的 QTextEdit，关闭富文本并去掉文档默认 margin。"""
         super().__init__(parent)
         from PySide6.QtWidgets import QFrame
 

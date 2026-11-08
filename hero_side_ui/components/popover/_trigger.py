@@ -1,11 +1,4 @@
-"""Popover 触发器附着与悬停/点击行为 mixin（私有）。
-
-负责：
-- attach(): 把 popover 绑到一个 trigger widget，并设置 trigger 类型（hover/click/manual）
-- eventFilter(): 拦截 trigger 上的 hover/click/focus 事件
-- 鼠标"游离"时的延迟关闭逻辑（避免移到 popover 内部就消失）
-- 触发器视觉响应（_apply_trigger_open_state）：popover 打开时给 trigger 加视觉反馈
-"""
+"""Popover 触发器 mixin：attach 绑定、eventFilter 拦截与游离延迟关闭。"""
 
 from PySide6.QtCore import QEvent, QPoint
 from PySide6.QtWidgets import QWidget
@@ -24,9 +17,9 @@ class _PopoverTriggerMixin:
     ):
         """把任意 widget 设为触发器。
 
-        - event="click"：触发器点击切换 open/close
-        - event="hover"：进入时打开，离开时关闭（150ms 延迟防闪烁）
-        - event="manual"：仅记录 trigger，使用方手动调用 open/close
+        Args:
+            trigger: 目标控件。
+            event: click 切换 / hover 进出开合（150ms 防闪）/ manual 仅记录。
         """
         if self._trigger is not None and self._trigger is not trigger:
             self._trigger.removeEventFilter(self)
@@ -41,6 +34,19 @@ class _PopoverTriggerMixin:
         self._sync_trigger_color()
 
     def eventFilter(self, obj, event):
+        """拦截 trigger 与 popover 自身的事件，驱动点击/悬停开合。
+
+        Args:
+            obj: 事件目标对象（trigger 或 popover 自己）。
+            event: Qt 事件对象。
+
+        Returns:
+            bool: 始终返回 super().eventFilter 结果，不主动吞事件。
+
+        Note:
+            click 模式下刚关闭不久（<250ms）的 trigger 点击会被忽略，
+            避免外部点击关闭逻辑与 click 玩家互相打架造成"点两次才开"。
+        """
         # ---- trigger 的事件 ----
         if obj is self._trigger:
             kind = getattr(self, "_trigger_event_kind", "click")
@@ -88,6 +94,14 @@ class _PopoverTriggerMixin:
         self.close()
 
     def _cursor_global_pos(self) -> QPoint | None:
+        """获取当前鼠标全局坐标。
+
+        Returns:
+            QPoint | None: 鼠标全局坐标；获取失败返回 None。
+
+        Note:
+            用 try/except 包裹 QCursor 导入与调用，避免 GUI 上下文缺失时报错。
+        """
         try:
             from PySide6.QtGui import QCursor
 
@@ -96,6 +110,17 @@ class _PopoverTriggerMixin:
             return None
 
     def _point_inside_trigger_or_popover(self, gp: QPoint) -> bool:
+        """判断全局坐标点是否落在 trigger 或 popover 之内。
+
+        Args:
+            gp: 待判断的全局坐标点。
+
+        Returns:
+            bool: 命中 trigger 或 popover 返回 True，否则 False。
+
+        Note:
+            用于 hover 模式延迟关闭时确认鼠标是否回到可交互区域。
+        """
         # trigger
         if self._trigger is not None:
             tr_top_left = self._trigger.mapToGlobal(QPoint(0, 0))
@@ -120,15 +145,11 @@ class _PopoverTriggerMixin:
     # 触发器视觉响应
     # ============================================================
     def _apply_trigger_open_state(self, opened: bool):
-        """打开/关闭时给 trigger 的视觉反馈。
+        """开合时给 trigger 视觉反馈。
 
-        注意：不能用 setGraphicsEffect，会覆盖 trigger 自身的 effect
-        （例如 Button 的 PressScaleEffect），一旦旧 effect 被替换 Qt
-        C++ 端会立即析构 _ScaleEffect，后续 PressScaleEffect 动画回调
-        再访问就会抛 "Internal C++ object already deleted"。
-
-        改为通过动态属性 + Qt 的 styleSheet 刷新实现。如果触发器没有
-        QSS 响应这个属性，则视觉上没变化，但不会崩。
+        Note:
+            不用 setGraphicsEffect——会覆盖 trigger 自身 effect 导致 C++
+            对象析构崩溃；改用动态属性 + QSS 刷新。
         """
         if self._trigger is None:
             return

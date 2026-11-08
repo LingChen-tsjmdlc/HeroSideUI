@@ -12,7 +12,15 @@ class _SelectCallbacksMixin:
     # Listbox 选中变化
     # ============================================================
     def _on_listbox_action(self, key: str):
-        """用户在 listbox 点击某项。"""
+        """同步 listbox 的选中变化到 trigger 文本并派发 selection_changed。
+
+        Args:
+            key: 被点击项的 key，用于判定单选下是否再次点中已选中项。
+
+        Note:
+            disallow_empty_selection=False 时单选允许点回空状态；single 选中后
+            立即关闭 popover，multiple 保持打开。
+        """
         # 单选 + 点击已选中项：listbox 默认不允许取消（HeroUI 对齐）；
         # 当 disallow_empty_selection=False 时主动允许回到空状态
         if (
@@ -41,6 +49,11 @@ class _SelectCallbacksMixin:
     # Clear 按钮
     # ============================================================
     def _on_clear_clicked(self):
+        """清空选中并派发信号，随后把焦点还给 trigger。
+
+        Note:
+            无选中或 disallow_empty_selection=True 时直接返回，不派发信号。
+        """
         if not self._selected_keys:
             return
         if self._disallow_empty_selection:
@@ -58,6 +71,7 @@ class _SelectCallbacksMixin:
     # Selector 按钮（chevron）
     # ============================================================
     def _on_selector_clicked(self):
+        """切换 popover 开关并把焦点还给 trigger，禁用态忽略。"""
         if self._is_disabled:
             return
         self.toggle()
@@ -67,6 +81,11 @@ class _SelectCallbacksMixin:
     # Popover open/close
     # ============================================================
     def _on_popover_open_changed(self, is_open: bool):
+        """同步 popover 开关状态，刷新 clear 可见性与 chevron 并派发信号。
+
+        Args:
+            is_open: popover 当前是否打开。
+        """
         self._is_open = is_open
         self._refresh_clear_visibility()
         if not self._disable_selector_icon_rotation:

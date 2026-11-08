@@ -1,11 +1,4 @@
-"""Spacer 间距填充器 — 零尺寸占位，靠 margin 撑出空白 (HeroUI v2)。
-
-用法::
-
-    layout.addWidget(Button("A"))
-    layout.addWidget(Spacer(x=4))   # 横向 16px 间隔
-    layout.addWidget(Button("B"))
-"""
+"""Spacer 间距填充器：零尺寸占位靠固定尺寸撑空白（Tailwind spacing scale）。"""
 
 from __future__ import annotations
 
@@ -55,7 +48,17 @@ Space = int | float | str
 
 
 def get_margin(value: Space) -> int:
-    """spacing 档位转像素（数字按 scale 表，字符串按表键或原样像素）。"""
+    """spacing 档位转像素（数字按 scale 表，字符串按表键或原样像素）。
+
+    Args:
+        value: 档位键；数字按档位表取值，字符串按表键或像素字面量解析。
+
+    Returns:
+        换算后的像素整数。
+
+    Note:
+        未收录的数字档位原样返回；表外字符串去掉 px 后缀后交给 int，非数值输入未做校验。
+    """
     if isinstance(value, str):
         if value in SPACING_SCALE:
             return int(SPACING_SCALE[value])
@@ -72,6 +75,13 @@ class Spacer(QWidget):
         y: Space = 1,
         parent: QWidget | None = None,
     ):
+        """按横纵档位创建间距填充器。
+
+        Args:
+            x: 横向间距档位，默认为 1。
+            y: 纵向间距档位，默认为 1。
+            parent: 父级 QWidget。
+        """
         super().__init__(parent)
         self.setObjectName("HeroSpacer")
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -81,6 +91,7 @@ class Spacer(QWidget):
         self._apply()
 
     def _apply(self):
+        """用固定尺寸撑出空白以适配 Qt 布局几何。"""
         # Qt 布局里 contentsMargins 不参与父布局几何——空白必须由本体尺寸
         # 撑出（官方 web 的 margin 语义在桌面端等价于 sizeHint）
         self.setFixedSize(get_margin(self._x), get_margin(self._y))
@@ -96,7 +107,9 @@ class Spacer(QWidget):
         self._apply()
 
     def x_space(self) -> Space:
+        """返回横向间距档位。"""
         return self._x
 
     def y_space(self) -> Space:
+        """返回纵向间距档位。"""
         return self._y

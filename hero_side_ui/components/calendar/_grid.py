@@ -1,13 +1,5 @@
-"""Calendar 网格切分与单元格状态判定（零 Qt 依赖）。
-
-对齐 react-aria 的 getDatesInWeek / useCalendarCell：
-  - 把一个月切成若干周（每周 7 格，溢出补 None）。
-  - 为每个日期算出渲染层需要的全部状态位（data-* 语义）。
-
-两套「起止」语义务必分清：
-  - selection_start/end：整个选中范围唯一的两个逻辑端点。
-  - range_start/end：每一行的视觉端点（行首/行尾/被 unavailable 打断处），
-    渲染层用它决定左右圆角；中间格靠 range_selection 画方形连接背景。
+"""Calendar 网格切分与状态判定（零 Qt 依赖）：月切周、逐格算 data-* 状态。
+selection_start/end 是范围逻辑端点；range_start/end 是行内视觉端点。
 """
 
 from __future__ import annotations
@@ -19,7 +11,11 @@ from ._date import CalendarDate, weeks_in_month
 
 
 class _GridState(Protocol):
-    """网格计算所需的状态只读视图，单选/范围 state 都实现它。"""
+    """网格计算所需的状态只读视图。
+
+    单选 state 与范围 state 都实现该协议，compute_cell_state 只依赖
+    这组只读接口，不关心具体持有者。
+    """
 
     first_day_of_week: int
 
@@ -33,7 +29,22 @@ class _GridState(Protocol):
 
 @dataclass(frozen=True)
 class CellState:
-    """单个日期格子的完整视觉状态。date 为 None 表示空占位格。"""
+    """单个日期格子的完整视觉状态。
+
+    Attributes:
+        date: 该格日期；None 表示空占位格。
+        is_selected: 是否选中（禁用格不判选中）。
+        is_disabled: 是否禁用（月外或业务禁用）。
+        is_unavailable: 是否不可用（画删除线）。
+        is_outside_month: 是否月外补位格。
+        is_today: 是否今天（仅本月内）。
+        is_readonly: 组件是否只读。
+        is_range_selection: 是否处于范围选中（含中间格）。
+        is_selection_start: 是否范围逻辑起点。
+        is_selection_end: 是否范围逻辑终点。
+        is_range_start: 是否行内视觉起点（连接背景左收口）。
+        is_range_end: 是否行内视觉终点（连接背景右收口）。
+    """
 
     date: CalendarDate | None
     is_selected: bool = False
@@ -51,10 +62,20 @@ class CellState:
 
     @property
     def is_empty(self) -> bool:
+        """是否为空占位格。
+
+        Returns:
+            date 为 None 时为 True。
+        """
         return self.date is None
 
     @property
     def label(self) -> str:
+        """格子的显示文本。
+
+        Returns:
+            日号字符串；空格返回空串。
+        """
         return "" if self.date is None else str(self.date.day)
 
 
@@ -63,9 +84,14 @@ def get_dates_in_week(
 ) -> list[CalendarDate | None]:
     """返回该月第 week_index 周的 7 个日期。
 
-    首尾行的本月外空档用相邻月的实际日期补齐（上月末尾 / 下月开头），
-    这些日期在 compute_cell_state 里标记 is_outside_month=True，渲染层淡色显示、
-    不可选。对齐 HeroUI：日历始终是完整的 7 列矩形，无空洞。
+    Args:
+        start_date: 当月任一天。
+        week_index: 周序号（0 起）。
+        first_day_of_week: 周起点（ICU weekday 常量）。
+
+    Returns:
+        一周 7 个日期；首尾行空档用相邻月日期补齐（标记 outside
+        淡显不可选），日历恒为完整 7 列矩形。
     """
     first = start_date.first_of_month()
     lead = (first.weekday - first_day_of_week) % 7
@@ -78,7 +104,15 @@ def get_dates_in_week(
 
 
 def get_weeks(start_date: CalendarDate, first_day_of_week: int) -> list[list[CalendarDate | None]]:
-    """把整月切成 [周][7] 的日期矩阵。"""
+    """把整月切成 [周][7] 的日期矩阵。
+
+    Args:
+        start_date: 当月任一天。
+        first_day_of_week: 周起点（ICU weekday 常量）。
+
+    Returns:
+        weeks_in_month 行、每行 7 列的日期（或 None）嵌套列表。
+    """
     n = weeks_in_month(start_date, first_day_of_week)
     return [get_dates_in_week(start_date, w, first_day_of_week) for w in range(n)]
 
@@ -86,7 +120,18 @@ def get_weeks(start_date: CalendarDate, first_day_of_week: int) -> list[list[Cal
 def compute_cell_state(
     date: CalendarDate | None, current_month: CalendarDate, state: _GridState, today: CalendarDate
 ) -> CellState:
-    """算出单个 cell 的全部状态位。"""
+    """算出单个 cell 的全部状态位。
+
+    Args:
+        date: 该格日期；None 直接返回空态。
+        current_month: 当前展示月（判断月外）。
+        state: 实现 _GridState 协议的状态视图。
+        today: 今天的日期。
+
+    Returns:
+        含单选位与范围位的 CellState；范围态额外算逻辑端点
+        （selection_start/end）与每行视觉端点（range_start/end）。
+    """
     if date is None:
         return CellState(date=None)
 
@@ -142,10 +187,24 @@ def compute_cell_state(
 
 
 def first_col(first_day_of_week: int) -> int:
-    """本周第一列对应的 ICU weekday。"""
+    """本周第一列对应的 ICU weekday。
+
+    Args:
+        first_day_of_week: 周起点常量。
+
+    Returns:
+        周起点本身（第一列即周起点）。
+    """
     return first_day_of_week
 
 
 def last_col(first_day_of_week: int) -> int:
-    """本周最后一列对应的 ICU weekday。"""
+    """本周最后一列对应的 ICU weekday。
+
+    Args:
+        first_day_of_week: 周起点常量。
+
+    Returns:
+        (起点 + 6 天) 折算回 1~7 的 ICU weekday。
+    """
     return (first_day_of_week + 5) % 7 + 1

@@ -54,23 +54,9 @@ from ..text import Text
 
 
 class ListboxItem(QAbstractButton):
-    """单个列表项。
+    """单个列表项，继承 QAbstractButton。
 
-    用法::
-
-        item = ListboxItem("New file", key="new", description="Create a new file",
-                           start_content=icon_widget, shortcut="Ctrl+N")
-        listbox.add_item(item)
-
-        # 或快捷创建：
-        listbox.add_item("New file", key="new", description="Create a new file",
-                         shortcut="Ctrl+N")
-
-    交互::
-        - 单击 → 触发 ``activated(key)`` 信号
-        - 选中 (selection_mode != none) → 触发 ``selection_changed(bool)``
-
-    样式属性由父 Listbox 通过 :py:meth:`apply_style` 注入；用户不要手动调。
+    样式由父 Listbox 经 apply_style 注入，用户不要手动调。
     """
 
     HOVER_ANIM_DURATION = 150
@@ -92,6 +78,19 @@ class ListboxItem(QAbstractButton):
         show_divider: bool = False,
         parent=None,
     ):
+        """初始化一个列表项。
+
+        Args:
+            title: 主标题文案。
+            key: 唯一标识；缺省时回落到 title 或自动生成 id。
+            description: 副标题（描述）文案，空则不显示。
+            start_content: 前置内容（SVG 名/路径或 QWidget）。
+            end_content: 后置内容（SVG 名/路径或 QWidget）；存在时隐藏选中对勾槽。
+            shortcut: 快捷键标记文案。
+            is_disabled: 是否禁用。
+            show_divider: 是否在项底部绘制分隔线。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self.setCursor(Qt.PointingHandCursor)
         self.setFocusPolicy(Qt.StrongFocus)
@@ -230,41 +229,96 @@ class ListboxItem(QAbstractButton):
     # 公共属性
     # ------------------------------------------------------------
     def key(self) -> str:
+        """返回本项的唯一标识 key。
+
+        Returns:
+            str: 当前 key。
+        """
         return self._key
 
     def set_key(self, key: str):
+        """设置本项的唯一标识 key。
+
+        Args:
+            key: 新的唯一标识字符串。
+        """
         self._key = key
 
     def title(self) -> str:
+        """返回主标题文案。
+
+        Returns:
+            str: 当前标题。
+        """
         return self._title
 
     def set_title(self, t: str):
+        """设置主标题文案。
+
+        Args:
+            t: 新标题；同步更新标题标签显示。
+        """
         self._title = t
         self._title_label.setText(t)
 
     def description(self) -> str:
+        """返回副标题（描述）文案。
+
+        Returns:
+            str: 当前描述；空串表示无描述。
+        """
         return self._description
 
     def set_description(self, d: str):
+        """设置副标题（描述）文案。
+
+        Args:
+            d: 新描述；为空则隐藏描述标签。
+        """
         self._description = d
         self._desc_label.setText(d)
         self._desc_label.setVisible(bool(d))
 
     def shortcut_text(self) -> str:
+        """返回快捷键标记文案。
+
+        Returns:
+            str: 当前快捷键文案。
+        """
         return self._shortcut
 
     def set_shortcut(self, s: str):
+        """设置快捷键标记文案。
+
+        Args:
+            s: 新快捷键文案；为空则隐藏快捷键标签。
+        """
         self._shortcut = s
         self._shortcut_label.setText(s)
         self._shortcut_label.setVisible(bool(s))
 
     def is_disabled(self) -> bool:
+        """返回是否处于禁用态。
+
+        Returns:
+            bool: True 表示已禁用（不可点击/不可选中）。
+        """
         return self._is_disabled
 
     def set_disabled(self, v: bool):
+        """设置是否禁用本项。
+
+        Args:
+            v: True 禁用，False 启用。
+        """
         self._set_disabled(v)
 
     def _set_disabled(self, v: bool):
+        """内部：真正落实禁用态（更新 enabled / 光标 / 重绘）。
+
+        Args:
+            v: True 禁用，False 启用。
+        """
         self._is_disabled = bool(v)
         self.setEnabled(not self._is_disabled)
         if self._is_disabled:
@@ -274,9 +328,19 @@ class ListboxItem(QAbstractButton):
         self.update()
 
     def is_selected(self) -> bool:
+        """返回当前是否被选中。
+
+        Returns:
+            bool: True 表示选中。
+        """
         return self._is_selected
 
     def set_selected(self, v: bool):
+        """以编程方式设置选中态（不触发 toggled，由父 Listbox 控制）。
+
+        Args:
+            v: True 设为选中，False 取消选中。
+        """
         v = bool(v)
         if v == self._is_selected:
             return
@@ -294,15 +358,30 @@ class ListboxItem(QAbstractButton):
         self.selected_changed.emit(v)
 
     def show_divider(self) -> bool:
+        """是否显示底部分隔线。
+
+        Returns:
+            bool: True 表示绘制分隔线。
+        """
         return self._show_divider
 
     def set_show_divider(self, v: bool):
+        """设置是否显示底部分隔线（同时重算高度）。
+
+        Args:
+            v: True 显示分隔线。
+        """
         self._show_divider = bool(v)
         self.update()
         # 高度需重算
         self.updateGeometry()
 
     def set_start_content(self, content: str | QWidget | None):
+        """设置前置内容（SVG 名/路径或 QWidget）。
+
+        Args:
+            content: SVG 名/路径字符串、QWidget，或 None 清空。
+        """
         # 清旧
         if self._start_widget is not None and self._start_widget is not self._start_label:
             self._h.removeWidget(self._start_widget)
@@ -323,6 +402,14 @@ class ListboxItem(QAbstractButton):
         self._update_layout_spacing()
 
     def set_end_content(self, content: str | QWidget | None):
+        """设置后置内容（SVG 名/路径或 QWidget）。
+
+        Args:
+            content: SVG 名/路径字符串、QWidget，或 None 清空（并恢复选中对勾槽）。
+
+        Note:
+            传入内容时会隐藏右侧 selectedIcon 占位槽。
+        """
         if self._end_widget is not None and self._end_widget is not self._end_label:
             self._h.removeWidget(self._end_widget)
             safe_delete(self._end_widget)
@@ -364,6 +451,19 @@ class ListboxItem(QAbstractButton):
         highlight_on_focus: bool,
         selectable: bool,
     ):
+        """由父 Listbox 注入并套用统一样式。
+
+        Args:
+            variant: 视觉变体（如 solid / light / flat）。
+            color: 主题色名（如 default / primary）。
+            size: 尺寸档位（sm / md / lg）。
+            radius: 圆角档位。
+            theme: 主题（light / dark）。
+            disable_animation: 是否关闭过渡动画。
+            hide_selected_icon: 是否隐藏选中勾选图标。
+            highlight_on_focus: 聚焦时是否高亮。
+            selectable: 本条是否可选中。
+        """
         self._variant = variant
         self._color = color
         self._size = size
@@ -385,6 +485,11 @@ class ListboxItem(QAbstractButton):
     # 尺寸与字体
     # ------------------------------------------------------------
     def _size_cfg(self) -> dict:
+        """取当前 size 对应的尺寸配置表。
+
+        Returns:
+            dict: LISTBOX_SIZES 中对应档位的配置；缺省回落 md。
+        """
         return LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
 
     def _resolved_item_radius(self, cfg: dict) -> float:
@@ -403,6 +508,7 @@ class ListboxItem(QAbstractButton):
             return float(cfg["item_radius"])
 
     def _apply_size(self):
+        """按当前 size 配置套用 layout margin / 字号 / 字重 / 快捷键样式并刷新几何。"""
         cfg = self._size_cfg()
 
         # 设置 layout margins
@@ -444,15 +550,7 @@ class ListboxItem(QAbstractButton):
         self.updateGeometry()
 
     def _refresh_check_slot(self):
-        """根据当前状态决定是否在右侧预留 selectedIcon 占位。
-
-        显示规则（和 ``_paint_check`` 必须保持一致）：
-        - selectable（selection_mode != "none"）
-        - hide_selected_icon=False（默认；为 True 时关闭对勾）
-        - 没设 end_content（end_content 占同一槽位，让用户内容优先）
-
-        宽度 = ``selected_icon_size * 1.6``（与 _paint_check 里的 box 一致）。
-        """
+        """按状态决定右侧 selectedIcon 槽位显隐与宽度（与 _paint_check 规则一致）。"""
         cfg = self._size_cfg()
         box = int(cfg["selected_icon_size"] * 1.6)
         will_show_check = (
@@ -468,6 +566,7 @@ class ListboxItem(QAbstractButton):
             self._check_slot.hide()
 
     def _update_layout_spacing(self):
+        """根据 description / shortcut 是否存在刷新可见性与几何尺寸。"""
         # 没有 description 时把 wrap 缩成单行高度
         self._desc_label.setVisible(bool(self._description))
         self._shortcut_label.setVisible(bool(self._shortcut))
@@ -475,6 +574,11 @@ class ListboxItem(QAbstractButton):
         self.updateGeometry()
 
     def sizeHint(self) -> QSize:
+        """返回推荐尺寸（高度含 title/description 与 divider，宽度估算）。
+
+        Returns:
+            QSize: 推荐宽高。
+        """
         cfg = self._size_cfg()
         # 基础高度 = title font + 上下 padding；有 description 时再加 desc 行
         title_h = QFontMetrics(self._title_label.font()).height()
@@ -489,16 +593,23 @@ class ListboxItem(QAbstractButton):
         return QSize(max(w, 80), h)
 
     def minimumSizeHint(self) -> QSize:
+        """返回最小尺寸（等同 sizeHint）。
+
+        Returns:
+            QSize: 最小宽高。
+        """
         return self.sizeHint()
 
     # ------------------------------------------------------------
     # icon pixmap 着色
     # ------------------------------------------------------------
     def _refresh_pixmap_color(self):
+        """刷新 start / end 两个 icon 的着色 pixmap。"""
         self._refresh_start_pixmap()
         self._refresh_end_pixmap()
 
     def _refresh_start_pixmap(self):
+        """按当前文字色重绘 start_content 的 SVG 图标。"""
         if self._start_src is None:
             return
         cfg = self._size_cfg()
@@ -509,6 +620,7 @@ class ListboxItem(QAbstractButton):
         self._start_label.setFixedSize(size, size)
 
     def _refresh_end_pixmap(self):
+        """按当前文字色重绘 end_content 的 SVG 图标。"""
         if self._end_src is None:
             return
         cfg = self._size_cfg()
@@ -522,6 +634,7 @@ class ListboxItem(QAbstractButton):
     # 状态变化
     # ------------------------------------------------------------
     def enterEvent(self, e):
+        """鼠标进入：标记 hover 并刷新调色板（带过渡）。"""
         super().enterEvent(e)
         # disabled 也记录 hover —— _refresh_palette 会用一个"减弱版"hover bg
         # 给视觉反馈("我知道你在 hover 我,但我点不动"),观感比完全不响应好。
@@ -530,11 +643,13 @@ class ListboxItem(QAbstractButton):
         self._refresh_palette(animated=not self._disable_animation)
 
     def leaveEvent(self, e):
+        """鼠标离开：清除 hover 并刷新调色板（带过渡）。"""
         super().leaveEvent(e)
         self._is_hover = False
         self._refresh_palette(animated=not self._disable_animation)
 
     def focusInEvent(self, e):
+        """获得焦点：记录 keyboard focus 并视情况刷新调色板。"""
         super().focusInEvent(e)
         self._is_focused = True
         # 键盘/Tab 等非鼠标来源进入 focus 时,无条件给 hover 同款视觉,
@@ -548,6 +663,7 @@ class ListboxItem(QAbstractButton):
             self._refresh_palette(animated=not self._disable_animation)
 
     def focusOutEvent(self, e):
+        """失去焦点：清除 focus 标记并视情况刷新调色板。"""
         super().focusOutEvent(e)
         self._is_focused = False
         was_kb = self._is_keyboard_focused
@@ -556,6 +672,11 @@ class ListboxItem(QAbstractButton):
             self._refresh_palette(animated=not self._disable_animation)
 
     def _on_toggled(self, checked: bool):
+        """toggled 信号槽：仅在 selectable 模式下同步选中态与对勾动画。
+
+        Args:
+            checked: QAbstractButton 切换后的 check 状态。
+        """
         # 只在 selectable 模式下当作选中态变化
         if not self._selectable:
             return
@@ -568,6 +689,11 @@ class ListboxItem(QAbstractButton):
         self.selected_changed.emit(checked)
 
     def mouseReleaseEvent(self, e):
+        """鼠标释放：处理守卫拦截与 activated 发射。
+
+        Note:
+            若父 Listbox 的 toggle_guard 返回 True，则吞掉本次点击（不 toggle、不 emit）。
+        """
         # 点击进入背错，还原不在本 item rect 内的释放：按默认走
         in_rect = self.rect().contains(
             e.position().toPoint() if hasattr(e, "position") else e.pos()
@@ -587,6 +713,11 @@ class ListboxItem(QAbstractButton):
             self.activated.emit(self._key)
 
     def keyPressEvent(self, e):
+        """键盘事件：方向键/Home/End 转发给父 Listbox，Enter/Space 走默认。
+
+        Args:
+            e: QKeyEvent。
+        """
         # 方向键 / Home / End 转发给父 Listbox（焦点在 item 上时由这里兜住，
         # 否则 QAbstractButton 默认会把方向键交给 Qt 焦点链跳走）
         key = e.key()
@@ -600,6 +731,11 @@ class ListboxItem(QAbstractButton):
         super().keyPressEvent(e)
 
     def _find_listbox(self):
+        """沿父链向上查找最近的 Listbox 实例（可能是直接父或隔着 Section）。
+
+        Returns:
+            Listbox | None: 找到的 Listbox 或 None。
+        """
         # 顺着父链找最近的 Listbox（可能是直接父，也可能隔着 ListboxSection / 内部容器）
         from .listbox import Listbox  # 局部 import 防循环
 
@@ -629,6 +765,14 @@ class ListboxItem(QAbstractButton):
         return False
 
     def _refresh_palette(self, *, animated: bool):
+        """根据当前状态计算目标 bg/border/text/indicator 并启动过渡动画。
+
+        Args:
+            animated: 是否以动画过渡；False 时立即设置终值。
+
+        Note:
+            透明端颜色经 aligned_color_pair 对齐色相，避免插值经过黑色产生灰边。
+        """
         active = self._is_active()
         # 目标色
         if active:
@@ -703,24 +847,45 @@ class ListboxItem(QAbstractButton):
         )
 
     def _on_bg_step(self, c):
+        """动画步：更新当前背景色并重绘。
+
+        Args:
+            c: 当前帧的 QColor。
+        """
         self._cur_bg = QColor(c)
         self.update()
 
     def _on_border_step(self, c):
+        """动画步：更新当前边框色并重绘。
+
+        Args:
+            c: 当前帧的 QColor。
+        """
         self._cur_border = QColor(c)
         self.update()
 
     def _on_text_step(self, c):
+        """动画步：更新当前文字色并刷新图标着色与重绘。
+
+        Args:
+            c: 当前帧的 QColor。
+        """
         self._cur_text = QColor(c)
         self._apply_text_color()
         self._refresh_pixmap_color()
         self.update()
 
     def _on_indicator_step(self, v):
+        """动画步：更新选中勾透明度并重绘。
+
+        Args:
+            v: 当前帧的 indicator alpha（0~1）。
+        """
         self._cur_indicator_alpha = float(v)
         self.update()
 
     def _apply_text_color(self):
+        """把当前过渡文字色应用到标题标签（description 固定 default-500）。"""
         # title 用当前过渡色，description 总是 default-500（HeroUI menu 行为）
         self._title_label.set_color(self._cur_text.name())
 
@@ -728,6 +893,7 @@ class ListboxItem(QAbstractButton):
     # 绘制
     # ------------------------------------------------------------
     def paintEvent(self, e):
+        """重绘：绘制背景 / 边框 / 选中对勾 / 分隔线（禁用态降低不透明度）。"""
         if self._is_disabled:
             opacity = 0.5
         else:
@@ -787,15 +953,7 @@ class ListboxItem(QAbstractButton):
         p.end()
 
     def _paint_check(self, p: QPainter, rect: QRect, cfg: dict):
-        """画选中态对勾（按 path 描出）—— 复用 animation/check_draw.paint_animated_check。
-
-        位置直接对齐 ``_check_slot.geometry()``。slot 由 ``_refresh_check_slot``
-        负责显隐和宽度，layout 自动给它腾出位置 → 永远不会和 shortcut /
-        end_content 重叠。
-
-        end_content 已被设置时 slot 会被 hide，这里也直接 return（语义和 HeroUI
-        selectedIcon 与 endContent 同槽位一致）。
-        """
+        """画选中对勾，位置对齐 _check_slot，复用 paint_animated_check。"""
         if self._end_widget is not None or self._end_src is not None:
             return
         if not self._check_slot.isVisible():

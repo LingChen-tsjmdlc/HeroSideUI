@@ -1,9 +1,4 @@
-"""
-HeroUI v2 圆角系统 (Border Radius)
-
-所有组件共享的圆角 token。
-"full" 需要根据组件高度动态计算，不在这里定义。
-"""
+"""HeroUI 圆角 token：none/sm/md/lg；full 需按高度动态算不在此定义。"""
 
 RADIUS = {
     "none": "0px",

@@ -33,9 +33,11 @@ class IndeterminateBarAnimation(LoopDriver):
         super().__init__(owner, duration, easing, parent)
 
     def _get_pos(self):
+        """由循环进度换算当前滑块位置。"""
         return -self._bar_ratio + self.value() * (1.0 + self._bar_ratio)
 
     def _set_pos(self, value):
+        """由滑块位置反推循环进度。"""
         self._set_phase((value + self._bar_ratio) / (1.0 + self._bar_ratio))
 
     position = Property(float, _get_pos, _set_pos)
@@ -64,9 +66,11 @@ class SpinAnimation(LoopDriver):
         super().__init__(owner, duration, easing, parent)
 
     def _get_angle(self):
+        """由循环进度换算当前旋转角度。"""
         return self.value() * 360.0
 
     def _set_angle(self, value):
+        """由旋转角度反推循环进度。"""
         self._set_phase(value / 360.0)
 
     angle = Property(float, _get_angle, _set_angle)

@@ -1,12 +1,5 @@
-"""pygments 语法高亮 → Qt 富文本 HTML。
-
-把源码按语言 token 化，每个 token 包成带颜色的 ``<span>``，整段拼成外层 ``<div>``
-富文本供 Text 渲染。配色随主题走 ``CODE_BLOCK_SYNTAX``（One Light / One Dark）。
-pygments 缺失或语言无法识别时降级为纯文本（保留内容不丢失）。
-
-字体注意：**不能用 ``<pre>``**——Qt 富文本会给 ``<pre>`` 强制套 monospace 覆盖
-掉 setFont 设的字体（表现为字体没生效）。改用 ``<div white-space:pre>`` 既保留
-换行/缩进，又让 CodeBlock 的 ``setFont`` 生效。只产出 HTML 字符串，不碰 Qt widget。
+"""pygments → Qt 富文本 HTML；用 <div white-space:pre> 而非 <pre>（后者会
+强制 monospace 覆盖 QFont）。缺失时降级纯文本。
 """
 
 from __future__ import annotations
@@ -17,7 +10,15 @@ from ...themes import CODE_BLOCK_SPEC, CODE_BLOCK_SYNTAX
 
 
 def _token_color(ttype, syntax: dict[str, str]) -> str:
-    """pygments token 类型 → 十六进制色（映射到语义键）。"""
+    """把 pygments token 类型映射到语义色。
+
+    Args:
+        ttype: pygments token 类型。
+        syntax: 主题的语法配色字典。
+
+    Returns:
+        对应语义键的十六进制色；未命中时返回 text 色。
+    """
     from pygments.token import (
         Comment,
         Error,
@@ -62,9 +63,17 @@ def _token_color(ttype, syntax: dict[str, str]) -> str:
 
 
 def highlight_to_lines(code: str, language: str, syntax: dict[str, str]) -> list[str]:
-    """把源码高亮成"每行一个 HTML 片段"的列表（不含行号 / 行容器）。
+    """把源码高亮成「每行一个 HTML 片段」的列表。
 
-    返回每行已着色的 HTML；pygments 不可用或识别失败时，每行退化为转义纯文本。
+    Args:
+        code: 源码文本。
+        language: pygments lexer 名；空串时自动猜测。
+        syntax: 主题的语法配色字典。
+
+    Returns:
+        每行已着色的 HTML 列表（不含行号与行容器）；
+        pygments 不可用、lexer 识别失败或任何异常时，
+        每行退化为 HTML 转义的纯文本。
     """
     code = code.rstrip("\n")
     try:
@@ -117,6 +126,13 @@ def build_code_html(
         show_line_numbers: 是否在每行前加行号
         wrap:              是否对超长行软换行（行号仍可与之共存）
         highlight_lines:   需高亮背景的行号（1 基）
+
+    Returns:
+        整段富文本 HTML 字符串。
+
+    Note:
+        行号用真实空格右对齐、由 white-space:pre 保留；
+        highlight_lines 中的行额外加背景色。
     """
     highlight_lines = highlight_lines or []
     syntax = CODE_BLOCK_SYNTAX["dark" if theme == "dark" else "light"]

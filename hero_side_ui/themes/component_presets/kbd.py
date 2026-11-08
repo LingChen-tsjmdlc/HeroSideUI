@@ -1,13 +1,4 @@
-"""Kbd 组件主题预设。
-
-对齐 HeroUI v2 kbd.ts:
-  base: px-1.5 py-0.5 + space-x-0.5 + font-normal + text-small + shadow-small + rounded-small
-
-HeroUI 原版无 size / radius variant；本组件按项目惯例扩展三档 size。
-radius 像素值不走全局 RADIUS token —— Kbd 高度受限（18~28px），
-全局值（如 lg=14）会被 Qt 钳制到短边一半导致与 full 视觉重合。
-故每档 size 自带一张 radius 表，且保证 lg 严格小于 full（差 2px）。
-"""
+"""KBD 尺寸表：每档 size 自带 radius 表（高度受限，全局 RADIUS 会被钳制重合）。"""
 
 # 默认 (md) 像素规格 —— 兼容旧引用
 KBD_SIZES = {

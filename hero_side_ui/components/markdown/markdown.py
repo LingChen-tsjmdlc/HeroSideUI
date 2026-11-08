@@ -1,14 +1,5 @@
-"""HeroSideUI Markdown 组件 —— 把 Markdown 文本渲染成原生 widget 树。
-
-完整 API / 示例见 ``docs/markdown.md``。
-
-设计：解析层（markdown-it-py）→ 语法树 → 渲染层（MarkdownRenderer）生成块级
-widget 纵向堆叠。块级复用 Title/Body/Table/Image/Divider；行内格式（粗斜删/
-行内 code/链接/图片）拼成 Qt 富文本由段落 Text 一次渲染、永不拆 widget，故整段
-连续框选。行内样式由 inline_styles 声明式配置（一次配置到处套用）。
-
-主题自治：各子组件自己注册到 ThemeProvider；主组件在主题切换时整树重建，
-保证行内 code 底色、引用竖条等随主题刷新。
+"""Markdown 组件：解析树 → 块级 widget 纵向堆叠；行内拼富文本不拆 widget。
+主题切换整树重建。API 见 docs/markdown.md。
 """
 
 from __future__ import annotations
@@ -103,6 +94,14 @@ class Markdown(QWidget):
     # ------------------------------------------------------------
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体 light/dark。
+
+        Args:
+            mode: auto / light / dark。
+
+        Returns:
+            str: 解析后的实际主题；auto 回落当前 ThemeProvider 主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
@@ -111,6 +110,7 @@ class Markdown(QWidget):
     # 重建
     # ------------------------------------------------------------
     def _rebuild(self) -> None:
+        """整树重建：清空布局、重新解析文本并渲染所有块级 widget。"""
         self.setUpdatesEnabled(False)
         clear_layout(self._layout)
         root = parse(self._text)
@@ -130,25 +130,55 @@ class Markdown(QWidget):
     # 公共 API
     # ------------------------------------------------------------
     def set_markdown(self, text: str) -> None:
+        """动态替换 Markdown 内容并重建渲染。
+
+        Args:
+            text: 新的 Markdown 文本。
+        """
         self._text = str(text or "")
         self._rebuild()
 
     def markdown(self) -> str:
+        """返回当前 Markdown 源文本。
+
+        Returns:
+            str: 当前文本。
+        """
         return self._text
 
     def set_inline_overrides(self, overrides: dict[str, InlineOverride]) -> None:
+        """设置行内 HTML override（重建渲染）。
+
+        Args:
+            overrides: {type: callable(InlineContext)->str}。
+        """
         self._inline_overrides = dict(overrides) if overrides else {}
         self._rebuild()
 
     def set_inline_styles(self, styles: dict[str, dict]) -> None:
+        """设置声明的行内样式（重建渲染）。
+
+        Args:
+            styles: {type: {样式属性}}。
+        """
         self._inline_styles = dict(styles) if styles else {}
         self._rebuild()
 
     def set_block_renderers(self, renderers: dict[str, BlockRenderer]) -> None:
+        """设置块级覆盖渲染器（重建渲染）。
+
+        Args:
+            renderers: {type: callable(BlockContext)->QWidget}。
+        """
         self._block_renderers = dict(renderers) if renderers else {}
         self._rebuild()
 
     def set_inline_widgets(self, widgets: dict[str, InlineWidget]) -> None:
+        """设置行内 widget 工厂（重建渲染）。
+
+        Args:
+            widgets: {type: callable(InlineWidgetContext)->QWidget}。
+        """
         self._inline_widgets = dict(widgets) if widgets else {}
         self._rebuild()
 
@@ -156,6 +186,11 @@ class Markdown(QWidget):
     # 主题
     # ------------------------------------------------------------
     def set_theme(self, theme: str) -> None:
+        """设置主题（auto/light/dark），auto 时注册 ThemeProvider（重建渲染）。
+
+        Args:
+            theme: auto 跟随全局；light/dark 硬锁主题。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -168,11 +203,17 @@ class Markdown(QWidget):
         self._rebuild()
 
     def _apply_provider_theme(self, theme: str) -> None:
+        """ThemeProvider 回调：auto 模式下跟随全局主题切换并重建。"""
         self._theme = theme
         self._rebuild()
 
     @property
     def theme(self) -> str:
+        """当前实际主题（light/dark）。
+
+        Returns:
+            str: 当前主题。
+        """
         return self._theme
 
 

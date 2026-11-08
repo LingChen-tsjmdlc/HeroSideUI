@@ -1,9 +1,4 @@
-"""Slider 的 thumb tip 显隐辅助（仅当 show_tooltip=True 时启用）。
-
-不复用通用 Tooltip——后者顶层窗口模式会闪一帧 Windows 原生装饰，
-embedded 模式 reparent 链也不可靠。改用 _SliderThumbTip：永远是 canvas
-的直系子 widget，自绘背景 + 文字 + 箭头。
-"""
+"""Slider thumb tip 显隐 mixin（show_tooltip=True 时启用），依赖 _SliderThumbTip。"""
 
 from __future__ import annotations
 
@@ -18,18 +13,17 @@ __all__ = ["_SliderTooltipMixin"]
 
 
 class _SliderTooltipMixin:
-    """Slider 的 thumb tip 显隐辅助。
-
-    依赖宿主 Slider 已有字段：
-        _show_tooltip / _tooltip_props / _canvas / _is_range
-        _value / _min / _max / _value_formatter / _step
-        _orientation / _hide_thumb / _theme_mode
-    """
+    """thumb tip 显隐辅助；依赖宿主 _show_tooltip/_canvas/_value 等字段。"""
 
     # ------------------------------------------------------------
     # 初始化
     # ------------------------------------------------------------
     def _init_tooltips(self) -> None:
+        """按 show_tooltip 与 range 模式创建 tooltip 实例。
+
+        Note:
+            _tip_anchors 保留为空列表以兼容 _api.py 的重建逻辑；未启用时直接返回。
+        """
         # _tip_anchors 保留为空 list（_api.py 重建逻辑兼容）
         self._tip_anchors: list[QWidget] = []
         self._tooltips: list[_SliderThumbTip] = []
@@ -55,6 +49,7 @@ class _SliderTooltipMixin:
     # 显隐控制
     # ------------------------------------------------------------
     def _tooltip_show(self, idx: int) -> None:
+        """显示指定 thumb 的 tooltip 并写入文字与位置。"""
         if not self._tooltips or idx < 0 or idx >= len(self._tooltips):
             return
         tip = self._tooltips[idx]
@@ -62,6 +57,7 @@ class _SliderTooltipMixin:
         tip.show_at(self._thumb_top_center(idx))
 
     def _tooltip_hide(self, idx: int | None = None) -> None:
+        """隐藏指定 thumb 的 tooltip；idx 为 None 时隐藏全部。"""
         if not self._tooltips:
             return
         if idx is None:
@@ -109,6 +105,7 @@ class _SliderTooltipMixin:
         return QPointF(c.x(), c.y() - thumb / 2.0)
 
     def _tooltip_text_for(self, idx: int) -> str:
+        """返回指定 thumb 对应的格式化数值文字。"""
         v = self._value  # type: ignore[attr-defined]
         if self._is_range:  # type: ignore[attr-defined]
             single = v[idx]
@@ -129,5 +126,6 @@ class _SliderTooltipMixin:
     # 主题同步
     # ------------------------------------------------------------
     def _tooltip_apply_theme(self, theme: str) -> None:
+        """把新主题下发给所有 tooltip 实例。"""
         for tip in getattr(self, "_tooltips", []) or []:
             tip.set_theme(theme)

@@ -1,9 +1,4 @@
-"""
-Slider thumb tooltip：顶层无边框 widget，自绘背景 + 文字 + 箭头。
-
-用 Qt.ToolTip + FramelessWindowHint + NoDropShadowWindowHint + WA_TranslucentBackground
-组合，避免 Windows 原生装饰泄露；定位走 canvas.mapToGlobal()，越界不被父裁剪。
-"""
+"""_SliderThumbTip：canvas 直系子 widget 的自绘 tooltip，防 Windows 原生装饰闪帧。"""
 
 from __future__ import annotations
 
@@ -33,14 +28,7 @@ _SHADOW_MARGIN = _SHADOW_SPREAD  # widget 四周预留
 
 
 class _SliderThumbTip(QWidget):
-    """单个 thumb 的轻量 tooltip。
-
-    用法：
-        tip = _SliderThumbTip(canvas, color="primary", size="md", theme="auto")
-        tip.set_text("50%")
-        tip.show_at(QPointF(cx, cy_thumb_top))   # 给 thumb 顶部锚点
-        tip.fade_out()
-    """
+    """单个 thumb 的轻量自绘 tooltip。"""
 
     def __init__(
         self,
@@ -50,6 +38,19 @@ class _SliderThumbTip(QWidget):
         theme: str = "auto",
         disable_animation: bool = False,
     ):
+        """构造顶层 tooltip 窗口并记录主题与动画配置。
+
+        Args:
+            parent: 作为坐标映射 anchor 的 canvas 控件。
+            color: 语义色名。
+            size: 尺寸档位。
+            theme: 主题模式，auto 跟随 ThemeProvider。
+            disable_animation: 是否关闭淡入淡出。
+
+        Note:
+            size 非法时回退到 md；parent 只用作 anchor，控件实际以 parent=None
+            创建为独立窗口以免被 canvas 裁剪；淡入淡出走 windowOpacity。
+        """
         # 顶层 widget：parent=None 让它独立窗口，不被 canvas 裁剪
         super().__init__(None)
         # 记录 anchor widget（canvas）做 mapToGlobal
@@ -87,22 +88,33 @@ class _SliderThumbTip(QWidget):
     # ---- 主题 ----
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: 主题模式，light / dark 直接生效。
+
+        Returns:
+            解析后的主题名；其它值跟随 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_theme(self, theme: str):
+        """切换主题模式并重解析当前主题、触发重绘。"""
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
         self.update()
 
     def _on_theme_changed(self, theme: str):
+        """auto 模式下响应主题广播并重绘。"""
         if self._theme_mode == "auto":
             self._theme = theme
             self.update()
 
     # ---- 颜色 ----
     def _bg_color(self) -> QColor:
+        """返回 tooltip 主体背景色，default 随主题翻转。"""
         is_dark = self._theme == "dark"
         if self._color == "default":
             return QColor("#ffffff" if not is_dark else "#27272a")
@@ -110,6 +122,7 @@ class _SliderThumbTip(QWidget):
         return QColor(c[500])
 
     def _text_color(self) -> QColor:
+        """返回 tooltip 文字颜色，warning 固定用黑字。"""
         is_dark = self._theme == "dark"
         if self._color == "default":
             return QColor("#11181c" if not is_dark else "#ecedee")
@@ -119,6 +132,7 @@ class _SliderThumbTip(QWidget):
 
     # ---- 内容 ----
     def set_text(self, text: str):
+        """更新 tooltip 文字并重新排版，文本相同时忽略。"""
         if text == self._text:
             return
         self._text = text
@@ -126,13 +140,16 @@ class _SliderThumbTip(QWidget):
         self.update()
 
     def _font(self):
+        """按尺寸档位返回文字 QFont。"""
         cfg = TOOLTIP_SIZES[self._size]
         return make_text_qfont(size=cfg["font_size"], weight="medium")
 
     def _padding(self) -> int:
+        """返回当前尺寸档位的内边距。"""
         return TOOLTIP_SIZES[self._size]["padding"]
 
     def _relayout(self):
+        """按文字尺寸、箭头与阴影 margin 重算窗口大小。"""
         fm = QFontMetrics(self._font())
         pad = self._padding()
         text_w = fm.horizontalAdvance(self._text or " ")
@@ -176,11 +193,18 @@ class _SliderThumbTip(QWidget):
         self._fade(1.0)
 
     def fade_out(self):
+        """淡出 tooltip，不可见时直接返回。"""
         if not self.isVisible():
             return
         self._fade(0.0, on_done=self.hide)
 
     def _fade(self, target: float, on_done=None):
+        """把窗口透明度过渡到目标值。
+
+        Args:
+            target: 目标窗口透明度。
+            on_done: 结束回调，淡出时用于隐藏窗口。
+        """
         tween_property(
             self,
             "_anim",
@@ -194,6 +218,7 @@ class _SliderThumbTip(QWidget):
 
     # ---- 绘制 ----
     def paintEvent(self, _event):
+        """绘制阴影、主体、底部箭头与文字。"""
         if not self._text:
             return
         p = QPainter(self)

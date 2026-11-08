@@ -1,12 +1,5 @@
-"""ToastRegion — Toast 的堆叠区（宿主窗口内的 overlay）。
-
-职责：
-- 覆盖宿主窗口，空白区鼠标透传，卡片可交互（卡片挂宿主窗口而非 region，
-  否则命中测试会整树跳过鼠标透明 region 的子树，卡片内按钮全部收不到点击）
-- 6 个 placement 定位；折叠态只露出最新几张，hover 展开全部
-- 进出场位移动画、超时/关闭/拖拽的编排；超量时旧卡隐藏保留计时，hover 展开全部
-
-卡片自身的外观与倒计时在 ``toast.py``；全局队列在 ``_provider.py``。
+"""ToastRegion 堆叠区：覆盖宿主、空白透传、卡片挂宿主（否则命中测试跳过
+子树）、6 方位定位与折叠展开编排。
 """
 
 from __future__ import annotations
@@ -49,17 +42,19 @@ class _ToastItem:
 
 
 class _HoverWatcher(QObject):
-    """监听全局鼠标移动，判断指针是否停在 toast 区域上。
-
-    region 自身鼠标透传，收不到 enter/leave；卡片各自上报又会在展开位移时抖动，
-    所以统一按"指针是否落在卡片联合矩形内"判定（等价于 HeroUI 的 region hover）。
-    """
+    """全局鼠标移动监听：按指针是否落在卡片联合矩形内判定 region hover。"""
 
     def __init__(self, region: ToastRegion):
+        """初始化监听器并持有目标 region。
+
+        Args:
+            region: 需要判定 hover 的 ToastRegion。
+        """
         super().__init__(region)
         self._region = region
 
     def eventFilter(self, obj, event) -> bool:
+        """把全局鼠标移动事件转交 region 处理。"""
         if event.type() == QEvent.Type.MouseMove:
             self._region._on_global_mouse_move(event.globalPosition().toPoint())
         return False
@@ -76,6 +71,18 @@ class ToastRegion(QWidget):
         toast_offset: int = 0,
         disable_animation: bool = False,
     ):
+        """初始化堆叠区并设置鼠标透传与折叠定时器。
+
+        Args:
+            parent: 宿主窗口；None 时 region 作为独立顶层窗口。
+            placement: toast 的初始弹出位置。
+            max_visible_toasts: 同时可见的 toast 数量上限。
+            toast_offset: 堆叠区相对窗口边缘的偏移量。
+            disable_animation: 为 True 时关闭进出场与位移动画。
+
+        Note:
+            有宿主时卡片挂在宿主窗口而非 region 子树内，避免 Qt 命中测试整树剪枝使卡片收不到鼠标事件；此时空白区才透传鼠标。max_visible_toasts 会经 int() 转换并钳制为至少 1。
+        """
         super().__init__(parent)
         self._placement = placement
         self._max_visible = max(1, int(max_visible_toasts))
@@ -105,6 +112,7 @@ class ToastRegion(QWidget):
 
     @property
     def placement(self) -> str:
+        """返回当前 toast 的弹出位置。"""
         return self._placement
 
     # ============================================================
@@ -174,6 +182,7 @@ class ToastRegion(QWidget):
                 self.dismiss(item.key)
 
     def keys(self) -> list:
+        """返回当前未退出的 toast 的 key 列表。"""
         return [it.key for it in self._items if not it.exiting]
 
     def card(self, key: str) -> QWidget | None:
@@ -186,20 +195,28 @@ class ToastRegion(QWidget):
     # ============================================================
 
     def set_placement(self, placement: str):
+        """设置 toast 的弹出位置并重排。"""
         self._placement = placement
         for item in self._items:
             item.card.set_placement(placement)
         self._relayout(animate=False)
 
     def set_max_visible_toasts(self, count: int):
+        """设置同时可见的 toast 数量上限并重排。
+
+        Note:
+            count 会经 int() 转换并钳制为至少 1。
+        """
         self._max_visible = max(1, int(count))
         self._relayout(animate=True)
 
     def set_toast_offset(self, offset: int):
+        """设置堆叠区相对窗口边缘的偏移量并重排。"""
         self._toast_offset = offset
         self._relayout(animate=False)
 
     def set_disable_animation(self, disable: bool):
+        """设置是否关闭进出场与位移动画。"""
         self._disable_animation = disable
 
     # ============================================================
@@ -207,6 +224,7 @@ class ToastRegion(QWidget):
     # ============================================================
 
     def _active_items(self) -> list:
+        """返回尚未进入退出流程的条目列表。"""
         return [it for it in self._items if not it.exiting]
 
     def _pad(self) -> int:
@@ -224,6 +242,7 @@ class ToastRegion(QWidget):
         return self._content_width() + 2 * self._pad()
 
     def _x_for(self, width: int) -> int:
+        """按弹出方位计算卡片左上角的 x 坐标。"""
         margin = TOAST_SPEC["margin"]
         if self._placement.endswith("left"):
             return margin
@@ -264,6 +283,11 @@ class ToastRegion(QWidget):
         return QRect(x, y, width, card_h)
 
     def _relayout(self, animate: bool):
+        """按当前折叠/展开态重排卡片的位置、可见性与层级。
+
+        Note:
+            先完成可见性等状态操作再统一采集高度表，否则定位高度与卡片实际高度不一致，展开态相邻卡间距会偏离 stack_gap。
+        """
         items = self._active_items()
         total = len(items)
         if total == 0:
@@ -367,6 +391,7 @@ class ToastRegion(QWidget):
             card.raise_()
 
     def _animate_move(self, item: _ToastItem, target: QRect):
+        """把卡片几何动画过渡到目标矩形。"""
         tween_property(
             item.card,
             "geo_anim",
@@ -382,6 +407,7 @@ class ToastRegion(QWidget):
     # ============================================================
 
     def _play_enter(self, item: _ToastItem):
+        """播放卡片的入场位移与淡入动画。"""
         card = item.card
         if self._disable_animation:
             card.set_opacity(1.0)
@@ -403,11 +429,13 @@ class ToastRegion(QWidget):
         self._animate_opacity(item, 1.0, then=lambda: self._enter_done(item))
 
     def _enter_done(self, item: _ToastItem):
+        """入场动画结束的回调：清除入场态并定格为不透明。"""
         item.entering = False
         if item in self._items and not item.exiting:
             item.card.set_opacity(1.0)
 
     def _play_exit(self, item: _ToastItem):
+        """播放卡片的退出位移与淡出动画。"""
         card = item.card
         # 隐藏中的卡（折叠态超配额）没有可见几何，直接出列
         if not item.visible or self._disable_animation:
@@ -436,6 +464,7 @@ class ToastRegion(QWidget):
         self._animate_opacity(item, 0.0, then=lambda: self._finalize_exit(item))
 
     def _animate_opacity(self, item: _ToastItem, target: float, then=None):
+        """把卡片透明度动画过渡到目标值。"""
         tween_property(
             item.card,
             "fade_anim",
@@ -457,6 +486,7 @@ class ToastRegion(QWidget):
             item.card.hide()
 
     def _finalize_exit(self, item: _ToastItem):
+        """退出结束后移除条目、销毁卡片并重排堆叠。"""
         if item not in self._items:
             return
         stop_tween(item, "geo_anim")
@@ -471,6 +501,7 @@ class ToastRegion(QWidget):
     # ============================================================
 
     def _toasts_rect(self) -> QRect:
+        """返回所有可见卡片的联合矩形并四周外扩一份堆叠间距。"""
         rect = QRect()
         for item in self._active_items():
             if item.visible:
@@ -479,6 +510,7 @@ class ToastRegion(QWidget):
         return rect.adjusted(-pad, -pad, pad, pad)
 
     def _on_global_mouse_move(self, pos: QPoint):
+        """按全局鼠标位置切换 hover 态并安排折叠延时。"""
         if not self._items:
             return
         local = self.mapFromGlobal(pos)
@@ -491,9 +523,11 @@ class ToastRegion(QWidget):
             self._collapse_timer.start()
 
     def _collapse_now(self):
+        """折叠定时器超时回调：退出 hover 展开态。"""
         self._set_hovering(False)
 
     def _set_hovering(self, hovering: bool):
+        """设置 hover 展开态，暂停或恢复卡片计时并重排。"""
         self._hovering = hovering
         self._expanded = hovering
         for item in self._active_items():
@@ -510,6 +544,7 @@ class ToastRegion(QWidget):
             self._relayout(animate=True)
 
     def _on_drag_started(self, item: _ToastItem):
+        """拖拽开始：抓取鼠标、展开堆叠并暂停全部计时。"""
         # 显式抓取鼠标：拖拽的透明度反馈会走快照模式隐藏子件，若 press
         # 落在子件上（title/desc），隐式 grab 随子件 hide 一起丢失，后续
         # move/release 全部断掉，拖到一半卡死。grab 在卡片上则不受影响
@@ -521,6 +556,7 @@ class ToastRegion(QWidget):
         self._relayout(animate=True)
 
     def _on_drag_moved(self, item: _ToastItem, dx: int, dy: int):
+        """拖拽中：按位移移动卡片并按滑动距离降低透明度。"""
         item.drag_dx, item.drag_dy = dx, dy
         card = item.card
         card.move(item.base_geom.topLeft() + QPoint(dx, dy))
@@ -533,6 +569,7 @@ class ToastRegion(QWidget):
         card.set_opacity(max(0.2, 1.0 - abs(axis) / (limit + 20.0)))
 
     def _on_drag_finished(self, item: _ToastItem, should_close: bool):
+        """拖拽结束：释放鼠标，据阈值决定关闭或回弹重排。"""
         item.card.releaseMouse()
         item.drag_dx = item.drag_dy = 0
         if should_close:
@@ -547,18 +584,21 @@ class ToastRegion(QWidget):
     # ============================================================
 
     def _sync_geometry(self):
+        """把 region 几何同步为宿主窗口的矩形。"""
         parent = self.parent()
         if parent is None:
             return
         self.setGeometry(parent.rect())
 
     def eventFilter(self, obj, event) -> bool:
+        """在宿主窗口尺寸变化时同步几何并重排。"""
         if obj is self.parent() and event.type() == QEvent.Type.Resize:
             self._sync_geometry()
             self._relayout(animate=False)
         return False
 
     def _update_watchers(self):
+        """按当前条目数安装或移除全局鼠标监听器。"""
         app = QApplication.instance()
         if app is None:
             return
@@ -569,6 +609,7 @@ class ToastRegion(QWidget):
             self._set_hovering(False)
 
     def _find(self, key: str) -> _ToastItem | None:
+        """按 key 查找对应条目，未找到返回 None。"""
         for item in self._items:
             if item.key == key:
                 return item

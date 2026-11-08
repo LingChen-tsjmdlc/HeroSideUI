@@ -1,10 +1,5 @@
-"""_DateSegment — 单个可聚焦的日期段（私有）。
-
-一个段就是一个可获得焦点的 Text：接收数字键逐位输入、上下键增减、
-Backspace/Delete 清空、滚轮增减，并把变化上报给宿主 DateInput。
-
-段的焦点底色一律走 QSS（配合 WA_StyledBackground=True），不用 paintEvent
-自绘——QLabel 的 super().paintEvent 会把 QPalette.Window 画上去，Fusion 下透黑底。
+"""_DateSegment 可聚焦日期段：接收键盘/滚轮编辑并上报宿主。
+焦点底色走 QSS + WA_StyledBackground，防 Fusion 画黑底。
 """
 
 from __future__ import annotations
@@ -24,11 +19,12 @@ _NUMERIC_TYPES = frozenset({"year", "month", "day", "hour", "minute", "second"})
 class _DateSegment(Text):
     """可编辑的日期段。
 
-    :param seg_type: 段类型（year/month/day/hour/...）
-    :param min_digits: pattern 中该字段的位数，决定占位符宽度
-    :param on_edit: 段值被键盘改动后的回调，用于宿主重算文本与发信号
-    :param on_focus_move: 请求把焦点移到相邻段的回调，参数为 +1 / -1
-    :param on_focus_change: 段获得/失去焦点的回调
+    Args:
+        seg_type: 段类型（year/month/day/hour/...）。
+        min_digits: pattern 位数，决定占位宽度。
+        on_edit: 值被改动后的回调。
+        on_focus_move: 请求焦点移到相邻段（+1/-1）。
+        on_focus_change: 段获得/失去焦点回调。
     """
 
     def __init__(
@@ -41,6 +37,22 @@ class _DateSegment(Text):
         on_focus_change: Callable[[str, bool], None] | None = None,
         parent: QWidget | None = None,
     ):
+        """创建可编辑日期段。
+
+        Args:
+            seg_type: 段类型（year/month/day/hour/...）。
+            min_digits: pattern 位数，决定占位宽度。
+            on_edit: 值被改动后的回调 fn(seg_type, action, payload)。
+            on_focus_move: 请求焦点移到相邻段 fn(+1/-1)。
+            on_focus_change: 段获得 / 失去焦点回调 fn(seg_type, focused)。
+            parent: Qt 父对象。
+
+        Note:
+            theme 固定为 light（非 auto）才不会注册进 ThemeProvider——
+            段的颜色由宿主按 variant/color/焦点态统一决策，若让 Text
+            保留主题自治，广播时 _apply_color 会用 setStyleSheet 整体
+            覆盖，冲掉宿主字色与 padding / border-radius。
+        """
         # theme 非 "auto" 才不会注册进 ThemeProvider。段的颜色由宿主 DateInput
         # 按 variant/color/焦点态统一决策，若让 Text 保留主题自治，主题广播时
         # Text._apply_color() 会 setStyleSheet 整体覆盖，把宿主设的字色冲成
@@ -67,19 +79,38 @@ class _DateSegment(Text):
     # ============================================================
     @property
     def seg_type(self) -> str:
+        """段类型。
+
+        Returns:
+            如 year / month / day / hour 等。
+        """
         return self._seg_type
 
     @property
     def min_digits(self) -> int:
+        """段的最少显示位数。
+
+        Returns:
+            pattern 解析出的位数。
+        """
         return self._min_digits
 
     def set_editable(self, editable: bool) -> None:
-        """字面量段不可聚焦，走这里关掉焦点与光标。"""
+        """设置该段是否可聚焦可编辑（字面量段传 False）。
+
+        Args:
+            editable: True 时 StrongFocus + IBeam 光标；False 时 NoFocus + 箭头。
+        """
         self._editable = editable
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus if editable else Qt.FocusPolicy.NoFocus)
         self.setCursor(Qt.CursorShape.IBeamCursor if editable else Qt.CursorShape.ArrowCursor)
 
     def set_readonly(self, readonly: bool) -> None:
+        """切换只读态（仍可聚焦但键盘编辑被拦截）。
+
+        Args:
+            readonly: True 表示只读。
+        """
         self._readonly = readonly
 
     # ============================================================
@@ -94,10 +125,17 @@ class _DateSegment(Text):
         padding_x: int,
         focused: bool,
     ) -> None:
-        """套用段的字色与焦点底色。
+        """套用段字色与焦点底色。
 
-        颜色一律用 QColor 直接构造再取 rgba 分量拼 QSS —— 不把
-        hex_to_rgba() 的 "rgba(...)" 字符串喂给 QColor（Qt 不解析，会得黑色）。
+        Args:
+            text_color: 当前状态字色。
+            focus_bg: 焦点底色；None 或 alpha=0 时用透明。
+            radius_px: 段高亮圆角。
+            padding_x: 左右内边距。
+            focused: 是否为焦点段。
+
+        Note:
+            用 QColor 分量拼 QSS，不直接喂 rgba 字符串。
         """
         parts = [
             f"color: rgba({text_color.red()}, {text_color.green()}, "
@@ -119,16 +157,31 @@ class _DateSegment(Text):
     # 焦点
     # ============================================================
     def focusInEvent(self, event):
+        """获得焦点：上报宿主刷新视觉。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         super().focusInEvent(event)
         if self._on_focus_change:
             self._on_focus_change(self._seg_type, True)
 
     def focusOutEvent(self, event):
+        """失去焦点：上报宿主刷新视觉。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         super().focusOutEvent(event)
         if self._on_focus_change:
             self._on_focus_change(self._seg_type, False)
 
     def mousePressEvent(self, event):
+        """鼠标点击：可编辑段请求焦点。
+
+        Args:
+            event: Qt 鼠标按下事件。
+        """
         if self._editable:
             self.setFocus(Qt.FocusReason.MouseFocusReason)
         event.accept()
@@ -137,6 +190,14 @@ class _DateSegment(Text):
     # 键盘 / 滚轮
     # ============================================================
     def keyPressEvent(self, event):
+        """键盘编辑：上下增减、删除清空、左右跳段、数字逐位输入、a/p 切 AM/PM。
+
+        Args:
+            event: Qt 键盘事件。
+
+        Note:
+            不可编辑或只读时交回父类；dayPeriod 段只接受 a/p 快捷键。
+        """
         if not self._editable or self._readonly:
             super().keyPressEvent(event)
             return
@@ -181,6 +242,11 @@ class _DateSegment(Text):
         super().keyPressEvent(event)
 
     def wheelEvent(self, event):
+        """滚轮编辑：仅在持有焦点时按滚动方向增减段值。
+
+        Args:
+            event: Qt 滚轮事件。
+        """
         if not self._editable or self._readonly or not self.hasFocus():
             event.ignore()
             return
@@ -193,10 +259,21 @@ class _DateSegment(Text):
     # 上报
     # ============================================================
     def _emit_edit(self, action: str, payload) -> None:
+        """把编辑动作上报宿主。
+
+        Args:
+            action: increment / clear / digit / day_period。
+            payload: 动作参数（步长、数字、AM/PM 值或 None）。
+        """
         if self._on_edit:
             self._on_edit(self._seg_type, action, payload)
 
     def _move_focus(self, direction: int) -> None:
+        """请求焦点移到相邻段。
+
+        Args:
+            direction: +1 下一段、-1 上一段。
+        """
         if self._on_focus_move:
             self._on_focus_move(direction)
 
@@ -205,6 +282,15 @@ class _SegmentLiteral(Text):
     """段之间的字面量分隔符（"/"、":"、", "）。不可聚焦、不响应鼠标。"""
 
     def __init__(self, text: str, parent: QWidget | None = None):
+        """创建字面量分隔符。
+
+        Args:
+            text: 分隔符文本。
+            parent: Qt 父对象。
+
+        Note:
+            同 _DateSegment：退出 Text 的主题自治，颜色由宿主统一决策。
+        """
         # 同 _DateSegment：退出 Text 的主题自治，颜色由宿主统一决策。
         super().__init__(text, selectable=False, theme="light", parent=parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -213,6 +299,11 @@ class _SegmentLiteral(Text):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
     def apply_visual(self, *, text_color: QColor) -> None:
+        """套用分隔符字色（背景恒透明、无内边距）。
+
+        Args:
+            text_color: 当前状态字色。
+        """
         self.setStyleSheet(
             "QLabel { background-color: transparent; padding: 0; color: rgba("
             f"{text_color.red()}, {text_color.green()}, {text_color.blue()}, "

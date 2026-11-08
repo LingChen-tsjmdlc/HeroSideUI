@@ -1,9 +1,4 @@
-"""脚注渲染：行内引用角标（hover Tooltip）+ 文档底部脚注列表。
-
-脚注引用 ``[^n]`` 渲染成上标角标 widget，hover 用 Tooltip 弹出脚注正文；
-底部的 ``footnote_block`` 渲染成带序号的定义列表。两者都复用现成组件
-（Text / Tooltip），子 widget 创建时显式传 parent，避免无父瞬间闪窗。
-"""
+"""脚注渲染：行内角标（embedded Tooltip hover 正文）+ 底部定义列表。"""
 
 from __future__ import annotations
 
@@ -34,7 +29,12 @@ def footnote_label(node: SyntaxTreeNode) -> str:
 
 
 class _FootnoteRef(QWidget):
-    """行内脚注角标：上标序号 + hover Tooltip 显示正文。"""
+    """行内脚注角标：上标 chip + hover Tooltip。
+
+    Note:
+        attach 走 showEvent + QTimer 双路兜底（重建期 showEvent 可能被
+        抑制）；角标销毁时手动销毁被 reparent 走的 tooltip。
+    """
 
 
 class _FootnoteRef(QWidget):
@@ -50,6 +50,14 @@ class _FootnoteRef(QWidget):
     """
 
     def __init__(self, label: str, body: str, theme: str, parent: QWidget = None):
+        """构造行内脚注角标。
+
+        Args:
+            label: 上标显示序号。
+            body: 脚注正文（用于 hover Tooltip）；为空则不挂 tooltip。
+            theme: 主题（light/dark）。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._theme = theme
         self._body = body
@@ -77,6 +85,7 @@ class _FootnoteRef(QWidget):
             QTimer.singleShot(0, self._ensure_tip)
 
     def showEvent(self, event):  # type: ignore[override]
+        """首次可见时尝试挂 Tooltip（与 QTimer 兜底双路）。"""
         super().showEvent(event)
         self._ensure_tip()
 
@@ -119,6 +128,13 @@ class _FootnoteList(QWidget):
         renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
+        """构建底部脚注定义区：遍历 footnote 节点逐条生成「序号 + 正文」。
+
+        Args:
+            node: footnote_block 语法树节点。
+            renderer: MarkdownRenderer，用于递归渲染脚注正文子节点。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._renderer = renderer
 
@@ -132,6 +148,15 @@ class _FootnoteList(QWidget):
             lay.addWidget(self._build_item(footnote_label(item), item))
 
     def _build_item(self, marker: str, item: SyntaxTreeNode) -> QWidget:
+        """构建单条脚注：「序号」+ 递归渲染正文（跳过回跳锚点）。
+
+        Args:
+            marker: 显示序号。
+            item: footnote 语法树节点。
+
+        Returns:
+            QWidget: 一条脚注（序号 + 内容）的容器。
+        """
         row = QWidget(self)
         row_lay = QHBoxLayout(row)
         row_lay.setContentsMargins(0, 0, 0, 0)

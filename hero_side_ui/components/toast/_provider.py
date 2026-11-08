@@ -1,15 +1,4 @@
-"""ToastProvider 与全局快捷函数（对齐 HeroUI 的 addToast / closeToast）。
-
-典型用法::
-
-    from hero_side_ui import add_toast, close_toast
-
-    key = add_toast(title="已保存", description="草稿已存入本地", color="success")
-    close_toast(key)
-
-全局函数会为"当前活动窗口"懒创建一个 ToastProvider（每个窗口一个 region），
-窗口销毁后自动回收。
-"""
+"""ToastProvider 与全局快捷函数：每窗口懒建 provider，窗口销毁自动回收。"""
 
 from __future__ import annotations
 
@@ -47,6 +36,19 @@ class ToastProvider(QObject):
         disable_animation: bool = False,
         toast_props: dict | None = None,
     ):
+        """初始化 provider 并在宿主窗口上建立 Toast 堆叠区。
+
+        Args:
+            window: 承载堆叠区的顶层窗口，同时作为 Qt 父对象。
+            placement: toast 的初始弹出位置。
+            max_visible_toasts: 同时可见的 toast 数量上限。
+            toast_offset: 堆叠区相对窗口边缘的偏移量。
+            disable_animation: 为 True 时关闭入场/退场动画。
+            toast_props: 追加到每条 toast 的默认属性字典。
+
+        Note:
+            懒创建时宿主窗口通常已显示，子 widget 不会自动可见，故显式调用 show 与 raise_。
+        """
         super().__init__(window)
         self._window = window
         self._toast_props = dict(toast_props or {})
@@ -65,19 +67,24 @@ class ToastProvider(QObject):
 
     @property
     def region(self) -> ToastRegion:
+        """返回该 provider 持有的 ToastRegion 堆叠区。"""
         return self._region
 
     @property
     def placement(self) -> str:
+        """返回当前 toast 的弹出位置。"""
         return self._region.placement
 
     def set_placement(self, placement: str):
+        """设置 toast 的弹出位置。"""
         self._region.set_placement(placement)
 
     def set_max_visible_toasts(self, count: int):
+        """设置同时可见的 toast 数量上限。"""
         self._region.set_max_visible_toasts(count)
 
     def set_toast_offset(self, offset: int):
+        """设置堆叠区相对窗口边缘的偏移量。"""
         self._region.set_toast_offset(offset)
 
     # ---- 队列 ----
@@ -99,10 +106,12 @@ class ToastProvider(QObject):
         return self._region.card(key)
 
     def close(self, key: str):
+        """关闭指定 key 的 toast 并移除其归属映射。"""
         self._region.dismiss(key)
         _key_owners.pop(key, None)
 
     def clear(self):
+        """清空该 provider 下的全部 toast 及其归属映射。"""
         for key in list(self._region.keys()):
             _key_owners.pop(key, None)
         self._region.clear()
@@ -131,6 +140,14 @@ def configure_toasts(
 
 
 def _resolve_window(window: QWidget | None = None) -> QWidget | None:
+    """解析宿主窗口：显式指定优先，否则回退到应用的活动窗口。
+
+    Args:
+        window: 显式指定的窗口；None 时自动探测。
+
+    Returns:
+        解析到的窗口；无 QApplication 或无可用顶层窗口时返回 None。
+    """
     if window is not None:
         return window
     app = QApplication.instance()

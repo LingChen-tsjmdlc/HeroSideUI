@@ -1,11 +1,4 @@
-"""Popover 弹层定位计算 mixin（私有）。
-
-负责：
-- 计算 popover 相对 trigger 的目标位置（_calc_position）
-- 12 种 placement 的具体几何（_compute_pos_for）
-- 边界翻转（_flip_placement，避免飞出屏幕）
-- frame margins（阴影 + 边距）
-"""
+"""Popover 定位 mixin：12 placement 几何 + 边界翻转 + frame margins。"""
 
 from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication, QWidget
@@ -21,7 +14,14 @@ class _PopoverGeometryMixin:
     # 几何
     # ============================================================
     def _frame_margins(self) -> tuple:
-        """内 layout 在四个方向需要让出多少空间给 arrow 和阴影。"""
+        """计算内容 layout 四周需预留给箭头与阴影的边距。
+
+        Returns:
+            tuple: (left, top, right, bottom) 像素边距。
+
+        Note:
+            仅当 self._arrow 为 True 时，对应方向额外加上 ARROW_SIZE。
+        """
         cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
         sm = cfg["blur"] + abs(cfg["offset_y"])
         # arrow 占用一边（仅在 self._arrow=True 时保留空间）
@@ -39,11 +39,14 @@ class _PopoverGeometryMixin:
         return tuple(m)
 
     def _effective_frame_margins(self) -> tuple:
-        """paint 用的 frame margins = base + 当前 squeeze 增量。
+        """计算绘制用的 frame margins（base + squeeze 增量）。
 
-        让 paintEvent 画的圆角 + 阴影 + 箭头位置都跟着 squeeze 动画走 ——
-        实现"整个 popover(含底色)整体挤压扩张"的视觉,不只是内容 layout 几何。
-        非动画期间 squeeze 处于完全展开态(extra 全 0),返回值 == _frame_margins。
+        Returns:
+            tuple: (left, top, right, bottom) 像素边距。
+
+        Note:
+            叠加 PaddingSqueezeAnimation 的 squeeze_extra，使圆角与阴影
+            随挤压动画一起收缩/展开，呈现"整体出现"而非仅内容铺开。
         """
         base = self._frame_margins()
         try:
@@ -58,7 +61,18 @@ class _PopoverGeometryMixin:
         )
 
     def _calc_position(self, trigger: QWidget) -> QPoint:
-        """计算 popover 在屏幕坐标下的左上角位置（含 auto-flip）。"""
+        """计算 popover 在屏幕坐标下的左上角位置（含 auto-flip）。
+
+        Args:
+            trigger: 作为定位锚点的控件。
+
+        Returns:
+            QPoint: popover 左上角的全局坐标。
+
+        Note:
+            越界时自动反向翻转 placement（_allow_flip 为 True 时）；
+            多屏配置下使用 trigger 所在屏幕而非主屏，避免误判越界。
+        """
         tr_pos = trigger.mapToGlobal(QPoint(0, 0))
         tr_w = trigger.width()
         tr_h = trigger.height()
@@ -100,8 +114,22 @@ class _PopoverGeometryMixin:
         return pos
 
     def _compute_pos_for(self, place: str, tr_pos: QPoint, tr_w: int, tr_h: int) -> QPoint:
-        """根据 placement 计算 popover 左上角（已扣掉 shadow 方向的 margin
-        以保证 arrow 紧贴 trigger）。"""
+        """根据 placement 计算 popover 左上角全局坐标。
+
+        Args:
+            place: placement 字符串（top/top-start/.../right-end）。
+            tr_pos: trigger 左上角的全局坐标。
+            tr_w: trigger 宽度。
+            tr_h: trigger 高度。
+
+        Returns:
+            QPoint: popover 左上角的全局坐标（已扣掉阴影方向边距，
+            保证箭头紧贴 trigger）。
+
+        Note:
+            箭头与 trigger 之间保留 6px 空气间隙；start/end 变体做
+            顶/底对齐偏移。
+        """
         my_w = self.sizeHint().width()
         my_h = self.sizeHint().height()
         x, y = tr_pos.x(), tr_pos.y()
@@ -147,6 +175,14 @@ class _PopoverGeometryMixin:
 
     @staticmethod
     def _flip_placement(p: str) -> str:
+        """将 placement 翻转到相反方向（top↔bottom，left↔right）。
+
+        Args:
+            p: 原 placement 字符串。
+
+        Returns:
+            str: 翻转后的 placement；无法识别时原样返回。
+        """
         if p.startswith("top"):
             return p.replace("top", "bottom")
         if p.startswith("bottom"):

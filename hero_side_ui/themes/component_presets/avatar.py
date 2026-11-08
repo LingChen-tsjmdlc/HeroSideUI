@@ -1,13 +1,4 @@
-"""Avatar 组件尺寸配置。
-
-对照 HeroUI avatar.ts 的 size variant：
-- sm: w-8 h-8(32) text-tiny(12)
-- md: w-10 h-10(40) text-tiny(12)
-- lg: w-14 h-14(56) text-small(14)
-isBordered: ring-2 ring-offset-2 → 边框 2px + 与背景间隔 2px。
-icon 占盒子 80%（对照 AvatarIcon 的 width/height 80%）。
-AvatarGroup 堆叠重叠量 -ms-2 ≈ 8px，hover 时后一个位移 12px（-translate-x-3）。
-"""
+"""Avatar 尺寸：sm 32/md 40/lg 56；bordered ring 2+2；组重叠 8px hover 让位 12px。"""
 
 # text_size 用项目 Text 的 token（xs/sm/md），不是 px
 AVATAR_SIZES = {

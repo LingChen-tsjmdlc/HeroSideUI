@@ -1,6 +1,7 @@
 # HeroSideUI 重构 RFC：组件目录结构与代码体积治理
 
-> 状态：**Phase 1 + Phase 2 + Phase 2-5 已完成（780 测试零回归，无文件 > 800 行）** · 起草 2026-05-13 · 作者：jerrylu + Claude
+> 状态：**Phase 1 + Phase 2 + Phase 2-5 已完成（780 测试零回归，当时无文件 > 800 行）** · 起草 2026-05-13 · 作者：jerrylu + Claude
+> ⚠️ 2026-11-09 复核：统一 Google 风格 docstring 后，`hero_side_ui/` 有 10 个文件物理行数 > 800（最大 970），代码主体行数未变。铁律 8 的口径修订与逐文件登记见 **13.7**；本节及 13.4 的"无文件 > 800 行"是 2026-05-13 的历史结论。
 > 目标版本：0.1.0（alpha 收尾 → beta 准备）
 > 影响面：内部代码结构，**公共 API 完全兼容**（`from hero_side_ui import X` 不变）
 > 实施记录：见章节 11（Phase 1）/ 章节 12（Phase 2）/ 章节 13（Phase 2-5）
@@ -418,18 +419,18 @@ StatePalette.divider(theme)                          # 分隔线
 StatePalette.selected_indicator(variant, color, theme)  # 选中标记
 ```
 
-全 ``@staticmethod``，无状态。
+全 `@staticmethod`，无状态。
 
-**State 模型**：``resting`` / ``hover`` / ``focus`` / ``selected`` / ``disabled``。``focus`` 和 ``selected`` 视觉等同 ``hover``（HeroUI 标准行为，组件可直接按此简化）。
+**State 模型**：`resting` / `hover` / `focus` / `selected` / `disabled`。`focus` 和 `selected` 视觉等同 `hover`（HeroUI 标准行为，组件可直接按此简化）。
 
 **listbox 迁移结果**：
 
-| 指标 | 迁移前 | 迁移后 |
-|---|---:|---:|
-| `listbox.py` | 1758 行 | 1623 行（**-7.7%**）|
-| `tests/test_listbox.py` | 57 通过 | 57 通过（零回归）|
-| 新增 `core/state_palette.py` | — | 291 行（含详尽文档注释）|
-| 新增 `tests/test_state_palette.py` | — | 310 行 / 41 用例 / 8.3s |
+| 指标                               |  迁移前 |                   迁移后 |
+| ---------------------------------- | ------: | -----------------------: |
+| `listbox.py`                       | 1758 行 |     1623 行（**-7.7%**） |
+| `tests/test_listbox.py`            | 57 通过 |        57 通过（零回归） |
+| 新增 `core/state_palette.py`       |       — | 291 行（含详尽文档注释） |
+| 新增 `tests/test_state_palette.py` |       — |  310 行 / 41 用例 / 8.3s |
 
 ### 11.2 已否决：Step 3（其他组件接入）
 
@@ -467,7 +468,7 @@ StatePalette.selected_indicator(variant, color, theme)  # 选中标记
 
 原计划"所有 18 组件改包结构"的主要理由是：**给巨头组件提供拆分空间**。但 Phase 1 的实测表明：
 
-- listbox 的 1623 行里，**没有明显可单独成文件的子类**（_Item / _Section 确实独立，但它们对外就是 `ListboxItem` / `ListboxSection`，不需要藏）
+- listbox 的 1623 行里，**没有明显可单独成文件的子类**（\_Item / \_Section 确实独立，但它们对外就是 `ListboxItem` / `ListboxSection`，不需要藏）
 - textarea / input 的 `_ResizeGrip` / `_ClearButton` 等**确实是独立子组件**，有拆分价值
 - 但拆完是否真的"更好读"，需要先拆一个巨头试点
 
@@ -508,38 +509,38 @@ components/
 
 17 个组件全部统一为包形态。文件分布如下（行数为切分后实际值）：
 
-| 包 | 主文件 | 子文件 | 总行数 |
-|---|---:|---|---:|
-| accordion | accordion.py 209 | item.py 394 / _indicator.py 79 | 686 |
-| autocomplete | autocomplete.py 936 | _selector_button.py 83 / _end_content.py 60 | 1082 |
-| button | button.py 559 | — | 562 |
-| card | card.py 709 | — | 712 |
-| checkbox | checkbox.py 661 | group.py 285 | 950 |
-| divider | divider.py 255 | — | 258 |
-| input | input.py 1196 | _line_edit.py 37 / _clear_button.py 77 / _wrapper.py 162 | 1475 |
-| listbox | listbox.py 724 | item.py 773 / section.py 171 | 1673 |
-| popover | popover.py 1067 | content.py 36 / _backdrop.py 109 / _click_catcher.py 48 / _constants.py 26 | 1290 |
-| progress | progress.py 520 | circular.py 388 | 912 |
-| scroll_shadow | scroll_shadow.py 626 | — | 629 |
-| switch | switch.py 567 | — | 570 |
-| tabs | tabs.py 562 | item.py 525 / _cursor.py 117 / _tab_list.py 70 / _helpers.py 111 / _constants.py 8 | 1397 |
-| text | text.py 195 | — | 198 |
-| textarea | textarea.py 1415 | _text_edit.py 65 / _resize_grip.py 99 | 1582 |
-| theme_switcher | theme_switcher.py 189 | — | 192 |
-| tooltip | tooltip.py 799 | — | 802 |
+| 包             |                主文件 | 子文件                                                                                 | 总行数 |
+| -------------- | --------------------: | -------------------------------------------------------------------------------------- | -----: |
+| accordion      |      accordion.py 209 | item.py 394 / \_indicator.py 79                                                        |    686 |
+| autocomplete   |   autocomplete.py 936 | \_selector_button.py 83 / \_end_content.py 60                                          |   1082 |
+| button         |         button.py 559 | —                                                                                      |    562 |
+| card           |           card.py 709 | —                                                                                      |    712 |
+| checkbox       |       checkbox.py 661 | group.py 285                                                                           |    950 |
+| divider        |        divider.py 255 | —                                                                                      |    258 |
+| input          |         input.py 1196 | \_line_edit.py 37 / \_clear_button.py 77 / \_wrapper.py 162                            |   1475 |
+| listbox        |        listbox.py 724 | item.py 773 / section.py 171                                                           |   1673 |
+| popover        |       popover.py 1067 | content.py 36 / \_backdrop.py 109 / \_click_catcher.py 48 / \_constants.py 26          |   1290 |
+| progress       |       progress.py 520 | circular.py 388                                                                        |    912 |
+| scroll_shadow  |  scroll_shadow.py 626 | —                                                                                      |    629 |
+| switch         |         switch.py 567 | —                                                                                      |    570 |
+| tabs           |           tabs.py 562 | item.py 525 / \_cursor.py 117 / \_tab_list.py 70 / \_helpers.py 111 / \_constants.py 8 |   1397 |
+| text           |           text.py 195 | —                                                                                      |    198 |
+| textarea       |      textarea.py 1415 | \_text_edit.py 65 / \_resize_grip.py 99                                                |   1582 |
+| theme_switcher | theme_switcher.py 189 | —                                                                                      |    192 |
+| tooltip        |        tooltip.py 799 | —                                                                                      |    802 |
 
 ### 12.2 关键减肥（巨头组件）
 
-| 组件 | 改造前主文件 | 改造后主文件 | 减量 |
-|---|---:|---:|---:|
-| listbox | 1623（Phase 1 后）| **724** | -55% |
-| tabs | 1344 | **562** | -58% |
-| autocomplete | 1108 | **936** | -16% |
-| popover | 1250 | **1067** | -15% |
-| input | 1439 | **1196** | -17% |
-| textarea | 1566 | **1415** | -10% |
+| 组件         |       改造前主文件 | 改造后主文件 | 减量 |
+| ------------ | -----------------: | -----------: | ---: |
+| listbox      | 1623（Phase 1 后） |      **724** | -55% |
+| tabs         |               1344 |      **562** | -58% |
+| autocomplete |               1108 |      **936** | -16% |
+| popover      |               1250 |     **1067** | -15% |
+| input        |               1439 |     **1196** | -17% |
+| textarea     |               1566 |     **1415** | -10% |
 
-listbox 和 tabs 收获最大，因为 `ListboxItem` / `TabItem` 本身就是逻辑独立的可独立成文件的 class。input/textarea/popover 因为私有子组件较小，主文件减肥有限——但**视觉结构已经清晰**（外部贡献者一眼就能定位"清除按钮 → input/_clear_button.py"）。
+listbox 和 tabs 收获最大，因为 `ListboxItem` / `TabItem` 本身就是逻辑独立的可独立成文件的 class。input/textarea/popover 因为私有子组件较小，主文件减肥有限——但**视觉结构已经清晰**（外部贡献者一眼就能定位"清除按钮 → input/\_clear_button.py"）。
 
 ### 12.3 拆分流程沉淀（下次复用）
 
@@ -584,12 +585,12 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
 ### 13.2 四大巨头最终行数
 
-| 组件 | 改造前主文件 | Phase 2-5 后主文件 | 减量 | mixin 文件 |
-|---|---:|---:|---:|---|
-| input | 1196 | **525** | -56% | _styling.py 552 / _layout.py 163 |
-| autocomplete | 936 | **615** | -34% | _styling.py 90 / _callbacks.py 149 / _keyboard.py 145 |
-| textarea | 1415 | **670** | -53% | _styling.py 544 / _autosize.py 96 / _layout.py 170 |
-| popover | 1067 | **610** | -43% | _trigger.py 143 / _geometry.py 153 / _paint.py 221 |
+| 组件         | 改造前主文件 | Phase 2-5 后主文件 | 减量 | mixin 文件                                               |
+| ------------ | -----------: | -----------------: | ---: | -------------------------------------------------------- |
+| input        |         1196 |            **525** | -56% | \_styling.py 552 / \_layout.py 163                       |
+| autocomplete |          936 |            **615** | -34% | \_styling.py 90 / \_callbacks.py 149 / \_keyboard.py 145 |
+| textarea     |         1415 |            **670** | -53% | \_styling.py 544 / \_autosize.py 96 / \_layout.py 170    |
+| popover      |         1067 |            **610** | -43% | \_trigger.py 143 / \_geometry.py 153 / \_paint.py 221    |
 
 ### 13.3 拆分准则（落地为铁律 8）
 
@@ -604,7 +605,9 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 - `_geometry.py` —— popover 特有，弹层定位算法（12 种 placement）
 - `_paint.py` —— popover 特有，paintEvent + 颜色推导
 
-### 13.4 终态健康度
+### 13.4 终态健康度（2026-05-13 历史快照）
+
+> 本节记录的是当时的终态，**不是当前口径**。2026-11-09 的复核与现行口径见 13.7。
 
 ```
 没有任何文件 > 800 行（铁律 8 合规）。
@@ -623,3 +626,63 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 ### 13.6 Phase 2 全部完成
 
 不再有遗留巨头。后续如果有新组件加入，按本 RFC §13 的 mixin 模板设计，主文件天然 < 600 行。
+
+### 13.7 铁律 8 口径修订（2026-11-09）
+
+**背景**：全库 docstring 统一为 Google 风格短格式（`.workbuddy/docstring-checklist.md`，311 / 311）后物理行数普涨。对照 HEAD `42db117` 逐文件核实，10 个文件越过原 800 行阈值，但增量**全部来自 docstring，代码主体行数未变**。
+
+**结论：不硬拆组件，改口径 + 补自动防线。**
+
+依据：
+
+- 本文 11.4 写过的判断边界：**"行数不是重构理由"**（`REFACTORING.md:464`）——不可简化的复杂度，拆了也不会更好读。
+- 13.3 的「一个 mixin = 一个清晰职责」仍然有效；为凑行数按段落切开组件，恰恰违反这一条。
+- 10 个文件里 6 个已有 2–5 个 mixin/helper，再拆只会把同类 setter 散到多个文件；其余 4 个虽未充分拆过，但拆分还必须为 tests 保留 `_field_state` / `_value` / `_LinkIconLabel` 等私有路径的 re-export，代价远大于收益。
+
+**现行口径（铁律 8 v2）**
+
+| 项       | 原口径（2026-05-13） | 现行口径（2026-11-09）                                                         |
+| -------- | -------------------- | ------------------------------------------------------------------------------ |
+| 度量     | 单文件物理行数       | 单文件物理行数（不变）                                                         |
+| 阈值     | ≤ 800 硬指标         | **≤ 1000 硬指标**                                                              |
+| 超标处理 | 一律拆分             | 先判断代码主体是否膨胀：是 → 按 13.3 拆；否（纯注释/文档增量）→ 登记留观，不拆 |
+| 拆分准则 | 13.3 清晰职责        | **13.3 不变，仍是唯一的拆分理由**                                              |
+| 防线     | 人工盘点             | `.hooks/check_file_lines.py`（仅 pre-commit，CI 不检查）                       |
+
+阈值取 1000：当前最大 970（`listbox/item.py`），留 30 行余量；全仓（含 `examples/` `tests/` `.hooks/`）无任何 `.py` 超过 1000 行，所以这次修订不会放过既有的真超标文件。
+
+**逐文件登记（10 个 > 800 行，全部在 `hero_side_ui/components/`）**
+
+| 文件                           | 当前 | HEAD `42db117` | 增量 | 800 口径   | 1000 口径    |
+| ------------------------------ | ---: | -------------: | ---: | ---------- | ------------ |
+| `listbox/item.py`              |  970 |            812 | +158 | 原本超标   | 合规（留观） |
+| `card/card.py`                 |  963 |            707 | +256 | 注释后新超 | 合规         |
+| `link/link.py`                 |  921 |            673 | +248 | 注释后新超 | 合规         |
+| `date_input/date_input.py`     |  906 |            627 | +279 | 注释后新超 | 合规         |
+| `drawer/drawer.py`             |  895 |            632 | +263 | 注释后新超 | 合规         |
+| `autocomplete/autocomplete.py` |  871 |            670 | +201 | 注释后新超 | 合规         |
+| `toast/toast.py`               |  865 |            810 |  +55 | 原本超标   | 合规         |
+| `dropdown/dropdown.py`         |  846 |            579 | +267 | 注释后新超 | 合规         |
+| `select/select.py`             |  832 |            701 | +131 | 注释后新超 | 合规         |
+| `checkbox/checkbox.py`         |  809 |            613 | +196 | 注释后新超 | 合规         |
+
+750–800 观察区 2 个，无需动作：`input/input.py` 794、`breadcrumbs/breadcrumbs.py` 777。
+
+**自动防线**
+
+```bash
+# 手动全量复核（pre-commit 已自动接入，一般无需手跑）
+python .hooks/check_file_lines.py $(find hero_side_ui examples tests .hooks -name "*.py")
+```
+
+- `.pre-commit-config.yaml` → local hook `check-file-lines`，`types: [python]`，只对暂存文件检查。
+- 阈值常量只有一处：`MAX_LINES = 1000`。
+- **CI 不设此检查**（2026-11-09 决定）：行数只在本地提交阶段拦截，不给外部 PR 增加与代码质量无关的红灯；需要全量复核时手动跑上面的命令。
+
+**何时必须真的拆**（防止口径变成放任）
+
+1. 单文件 > 1000 行 → pre-commit 直接报红，必须拆或重新走口径修订；
+2. 代码主体（去 docstring / 注释 / 空行）明显增长，即使总行数 < 1000 → 按 13.3 找清晰职责边界拆；
+3. 新增独立职责（新状态机、新定位算法、新绘制后端）→ 按 13.3 拆，与行数无关。
+
+**留观**：`listbox/item.py` 970 距阈值仅 30 行，后续给它补注释或加 API 前先回看 13.3。

@@ -11,14 +11,20 @@ from ...animation import tween_property
 # inputWrapper：带背景/边框/圆角的画布
 # ============================================================
 class _InputWrapper(QFrame):
-    """输入框背景容器 — 用 QPainter 手绘背景 + 边框 + 圆角
-
-    维护 bg_color / border_color / bottom_line_color 三个 Qt Property，
-    通过 QPropertyAnimation 插值实现 150ms 颜色过渡（对齐 HeroUI 的
-    `transition-background !duration-150` 与 `transition-colors`）。
+    """输入框背景容器：QPainter 自绘背景/边框/圆角，三颜色 Property 走
+    QPropertyAnimation 做 150ms 过渡。
     """
 
     def __init__(self, parent: QWidget | None = None):
+        """创建自绘背景画布。
+
+        Args:
+            parent: Qt 父对象。
+
+        Note:
+            关闭 WA_StyledBackground 与 AutoFillBackground，
+            背景完全由 paintEvent 负责；三个颜色 Property 走 150ms 补间。
+        """
         super().__init__(parent)
         self.setObjectName("heroInputWrapper")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -43,27 +49,57 @@ class _InputWrapper(QFrame):
     from PySide6.QtCore import Property as _QtProperty  # 避免和 typing Property 冲突
 
     def _get_bg(self) -> QColor:
+        """Property getter：当前背景色。
+
+        Returns:
+            背景 QColor（可含 alpha）。
+        """
         return self._bg_color
 
     def _set_bg(self, c: QColor):
+        """Property setter：写入背景色并重绘。
+
+        Args:
+            c: 新颜色，由补间每帧调用。
+        """
         self._bg_color = c
         self.update()
 
     bg_color = _QtProperty(QColor, _get_bg, _set_bg)
 
     def _get_border(self) -> QColor:
+        """Property getter：当前边框色。
+
+        Returns:
+            边框 QColor。
+        """
         return self._border_color
 
     def _set_border(self, c: QColor):
+        """Property setter：写入边框色并重绘。
+
+        Args:
+            c: 新颜色，由补间每帧调用。
+        """
         self._border_color = c
         self.update()
 
     border_color = _QtProperty(QColor, _get_border, _set_border)
 
     def _get_bottom(self) -> QColor:
+        """Property getter：underlined 底部静态线颜色。
+
+        Returns:
+            底线的 QColor。
+        """
         return self._bottom_line_color
 
     def _set_bottom(self, c: QColor):
+        """Property setter：写入底线颜色并重绘。
+
+        Args:
+            c: 新颜色，由补间每帧调用。
+        """
         self._bottom_line_color = c
         self.update()
 
@@ -71,27 +107,61 @@ class _InputWrapper(QFrame):
 
     # ---- 配置接口 ----
     def set_static(self, *, border_width: int, radius_px: int, show_bottom_line: bool):
-        """设置非动画属性"""
+        """设置非动画属性。
+
+        Args:
+            border_width: 边框宽度；0 表示不画边框。
+            radius_px: 圆角半径（像素）。
+            show_bottom_line: underlined 变体是否画底部静态线。
+        """
         self._border_width = border_width
         self._radius_px = radius_px
         self._show_bottom_line = show_bottom_line
         self.update()
 
     def set_bg_color(self, c: QColor, animate: bool = True):
+        """设置背景色，按需走 150ms 补间。
+
+        Args:
+            c: 目标颜色。
+            animate: False 时直达终态。
+        """
         tween_property(self, "_bg_anim", b"bg_color", QColor(c), duration=150, animated=animate)
 
     def set_border_color(self, c: QColor, animate: bool = True):
+        """设置边框色，按需走 150ms 补间。
+
+        Args:
+            c: 目标颜色。
+            animate: False 时直达终态。
+        """
         tween_property(
             self, "_border_anim", b"border_color", QColor(c), duration=150, animated=animate
         )
 
     def set_bottom_line_color(self, c: QColor, animate: bool = True):
+        """设置 underlined 底部静态线颜色，按需走 150ms 补间。
+
+        Args:
+            c: 目标颜色。
+            animate: False 时直达终态。
+        """
         tween_property(
             self, "_bottom_anim", b"bottom_line_color", QColor(c), duration=150, animated=animate
         )
 
     # ---- 手绘背景 + 边框 ----
     def paintEvent(self, event):
+        """自绘圆角背景与边框。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            underlined 变体只画底部 2px 静态线并提前返回；
+            有边框时把矩形内缩半笔宽避免线条被裁，且背景只在
+            alpha > 0 时填充。
+        """
         from PySide6.QtCore import QRectF
 
         painter = QPainter(self)

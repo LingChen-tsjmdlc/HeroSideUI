@@ -1,20 +1,6 @@
-"""HeroSideUI Link 组件 —— 复刻 HeroUI v2 Link。
+"""Link 链接组件：6 色 3 号 5 档下划线；isBlock hover 色块。
 
-样式锚点：packages/core/theme/src/components/link.ts
-组件锚点：packages/components/link/src/{link.tsx,use-link.ts,link-icon.tsx}
-
-视觉规格：
-  base:   relative inline-flex items-center
-  size:   sm=14 / md=16 / lg=18 (px)
-  color:  foreground / primary / secondary / success / warning / danger
-  underline: none / hover / always / active / focus  (offset 4px)
-  isBlock=False: hover→opacity-hover(0.8/0.9)  active→opacity-disabled(0.5)
-  isBlock=True:  px-2 py-1 + hover 显示 rounded-xl(12px) 半透明色块
-                 (foreground/10  其余 5 色 /20)
-
-外部交互：
-  href + isExternal → 通过 webbrowser 打开
-  showAnchorIcon → 默认 icon-park-outline--share
+is_external 经 webbrowser 打开；show_anchor_icon 默认 share 图标。
 """
 
 from __future__ import annotations
@@ -74,6 +60,14 @@ class _LinkIconLabel(QLabel):
         color: QColor,
         parent: QWidget | None = None,
     ):
+        """创建锚点图标槽。
+
+        Args:
+            icon_name: SVG icon 名。
+            size: 图标边长（像素）。
+            color: 图标颜色。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -83,15 +77,32 @@ class _LinkIconLabel(QLabel):
         self.set_color(color)
 
     def set_color(self, color: QColor) -> None:
+        """按主题色重渲染图标并固定尺寸。
+
+        Args:
+            color: 新图标颜色。
+        """
         pm = load_svg_icon(self._icon_name, size=self._size, color=color)
         self.setPixmap(pm)
         self.setFixedSize(pm.size())
 
     def set_icon_name(self, icon_name: str, color: QColor) -> None:
+        """切换图标名并重渲染。
+
+        Args:
+            icon_name: 新 SVG icon 名。
+            color: 图标颜色。
+        """
         self._icon_name = icon_name
         self.set_color(color)
 
     def set_size_px(self, size: int, color: QColor) -> None:
+        """调整图标边长并重渲染。
+
+        Args:
+            size: 新边长（像素）。
+            color: 图标颜色。
+        """
         self._size = int(size)
         self.set_color(color)
 
@@ -102,12 +113,12 @@ class _LinkIconLabel(QLabel):
 
 
 class Link(QFrame):
-    """HeroUI v2 风格的链接组件。完整 API/示例见 ``docs/link.md``。
+    """HeroUI v2 风格链接组件，完整 API 见 docs/link.md。
 
-    信号:
-        clicked()  — 鼠标释放在 widget 内 / 键盘 Space/Enter 触发
-        pressed()  — 鼠标按下
-        released() — 鼠标释放（无论是否在 widget 内）
+    Signals:
+        clicked: 释放在 widget 内或键盘触发。
+        pressed: 鼠标按下。
+        released: 鼠标释放。
     """
 
     clicked = Signal()
@@ -132,6 +143,24 @@ class Link(QFrame):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建链接组件。
+
+        Args:
+            children: 链接文本。
+            href: 链接地址。
+            size: 尺寸档位。
+            color: 语义色（primary / foreground 等）。
+            underline: 下划线策略（none / hover / active / focus / always）。
+            is_block: 是否为块级（hover 色块）。
+            is_external: 点击是否用浏览器打开 href。
+            is_disabled: 是否禁用。
+            show_anchor_icon: 是否显示锚点图标。
+            anchor_icon: 锚点图标名或自定义 QWidget。
+            disable_animation: 是否关闭动画。
+            is_text_selectable: 文本是否可选中。
+            theme: auto / light / dark。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
 
         # ---- 状态 ----
@@ -197,36 +226,77 @@ class Link(QFrame):
     # ============================================================
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """将主题模式解析为实际 light / dark。
+
+        Args:
+            mode: 主题模式字符串。
+
+        Returns:
+            str: "light" 或 "dark"。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     @staticmethod
     def _validate_size(size: str) -> str:
+        """校验尺寸档位，非法值抛 ValueError。
+
+        Args:
+            size: 待校验尺寸。
+
+        Returns:
+            str: 合法尺寸。
+        """
         if size not in VALID_LINK_SIZES:
             raise ValueError(f"Link: size 必须是 {VALID_LINK_SIZES}，传入 {size!r}")
         return size
 
     @staticmethod
     def _validate_color(color: str) -> str:
+        """校验语义色，非法值抛 ValueError。
+
+        Args:
+            color: 待校验颜色。
+
+        Returns:
+            str: 合法颜色。
+        """
         if color not in VALID_LINK_COLORS:
             raise ValueError(f"Link: color 必须是 {VALID_LINK_COLORS}，传入 {color!r}")
         return color
 
     @staticmethod
     def _validate_underline(underline: str) -> str:
+        """校验下划线策略，非法值抛 ValueError。
+
+        Args:
+            underline: 待校验下划线策略。
+
+        Returns:
+            str: 合法下划线策略。
+        """
         if underline not in VALID_LINK_UNDERLINES:
             raise ValueError(f"Link: underline 必须是 {VALID_LINK_UNDERLINES}，传入 {underline!r}")
         return underline
 
     def _spec(self) -> dict:
+        """当前 size 的像素规格表。
+
+        Returns:
+            dict: 含 font_size / icon_size / block_pad 等规格。
+        """
         return LINK_SIZES[self._size]
 
     # ============================================================
     # 颜色解析
     # ============================================================
     def _text_color(self) -> QColor:
-        """根据 color/theme 推出文字颜色（未叠加 opacity）。"""
+        """根据 color/theme 推出文字颜色（未叠加 opacity）。
+
+        Returns:
+            QColor: 文字颜色。
+        """
         if self._color == "foreground":
             # foreground = 主题正文色
             return QColor("#18181b" if self._theme == "light" else "#ECEDEE")
@@ -234,7 +304,11 @@ class Link(QFrame):
         return QColor(HEROUI_COLORS[self._color][500])
 
     def _block_bg_color(self) -> QColor:
-        """is_block=True 时 hover 显示的色块底色（含 alpha）。"""
+        """is_block=True 时 hover 显示的色块底色（含 alpha）。
+
+        Returns:
+            QColor: 随 _block_bg_progress 渐变的色块底色。
+        """
         alpha = (
             LINK_BLOCK["bg_alpha_foreground"]
             if self._color == "foreground"
@@ -252,6 +326,7 @@ class Link(QFrame):
     # 子控件构建
     # ============================================================
     def _build_children(self) -> None:
+        """构建文本子控件与（按需）锚点图标。"""
         spec = self._spec()
         c = self._text_color()
 
@@ -273,6 +348,7 @@ class Link(QFrame):
             self._mount_anchor_icon()
 
     def _mount_anchor_icon(self) -> None:
+        """挂载锚点图标（自定义 QWidget 或默认 SVG），并加 4px 间距。"""
         spec = self._spec()
         c = self._text_color()
         # mx-1 = 4px（HeroUI linkAnchorClasses）
@@ -287,6 +363,7 @@ class Link(QFrame):
         self._layout.addWidget(self._icon, 0, Qt.AlignmentFlag.AlignVCenter)
 
     def _unmount_anchor_icon(self) -> None:
+        """移除锚点图标与前面的间隔 spacer（layout 末尾两项）。"""
         # 移除 icon 与它前面的间隔 spacer。layout 末尾两项即 spacer + icon。
         if self._icon is None:
             return
@@ -305,7 +382,11 @@ class Link(QFrame):
     # 样式 / 几何
     # ============================================================
     def _apply_padding(self) -> None:
-        """is_block=True 时启用 px-2 py-1；否则零内边距（行内文字）。"""
+        """is_block=True 时启用 px-2 py-1；否则零内边距（行内文字）。
+
+        Note:
+            block 模式用内边距撑出可点击色块，行内模式零内边距。
+        """
         spec = self._spec()
         if self._is_block:
             self._layout.setContentsMargins(
@@ -318,7 +399,11 @@ class Link(QFrame):
             self._layout.setContentsMargins(0, 0, 0, 0)
 
     def _apply_text_underline(self) -> None:
-        """根据 underline 维度 + 当前状态决定文字是否带下划线。"""
+        """根据 underline 维度 + 当前状态决定文字是否带下划线。
+
+        Note:
+            仅在 _should_underline() 结果变化时才重设字体，避免无谓刷新。
+        """
         if self._text is None:
             return
         show = self._should_underline()
@@ -328,6 +413,11 @@ class Link(QFrame):
             self._text.setFont(f)
 
     def _should_underline(self) -> bool:
+        """按 underline 维度与当前交互状态决定下划线开关。
+
+        Returns:
+            bool: 是否应显示下划线。
+        """
         u = self._underline
         if u == "always":
             return True
@@ -342,6 +432,7 @@ class Link(QFrame):
         return False
 
     def _apply_focus_and_cursor(self) -> None:
+        """按禁用态设置光标与焦点策略（禁用=箭头+不可聚焦，否则手型+强焦点）。"""
         if self._is_disabled:
             self.setCursor(Qt.CursorShape.ArrowCursor)
             self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
@@ -354,10 +445,19 @@ class Link(QFrame):
     # opacity / 背景动画
     # ============================================================
     def _hover_opacity(self) -> float:
+        """hover 目标透明度（暗色 0.9 / 亮色 0.8）。
+
+        Returns:
+            float: hover 透明度。
+        """
         return LINK_OPACITY["hover_dark"] if self._theme == "dark" else LINK_OPACITY["hover_light"]
 
     def _target_opacity(self) -> float:
-        """is_block=False 时根据状态返回目标透明度；is_block=True 永远 1.0。"""
+        """is_block=False 时根据状态返回目标透明度；is_block=True 永远 1.0。
+
+        Returns:
+            float: 目标透明度。
+        """
         if self._is_disabled:
             return LINK_OPACITY["disabled"]
         if self._is_block:
@@ -369,6 +469,7 @@ class Link(QFrame):
         return 1.0
 
     def _animate_opacity(self) -> None:
+        """把 opacity 补间到 _target_opacity（关动画时瞬切）。"""
         tween_value(
             self,
             "_opacity_anim_runner",
@@ -380,6 +481,7 @@ class Link(QFrame):
         )
 
     def _animate_block_bg(self) -> None:
+        """补间 block 色块背景进度（hover 且非禁用→1.0，否则 0.0）。"""
         target = 1.0 if self._is_hovered and not self._is_disabled else 0.0
 
         def step(value):
@@ -400,6 +502,7 @@ class Link(QFrame):
     # 文字色 / icon 色推送
     # ============================================================
     def _push_color_to_children(self) -> None:
+        """把当前文字色推送到 Text 与图标子控件。"""
         c = self._text_color()
         if self._text is not None:
             self._text.set_color(c)
@@ -410,6 +513,11 @@ class Link(QFrame):
     # paintEvent —— is_block hover 色块
     # ============================================================
     def paintEvent(self, event):  # type: ignore[override]
+        """绘制 block 模式 hover 色块（行内模式不绘制）。
+
+        Args:
+            event: Qt 绘制事件。
+        """
         super().paintEvent(event)
         if not self._is_block:
             return
@@ -427,6 +535,11 @@ class Link(QFrame):
     # 鼠标 / 键盘事件
     # ============================================================
     def enterEvent(self, event: QEnterEvent) -> None:  # type: ignore[override]
+        """进入：标记 hover 并触发下划线 / 透明度 / block 背景动画。
+
+        Args:
+            event: Qt 进入事件。
+        """
         if not self._is_disabled:
             self._is_hovered = True
             self._apply_text_underline()
@@ -436,6 +549,11 @@ class Link(QFrame):
         super().enterEvent(event)
 
     def leaveEvent(self, event: QEvent) -> None:  # type: ignore[override]
+        """离开：清除 hover/press 并重算下划线与透明度。
+
+        Args:
+            event: Qt 离开事件。
+        """
         self._is_hovered = False
         self._is_pressed = False
         self._apply_text_underline()
@@ -445,6 +563,11 @@ class Link(QFrame):
         super().leaveEvent(event)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
+        """左键按下：标记 press 并发 pressed 信号。
+
+        Args:
+            event: Qt 鼠标事件。
+        """
         if self._is_disabled or event.button() != Qt.MouseButton.LeftButton:
             super().mousePressEvent(event)
             return
@@ -455,6 +578,11 @@ class Link(QFrame):
         event.accept()
 
     def mouseReleaseEvent(self, event: QMouseEvent) -> None:  # type: ignore[override]
+        """左键释放：发 released；落在 widget 内则触发 click + 外链。
+
+        Args:
+            event: Qt 鼠标事件。
+        """
         if self._is_disabled or event.button() != Qt.MouseButton.LeftButton:
             super().mouseReleaseEvent(event)
             return
@@ -469,6 +597,11 @@ class Link(QFrame):
         event.accept()
 
     def keyPressEvent(self, event: QKeyEvent) -> None:  # type: ignore[override]
+        """键盘按下：Enter/Space 标记 press 并触发视觉反馈。
+
+        Args:
+            event: Qt 按键事件。
+        """
         if self._is_disabled:
             super().keyPressEvent(event)
             return
@@ -485,6 +618,11 @@ class Link(QFrame):
         super().keyPressEvent(event)
 
     def keyReleaseEvent(self, event: QKeyEvent) -> None:  # type: ignore[override]
+        """键盘释放：Enter/Space 触发激活（click + 外链）。
+
+        Args:
+            event: Qt 按键事件。
+        """
         if self._is_disabled:
             super().keyReleaseEvent(event)
             return
@@ -502,11 +640,21 @@ class Link(QFrame):
         super().keyReleaseEvent(event)
 
     def focusInEvent(self, event: QFocusEvent) -> None:  # type: ignore[override]
+        """获得焦点：标记 focused 刷新下划线。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         self._is_focused = True
         self._apply_text_underline()
         super().focusInEvent(event)
 
     def focusOutEvent(self, event: QFocusEvent) -> None:  # type: ignore[override]
+        """失去焦点：清除 focused/press 刷新下划线与透明度。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         self._is_focused = False
         self._is_pressed = False
         self._apply_text_underline()
@@ -514,7 +662,11 @@ class Link(QFrame):
         super().focusOutEvent(event)
 
     def _activate(self) -> None:
-        """触发点击行为：发 clicked + 按需打开外链。"""
+        """触发点击行为：发 clicked + 按需打开外链。
+
+        Note:
+            is_external 且 href 非空时调用 webbrowser.open，异常被吞掉以防崩组件。
+        """
         self.clicked.emit()
         if self._is_external and self._href:
             try:
@@ -527,20 +679,45 @@ class Link(QFrame):
     # 公共 API
     # ============================================================
     def set_children(self, text: str) -> None:
+        """更新链接文本。
+
+        Args:
+            text: 新文本。
+        """
         self._children_text = str(text or "")
         if self._text is not None:
             self._text.setText(self._children_text)
 
     def children_text(self) -> str:
+        """返回当前链接文本。
+
+        Returns:
+            str: 当前文本。
+        """
         return self._children_text
 
     def set_href(self, href: str) -> None:
+        """设置链接地址。
+
+        Args:
+            href: 新地址。
+        """
         self._href = str(href or "")
 
     def href(self) -> str:
+        """返回当前链接地址。
+
+        Returns:
+            str: 当前 href。
+        """
         return self._href
 
     def set_size(self, size: str) -> None:
+        """设置尺寸档位（同步文本与图标尺寸、padding）。
+
+        Args:
+            size: 尺寸名（非法值抛 ValueError）。
+        """
         size = self._validate_size(size)
         if size == self._size:
             return
@@ -554,6 +731,11 @@ class Link(QFrame):
         self._apply_padding()
 
     def set_color(self, color: str) -> None:
+        """设置语义色（推送子控件配色）。
+
+        Args:
+            color: 语义色名（非法值抛 ValueError）。
+        """
         color = self._validate_color(color)
         if color == self._color:
             return
@@ -563,6 +745,11 @@ class Link(QFrame):
             self.update()
 
     def set_underline(self, underline: str) -> None:
+        """设置下划线策略。
+
+        Args:
+            underline: none / hover / active / focus / always（非法值抛 ValueError）。
+        """
         underline = self._validate_underline(underline)
         if underline == self._underline:
             return
@@ -570,6 +757,11 @@ class Link(QFrame):
         self._apply_text_underline()
 
     def set_is_block(self, is_block: bool) -> None:
+        """切换块级模式（影响 padding 与 opacity 策略）。
+
+        Args:
+            is_block: 是否块级。
+        """
         is_block = bool(is_block)
         if is_block == self._is_block:
             return
@@ -582,9 +774,19 @@ class Link(QFrame):
         self.update()
 
     def set_is_external(self, is_external: bool) -> None:
+        """设置是否外链（点击用浏览器打开 href）。
+
+        Args:
+            is_external: 是否外链。
+        """
         self._is_external = bool(is_external)
 
     def set_is_disabled(self, is_disabled: bool) -> None:
+        """设置禁用态（同步光标/焦点/透明度/视觉）。
+
+        Args:
+            is_disabled: 是否禁用。
+        """
         is_disabled = bool(is_disabled)
         if is_disabled == self._is_disabled:
             return
@@ -598,6 +800,11 @@ class Link(QFrame):
             self._animate_block_bg()
 
     def set_show_anchor_icon(self, show: bool) -> None:
+        """切换锚点图标显隐（按需挂载/卸载）。
+
+        Args:
+            show: 是否显示锚点图标。
+        """
         show = bool(show)
         if show == self._show_anchor_icon:
             return
@@ -608,7 +815,11 @@ class Link(QFrame):
             self._unmount_anchor_icon()
 
     def set_anchor_icon(self, anchor_icon: str | QWidget | None) -> None:
-        """切换锚点图标内容。show_anchor_icon=False 时仅记录，不挂载。"""
+        """切换锚点图标内容。show_anchor_icon=False 时仅记录，不挂载。
+
+        Args:
+            anchor_icon: 新图标名或自定义 QWidget。
+        """
         self._anchor_icon_input = anchor_icon
         if not self._show_anchor_icon:
             return
@@ -617,9 +828,22 @@ class Link(QFrame):
         self._mount_anchor_icon()
 
     def set_disable_animation(self, disable: bool) -> None:
+        """设置是否关闭所有动画。
+
+        Args:
+            disable: True 关闭动画。
+        """
         self._disable_animation = bool(disable)
 
     def set_theme(self, theme: str) -> None:
+        """设置主题（auto 注册 ThemeProvider 跟随全局）。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            会同步子 Text 主题与配色，并刷新透明度档位。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -638,7 +862,11 @@ class Link(QFrame):
             self.update()
 
     def _apply_provider_theme(self, theme: str) -> None:
-        """ThemeProvider 广播专用入口。"""
+        """ThemeProvider 广播回调：更新主题并推送子控件配色。
+
+        Args:
+            theme: 广播下发的实际主题（light/dark）。
+        """
         self._theme = theme
         if self._text is not None:
             self._text.set_theme(theme)
@@ -652,20 +880,40 @@ class Link(QFrame):
     # ============================================================
     @staticmethod
     def valid_sizes() -> tuple:
+        """返回所有合法尺寸档位。
+
+        Returns:
+            tuple: 合法 size 集合。
+        """
         return VALID_LINK_SIZES
 
     @staticmethod
     def valid_colors() -> tuple:
+        """返回所有合法语义色。
+
+        Returns:
+            tuple: 合法 color 集合。
+        """
         return VALID_LINK_COLORS
 
     @staticmethod
     def valid_underlines() -> tuple:
+        """返回所有合法下划线策略。
+
+        Returns:
+            tuple: 合法 underline 集合。
+        """
         return VALID_LINK_UNDERLINES
 
     # ============================================================
     # sizeHint —— 让 Layout 给到合适宽度
     # ============================================================
     def sizeHint(self) -> QSize:  # type: ignore[override]
+        """返回建议尺寸（由 layout 决定）。
+
+        Returns:
+            QSize: 父类根据 layout 计算出的建议尺寸。
+        """
         # 由 layout 决定，QFrame 默认实现已正确，仅显式声明便于阅读
         return super().sizeHint()
 

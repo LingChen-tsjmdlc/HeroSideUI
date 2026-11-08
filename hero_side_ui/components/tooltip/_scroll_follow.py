@@ -1,13 +1,5 @@
-"""Tooltip 顶层模式滚动跟随 mixin。
-
-为什么独立：tooltip.py 已超 800 行红线，把"顶层 Qt.Tool tooltip 跟随父滚动"
-这套（连接祖先 scrollbar.valueChanged + 节流重定位）剥出来。embedded 模式不需要
-这套——子 widget 跟随父体系滚动是 Qt 原生能力。
-
-为什么用 valueChanged 而非自定义 SmoothScroll 信号：
-    valueChanged 是 Qt 原生信号，对所有滚动来源（鼠标滚轮 / 拖动 scrollbar /
-    键盘 PageDown / scrollTo() API / SmoothScroll 动画的逐帧 setValue）都生效；
-    与 SmoothScroll 解耦，零依赖。
+"""Tooltip 顶层模式滚动跟随 mixin：连接祖先 scrollbar valueChanged + 节流重定位
+（embedded 模式不需要，Qt 原生跟随）。
 """
 
 from __future__ import annotations
@@ -19,11 +11,7 @@ __all__ = ["_TooltipScrollFollowMixin"]
 
 
 class _TooltipScrollFollowMixin:
-    """Tooltip 顶层模式下"滚动跟随"逻辑（已有 _scroll_bars / _scroll_reposition_pending
-    / _trigger / _is_open / _refresh_geometry 由 Tooltip 自己提供）。
-
-    embedded 模式下宿主类**不调用**这些方法（子 widget 自动跟随）。
-    """
+    """顶层模式滚动跟随逻辑；embedded 模式宿主不调用这些方法。"""
 
     def _connect_scroll_watchers(self, trigger: QWidget) -> None:
         """沿 trigger 祖先链找所有 QAbstractScrollArea，连接 scrollbar.valueChanged。"""
@@ -40,6 +28,7 @@ class _TooltipScrollFollowMixin:
             w = w.parentWidget()
 
     def _disconnect_scroll_watchers(self) -> None:
+        """断开所有已连接的滚动条监听并清空记录。"""
         for bar in self._scroll_bars:  # type: ignore[attr-defined]
             try:
                 bar.valueChanged.disconnect(self._on_scroll_detected)  # type: ignore[attr-defined]

@@ -100,6 +100,7 @@ class PaddingSqueezeAnimation(QObject):
         self._stop_anim()
 
     def _play(self, target: float, forward: bool, animated: bool) -> None:
+        """启动边距过渡，按方向选择缓动曲线。"""
         self._forward = forward
         tween_value(
             self,
@@ -114,6 +115,7 @@ class PaddingSqueezeAnimation(QObject):
         )
 
     def _on_step(self, v) -> None:
+        """接收过渡帧并应用边距。"""
         try:
             self._progress = float(v)
         except (TypeError, ValueError):
@@ -121,6 +123,7 @@ class PaddingSqueezeAnimation(QObject):
         self._apply_progress()
 
     def _stop_anim(self) -> None:
+        """取消当前边距过渡。"""
         stop_tween(self, "_anim")
 
     def _apply_progress(self) -> None:

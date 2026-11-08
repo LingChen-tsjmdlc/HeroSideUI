@@ -1,13 +1,4 @@
-"""Badge 组件尺寸配置。
-
-对照 HeroUI badge.ts 的 size / compound variants：
-- isDot 固定圆点：sm w-3(12) / md w-3.5(14) / lg w-4(16)
-- isOneChar 正方形：sm w-4(16) / md w-5(20) / lg w-6(24)
-- 多字符：px-1(4)，高 sm 16 / md 20 / lg 20（md/lg 官方同为 text-small）
-- 角标锚点偏移（相对被包裹内容边缘，中心悬在边缘上）：
-  rectangle 5% / circle 10%（placement × shape compound variants）
-- 文字字号：sm 10 / md 14 / lg 16
-"""
+"""Badge 尺寸：圆点 12/14/16、单字 16/20/24、多字符高 16/20/20；锚点偏移 5%/10%。"""
 
 BADGE_SIZES = {
     "sm": {

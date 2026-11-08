@@ -1,17 +1,4 @@
-"""variant=spinner —— iOS UIActivityIndicator 风格的 12 根时钟刻度。
-
-HeroUI 原版 CSS:
-    每根 i:
-      transform: rotate(30deg * --bar-index) translate(140%);
-      animation: fade-out 1.2s linear infinite;
-      animation-delay: calc(-1.2s + 0.1s * --bar-index);
-    @keyframes fade-out { 0%{opacity:1} 100%{opacity:0.15} }  (大致)
-
-复刻策略:
-    用一个 1.2s phase 驱动；第 i 根的局部 phase = (phase + i*delay) % 1
-    其中 delay = 1/12 ≈ 0.0833（让它走 0~1 的循环）
-    透明度 = 1 - phase_local（线性淡出，min 0.15）
-"""
+"""spinner 变体：iOS 风格 12 根时钟刻度，逐根相位差线性淡出。"""
 
 from __future__ import annotations
 
@@ -31,7 +18,20 @@ def paint_spinner(
     bar_width: float,
     phase: float,
 ):
-    """phase ∈ [0, 1)；驱动器周期 1.2s。"""
+    """绘制 spinner 变体：12 根时钟刻度按相位差逐根淡出。
+
+    Args:
+        painter: 目标 QPainter，函数内平移旋转并以 save/restore 包裹。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 主色，每根刻度逐帧派生并改写透明度。
+        bar_length: 刻度棒长度，同时决定内圆留空半径。
+        bar_width: 刻度棒宽度，同时作为圆角半径。
+        phase: 全局相位，取值 [0, 1)，驱动器周期 1.2s。
+
+    Note:
+        相位差固定为 1/12，i 越大越晚出现以形成旋转方向感；透明度由 1 线性淡到 0.15。
+    """
     side = min(w, h)
     cx = w / 2
     cy = h / 2

@@ -40,9 +40,11 @@ class LabelFloatAnimation(QObject):
         self._anim.finished.connect(lambda: self.finished.emit(self._floated))
 
     def _get_progress(self) -> float:
+        """返回当前过渡进度。"""
         return self._progress
 
     def _set_progress(self, value: float):
+        """设置过渡进度并通知回调。"""
         self._progress = value
         self._on_progress(value)
 

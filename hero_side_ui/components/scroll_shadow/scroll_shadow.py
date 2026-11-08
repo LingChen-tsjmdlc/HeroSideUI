@@ -1,35 +1,4 @@
-"""
-HeroSideUI ScrollShadow 组件
-
-对标 HeroUI v2:
-    https://v2.heroui.com/docs/components/scroll-shadow
-    源码: https://github.com/heroui-inc/heroui/tree/main/packages/components/scroll-shadow
-
-行为对齐:
-    在可滚动容器的起/止端，绘制一条与"容器父层背景"同色的渐变蒙版，
-    让内容看起来"淡出"在边缘——暗示"还有更多内容可滚"。
-    - vertical 方向: 顶部 / 底部各一条阴影
-    - horizontal 方向: 左端 / 右端各一条阴影
-    阴影自动根据滚动位置显隐:
-        - 容器没到顶 → 显示顶部淡出
-        - 没到底 → 显示底部淡出
-        - 不可滚动 → 全部隐藏
-
-Qt 实现:
-    Web 端 HeroUI 用 CSS `mask-image: linear-gradient(...)` 把容器自身
-    的边缘做 alpha 渐变;Qt 里没有 CSS mask——改为 viewport 上叠一个
-    透明覆盖层 `_ShadowOverlay`,用 `QLinearGradient` 画一条
-    "背景色→透明" 的渐变,视觉效果与 mask-image 完全等价。
-
-    阴影的"淡出目标色"取自 ThemeProvider 的窗口背景色
-    (light=#FAFBFD / dark=#0B0D12),确保渐变终点和父容器融为一体。
-
-结构:
-    ScrollShadow (QScrollArea)
-        └── viewport (QWidget, QScrollArea 内置)
-                ├── 用户通过 setWidget() 设置的内容
-                └── _ShadowOverlay (QWidget, 覆盖在内容之上,鼠标穿透)
-"""
+"""ScrollShadow 组件：可滚动容器两端的背景色渐变蒙版，暗示可滚动方向。"""
 
 from __future__ import annotations
 
@@ -49,6 +18,14 @@ class _ShadowOverlay(QWidget):
     """覆盖在 viewport 上的透明层,负责绘制两端渐变。"""
 
     def __init__(self, parent: QWidget):
+        """初始化透明叠加层并设默认绘制状态。
+
+        Args:
+            parent: 承载叠加层的父 widget。
+
+        Note:
+            设置鼠标事件穿透与半透明背景，使叠加层只绘制渐变而不拦截交互。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
@@ -72,7 +49,16 @@ class _ShadowOverlay(QWidget):
         fade_color: QColor,
         clip_radius: float = 0.0,
     ) -> None:
-        """由 ScrollShadow 调用,设置本帧要画什么。"""
+        """由 ScrollShadow 调用，设置本帧的渐变绘制参数。
+
+        Args:
+            orientation: 渐变方向，vertical 或 horizontal。
+            size: 渐变长度（像素）。
+            show_start: 是否绘制起始端阴影。
+            show_end: 是否绘制末端阴影。
+            fade_color: 渐变淡出目标色。
+            clip_radius: 圆角裁剪半径，为 0 时不裁剪。
+        """
         self._orientation = orientation
         self._size = max(0, size)
         self._show_start = show_start
@@ -82,6 +68,15 @@ class _ShadowOverlay(QWidget):
         self.update()
 
     def paintEvent(self, event):
+        """按配置在两端绘制渐变蒙版。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            clip_radius 大于 0 时用 QPainterPath 裁剪到圆角矩形，
+            避免 setMask 的 1bit 锯齿；两端同显时渐变长度取半，防止重叠。
+        """
         if self._size <= 0:
             return
         if not (self._show_start or self._show_end):
@@ -139,29 +134,9 @@ class _ShadowOverlay(QWidget):
 class ScrollShadow(QScrollArea):
     """HeroUI 风格的滚动阴影容器。
 
-    用法:
-        sa = ScrollShadow(orientation="vertical", size=40)
-        sa.setWidget(my_long_content)   # 和 QScrollArea 完全一样
-
-        # 水平方向
-        sa = ScrollShadow(orientation="horizontal", hide_scrollbar=True)
-
-        # 强制两端始终显示
-        sa = ScrollShadow(visibility="both")
-
-    参数:
-        orientation     : "vertical" | "horizontal"   默认 "vertical"
-        size            : 阴影渐变宽度 (px)           默认 40
-        offset          : 进入"到顶/到底"判定的容差 (px) 默认 0
-        visibility      : "auto"|"both"|"top"|"bottom"|"left"|"right"|"none"
-                          默认 "auto" —— 按滚动位置自动显隐
-        is_enabled      : 是否启用阴影                 默认 True
-        hide_scrollbar  : 是否隐藏原生滚动条           默认 False
-        theme           : "auto"|"light"|"dark"       默认 "auto"
-
-    信号:
-        visibility_changed(str)  : 当前显隐组合变化时发射
-                                    值为 "top"/"bottom"/"both"/"none"/"left"/"right"
+    Note:
+        orientation 决定纵向(顶/底)或横向(左/右)两端渐变；visibility="auto"
+        时按滚动位置自动显隐，不可滚动则全部隐藏。
     """
 
     visibility_changed = Signal(str)
@@ -178,6 +153,24 @@ class ScrollShadow(QScrollArea):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """初始化滚动阴影容器并校验方向、可见性参数。
+
+        Args:
+            orientation: 滚动方向，vertical 或 horizontal。
+            size: 渐变长度（像素）。
+            offset: 判定可滚动时使用的边界偏移。
+            visibility: 显隐策略，auto/both/top/bottom/left/right/none。
+            is_enabled: 是否启用阴影。
+            hide_scrollbar: 是否隐藏滚动条。
+            fade_color: 显式淡出目标色；None 表示跟随容器背景。
+            theme: 主题模式，auto/light/dark。
+            parent: Qt 父对象。
+
+        Note:
+            orientation、visibility 非法值抛 ValueError；
+            theme 为 auto 时注册到 ThemeProvider；
+            viewport 与内容容器关闭自动填背景，让父容器底色透上来。
+        """
         super().__init__(parent)
 
         if orientation not in _ORIENTATION:
@@ -258,10 +251,10 @@ class ScrollShadow(QScrollArea):
     # 插槽 API (推荐用法,像 Card 一样可装配)
     # ============================================================
     def add_widget(self, widget: QWidget) -> None:
-        """往 ScrollShadow 内部追加一个子 widget。
+        """向内部容器追加一个子 widget。
 
-        内部容器是 QVBoxLayout (vertical 方向) 或 QHBoxLayout (horizontal 方向),
-        按调用顺序堆叠。完全等价 `self.layout().addWidget(widget)`。
+        Args:
+            widget: 要追加的子控件。
         """
         self._content_layout.addWidget(widget)
 
@@ -278,18 +271,14 @@ class ScrollShadow(QScrollArea):
             self._content_layout.addStretch(stretch)
 
     def content(self) -> QWidget:
-        """返回内置的内容容器 widget(已挂好 layout)。
-
-        高级用法: 需要直接操作这个 QWidget 时用(如 setContentsMargins
-        做边距、或把现有 layout 替换成自定义 GridLayout)。
-        """
+        """返回内置内容容器，供直接操作（如设边距或替换 layout）。"""
         return self._content
 
     def layout(self) -> QLayout:  # type: ignore[override]
-        """返回内置的内容 layout。
+        """返回内置内容 layout，可像普通容器一样装配。
 
-        用户可以 `sc.layout().addWidget(...)` / `sc.layout().addLayout(...)`
-        像普通容器一样装配内容。
+        Returns:
+            内部 QLayout。
         """
         return self._content_layout
 
@@ -297,11 +286,10 @@ class ScrollShadow(QScrollArea):
     # QScrollArea 原生 setWidget(高级用法,替换整个内容容器)
     # ============================================================
     def setWidget(self, widget):  # type: ignore[override]
-        """替换整个内容容器。
+        """替换整个内容容器，替换后插槽 API 失效。
 
-        调用后,插槽 API (add_widget / layout / content) 不再有效 ——
-        因为它们指向的内容 widget 被替换掉了。只推荐需要完全自定义内容
-        容器的高级场景使用。
+        Args:
+            widget: 新的内容控件；调用后 add_widget/layout/content 不再指向原容器。
         """
         super().setWidget(widget)
         self._content = widget
@@ -315,6 +303,15 @@ class ScrollShadow(QScrollArea):
     # 事件
     # ============================================================
     def eventFilter(self, obj: QObject, event: QEvent) -> bool:
+        """在 viewport 尺寸或显示变化时同步几何并刷新阴影。
+
+        Args:
+            obj: 事件来源对象。
+            event: 待过滤的 Qt 事件。
+
+        Returns:
+            交由父类 eventFilter 的返回值。
+        """
         if obj is self.viewport() and event.type() in (
             QEvent.Type.Resize,
             QEvent.Type.Show,
@@ -324,11 +321,24 @@ class ScrollShadow(QScrollArea):
         return super().eventFilter(obj, event)
 
     def resizeEvent(self, event):
+        """尺寸变化时同步叠加层几何并刷新阴影。
+
+        Args:
+            event: Qt 尺寸事件。
+        """
         super().resizeEvent(event)
         self._sync_overlay_geometry()
         self._refresh_shadow()
 
     def showEvent(self, event):
+        """首次显示后重算一次淡出目标色。
+
+        Args:
+            event: Qt 显示事件。
+
+        Note:
+            推迟到 parent 链挂好后计算，以读到祖先容器提供的背景色。
+        """
         # 首次 show 时 parent 链已经挂好,重算一次 fade_color
         # (处理"addWidget 之后才有 heroCard 祖先"的场景)
         super().showEvent(event)
@@ -338,16 +348,17 @@ class ScrollShadow(QScrollArea):
     # 内部: overlay 几何 & 阴影计算
     # ============================================================
     def _sync_overlay_geometry(self) -> None:
+        """把叠加层几何对齐到 viewport 并置顶。"""
         vp = self.viewport()
         self._overlay.setGeometry(0, 0, vp.width(), vp.height())
         self._overlay.raise_()
 
     def _compute_effective_visibility(self) -> tuple[bool, bool, str]:
-        """计算 (show_start, show_end, label) —— label 用于信号广播。
+        """计算两端显隐状态与广播标签。
 
-        返回的 label 对应原版 HeroUI 的 data-* 属性语义:
-            vertical: "top" / "bottom" / "both" / "none"
-            horizontal: "left" / "right" / "both" / "none"
+        Returns:
+            (show_start, show_end, label)；label 为 "top"/"bottom"/"both"/
+            "none"/"left"/"right"，语义对齐 HeroUI data-* 属性。
         """
         if not self._is_enabled:
             return False, False, "none"
@@ -408,25 +419,11 @@ class ScrollShadow(QScrollArea):
             return False, False, "none"
 
     def _fade_color(self) -> QColor:
-        """淡出的目标色 —— 实时跟随"容器所处背景"。
+        """取淡出目标色，实时跟随容器所处背景。
 
-        决策顺序:
-            1. 用户显式传了 `fade_color` → 直接用(最高优先级,手动覆盖)
-            2. 沿 parent 链向上找第一个提供 `current_bg_color()` API 的
-               祖先容器(如 Card),读其返回值。这是 duck typing,不耦合
-               具体类名或 objectName——任何"自知底色且愿意暴露"的容器都能
-               被命中。
-            3. 回退读自身 palette.Window —— Qt palette 沿 parent 链继承,
-               ThemeProvider 已把 QApplication.palette.Window 同步为当前
-               主题窗口色。
-
-        配合:
-            - ThemeProvider `_refresh_theme` 先 _sync_app_palette 再广播
-            - changeEvent 监听 PaletteChange 实时重绘
-            - _apply_provider_theme 用 QTimer.singleShot(0) 推迟到事件循环
-              末尾(保证所有级联 setPalette 跑完)
-            - Card 等容器的 theme_changed 会触发自己 _apply_styles ->
-              子树 palette 变更 -> ScrollShadow 收到 PaletteChange -> 重绘
+        Note:
+            优先级依次为显式 fade_color、父链上 current_bg_color()、palette.Window；
+            父链通过 duck typing 查找提供该方法的祖先。
         """
         if self._fade_color_user is not None:
             return QColor(self._fade_color_user)
@@ -447,6 +444,11 @@ class ScrollShadow(QScrollArea):
         return self.palette().color(QPalette.ColorRole.Window)
 
     def _refresh_shadow(self) -> None:
+        """按当前状态重配叠加层，并在标签变化时广播 visibility_changed。
+
+        Note:
+            用 _last_effective_vis 去重，避免同一显隐状态重复广播。
+        """
         start, end, label = self._compute_effective_visibility()
         self._overlay.configure(
             orientation=self._orientation,
@@ -461,18 +463,10 @@ class ScrollShadow(QScrollArea):
             self.visibility_changed.emit(label)
 
     def _clip_radius(self) -> float:
-        """裁剪圆角半径 (px) —— 沿父链 duck-typing 找 ``current_corner_radius()``。
+        """取裁剪圆角半径，沿父链 duck-typing 找 current_corner_radius()。
 
-        阴影 overlay 是矩形 widget,默认画的是矩形渐变;若父级是圆角容器
-        (popover/card),overlay 不裁剪就会"咬"进圆角内侧 —— 滚到中间时
-        顶/底两条阴影都显示,把圆角里的 4 个角染色,看起来像直角。
-
-        范式与 :meth:`_fade_color` 一致(MEMORY 第 32 条):
-            1. 沿 parent 链找到第一个 ``current_corner_radius()`` API
-            2. 找不到 → 返回 0 (不裁剪,矩形渐变,与原行为一致)
-
-        ``_fade_color`` + ``_clip_radius`` 合起来让 ScrollShadow 在任何
-        圆角容器内都能"严丝合缝":底色对、形状对。
+        Returns:
+            圆角像素值；父链无提供者时返回 0（不裁剪）。
         """
         p = self.parentWidget()
         while p is not None:
@@ -488,6 +482,11 @@ class ScrollShadow(QScrollArea):
         return 0.0
 
     def _apply_scrollbar_policy(self) -> None:
+        """按方向与隐藏设置配置横纵滚动条策略。
+
+        Note:
+            hide_scrollbar 为真时两轴都强制关闭；否则仅保留滚动方向对应的滚动条。
+        """
         if self._hide_scrollbar:
             self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
             self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
@@ -504,6 +503,14 @@ class ScrollShadow(QScrollArea):
     # 公共 setter
     # ============================================================
     def set_orientation(self, o: str) -> None:
+        """切换滚动方向并重配滚动条策略。
+
+        Args:
+            o: vertical 或 horizontal。
+
+        Note:
+            非法值抛 ValueError。
+        """
         if o not in _ORIENTATION:
             raise ValueError(f"orientation must be one of {_ORIENTATION}")
         self._orientation = o
@@ -511,48 +518,56 @@ class ScrollShadow(QScrollArea):
         self._refresh_shadow()
 
     def set_size(self, s: int) -> None:
+        """设置渐变长度并刷新阴影。"""
         self._size = max(0, int(s))
         self._refresh_shadow()
 
     def set_offset(self, o: int) -> None:
+        """设置可滚动判定的边界偏移并刷新阴影。"""
         self._offset = int(o)
         self._refresh_shadow()
 
     def set_visibility(self, v: str) -> None:
+        """切换显隐策略并刷新阴影。
+
+        Args:
+            v: 显隐策略，须为 _VISIBILITY 中的值。
+
+        Note:
+            非法值抛 ValueError。
+        """
         if v not in _VISIBILITY:
             raise ValueError(f"visibility must be one of {_VISIBILITY}")
         self._visibility = v
         self._refresh_shadow()
 
     def set_is_enabled(self, v: bool) -> None:
+        """设置是否启用阴影并刷新。"""
         self._is_enabled = bool(v)
         self._refresh_shadow()
 
     def set_hide_scrollbar(self, v: bool) -> None:
+        """设置是否隐藏滚动条并刷新阴影。"""
         self._hide_scrollbar = bool(v)
         self._apply_scrollbar_policy()
         self._sync_overlay_geometry()
         self._refresh_shadow()
 
     def set_fade_color(self, c: str | None) -> None:
-        """设置淡出渐变的目标色 —— **同时**把 ScrollShadow 自身+viewport 的
-        背景也填成这个色,保证阴影与底色严丝合缝。
+        """设置淡出目标色，并同步自身与 viewport 背景。
 
-        传 None 恢复"跟随 palette 自动决策"模式(自身/viewport 背景回到透明,
-        让父容器的背景/palette 透过来画)。
-
-        场景: 嵌在非默认背景容器里(比如主题不一致的区域、自定义色彩面板),
-        一行传背景色即可,无需关心 palette 推断。
+        Args:
+            c: 目标色；传 None 恢复跟随 palette 自动决策。
         """
         self._fade_color_user = c
         self._apply_user_bg()
         self._refresh_shadow()
 
     def _apply_user_bg(self) -> None:
-        """用户传了 fade_color 时,把 self + viewport 背景也涂成该色。
+        """把自身与 viewport 背景涂成用户指定的 fade_color。
 
-        通过 palette.Window + setAutoFillBackground 实现(不用 QSS,避免
-        QSS 向内部 widget 传染——MEMORY 23 条的经验教训)。
+        Note:
+            通过 palette.Window 实现而非 QSS，避免样式向内部 widget 传染。
         """
         vp = self.viewport()
         if self._fade_color_user is None:
@@ -572,6 +587,14 @@ class ScrollShadow(QScrollArea):
     # 主题
     # ============================================================
     def set_theme(self, t: str) -> None:
+        """切换主题模式并刷新阴影。
+
+        Args:
+            t: auto 时注册到 ThemeProvider，其余值作为固定主题。
+
+        Note:
+            由 auto 切到固定主题时会从 ThemeProvider 注销。
+        """
         if t == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -584,6 +607,11 @@ class ScrollShadow(QScrollArea):
         self._refresh_shadow()
 
     def _apply_provider_theme(self, theme: str) -> None:
+        """响应 ThemeProvider 广播，延迟到事件循环末尾再重绘。
+
+        Note:
+            用 QTimer.singleShot(0) 推迟，确保此时父级组件已完成 palette 同步。
+        """
         self._theme = theme
         # 推迟到事件循环末尾再重绘: 保证此时其他组件(如父级 Card)也已经
         # 完成 palette 同步,我们读 self.palette().Window 能拿到最新色。
@@ -591,6 +619,14 @@ class ScrollShadow(QScrollArea):
 
     # --- 响应 palette 变化 (覆盖 QWidget.changeEvent) ---
     def changeEvent(self, event):
+        """在 palette 变更时重绘阴影。
+
+        Args:
+            event: Qt 事件。
+
+        Note:
+            仅 QEvent.Type.PaletteChange 触发刷新，其余事件交回父类处理。
+        """
         # 当 QApplication.setPalette 或 parent.setPalette 触发子树 palette 变更,
         # Qt 会给每个子 widget 发 PaletteChange 事件。在这里重绘以保证阴影色
         # 即时跟随 Card / 窗口的 palette 变化。
@@ -600,6 +636,14 @@ class ScrollShadow(QScrollArea):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的 light 或 dark。
+
+        Args:
+            mode: 主题模式。
+
+        Returns:
+            light/dark 原样返回；其余返回 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
@@ -609,12 +653,15 @@ class ScrollShadow(QScrollArea):
     # ============================================================
     @property
     def orientation(self) -> str:
+        """返回当前滚动方向。"""
         return self._orientation
 
     @property
     def size_px(self) -> int:
+        """返回当前渐变长度（像素）。"""
         return self._size
 
     @property
     def effective_visibility(self) -> str:
+        """返回上一次广播的显隐标签。"""
         return self._last_effective_vis

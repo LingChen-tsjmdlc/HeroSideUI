@@ -1,16 +1,6 @@
-"""节点 → 原生 widget 渲染器。
-
-遍历 ``SyntaxTreeNode`` 树，把每个块级节点渲染成 HeroSideUI 原生 widget：
-
-- heading / paragraph → ``Text``（承载行内富文本 HTML）
-- bullet_list / ordered_list → ``_ListBlock``
-- blockquote → ``_QuoteBlock``
-- hr → ``Divider``
-- table → ``Table``
-- 独立成段的图片 → ``Image``
-- fence / code_block → 等宽降级文本块（首版不做高亮）
-
-行内格式统一交给 ``_inline.inline_to_html``，不拆 widget。
+"""节点 → 原生 widget 渲染器：heading/段落→Text、列表→_ListBlock、
+引用→_QuoteBlock、hr→Divider、表格→Table、图片→Image、代码块降级文本。
+行内格式统一走 _inline.inline_to_html 不拆 widget。
 """
 
 from __future__ import annotations
@@ -41,6 +31,11 @@ def _plain_text(node: SyntaxTreeNode) -> str:
 
 
 def _first_inline(node: SyntaxTreeNode) -> SyntaxTreeNode | None:
+    """取节点第一个 inline 子节点（行内内容载体）。
+
+    Returns:
+        SyntaxTreeNode | None: 第一个 inline 节点，无则 None。
+    """
     for c in node.children:
         if c.type == "inline":
             return c
@@ -50,17 +45,10 @@ def _first_inline(node: SyntaxTreeNode) -> SyntaxTreeNode | None:
 class BlockContext:
     """传给 block_renderer 工厂的上下文。
 
-    属性：
-        node:    原始语法节点
-        parent:  应作为返回 widget 父级的容器
-        theme:   当前主题
-    方法：
-        render_children(parent) -> list[QWidget]:
-            把本节点的块级子节点渲染成 widget 列表（插槽 children）。
-        inline_html() -> str:
-            把本节点的行内内容渲染成 HTML 字符串（段落/标题类用）。
-        default(parent) -> QWidget | None:
-            退回该节点的内置默认 widget（只想包外壳、内部仍用默认时用）。
+    Attributes:
+        node: 原始语法节点。
+        parent: 应作为返回 widget 父级的容器。
+        theme: 当前主题。
     """
 
     def __init__(
@@ -69,12 +57,27 @@ class BlockContext:
         parent: QWidget,
         renderer: MarkdownRenderer,
     ):
+        """构造块级渲染上下文。
+
+        Args:
+            node: 原始语法树节点。
+            parent: 应作为返回 widget 父级的容器。
+            renderer: 当前 MarkdownRenderer（提供主题与渲染能力）。
+        """
         self.node = node
         self.parent = parent
         self.theme = renderer.theme
         self._renderer = renderer
 
     def render_children(self, parent: QWidget) -> list[QWidget]:
+        """递归渲染本节点所有子节点（绕过 block override，走默认渲染）。
+
+        Args:
+            parent: 子 widget 的父容器。
+
+        Returns:
+            list[QWidget]: 渲染出的子 widget 列表。
+        """
         out: list[QWidget] = []
         for child in self.node.children:
             w = self._renderer.render_node(child, parent)
@@ -83,6 +86,11 @@ class BlockContext:
         return out
 
     def inline_html(self) -> str:
+        """渲染本节点 inline 子节点为 HTML 片段（应用 inline override/样式）。
+
+        Returns:
+            str: 行内 HTML。
+        """
         inline = _first_inline(self.node)
         if inline is None:
             return ""
@@ -91,6 +99,14 @@ class BlockContext:
         )
 
     def default(self, parent: QWidget) -> QWidget | None:
+        """调用内置默认渲染器（跳过 block override）。
+
+        Args:
+            parent: 默认渲染 widget 的父容器。
+
+        Returns:
+            QWidget | None: 默认渲染结果。
+        """
         return self._renderer.render_node(self.node, parent, _skip_override=True)
 
 
@@ -119,6 +135,7 @@ class MarkdownRenderer:
         inline_widgets: dict[str, InlineWidget] | None = None,
         inline_styles: dict[str, dict] | None = None,
     ):
+        """构造渲染器：缓存主题、override、样式表与脚注文本。"""
         self.theme = theme
         self.inline_overrides = inline_overrides or {}
         self.block_renderers = block_renderers or {}
@@ -131,6 +148,17 @@ class MarkdownRenderer:
     # 富文本 label 构造
     # ------------------------------------------------------------
     def _rich_label(self, html: str, parent: QWidget, *, size="md", weight="normal") -> Text:
+        """构造一个富文本 Text（可选中、可打开外链、链接色锁定 primary）。
+
+        Args:
+            html: 富文本 HTML。
+            parent: 父控件。
+            size: 字号档位。
+            weight: 字重档位。
+
+        Returns:
+            Text: 配置好的富文本标签。
+        """
         label = Text(size=size, weight=weight, theme=self.theme, rich_text=True, parent=parent)
         label.setTextFormat(Qt.TextFormat.RichText)
         label.setWordWrap(True)
@@ -146,6 +174,15 @@ class MarkdownRenderer:
     # 顶层入口
     # ------------------------------------------------------------
     def render(self, root: SyntaxTreeNode, parent: QWidget) -> list[QWidget]:
+        """渲染整棵语法树为块级 widget 列表（含脚注文本收集）。
+
+        Args:
+            root: 语法树根节点。
+            parent: 顶层 widget 父容器。
+
+        Returns:
+            list[QWidget]: 渲染出的块级 widget 列表。
+        """
         from ._footnote import collect_footnote_texts
 
         self.footnote_texts = collect_footnote_texts(root)
@@ -163,6 +200,16 @@ class MarkdownRenderer:
         *,
         _skip_override: bool = False,
     ) -> QWidget | None:
+        """按节点类型渲染单个节点为 widget。
+
+        Args:
+            node: 语法树节点。
+            parent: 父容器。
+            _skip_override: 为 True 时跳过 block_renderers（供 ctx.default 取默认）。
+
+        Returns:
+            QWidget | None: 渲染结果；无内容时返回 None。
+        """
         # 用户块级 override 优先（_skip_override=True 时跳过，供 ctx.default 取默认）
         if not _skip_override:
             factory = self.block_renderers.get(node.type)
@@ -185,6 +232,7 @@ class MarkdownRenderer:
     # 块级 handler
     # ------------------------------------------------------------
     def _render_heading(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染标题：按级别取字号/字重，inline 内容转富文本。"""
         level = int(node.tag[1]) if node.tag and node.tag[1:].isdigit() else 1
         size, weight = HEADING_SPEC.get(level, HEADING_SPEC[6])
         inline = _first_inline(node)
@@ -194,6 +242,7 @@ class MarkdownRenderer:
         return self._rich_label(html, parent, size=size, weight=weight)
 
     def _render_paragraph(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget | None:
+        """渲染段落：单张图→Image；含 widget 行内→_InlineFlow；否则富文本。"""
         inline = _first_inline(node)
         if inline is None:
             return None
@@ -216,6 +265,7 @@ class MarkdownRenderer:
         return self._rich_label(html, parent)
 
     def _render_bullet_list(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染无序列表（委托 _ListBlock）。"""
         from ._blocks import _ListBlock
 
         return _ListBlock(node, self, parent)
@@ -223,19 +273,23 @@ class MarkdownRenderer:
     _render_ordered_list = _render_bullet_list
 
     def _render_blockquote(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染引用块（委托 _QuoteBlock）。"""
         from ._blocks import _QuoteBlock
 
         return _QuoteBlock(node, self, parent)
 
     def _render_hr(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染水平分隔线（Divider）。"""
         return Divider(orientation="horizontal", theme=self.theme, parent=parent)
 
     def _render_footnote_block(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染文档底部脚注定义区（委托 _FootnoteList）。"""
         from ._footnote import _FootnoteList
 
         return _FootnoteList(node, self, parent)
 
     def _render_table(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染 GFM 表格：解析 thead/tbody 为 Table 的列与行。"""
         table = Table(theme=self.theme, parent=parent)
         headers: list[str] = []
         aligns: list[str] = []
@@ -272,6 +326,7 @@ class MarkdownRenderer:
         return "start"
 
     def _render_fence(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
+        """渲染围栏代码块（委托 CodeBlock，语言取首 token）。"""
         from ..code_block import CodeBlock
 
         # fence info 串首词为语言标记（```python → "python"）
@@ -288,7 +343,7 @@ class MarkdownRenderer:
     _render_code_block = _render_fence
 
     def _render_fallback(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget | None:
-        # 未识别块：有 inline 子节点就当段落渲染，否则丢弃
+        """未识别块：有 inline 子节点就当段落渲染，否则丢弃。"""
         inline = _first_inline(node)
         if inline is not None:
             return self._rich_label(

@@ -1,11 +1,4 @@
-"""Autocomplete 内部"视觉同步" mixin（私有）。
-
-负责：
-- 末尾按钮（clear / arrow）尺寸根据 size 刷新
-- 末尾按钮 icon 颜色根据 theme 刷新
-- clear 按钮显隐根据 hover/value 状态计算
-- enter/leave 事件下的 hover 状态切换
-"""
+"""Autocomplete 视觉同步 mixin：末尾按钮尺寸/配色与 clear 显隐刷新。"""
 
 from PySide6.QtGui import QColor
 
@@ -20,6 +13,13 @@ class _AutocompleteStylingMixin:
     # 内部：图标/尺寸刷新
     # ============================================================
     def _refresh_end_btn_sizes(self):
+        """按当前尺寸档位同步末尾按钮尺寸与间距。
+
+        Note:
+            clear_btn 必须走 set_icon_only_side（持久化 override）而非
+            setFixedSize —— 主题切换会触发 Button._apply_styles 把
+            setFixedSize 重设回 BUTTON_SIZES 的默认值。
+        """
         cfg = AUTOCOMPLETE_SIZES.get(self._size, AUTOCOMPLETE_SIZES["md"])
         size = cfg["end_btn_size"]
         # clear_btn 是 Button 组件:用 set_icon_only_side(持久化 override),
@@ -30,6 +30,13 @@ class _AutocompleteStylingMixin:
         self._end._h.setSpacing(cfg["end_gap"])
 
     def _refresh_end_icons(self):
+        """刷新 clear 图标与 selector chevron 的渲染。
+
+        Note:
+            clear 按钮只传 icon 名与尺寸，颜色由 Button 内部管理；
+            selector 颜色策略：default 用 default-500 灰，其余用主色
+            palette 的 500 色与组件呼应。
+        """
         cfg = AUTOCOMPLETE_SIZES.get(self._size, AUTOCOMPLETE_SIZES["md"])
 
         # Clear 按钮:用 Button 组件的高层 API —— 只传 icon name + size,
@@ -55,6 +62,11 @@ class _AutocompleteStylingMixin:
         self._end.selector_btn.set_pixmap(sel_pix)
 
     def _refresh_clear_visibility(self):
+        """按四条规则刷新 clear 按钮显隐。
+
+        规则（对齐 HeroUI）：is_clearable 开、有值、非 disabled / readonly、
+        且容器 hover 或持有焦点（键盘流 Tab 切入时 clear 不消失）。
+        """
         has_value = bool(self._input_value) or self._selected_key is not None
         # 显示规则(对齐 HeroUI):
         #   1. is_clearable 开
@@ -76,11 +88,21 @@ class _AutocompleteStylingMixin:
     # Hover 跟踪 —— 决定 clear 按钮显隐
     # ============================================================
     def enterEvent(self, event):
+        """鼠标进入：置 hover 位并刷新 clear 显隐。
+
+        Args:
+            event: Qt 进入事件。
+        """
         self._is_hovered = True
         self._refresh_clear_visibility()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """鼠标离开：清 hover 位并刷新 clear 显隐。
+
+        Args:
+            event: Qt 离开事件。
+        """
         self._is_hovered = False
         self._refresh_clear_visibility()
         super().leaveEvent(event)

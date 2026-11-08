@@ -1,11 +1,4 @@
-"""Alert color tokens for 4 variants × 6 colors × 2 themes.
-
-色阶映射严格对照 HeroUI alert.ts：
-- solid:  纯色背景
-- flat:   彩色浅底 + 无边框
-- bordered: 透明底 + 彩色边框
-- faded:  flat 背景 + bordered 边框 (= flat + bordered)
-"""
+"""Alert 配色 token：4 variants × 6 colors × 2 themes，对照 HeroUI alert.ts。"""
 
 from __future__ import annotations
 
@@ -19,10 +12,17 @@ def build_alert_styles(
     theme: str,
     radius: str,
 ) -> dict:
-    """Return color tokens for all sub-elements.
+    """按变体返回全部子元素配色 token。
 
-    Keys: base_bg, base_fg, base_border, icon_wrapper_bg, icon_color,
-          title_color, desc_color, close_btn_color
+    Args:
+        variant: 变体名，决定走 solid / bordered / faded / flat 哪条分支。
+        color: 语义色名，未命中时回退 primary。
+        theme: 主题名，dark 走深色取值。
+        radius: 圆角档位；配色 token 不消费它，圆角由调用方单独处理。
+
+    Returns:
+        含 base_bg/base_fg/base_border/icon_wrapper_bg/icon_color/
+        title_color/desc_color/close_btn_color 的 dict。
     """
     is_dark = theme == "dark"
     c = HEROUI_COLORS.get(color, HEROUI_COLORS["primary"])
@@ -38,6 +38,15 @@ def build_alert_styles(
 
 
 def _fg_on_solid(color_name: str, is_dark: bool) -> str:
+    """求 solid 变体的前景色，保证实色底上文字可读。
+
+    Args:
+        color_name: 语义色名；warning 底色过亮，需改用黑字。
+        is_dark: 是否深色主题，仅影响 default 分支。
+
+    Returns:
+        十六进制前景色字符串。
+    """
     if color_name == "warning":
         return "#000000"
     if color_name == "default":
@@ -49,6 +58,17 @@ def _fg_on_solid(color_name: str, is_dark: bool) -> str:
 
 
 def _solid(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
+    """生成 solid 变体的配色 token：实色底 + 反色前景。
+
+    Args:
+        c: 语义色阶字典。
+        d: default 色阶字典，color 为 default 时兜底。
+        is_dark: 是否深色主题。
+        color_name: 语义色名，决定是否走 default 分支。
+
+    Returns:
+        与其他变体结构一致的 token 字典；边框为 none，图标容器底色透明。
+    """
     if color_name == "default":
         bg = d[700] if is_dark else d[500]
     else:
@@ -70,6 +90,17 @@ def _solid(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
 
 
 def _flat(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
+    """生成 flat 变体的配色 token：浅色底 + 无边框。
+
+    Args:
+        c: 语义色阶字典。
+        d: default 色阶字典。
+        is_dark: 是否深色主题；深色下底色用色阶 500 加透明度叠加。
+        color_name: 语义色名。
+
+    Returns:
+        与其他变体结构一致的 token 字典；边框为 none。
+    """
     if color_name == "default":
         bg = d[100] if not is_dark else hex_to_rgba(d[500], 0.15)
         fg = d[800] if not is_dark else d[100]
@@ -101,6 +132,20 @@ def _flat(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
 
 
 def _bordered(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
+    """生成 bordered 变体的配色 token：透明底 + 2px 深边框。
+
+    Args:
+        c: 语义色阶字典。
+        d: default 色阶字典。
+        is_dark: 是否深色主题。
+        color_name: 语义色名。
+
+    Returns:
+        与其他变体结构一致的 token 字典，base_border 为 2px solid。
+
+    Note:
+        取值结构与 faded 相同，区别只在边框粗细与颜色深浅。
+    """
     if color_name == "default":
         bd = d[300] if not is_dark else d[600]
         fg = d[800] if not is_dark else d[100]
@@ -132,6 +177,20 @@ def _bordered(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
 
 
 def _faded(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
+    """生成 faded 变体的配色 token：复用 flat 底色 + 1px 浅边框。
+
+    Args:
+        c: 语义色阶字典。
+        d: default 色阶字典。
+        is_dark: 是否深色主题。
+        color_name: 语义色名。
+
+    Returns:
+        在 flat token 基础上覆盖 base_border 的新字典。
+
+    Note:
+        用解包新建字典而非就地改 _flat 的返回值，避免污染 flat 变体。
+    """
     flat_tokens = _flat(c, d, is_dark, color_name)
     if color_name == "default":
         bd = d[200] if not is_dark else d[700]

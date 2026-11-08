@@ -56,9 +56,11 @@ class _SingleRipple(QObject):
         self._anim.finished.connect(self._on_finished)
 
     def _get_progress(self) -> float:
+        """返回当前扩散进度。"""
         return self._progress
 
     def _set_progress(self, value: float):
+        """设置扩散进度并请求父级重绘。"""
         self._progress = value
 
         if self.parent():
@@ -68,10 +70,12 @@ class _SingleRipple(QObject):
 
     @property
     def center(self) -> QPoint:
+        """返回水波纹圆心。"""
         return self._center
 
     @property
     def current_radius(self) -> float:
+        """返回当前扩散半径。"""
         return self._progress * self._max_radius
 
     @property
@@ -83,9 +87,11 @@ class _SingleRipple(QObject):
         return c
 
     def start(self):
+        """启动扩散动画。"""
         self._anim.start()
 
     def _on_finished(self):
+        """发出携带自身的完成信号。"""
         self.finished.emit(self)
 
 
@@ -207,7 +213,7 @@ class RippleOverlay(QWidget):
 
 
 def _distance(p1: QPoint, p2: QPoint) -> float:
-    """两点距离"""
+    """两点距离。"""
     dx = p1.x() - p2.x()
     dy = p1.y() - p2.y()
     return (dx * dx + dy * dy) ** 0.5

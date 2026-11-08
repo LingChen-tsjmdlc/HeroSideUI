@@ -1,9 +1,4 @@
-"""Calendar 星期名条（固定，属于顶部亮区，翻月不动）。
-
-对齐 HeroUI gridHeader：content1 亮底 + 底部分隔阴影。星期名由 first_day_of_week
-决定、翻月永不变，故做成独立固定组件，不随日期网格滑动、不重复重绘。列宽由
-外部传入的 col_width 统一（与日期网格一致），long 样式也不截断。
-"""
+"""Calendar 星期名条：固定组件，翻月不动；列宽与日期网格同源。"""
 
 from __future__ import annotations
 
@@ -19,6 +14,15 @@ class _WeekdayBar(QWidget):
     def __init__(
         self, sizes: dict, *, visible_months: int, col_width: int, theme: str, parent=None
     ) -> None:
+        """创建星期名条：每个可见月一段、7 个星期名格。
+
+        Args:
+            sizes: 尺寸 token（weekday_font / grid_pad_x 等）。
+            visible_months: 可见月份数（多月视图时 >1）。
+            col_width: 单格列宽，与日期网格同源。
+            theme: 主题名。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._sizes = sizes
         self._visible_months = visible_months
@@ -31,6 +35,7 @@ class _WeekdayBar(QWidget):
         self._build_ui()
 
     def _build_ui(self) -> None:
+        """按可见月份数构建分段布局，每段 7 个等宽星期名格。"""
         pad = self._sizes["grid_pad_x"]
         root = QHBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -52,6 +57,15 @@ class _WeekdayBar(QWidget):
     # ---- 绘制：content1 底 + 底部渐隐阴影 -----------------------------
 
     def paintEvent(self, ev) -> None:
+        """绘制 content1 底色。
+
+        Args:
+            ev: Qt 绘制事件。
+
+        Note:
+            与月/年头部同为 content1 层，与日期区靠色差分层；
+            不画底部阴影带——浅色主题下会显成突兀灰杠。
+        """
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         w, h = self.width(), self.height()
@@ -63,11 +77,20 @@ class _WeekdayBar(QWidget):
     # ---- API ----------------------------------------------------------
 
     def set_names(self, names: list[str]) -> None:
-        """names 为一个月的 7 个星期名；多月时重复填充每段。"""
+        """填充星期名文本。
+
+        Args:
+            names: 单个月份的 7 个星期名；多月时重复填充每段。
+        """
         for i, lbl in enumerate(self._labels):
             lbl.setText(names[i % 7])
 
     def set_theme(self, theme: str) -> None:
+        """切换主题并联动星期名文字颜色。
+
+        Args:
+            theme: 主题名。
+        """
         self._theme = theme
         for lbl in self._labels:
             lbl.set_theme(theme)

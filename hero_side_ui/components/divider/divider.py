@@ -1,23 +1,4 @@
-"""
-HeroSideUI Divider Component
-基于 HeroUI v2 设计风格，保持 PySide 原生 API
-
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/divider.ts
-
-结构:
-    Divider (QFrame)
-        一条纯色分割线，支持水平/垂直方向。
-        当 orientation="horizontal" 且传入 text 时，会在分割线中间显示文字，
-        左右各一段短线 —— 用 paintEvent 自绘。
-
-特性对齐 HeroUI:
-    - 2 种方向: horizontal (默认) / vertical
-    - 亮暗双主题 (light / dark)
-    - 可自定义颜色 (默认跟随主题的 divider 色)
-    - shrink-0: 不被 flex 压缩
-    - border-none: 无边框（由背景色决定视觉）
-    - 可选中间文字（只水平方向生效，如 "OR"、"或"）
-"""
+"""Divider 分割线组件：水平/垂直纯色线，水平方向可选中间文字。"""
 
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
@@ -28,27 +9,13 @@ from ...themes import DIVIDER_SIZES, HEROUI_COLORS
 
 
 class Divider(QFrame):
-    """HeroUI 风格的分割线组件
+    """HeroUI 风格分割线，继承 QFrame。
 
-    特性：
-    - 保持 PySide 原生 API (继承 QFrame)
-    - 支持方向 (horizontal, vertical)
-    - 支持主题 (light, dark)
-    - 可选自定义颜色 (十六进制或 rgba 字符串)
-    - 可选中间文字 text（仅 horizontal 生效），text_size 控制字号
-
-    用法:
-        # 水平分割线
-        divider = Divider(orientation="horizontal", theme="light")
-
-        # 垂直分割线
-        divider = Divider(orientation="vertical", theme="dark")
-
-        # 自定义颜色
-        divider = Divider(color="#ff0000")
-
-        # 带中间文字的水平分割线（常用于 "OR continue with ..."）
-        divider = Divider(text="OR", text_size=12)
+    Args:
+        orientation: horizontal（默认）或 vertical。
+        color: 自定义颜色；None 跟随主题。
+        text: 中间文字，仅水平生效。
+        text_size: 中间文字字号。
     """
 
     def __init__(
@@ -60,6 +27,16 @@ class Divider(QFrame):
         text_size: int = 12,
         parent=None,
     ):
+        """创建分割线并按方向选择绘制方式。
+
+        Args:
+            orientation: horizontal 或 vertical。
+            theme: 主题名；auto 时跟随 ThemeProvider。
+            color: 自定义线色；None 表示跟随主题。
+            text: 中间文字，仅水平方向生效。
+            text_size: 中间文字字号，单位像素。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._orientation = orientation
         self._theme_mode = theme
@@ -83,7 +60,12 @@ class Divider(QFrame):
     # ============================================================
 
     def _line_color(self) -> str:
-        """分割线颜色: 自定义 > 主题默认"""
+        """返回分割线颜色，自定义色优先于主题默认色。
+
+        Returns:
+            自定义颜色的十六进制字符串；未设置时亮色取 default-200、
+            暗色取 default-700。
+        """
         if self._custom_color:
             return self._custom_color
         is_dark = self._theme == "dark"
@@ -92,13 +74,21 @@ class Divider(QFrame):
         return dc[700] if is_dark else dc[200]
 
     def _text_color(self) -> str:
-        """文字颜色: 跟随主题（亮色偏灰 500，暗色偏灰 400）"""
+        """返回中间文字颜色，只跟随主题。
+
+        Returns:
+            亮色取 default-500、暗色取 default-400 的十六进制字符串。
+        """
         is_dark = self._theme == "dark"
         dc = HEROUI_COLORS["default"]
         return dc[400] if is_dark else dc[500]
 
     def _has_text_mode(self) -> bool:
-        """是否启用"带文字"模式：只在水平方向且 text 非空时生效"""
+        """是否启用「带文字」模式。
+
+        Returns:
+            text 非空且方向不是 vertical 时为 True；垂直分割线永远不带文字。
+        """
         return bool(self._text) and self._orientation != "vertical"
 
     # ============================================================
@@ -106,7 +96,15 @@ class Divider(QFrame):
     # ============================================================
 
     def _apply_styles(self):
-        """根据方向 + 是否带文字，选择 QSS 背景色模式 或 paintEvent 自绘模式"""
+        """按方向与是否带文字，在 QSS 背景与 paintEvent 自绘之间切换。
+
+        垂直线固定宽度、垂直 Expanding；水平带文字时高度由字体行高决定；
+        水平纯线固定 1px 高、水平 Expanding。
+
+        Note:
+            切到带文字模式必须把 QSS 清空，否则 setStyleSheet 的实心背景
+            会盖在 paintEvent 的绘制结果上。
+        """
         if self._orientation == "vertical":
             # 垂直分割线：固定宽度，垂直 Expanding，QSS 背景
             thickness = DIVIDER_SIZES["vertical"]["thickness"]
@@ -140,6 +138,11 @@ class Divider(QFrame):
             )
 
     def _build_font(self) -> QFont:
+        """按 text_size 构建中间文字使用的字体。
+
+        Returns:
+            normal 字重的 QFont；供 paintEvent 与行高测量共用。
+        """
         from ...core import make_text_qfont
 
         return make_text_qfont(self._text_size, "normal")
@@ -149,6 +152,15 @@ class Divider(QFrame):
     # ============================================================
 
     def paintEvent(self, event):
+        """绘制水平带文字分割线：两侧线段 + 居中文字。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            非文字模式直接交给 QFrame 默认绘制（QSS 背景走 styled background），
+            本方法只处理 _has_text_mode() 为 True 的分支。
+        """
         if not self._has_text_mode():
             # 非文字模式交给 QFrame 默认绘制（QSS 背景走 styled background）
             super().paintEvent(event)
@@ -198,12 +210,23 @@ class Divider(QFrame):
     # ============================================================
 
     def set_orientation(self, orientation: str):
-        """设置方向 ("horizontal" / "vertical")"""
+        """切换分割线方向并重算样式。
+
+        Args:
+            orientation: horizontal 或 vertical；垂直方向不显示中间文字。
+        """
         self._orientation = orientation
         self._apply_styles()
 
     def set_theme(self, theme: str):
-        """设置主题 ("auto" / "light" / "dark")"""
+        """切换主题，并维护 ThemeProvider 的注册状态。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            从 auto 切到固定主题时先 unregister，避免后续广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -216,33 +239,73 @@ class Divider(QFrame):
         self._apply_styles()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，只更新主题并重算样式。
+        """
         self._theme = theme
         self._apply_styles()
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析成实际主题名。
+
+        Args:
+            mode: light / dark 或 auto 等其他值。
+
+        Returns:
+            light / dark 原样返回；其余返回 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_color(self, color: str | None):
-        """设置自定义颜色 (十六进制字符串或 None 恢复默认)"""
+        """设置自定义线色。
+
+        Args:
+            color: 十六进制颜色字符串；None 恢复跟随主题。
+        """
         self._custom_color = color
         self._apply_styles()
 
     def set_text(self, text: str | None):
-        """设置中间文字（仅水平方向生效；传 None 或 "" 恢复纯线）"""
+        """设置中间文字。
+
+        Args:
+            text: 文字内容；None 或空串恢复为纯线。
+
+        Note:
+            仅水平方向生效，垂直方向始终忽略该文字。
+        """
         self._text = text or ""
         self._apply_styles()
 
     def set_text_size(self, size: int):
-        """设置文字字号（像素）"""
+        """设置中间文字字号。
+
+        Args:
+            size: 字号，单位像素；内部转成 int 后会影响带文字模式的高度。
+        """
         self._text_size = int(size)
         self._apply_styles()
 
     def text(self) -> str:
+        """返回中间文字。
+
+        Returns:
+            当前文字；未设置时为空串。
+        """
         return self._text
 
     def text_size(self) -> int:
+        """返回中间文字字号。
+
+        Returns:
+            当前字号，单位像素。
+        """
         return self._text_size

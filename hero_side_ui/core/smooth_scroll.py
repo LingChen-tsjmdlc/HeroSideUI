@@ -1,35 +1,7 @@
-"""
-HeroSideUI 平滑滚动 (SmoothScroll)
+"""SmoothScroll：给 QAbstractScrollArea 提供滚轮平滑滚动。
 
-PySide/Qt 默认的 QAbstractScrollArea（QPlainTextEdit / QTextEdit / QScrollArea / QListView 等）
-滚动行为是"整行跳跃"——滚轮转一格 = scrollbar.singleStep（默认是一行字高），
-没有动画过渡，所以体感生硬。
-
-SmoothScroll 通过：
-    1. 拦截 wheelEvent，自己接管滚动（不让 Qt 默认行为生效）
-    2. 用 QPropertyAnimation 在 verticalScrollBar.value 上做 0→target 的丝滑过渡
-    3. 若动画进行中又来一次 wheel，target 在**当前 target 基础上累加**，动画
-       从"当前实际值"重启到新 target—— 这样连续滚动是顺畅的，不会跳回起点
-
-⚠️ 单位说明（重要踩坑点）：
-    QScrollBar.value 的单位**不是像素**，由 widget 自己定义：
-      - QPlainTextEdit / QTextEdit / QListView: value 是"行/项目编号"，singleStep = 1
-      - QScrollArea / QGraphicsView: value 是像素，singleStep ≈ 20
-    所以不能用固定像素数做步进；要用 `bar.singleStep() × lines_per_step` 倍率，
-    天然适配各种 widget。
-
-用法：
-    from hero_side_ui import SmoothScroll
-    SmoothScroll.apply_global()         # 推荐：全局所有 QAbstractScrollArea 自动接管（含运行时新建）
-    SmoothScroll.attach(my_scroll_area) # 单 area 手动挂（仅特殊场景）
-
-    # 自定义参数
-    SmoothScroll.attach(area, lines_per_step=5, duration=250)
-
-参数：
-    lines_per_step: 滚轮一格滚多少个 singleStep（QPlainTextEdit 一行 = 1 step；默认 3）
-    duration: 动画时长 ms（默认 200ms）
-    easing: 缓动曲线（默认 OutCubic）
+拦截 wheelEvent 用 QPropertyAnimation 在 scrollbar value 上过渡；连续滚动
+时目标值累加、动画从当前值重启。步进用 singleStep 倍率以适配各 widget 单位。
 """
 
 from __future__ import annotations
@@ -62,6 +34,14 @@ class _SmoothScrollFilter(QObject):
         duration: int = 300,
         easing: QEasingCurve.Type = QEasingCurve.Type.OutCubic,
     ):
+        """初始化过滤器并把事件过滤器装到 viewport 与 area。
+
+        Args:
+            area: 目标 QAbstractScrollArea。
+            lines_per_step: 每格滚轮滚动的 singleStep 倍数。
+            duration: 动画时长（ms）。
+            easing: 缓动曲线。
+        """
         super().__init__(area)
         self._area = area
         self._lines_per_step = lines_per_step
@@ -79,18 +59,22 @@ class _SmoothScrollFilter(QObject):
         area.installEventFilter(self)
 
     def set_lines_per_step(self, n: int):
+        """设置每格滚轮的步进倍数，至少 1。"""
         self._lines_per_step = max(1, int(n))
 
     def set_duration(self, ms: int):
+        """设置动画时长（ms），下限 0。"""
         self._duration = max(0, int(ms))
 
     def set_easing(self, curve: QEasingCurve.Type):
+        """设置动画缓动曲线。"""
         self._easing = curve
 
     # ============================================================
     # eventFilter
     # ============================================================
     def eventFilter(self, obj, event):
+        """拦截 Wheel 事件并交给滚轮处理器。"""
         if event.type() == QEvent.Type.Wheel:
             try:
                 handled = self._handle_wheel(event)
@@ -101,6 +85,7 @@ class _SmoothScrollFilter(QObject):
         return super().eventFilter(obj, event)
 
     def _handle_wheel(self, event) -> bool:
+        """把滚轮增量换算为水平与垂直方向的滚动步进。"""
         ad = event.angleDelta()
         dx = ad.x()
         dy = ad.y()
@@ -131,6 +116,7 @@ class _SmoothScrollFilter(QObject):
     # 滚动驱动
     # ============================================================
     def _scroll_to(self, bar: QScrollBar, *, axis: str, delta: int):
+        """按目标增量启动或续接单轴滚动动画。"""
         if delta == 0:
             return
 
@@ -176,6 +162,7 @@ class _SmoothScrollFilter(QObject):
         anim.setEasingCurve(self._easing)
 
         def _on_finished(a=anim, t=target_attr, ah=anim_attr):
+            """动画结束时清空对应的动画句柄。"""
             if getattr(self, ah, None) is a:
                 setattr(self, ah, None)
 
@@ -187,14 +174,15 @@ class _SmoothScrollFilter(QObject):
 
 
 class _GlobalAutoAttachFilter(QObject):
-    """装在 QApplication 上的事件过滤器：自动给每个新出现的 QAbstractScrollArea 挂 SmoothScroll
+    """QApplication 事件过滤器：给新出现的 QAbstractScrollArea 自动挂载。
 
-    为什么用 Show 而不是 ChildAdded：ChildAdded 时 widget 往往还没构造完，
-    viewport 可能还是 None；Show 事件保证 widget 已就绪。attach() 内部有 _ATTACHED_FLAG
-    防重复，所以多次 Show 也安全。
+    Note:
+        监听 Show 而非 ChildAdded——Show 时 viewport 必已就绪；
+        attach 内部有防重标记，多次触发安全。
     """
 
     def eventFilter(self, obj, event):
+        """在新出现的滚动区显示时自动挂载平滑滚动。"""
         if event.type() == QEvent.Type.Show and isinstance(obj, QAbstractScrollArea):
             if obj.property(_OPT_OUT_FLAG) is not True and obj.property(_ATTACHED_FLAG) is None:
                 SmoothScroll.attach(obj)
@@ -202,13 +190,10 @@ class _GlobalAutoAttachFilter(QObject):
 
 
 class SmoothScroll:
-    """命名空间：给 QAbstractScrollArea 挂载平滑滚动能力的工具
+    """命名空间工具：给滚动区挂载平滑滚动。
 
-    两种使用方式：
-      - SmoothScroll.apply_global()：QApplication 级自动接管（推荐，零样板）
-      - SmoothScroll.attach(area)：手动挂单个 area（特殊场景退路）
-
-    SmoothScroll 不是单例 —— 每个 area 自己挂一个 _SmoothScrollFilter 实例。
+    apply_global() 全局自动接管（推荐）；attach(area) 手动挂单个。
+    非 单例，每个 area 独立持有过滤器实例。
     """
 
     # 全局默认参数
@@ -285,11 +270,10 @@ class SmoothScroll:
 
     @classmethod
     def ensure_applied(cls) -> bool:
-        """幂等激活：已装则跳、QApplication 不在则跳（等 app 起来再试）。
+        """幂等激活全局平滑滚动；QApplication 未就绪时静默等待下次。
 
-        设计参考 FontProvider.ensure_loaded。ThemeProvider 初始化时会调一次，
-        使得用户只要用了 hero_side_ui 任何一个组件（组件会注册到 ThemeProvider），
-        平滑滚动就自动生效。高级用户仍可调 disable_global() 关掉。
+        Returns:
+            是否已安装。
         """
         if cls._global_filter is not None:
             return True
@@ -306,14 +290,7 @@ class SmoothScroll:
         duration: int | None = None,
         easing: QEasingCurve.Type | None = None,
     ):
-        """全局自动给所有 QAbstractScrollArea 挂上平滑滚动（含运行时新建的）
-
-        与 ScrollStyle.apply_global() 对称的零样板入口。调一次后：
-          1) 立即扫描 QApplication.allWidgets() 已存在的 area 全部 attach
-          2) 装 QApplication eventFilter，后续新建 area Show 时自动 attach
-
-        如果某个 area 不想要平滑滚动，调 SmoothScroll.detach(area) 单独退出。
-        """
+        """全局接管所有滚动区（含运行时新建），调一次即生效。"""
         # 设置默认参数（影响后续自动 attach 的 area）
         cls.set_global_default(
             lines_per_step=lines_per_step,

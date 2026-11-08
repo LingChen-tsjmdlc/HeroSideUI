@@ -1,8 +1,4 @@
-"""Dropdown 触发器 mixin（私有）。
-
-负责：把任意 widget 变成菜单开关 —— 点击切换、方向键打开，
-以及开关菜单时的焦点接管与归还。
-"""
+"""Dropdown 触发器 mixin：任意 widget 变菜单开关 + 焦点接管与归还。"""
 
 import shiboken6
 from PySide6.QtCore import QEvent, Qt
@@ -16,7 +12,12 @@ class _DropdownTriggerMixin:
     # 绑定 / 解绑
     # ============================================================
     def _bind_trigger(self) -> None:
-        """绑定 trigger：Button 走 clicked，其余走鼠标释放事件。"""
+        """绑定 trigger：Button 走 clicked，其余走鼠标释放事件。
+
+        Note:
+            QAbstractButton 用 clicked 而不是吞事件，用户自己的 clicked
+            连接不会被吃掉；同时设置手型光标并安装事件过滤器。
+        """
         w = self._trigger
         if w is None:
             return
@@ -29,6 +30,7 @@ class _DropdownTriggerMixin:
             self._trigger_click_connected = True
 
     def _unbind_trigger(self) -> None:
+        """解绑 trigger：摘过滤器、还原光标、断开 clicked。"""
         w = self._trigger
         if w is None:
             return
@@ -45,6 +47,18 @@ class _DropdownTriggerMixin:
     # 事件过滤
     # ============================================================
     def eventFilter(self, obj, event):
+        """处理 trigger 的鼠标释放与上下键开菜单。
+
+        Args:
+            obj: 被监听对象（trigger）。
+            event: 当前事件。
+
+        Returns:
+            True 表示已消费；Button 的释放事件交给 clicked 处理时返回 False。
+
+        Note:
+            上下键在未打开时直接打开菜单，禁用态忽略。
+        """
         if obj is self._trigger:
             if event.type() == QEvent.MouseButtonRelease:
                 # Button 已由 clicked 处理，这里只兜住非按钮 widget
@@ -72,7 +86,12 @@ class _DropdownTriggerMixin:
         self._listbox.focus_first_enabled()
 
     def _restore_focus(self) -> None:
-        """焦点仍在菜单内时才归还，避免抢走用户的新焦点。"""
+        """焦点仍在菜单内时才归还，避免抢走用户的新焦点。
+
+        Note:
+            记录的焦点对象可能已被销毁，用 shiboken6.isValid 校验；
+            无效时退回 trigger。
+        """
         fw = QApplication.focusWidget()
         if fw is None:
             return

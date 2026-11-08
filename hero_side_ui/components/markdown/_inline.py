@@ -1,14 +1,7 @@
-"""行内节点 → Qt 富文本 HTML 片段。
+"""行内节点 → Qt 富文本 HTML 片段：行内格式永不拆 widget，保证连续框选。
 
-Markdown 的行内格式（粗/斜/删除线/行内 code/链接/图片/换行）**永不拆成独立
-widget**，而是拼成一段 Qt rich-text HTML，由承载段落的 ``Text`` 一次性渲染。这样换行、
-基线对齐交给 Qt 自己排版，整段可连续框选、可复制。
-
-样式来源分两层：
-- ``inline_styles``（声明式配置，见 ``_inline_styles.InlineStyleSheet``）：默认路径，
-  一次配置到处套用（strong/em/s/code/link 的颜色、下划线等）。
-- ``inline_overrides``（返回原始 HTML 片段的回调）：底层入口，``inline_styles`` 表达不了
-  时用；回调出错自动退回默认。
+样式分两层：inline_styles 声明式默认路径 + inline_overrides 返回 HTML
+的底层入口（出错自动退回默认）。
 """
 
 from __future__ import annotations
@@ -24,14 +17,13 @@ from ._inline_styles import InlineStyleSheet
 class InlineContext:
     """传给 inline_override 回调的上下文。
 
-    属性：
-        type:      节点类型（strong / em / s / code_inline / link / image）
-        children:  已渲染的内层 HTML 字符串（已转义，可直接拼）
-        content:   节点纯文本（code_inline / image 用）
-        href:      链接地址（仅 link）
-        src/alt:   图片地址 / 替代文本（仅 image）
-    方法：
-        default(): 退回该节点的内置默认 HTML（只想微调时用）
+    Attributes:
+        type: 节点类型（strong/em/s/code_inline/link/image）。
+        children: 已渲染的内层 HTML。
+        content: 节点纯文本。
+        href: 链接地址（仅 link）。
+        src: 图片地址（仅 image）。
+        alt: 替代文本（仅 image）。
     """
 
     def __init__(
@@ -41,6 +33,14 @@ class InlineContext:
         theme: str,
         default_fn: Callable[[], str],
     ):
+        """构造行内上下文。
+
+        Args:
+            node: 当前行内语法树节点。
+            children_html: 已渲染的内层 HTML。
+            theme: 当前主题。
+            default_fn: 内置默认渲染器，调用即返回默认 HTML。
+        """
         self.type = node.type
         self.children = children_html
         self.content = node.content or ""
@@ -52,6 +52,11 @@ class InlineContext:
         self._default_fn = default_fn
 
     def default(self) -> str:
+        """调用内置默认渲染器，返回默认 HTML 片段。
+
+        Returns:
+            str: 默认渲染结果。
+        """
         return self._default_fn()
 
 
@@ -65,11 +70,10 @@ def _render_children(
     overrides: dict[str, InlineOverride] | None,
     fmt: frozenset = frozenset(),
 ) -> str:
-    """递归把一个行内容器节点的 children 拼成 HTML，并应用用户 override。
+    """递归拼 children HTML 并应用 override；strong/em 标记并入 fmt 到叶子合成单 span。
 
-    fmt 累积祖先链上的 strong/em/s 格式：无 override 的这几类不各自包 span，
-    而是把标记并入 fmt，到 text 叶子时由 sheet.wrap() 一次性合成单 span，
-    避免嵌套 span 里内层 font-weight 覆盖外层导致加粗斜体反而变细。
+    Note:
+        避免嵌套 span 内层 font-weight 覆盖外层导致粗斜体变细。
     """
     parts: list[str] = []
     for child in node.children:

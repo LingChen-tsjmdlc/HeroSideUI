@@ -1,11 +1,4 @@
-"""Chip 组件尺寸配置。
-
-色阶/尺寸对照 HeroUI chip.ts 的 size variant：
-- sm: h-6(24) px-1 text-tiny(12) avatar-16 close-16
-- md: h-7(28) px-1 text-small(14) avatar-20 close-18
-- lg: h-8(32) px-2 text-medium(16) avatar-24 close-20
-isOneChar 时锁正方形：sm-20 md-24 lg-28；dot 统一 8px。
-"""
+"""Chip 尺寸：高 24/28/32，单字锁方 20/24/28，dot 8px。"""
 
 # text_size 用项目 Text 的 token（xs/sm/md），不是 px
 CHIP_SIZES = {

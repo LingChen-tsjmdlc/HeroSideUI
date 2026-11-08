@@ -1,8 +1,4 @@
-"""Pagination 单个 item (_PaginationItem)。
-
-QAbstractButton 子类,负责自绘 + press scale 动画。
-四种类型: PAGE / PREV / NEXT / DOTS,父组件按 type 注入文本/图标。
-"""
+"""_PaginationItem：自绘按钮 + press scale，四种类型 PAGE/PREV/NEXT/DOTS。"""
 
 from PySide6.QtCore import QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
@@ -43,6 +39,14 @@ class _PaginationItem(QAbstractButton):
         is_before: bool = False,  # 仅 DOTS 用: True=左侧省略号
         parent: QWidget | None = None,
     ):
+        """构造单页按钮。
+
+        Args:
+            item_type: PAGE / PREV / NEXT / DOTS。
+            page: 页码（仅 PAGE）；其余为 None。
+            is_before: 仅 DOTS 用，True 表示左侧省略号。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._type = item_type
         self._page = page  # PAGE: 页码; PREV/NEXT: None; DOTS: None
@@ -115,12 +119,15 @@ class _PaginationItem(QAbstractButton):
     # ============================================================
 
     def item_type(self) -> PaginationItemType:
+        """返回该 item 的类型。"""
         return self._type
 
     def page(self) -> int | None:
+        """返回页码（仅 PAGE 类型有效，其余为 None）。"""
         return self._page
 
     def is_before(self) -> bool:
+        """是否为左侧省略号（DOTS 用）。"""
         return self._is_before
 
     def set_position_flags(self, *, is_first: bool, is_last: bool):
@@ -161,6 +168,17 @@ class _PaginationItem(QAbstractButton):
         is_compact: bool,
         disable_animation: bool,
     ):
+        """注入视觉状态（变体/颜色/尺寸/主题/圆角/紧凑/动画开关）并刷新尺寸与图标色。
+
+        Args:
+            variant: flat/bordered/light/faded。
+            color: 语义色。
+            size: sm/md/lg。
+            theme: light/dark。
+            radius: 圆角档位。
+            is_compact: 是否紧凑模式。
+            disable_animation: 是否关闭 press scale 动画。
+        """
         self._variant = variant
         self._color = color
         self._size = size
@@ -175,6 +193,7 @@ class _PaginationItem(QAbstractButton):
         self.update()
 
     def _apply_size(self):
+        """按当前尺寸档位设置固定高度、最小宽度，并同步图标尺寸。"""
         cfg = self._size_cfg
         h = cfg["item_height"]
         min_w = cfg["item_min_width"]
@@ -191,6 +210,7 @@ class _PaginationItem(QAbstractButton):
                 self._icon_label.setFixedSize(icon_size, icon_size)
 
     def _update_press_scaler(self, disable_animation: bool):
+        """按 disable_animation 创建/销毁 press scale 动画效果。"""
         if disable_animation:
             if self._press_scaler is not None:
                 self.setGraphicsEffect(None)
@@ -238,28 +258,33 @@ class _PaginationItem(QAbstractButton):
     # ============================================================
 
     def enterEvent(self, ev):
+        """鼠标进入：DOTS 切换 hover 图标并触发重绘。"""
         super().enterEvent(ev)
         if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(True)
         self.update()
 
     def leaveEvent(self, ev):
+        """鼠标离开：DOTS 取消 hover 图标并触发重绘。"""
         super().leaveEvent(ev)
         if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(False)
         self.update()
 
     def mousePressEvent(self, ev):
+        """鼠标按下：左键触发 press scale 动画。"""
         super().mousePressEvent(ev)
         if self._press_scaler is not None and ev.button() == Qt.MouseButton.LeftButton:
             self._press_scaler.press()
 
     def mouseReleaseEvent(self, ev):
+        """鼠标释放：结束 press scale 动画。"""
         if self._press_scaler is not None:
             self._press_scaler.release()
         super().mouseReleaseEvent(ev)
 
     def focusInEvent(self, ev):
+        """获得焦点：仅键盘 Tab 聚焦时亮 focus ring；DOTS 切换 hover 图标。"""
         super().focusInEvent(ev)
         # focus-visible: 仅 Tab/Backtab 键盘聚焦才亮 ring
         reason = ev.reason()
@@ -272,6 +297,7 @@ class _PaginationItem(QAbstractButton):
         self.update()
 
     def focusOutEvent(self, ev):
+        """失去焦点：关闭 focus ring；DOTS 取消 hover 图标。"""
         super().focusOutEvent(ev)
         self._focus_visible = False
         if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
@@ -283,6 +309,7 @@ class _PaginationItem(QAbstractButton):
     # ============================================================
 
     def paintEvent(self, ev):
+        """自绘：圆角底色/边框（按 variant 状态）+ 页码文字 + focus ring。"""
         from ._palette import resolve_radius_px
 
         if self.width() <= 0 or self.height() <= 0:
@@ -449,6 +476,7 @@ class _PaginationItem(QAbstractButton):
     # ============================================================
 
     def sizeHint(self) -> QSize:
+        """返回推荐尺寸（最小宽度 + 固定高度）。"""
         cfg = self._size_cfg
         return QSize(cfg["item_min_width"], cfg["item_height"])
 

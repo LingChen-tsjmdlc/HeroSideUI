@@ -1,9 +1,4 @@
-"""_HostGeometryWatcher — Popover 宿主几何变化监听器（私有）。
-
-挂在 trigger.window() 上：
-- Move  → 触发"平移"重定位（与 trigger 一起整体平移即可）
-- Resize → 触发"完整 _calc_position 重算"（layout 可能整体重排，trigger 相对 host 位置变了）
-"""
+"""宿主几何监听：Move 平移跟随，Resize 触发完整重定位。"""
 
 from PySide6.QtCore import QEvent, QObject
 
@@ -12,10 +7,27 @@ class _HostGeometryWatcher(QObject):
     """监听 host window 的 Move / Resize，分别走平移 / 完整重算路径。"""
 
     def __init__(self, owner):
+        """构造宿主几何监听器。
+
+        Args:
+            owner: 所属的 Popover 实例，用于查询打开状态与触发重定位。
+        """
         super().__init__(owner)
         self._owner = owner
 
     def eventFilter(self, obj, event):
+        """拦截宿主窗口的 Move / Resize 事件。
+
+        Args:
+            obj: 事件目标对象。
+            event: Qt 事件对象。
+
+        Returns:
+            bool: 始终返回 False，不拦截事件传播。
+
+        Note:
+            整窗 Move 走平移跟随；Resize（layout 重排）走完整重定位。
+        """
         if not self._owner._is_open:
             return False
         et = event.type()

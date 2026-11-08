@@ -1,11 +1,4 @@
-"""Textarea 自适应高度（auto-resize）计算 mixin（私有）。
-
-负责：
-- 行高（``_calc_row_height``）
-- 内容总行数（``_calc_content_rows``，遍历 doc.block 处理 wrap）
-- 高度更新（``_update_textarea_height``，约束在 min_rows..max_rows 之间）
-- wrapper padding 取值（取决于 inside/outside label）
-"""
+"""Textarea auto-resize mixin：行高/内容行数/高度更新与 padding 取值。"""
 
 from PySide6.QtGui import QFontMetrics
 
@@ -19,14 +12,14 @@ class _TextareaAutosizeMixin:
     # 高度计算（auto-resize 核心）
     # ============================================================
     def _calc_row_height(self) -> int:
-        """根据当前字体度量计算一行的实际像素高度（包含 line spacing）"""
+        """根据当前字体度量计算一行的实际像素高度（包含 line spacing）。"""
         font = self.text_edit.font()
         fm = QFontMetrics(font)
         # lineSpacing 比 height 多出 leading，更接近 textarea 实际行距
         return fm.lineSpacing()
 
     def _calc_content_rows(self) -> int:
-        """估算当前内容占用的视觉行数（含 wrap）"""
+        """估算当前内容占用的视觉行数（含 wrap）。"""
         doc = self.text_edit.document()
         # 使其布局到当前 viewport 宽度下
         viewport_w = self.text_edit.viewport().width()
@@ -46,11 +39,7 @@ class _TextareaAutosizeMixin:
         return max(1, total_lines)
 
     def _update_textarea_height(self):
-        """根据 minRows/maxRows/disable_autosize 计算并应用高度
-
-        如果用户手动拖动过 grip（self._manual_height 不为 None），优先用该高度，
-        绕过 auto-resize 逻辑。调 reset_manual_height() 可恢复 auto-resize。
-        """
+        """按 minRows/maxRows 计算应用高度；手动拖动过 grip 时优先手动值。"""
         row_h = self._calc_row_height()
         self._cached_row_height = row_h
         size_config = TEXTAREA_SIZES.get(self._size, TEXTAREA_SIZES["md"])
@@ -90,6 +79,6 @@ class _TextareaAutosizeMixin:
         self._reposition_inside_label()
 
     def _current_wrapper_paddings(self, size_config, is_inside: bool):
-        """返回当前 wrapper layout 的上下 padding"""
+        """返回当前 wrapper layout 的上下 padding。"""
         pad_y = size_config["inside_padding_y"] if is_inside else size_config["padding_y"]
         return pad_y, pad_y

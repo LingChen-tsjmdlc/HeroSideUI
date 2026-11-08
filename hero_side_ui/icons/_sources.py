@@ -21,6 +21,7 @@ _STROKE_WIDTH = re.compile(r"stroke-width\s*=\s*([\"'])(.*?)\1")
 
 @lru_cache(maxsize=1)
 def _builtin_index() -> dict[str, str]:
+    """构建内置 SVG 图标名到文件名的索引（缓存一次）。"""
     directory = files("hero_side_ui").joinpath("resources", "icons")
     return {
         resource.name[:-4]: resource.name
@@ -30,12 +31,13 @@ def _builtin_index() -> dict[str, str]:
 
 
 def builtin_icon_names() -> tuple[str, ...]:
-    """Return the legacy names of all bundled icons, without downloading data."""
+    """返回全部内置图标的 legacy 名称，不下载数据。"""
     return tuple(sorted(_builtin_index()))
 
 
 @lru_cache(maxsize=1)
 def _aliases() -> dict[str, str]:
+    """构建 legacy 名及其带前缀别名到 legacy 名的映射（缓存一次）。"""
     aliases = {}
     for legacy in _builtin_index():
         aliases[legacy] = legacy
@@ -46,7 +48,7 @@ def _aliases() -> dict[str, str]:
 
 
 def _svg_data(source: str) -> IconData:
-    """Preserve the SVG viewport and root presentation attributes as IconData."""
+    """把 SVG 文本解析为 IconData，保留视图尺寸与根节点呈现属性。"""
     root = ET.fromstring(source)
     if root.tag.rsplit("}", 1)[-1] != "svg":
         raise ValueError("icon source must be an SVG document")
@@ -82,17 +84,19 @@ def _svg_data(source: str) -> IconData:
 
 @lru_cache(maxsize=128)
 def _builtin_data(legacy: str) -> IconData:
+    """按 legacy 名读取并解析内置 SVG 图标（带缓存）。"""
     resource = files("hero_side_ui").joinpath("resources", "icons", _builtin_index()[legacy])
     return _svg_data(resource.read_text(encoding="utf-8"))
 
 
 @lru_cache(maxsize=128)
 def _file_data(path: str, modified_ns: int, byte_count: int) -> IconData:
+    """按路径读取并解析外部 SVG 文件，缓存键含修改时间与字节数。"""
     return _svg_data(Path(path).read_text(encoding="utf-8"))
 
 
 def ensure_local_icon(name: str, data: IconData) -> None:
-    """Register owned data idempotently, including after shared-cache eviction."""
+    """幂等登记图标数据，共享缓存被逐出后仍可重新注册。"""
     try:
         if get_icon_data(name) == data:
             return
@@ -102,12 +106,7 @@ def ensure_local_icon(name: str, data: IconData) -> None:
 
 
 def resolve_icon(source: IconSource, *, stroke_width: float | None = None) -> str:
-    """Resolve bundled names, paths or IconData; other Iconify names pass through.
-
-    Local sources are registered in the reserved ``herosideui:`` namespace.
-    A stroke override requires local or already registered data. This function
-    never fetches icons or changes pyside-iconify's default configuration.
-    """
+    """解析内置名/路径/IconData；其余 Iconify 名透传。从不联网。"""
     name = None
     if isinstance(source, IconData):
         data = source

@@ -1,12 +1,5 @@
-"""CodeEditor 组件主题预设。
-
-编辑器与 CodeBlock 视觉同源：圆角外壳 + 代码区底色随主题走 zinc 浅/深、
-语法配色复用 One Light / One Dark 的 token 色（由 ``CODE_BLOCK_SYNTAX``
-直接引用，不重复定义）。这里只补编辑器特有的 token：行号栏、当前行高亮、
-光标、选区、边框与外壳。
-
-- CODE_EDITOR_SPEC：规格（圆角/边距/字号/边框/底色）
-- CODE_EDITOR_LINE：行号栏与当前行高亮（亮暗两套）
+"""CODE_EDITOR_SPEC/LINE：编辑器特有 token（行号栏/当前行/选区/边框），
+语法配色直接引用 CODE_BLOCK_SYNTAX。
 """
 
 from .code_block import CODE_BLOCK_SYNTAX

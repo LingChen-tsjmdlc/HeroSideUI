@@ -1,8 +1,7 @@
-"""段序解析：把 ICU 日期 pattern 拆成 DateInput 的段列表（零 Qt 依赖）。
+"""段序解析：由 ICU 按 locale/历法推导 best pattern 再拆成段列表。
 
-段顺序绝不硬编码——由 ICU DateTimePatternGenerator 按 locale + 历法
-推导出 best pattern（en_US 得 M/d/y、de_DE 得 d.M.y、ja_JP 得 y/M/d），
-再逐字符扫描 pattern，把字段字母转成段、把其余字符转成字面量分隔符。
+段顺序不硬编码（en_US 得 M/d/y、de_DE 得 d.M.y）；字段字母转段、
+其余字符转字面量分隔符。
 """
 
 from __future__ import annotations
@@ -55,11 +54,12 @@ TIME_GRANULARITIES = ("hour", "minute", "second")
 
 @dataclass(frozen=True)
 class SegmentSpec:
-    """一个段或字面量在段列表中的静态描述。
+    """段或字面量的静态描述。
 
-    :param type: 段类型；字面量为 "literal"
-    :param text: 字面量文本（仅 literal 使用）
-    :param min_digits: 该段最少显示位数（由 pattern 中字母重复次数决定）
+    Attributes:
+        type: 段类型（era/year/.../literal/timeZone）。
+        text: 字面量文本；段类型时为空。
+        min_digits: pattern 给出的最少位数。
     """
 
     type: str
@@ -68,10 +68,20 @@ class SegmentSpec:
 
     @property
     def is_editable(self) -> bool:
+        """该段是否可由用户输入。
+
+        Returns:
+            type 在 EDITABLE_TYPES 内为 True（字面量与时区不可编辑）。
+        """
         return self.type in EDITABLE_TYPES
 
     @property
     def is_literal(self) -> bool:
+        """该段是否为字面量分隔符。
+
+        Returns:
+            type == literal 时为 True。
+        """
         return self.type == "literal"
 
 
@@ -85,9 +95,18 @@ def build_pattern(
 ) -> str:
     """按 locale/历法/粒度/小时制求 ICU best pattern。
 
-    :param hour_cycle: 12 或 24；None 表示跟随 locale 习惯（skeleton 用 j）
-    :param include_date: False 时只求时间部分 pattern（TimeInput 用，
-        不拼 yMd 日期前缀，段列表里不会出现年/月/日段）
+    Args:
+        locale: ICU locale。
+        identifier: 历法标识。
+        granularity: 时间粒度。
+        hour_cycle: 12/24；None 跟随 locale（skeleton 用 j）。
+        include_date: False 时只求时间 pattern（TimeInput 用）。
+
+    Returns:
+        ICU pattern 字符串。
+
+    Raises:
+        ValueError: granularity 不在 _TIME_SKELETON 中时抛出。
     """
     if granularity not in _TIME_SKELETON:
         raise ValueError(f"invalid granularity: {granularity!r}")
@@ -103,14 +122,24 @@ def build_pattern(
 
 
 def parse_pattern(pattern: str) -> list[SegmentSpec]:
-    """把 ICU pattern 字符串扫描成段/字面量序列。
+    """把 ICU pattern 字符串扫描成段 / 字面量序列。
 
-    ICU pattern 中单引号包裹的是字面量（如 de_DE 的 'um'），需原样保留。
+    Args:
+        pattern: ICU 日期时间 pattern 字符串。
+
+    Returns:
+        段与字面量的有序列表；连续相同字段字母合并成一个段，
+        run 长度（上限 4）作为 min_digits。
+
+    Note:
+        单引号包裹的是字面量（如 de_DE 的 'um'），需原样保留；
+        连续两个单引号表示一个真实的单引号字符。
     """
     specs: list[SegmentSpec] = []
     buffer: list[str] = []
 
     def flush_literal():
+        """把已累积的字面量字符刷成一个 literal 段。"""
         if buffer:
             specs.append(SegmentSpec("literal", text="".join(buffer)))
             buffer.clear()
@@ -166,10 +195,19 @@ def build_segments(
     has_timezone: bool = False,
     include_date: bool = True,
 ) -> list[SegmentSpec]:
-    """求最终段列表：解析 pattern 后按需补/删时区段。
+    """求最终段列表：解析 pattern 后按需补 / 删时区段。
 
-    ICU 的 yMd 系 skeleton 不含时区字段，带时区的值需要额外补一个 timeZone
-    段（对齐 HeroUI 在 ZonedDateTime 下显示 PST 的行为）。
+    Args:
+        locale: ICU locale。
+        identifier: 历法标识。
+        granularity: 时间粒度。
+        hour_cycle: 12 / 24；None 跟随 locale。
+        hide_time_zone: 强制隐藏时区段。
+        has_timezone: 值里是否带时区（决定是否需要 timeZone 段）。
+        include_date: False 时只求时间 pattern（TimeInput 用）。
+
+    Returns:
+        去掉首尾悬空字面量后的 SegmentSpec 列表。
     """
     specs = parse_pattern(
         build_pattern(
@@ -190,7 +228,14 @@ def build_segments(
 
 
 def _strip_dangling_literals(specs: list[SegmentSpec]) -> list[SegmentSpec]:
-    """去掉首尾多余的字面量与因删段而产生的连续分隔符。"""
+    """去掉首尾多余的字面量与因删段而产生的连续分隔符。
+
+    Args:
+        specs: 初步解析出的段列表。
+
+    Returns:
+        相邻字面量合并、首尾字面量剥离后的新列表。
+    """
     out: list[SegmentSpec] = []
     for spec in specs:
         if spec.is_literal and out and out[-1].is_literal:

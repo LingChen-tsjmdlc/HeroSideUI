@@ -1,13 +1,4 @@
-"""Tooltip 绘制 / 颜色 / 圆角 mixin。
-
-为什么独立：tooltip.py 太大，把"颜色解析 + 圆角解析 + paintEvent + 箭头绘制"
-这些纯渲染逻辑（不涉及事件/动画/状态机）剥出来。
-
-宿主类需要提供以下属性/方法（已在 Tooltip 上）：
-    self._color, self._theme, self._radius, self._shadow, self._show_arrow,
-    self._actual_placement, self._scale_proxy, self._frame_margins(),
-    self.width(), self.height(), self.rect()
-"""
+"""Tooltip 绘制 mixin：颜色/圆角解析 + paintEvent + 箭头（纯渲染无状态机）。"""
 
 from __future__ import annotations
 
@@ -25,6 +16,7 @@ class _TooltipPaintMixin:
 
     # ---- 颜色 ----
     def _bg_color(self) -> QColor:
+        """返回当前主题与配色下的背景色。"""
         is_dark = self._theme == "dark"  # type: ignore[attr-defined]
         if self._color == "default":  # type: ignore[attr-defined]
             return QColor("#ffffff" if not is_dark else "#27272a")
@@ -32,6 +24,7 @@ class _TooltipPaintMixin:
         return QColor(c[500])
 
     def _text_color(self) -> QColor:
+        """返回当前主题与配色下的文字色。"""
         is_dark = self._theme == "dark"  # type: ignore[attr-defined]
         if self._color == "default":  # type: ignore[attr-defined]
             return QColor("#11181c" if not is_dark else "#ecedee")
@@ -41,6 +34,7 @@ class _TooltipPaintMixin:
 
     # ---- 圆角 ----
     def _resolve_radius(self) -> float:
+        """解析当前圆角档位对应的像素半径。"""
         if self._radius == "none":  # type: ignore[attr-defined]
             return 0.0
         if self._radius == "full":  # type: ignore[attr-defined]
@@ -49,6 +43,7 @@ class _TooltipPaintMixin:
         return float(key_map.get(self._radius, 8))  # type: ignore[attr-defined]
 
     def _content_rect_size(self) -> QSize:
+        """返回扣除外框留白后的内容区尺寸。"""
         m = self._frame_margins()  # type: ignore[attr-defined]
         return QSize(
             max(0, self.width() - m[0] - m[2]),  # type: ignore[attr-defined]
@@ -57,6 +52,7 @@ class _TooltipPaintMixin:
 
     # ---- paintEvent ----
     def paintEvent(self, event):
+        """绘制阴影、主体与箭头；缩放动画期间改画代理快照。"""
         painter = QPainter(self)  # type: ignore[arg-type]
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
@@ -116,11 +112,7 @@ class _TooltipPaintMixin:
             self._draw_arrow(painter, content_rect, bg)
 
     def _draw_arrow(self, painter: QPainter, content_rect: QRectF, bg: QColor):
-        """绘制箭头。
-
-        - top/bottom 系列：底/顶边上；start→靠左，end→靠右，无后缀→居中
-        - left/right 系列：右/左边上；start→靠上，end→靠下，无后缀→居中
-        """
+        """绘制箭头：start/end/无后缀分别对应靠左/靠右/居中（或上/下）。"""
         place = self._actual_placement  # type: ignore[attr-defined]
         a = ARROW_SIZE
         path = QPainterPath()

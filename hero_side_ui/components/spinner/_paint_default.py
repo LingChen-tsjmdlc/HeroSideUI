@@ -1,15 +1,4 @@
-"""variant=default —— 实色 90° 弧（头）+ 4 个拖尾小圆点（虚）。
-
-设计要点（与 HeroUI 原版略偏离，做"头实尾虚"的明确视觉）:
-
-- 起始位置在 12 点钟，顺时针前进。
-- 旋转曲线用 3 阶 smoothstep `t²(3 - 2t)`（≈ CSS `ease-in-out`），首尾稍慢、中段稍快，
-  温和的顿挫感。
-- 实色 90° 弧（border 等粗）居中在头部。
-- 拖尾 3 个小圆点紧跟弧的"后方"，每个点的角度间距随瞬时角速度（cubic 的导数
-  `6 t (1-t)`）伸缩 —— 头转得快时拖尾拉长，头停下时拖尾收紧。
-- 3 个点的 alpha 逐次衰减（0.75 → 0.50 → 0.28）。
-"""
+"""default 变体：实色 90° 弧（头）+ 3 个拖尾小圆点（虚，角度随速度伸缩）。"""
 
 from __future__ import annotations
 
@@ -30,7 +19,20 @@ def paint_default(
     phase_ease: float,
     phase_linear: float,  # 保留参数兼容，default 不再使用第二条驱动器
 ):
-    """phase_ease ∈ [0, 1)，驱动器周期 0.8s。"""
+    """绘制 default 变体：实色 90° 弧头与随相位伸缩的 3 个拖尾圆点。
+
+    Args:
+        painter: 目标 QPainter，函数内会改写其画笔与画刷。
+        w: 绘制区域宽度。
+        h: 绘制区域高度。
+        indicator: 主色，拖尾点由它派生并逐级降低透明度。
+        border: 弧线宽度，同时决定拖尾点半径。
+        phase_ease: 缓动相位，取值 [0, 1)，驱动器周期 0.8s。
+        phase_linear: 线性相位，为兼容保留，本变体不使用。
+
+    Note:
+        default 不再使用第二条驱动器，函数体显式 del phase_linear 声明未使用。
+    """
     del phase_linear  # 显式声明未使用
 
     side = min(w, h)

@@ -1,10 +1,4 @@
-"""Breadcrumbs 配色 token。
-
-对照 HeroUI breadcrumbs.ts + breadcrumbItem.ts：
-- item 非 current：text-foreground/50（语义色 80%）；current：全色
-- separator：列表级 text-default-400，item 级跟随 color 同透明度
-- variant solid：bg-default-100；bordered：border 2px default-200；light：无
-"""
+"""Breadcrumbs 配色 token：非 current 50%、current 全色、分隔 default-400。"""
 
 from __future__ import annotations
 
@@ -14,28 +8,58 @@ from ...themes import HEROUI_COLORS
 
 
 def _qcolor(hex_color: str, alpha: float = 1.0) -> QColor:
+    """把十六进制色转成带透明度的 QColor。
+
+    Args:
+        hex_color: 十六进制颜色字符串。
+        alpha: 透明度，默认 1.0 不透明。
+
+    Returns:
+        已设置 alphaF 的 QColor。
+    """
     c = QColor(hex_color)
     c.setAlphaF(alpha)
     return c
 
 
 def _foreground(theme: str) -> str:
-    """官方 foreground 色（default-foreground 语义）：亮黑暗白。"""
+    """官方 foreground 色（default-foreground 语义）。
+
+    Args:
+        theme: 主题名。
+
+    Returns:
+        暗色 #ffffff，亮色 #000000。
+    """
     return "#ffffff" if theme == "dark" else "#000000"
 
 
 def color_base(color: str, theme: str) -> str:
-    """语义色 100% 基色（current 项文字 / hover 提亮目标）。"""
+    """语义色 100% 基色。
+
+    Args:
+        color: 语义色名或 foreground；未命中回退 primary。
+        theme: 主题名。
+
+    Returns:
+        current 项文字与 hover 提亮的基准色。
+    """
     if color == "foreground":
         return _foreground(theme)
     return HEROUI_COLORS.get(color, HEROUI_COLORS["primary"])[500]
 
 
 def build_item_styles(color: str, theme: str, is_current: bool) -> dict:
-    """单项配色（QColor 对象）。
+    """返回单项配色 token。
 
-    Keys: text（常态）、text_hover（hover 提亮到全色）、text_pressed（50%）、
-    separator（跟随 color 同透明度）
+    Args:
+        color: 语义色名或 foreground。
+        theme: 主题名。
+        is_current: 是否为当前项。
+
+    Returns:
+        含 text / text_hover / text_pressed / separator 的 dict；
+        非 current 时 foreground 按 50%、语义色按 80% 降透明度。
     """
     base = color_base(color, theme)
     # 官方：foreground 用 /50，语义色用 /80；current 全色
@@ -51,7 +75,15 @@ def build_item_styles(color: str, theme: str, is_current: bool) -> dict:
 def build_list_styles(variant: str, theme: str) -> dict:
     """列表容器配色：solid 底色 / bordered 边框 / light 无。
 
-    暗色下浅阶索引镜像反转（100↔800 / 200↔700）。
+    Args:
+        variant: solid / bordered / light。
+        theme: 主题名。
+
+    Returns:
+        含 bg / border / border_w 的 dict。
+
+    Note:
+        暗色下浅阶索引镜像反转（100↔800 / 200↔700），保证视觉亮度对应。
     """
     is_dark = theme == "dark"
     d = HEROUI_COLORS["default"]
@@ -73,5 +105,12 @@ def build_list_styles(variant: str, theme: str) -> dict:
 
 
 def separator_color(theme: str) -> str:
-    """列表级分隔符默认色：text-default-400。"""
+    """列表级分隔符默认色。
+
+    Args:
+        theme: 主题名（当前实现不区分主题，保持与 default-400 一致）。
+
+    Returns:
+        text-default-400 的十六进制色。
+    """
     return HEROUI_COLORS["default"][400]

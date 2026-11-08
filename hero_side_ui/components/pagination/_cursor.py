@@ -1,12 +1,4 @@
-"""分页器滑动光标 (_CursorWidget)。
-
-绝对定位浮层(zIndex 在 items 之上)。功能:
-  - 跟随 active item 几何 (translateX 等价于 setGeometry)
-  - 切换时 scale 1.0 → 1.1 → 1.0 弹簧动效 (HeroUI 招牌)
-  - 自绘 active 页码数字 + 主色填充
-  - 切换页时新旧数字方向化交叉滚动 (页码增大向上,减小向下)
-  - 鼠标穿透,首次出现淡入
-"""
+"""_CursorWidget 滑动光标：跟随 active、scale 弹簧动效、数字方向化滚动、穿透。"""
 
 from PySide6.QtCore import QRectF, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QPainter, QPainterPath
@@ -21,6 +13,7 @@ class _CursorWidget(QWidget):
     """active 页面的高亮光标(浮于 items 之上)。"""
 
     def __init__(self, parent: QWidget | None = None):
+        """构造滑动光标；默认 primary/light/flat、半径 8、scale 1.0。"""
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -62,6 +55,7 @@ class _CursorWidget(QWidget):
         radius_px: int | None = None,
         font_size: int | None = None,
     ):
+        """批量更新光标视觉参数（变体/颜色/主题/圆角/字号）。"""
         if variant is not None:
             self._variant = variant
         if color is not None:
@@ -75,11 +69,13 @@ class _CursorWidget(QWidget):
         self.update()
 
     def set_item_size(self, w: int, h: int):
+        """设置 item 真实尺寸（paint 圆角贴合基准）。"""
         self._item_w = int(w)
         self._item_h = int(h)
         self.update()
 
     def set_page_text(self, text: str):
+        """硬切页码文本（无动画路径用）。"""
         # 直接硬切 (无动画路径用)
         self._page_text = str(text)
         self._old_page_text = ""
@@ -92,6 +88,13 @@ class _CursorWidget(QWidget):
         return bool(self._page_text)
 
     def start_text_swap(self, new_text: str, *, duration_ms: int = 300, direction: str = "up"):
+        """启动新旧文字交叉淡入滚动（方向化）。
+
+        Args:
+            new_text: 新页码文本。
+            duration_ms: 动画时长。
+            direction: "up" 页码增大 / "down" 页码减小。
+        """
         new_text = str(new_text)
         if new_text == self._page_text:
             return
@@ -117,13 +120,16 @@ class _CursorWidget(QWidget):
         )
 
     def _stop_text_anim(self):
+        """停止文字交叉淡入动画。"""
         stop_tween(self, "_text_anim")
 
     def set_scale(self, scale: float):
+        """设置当前帧缩放（围绕中心扩张）。"""
         self._scale = float(scale)
         self.update()
 
     def set_opacity(self, opacity: float):
+        """设置内部 opacity（0~1，真正淡入由父级 QGraphicsOpacityEffect 负责）。"""
         self._opacity = max(0.0, min(1.0, float(opacity)))
         self.update()
 
@@ -132,6 +138,7 @@ class _CursorWidget(QWidget):
     # ============================================================
 
     def paintEvent(self, ev):
+        """重绘：主体圆角填充 + 交叉淡入页码文字（按 scale 围绕中心扩张）。"""
         if self.width() <= 0 or self.height() <= 0:
             return
         if self._opacity <= 0.0:

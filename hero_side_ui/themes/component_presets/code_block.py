@@ -1,12 +1,4 @@
-"""CodeBlock 组件主题预设。
-
-复刻前端 CodeBlock 的视觉：圆角容器 + 标题栏 + 高亮代码区。代码区底色随主题在
-Tailwind zinc 浅/深之间切换（zinc 比 neutral 更冷、偏中性灰）；语法配色用
-One Light / One Dark 的 token 色（仅文字着色，底色不用其背景）。
-
-- CODE_BLOCK_SPEC：外壳圆角 / 内边距 / 默认字号 / 标题栏配色 token / 代码区底色
-- CODE_BLOCK_SYNTAX：{theme: {pygments 语义 token → 颜色}}（One Light / One Dark）
-"""
+"""CODE_BLOCK_SPEC（外壳规格）与 CODE_BLOCK_SYNTAX（One Light/Dark 语义 token 色）。"""
 
 # 外壳 / 标题栏 / 代码区规格
 CODE_BLOCK_SPEC = {

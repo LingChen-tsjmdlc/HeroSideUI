@@ -1,10 +1,5 @@
-"""markdown-it-py 封装：Markdown 文本 → SyntaxTreeNode 树。
-
-启用 CommonMark + GFM 表格 + 删除线 + 脚注 + 任务列表。表格/删除线为内置规则，
-脚注 / 任务列表来自 mdit_py_plugins（可选依赖）：未安装时静默降级，相应标记按
-纯文本呈现，其余语法照常，绝不因缺插件崩溃。
-
-只做解析，不碰任何 Qt 对象。
+"""markdown-it-py 封装：CommonMark + GFM 表格/删除线 + 可选脚注/任务列表
+（缺插件静默降级）。只做解析不碰 Qt。
 """
 
 from __future__ import annotations

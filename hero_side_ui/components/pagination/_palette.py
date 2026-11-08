@@ -1,8 +1,4 @@
-"""Pagination 颜色与几何解析工具。
-
-对齐 HeroUI v2 pagination.ts 的 variant/color/radius 复合规则，
-返回纯 QColor / px 值，供 _cursor / _item 自绘。
-"""
+"""Pagination 颜色与几何解析：variant/color/radius 复合规则 → QColor/px。"""
 
 from PySide6.QtGui import QColor
 
@@ -43,13 +39,7 @@ def _default_token(n: int, theme: str) -> str:
 
 
 def resolve_cursor_fill(color: str, theme: str) -> QColor:
-    """cursor 填充色 = HeroUI solid bg-{color}。
-
-    default: 取与 item 底色 (default-100) 形成反差的色阶
-        - light = default-300 (#d4d4d8, 中灰)
-        - dark  = default-300 镜像 = palette[600] (#52525b, 中灰)
-    其余色: colors[500]。
-    """
+    """取 cursor 填充色：default 取反差中灰，其余色取 colors[500]。"""
     if color == "default":
         return QColor(_default_token(300, theme))
     return QColor(HEROUI_COLORS[color][500])
@@ -84,14 +74,14 @@ def resolve_item_disabled_text(theme: str) -> QColor:
 def resolve_item_bg(
     variant: str, theme: str, *, hover: bool, pressed: bool, active: bool
 ) -> QColor | None:
-    """item 底色（透明返回 None）。对齐 HeroUI v2 pagination.ts。
+    """取 item 底色（透明返回 None），flat/bordered/light/faded 各态对齐 HeroUI。
 
-    - flat:     bg-default-100  hover bg-default-200  pressed bg-default-300
-    - bordered: 透明            hover bg-default-100  pressed bg-default-200
-    - light:    透明            hover bg-default-100  pressed bg-default-200
-    - faded:    bg-default-100  hover bg-default-200  pressed bg-default-300 (与 flat 同)
-    active 选中项让 cursor 接管,item 自身透明。
-    dark 模式下 default-N 通过 _default_token 反转色阶。
+    Args:
+        variant: flat/bordered/light/faded。
+        theme: light/dark。
+        hover: 悬停态。
+        pressed: 按压态。
+        active: 选中项由 cursor 接管，自身透明。
     """
     if active:
         return None
@@ -136,14 +126,7 @@ def resolve_item_border(variant: str, theme: str) -> QColor | None:
 
 
 def resolve_radius_px(radius: str, height: int) -> int:
-    """对齐 HeroUI rounded-* token 到像素。
-
-    - none: 0
-    - sm: 8 (rounded-small)
-    - md: 12 (rounded-medium)
-    - lg: 14 (rounded-large)
-    - full: height / 2
-    """
+    """rounded token 转像素：none 0 / sm 8 / md 12 / lg 14 / full 为半高。"""
     if radius == "none":
         return 0
     if radius == "full":

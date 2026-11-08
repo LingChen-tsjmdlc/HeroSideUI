@@ -30,21 +30,10 @@ from ._helpers import _resolve_selected_text, _resolve_unselected_text
 
 
 class TabItem(QAbstractButton):
-    """单个 tab 标签 —— 三档插槽能力：
+    """单个 tab 标签，三档插槽：纯文本 / icon+文本 / custom widget。
 
-    1. **默认**：纯文本（与 HeroUI 默认一致）
-       ``TabItem("Photos")``
-
-    2. **icon + 文本**：左/右图标，颜色随选中态/主题自动着色
-       ``TabItem("Photos", start_icon="heroicons--photo-solid", end_icon=...)``
-       icon 支持内置 heroicons 名（不含 .svg 后缀）或外部 SVG 路径，
-       由 ``hero_side_ui.utils.icon_utils.load_svg_icon`` 加载与着色。
-
-    3. **完全自定义**：直接传 widget 作为标签内容
-       ``TabItem(custom=my_widget)`` —— TabItem 把它作为子控件填满自己，
-       不画文字/图标。hover-unselected/disabled 透明度仍然通过 QGraphicsOpacityEffect
-       套在 custom widget 上。如果 custom widget 想跟随选中态，可监听
-       ``TabItem.selected_changed(bool)`` 信号自行刷新。
+    Note:
+        custom 模式不画文字图标，选中态由 selected_changed 信号自理。
     """
 
     HOVER_ANIM_DURATION = 150
@@ -63,6 +52,20 @@ class TabItem(QAbstractButton):
         custom: QWidget | None = None,
         parent=None,
     ):
+        """创建标签按钮并初始化三档插槽与默认样式。
+
+        Args:
+            title: 标签标题；custom 模式下仅作为 key 的回退值。
+            key: 唯一标识；未传时回退到 title。
+            start_icon: 起始图标来源。
+            end_icon: 结束图标来源。
+            custom: 自定义内容 widget，传入即进入 custom 模式。
+            parent: Qt 父对象。
+
+        Note:
+            QButtonGroup 的 exclusive 模式会从 C++ 层直接调用 setChecked，
+            Python 子类 override 无法拦截，故用 toggled 信号驱动选中动画。
+        """
         super().__init__(parent)
         self.setCheckable(True)
         self.setCursor(Qt.PointingHandCursor)
@@ -123,9 +126,11 @@ class TabItem(QAbstractButton):
     # -------------------- Public API --------------------
 
     def title(self) -> str:
+        """返回当前标签标题。"""
         return self._title
 
     def set_title(self, title: str):
+        """设置标签标题，custom 模式下不影响视觉。"""
         self._title = title
         # custom 模式下 title 仅作为 key fallback，不影响视觉
         if self._custom is None:
@@ -134,12 +139,15 @@ class TabItem(QAbstractButton):
             self.update()
 
     def key(self) -> str:
+        """返回标签的唯一标识。"""
         return self._key
 
     def set_key(self, key: str):
+        """设置标签的唯一标识。"""
         self._key = key
 
     def set_disabled(self, disabled: bool):
+        """设置禁用态并同步鼠标样式与 custom 透明度。"""
         self._is_disabled = bool(disabled)
         self.setEnabled(not self._is_disabled)
         if self._is_disabled:
@@ -150,12 +158,14 @@ class TabItem(QAbstractButton):
         self.update()
 
     def is_disabled(self) -> bool:
+        """返回是否处于禁用态。"""
         return self._is_disabled
 
     def set_start_icon(self, src):
         """设置起始图标。
 
-        ``src`` 可以是 ``None`` / 内置图标名 / SVG 路径 / 已加载的 ``QPixmap``。
+        Args:
+            src: 图标来源，可为 None / 内置图标名 / SVG 路径 / QPixmap。
         """
         self._start_icon_src = src
         self._refresh_icons()
@@ -170,14 +180,20 @@ class TabItem(QAbstractButton):
         self.update()
 
     def has_icons(self) -> bool:
+        """返回是否存在起始或结束图标。"""
         return self._start_icon_src is not None or self._end_icon_src is not None
 
     # ----- 档3：custom widget 插槽 -----
 
     def set_custom(self, widget: QWidget | None):
-        """把自定义 widget 装进 TabItem，作为标签内容（档3）。
+        """把自定义 widget 装进标签作为内容（档3）。
 
-        传 ``None`` 取消 custom，回退到 text/icon 模式。
+        Args:
+            widget: 自定义内容；传 None 取消 custom 并回退到 text/icon 模式。
+
+        Note:
+            custom 模式不挂 QGraphicsOpacityEffect，因其离屏渲染会用
+            palette.Window 填色盖住下层 cursor；hover 透明度变化由此不生效。
         """
         # 清掉旧的
         if self._custom is not None:
@@ -247,11 +263,22 @@ class TabItem(QAbstractButton):
         self.update()
 
     def custom(self) -> QWidget | None:
+        """返回当前 custom widget，未启用时返回 None。"""
         return self._custom
 
     # -------------------- 由 Tabs 调用 --------------------
 
     def apply_style(self, *, variant, color, size, theme, disable_animation, full_width):
+        """批量应用由 Tabs 注入的样式并立即刷新文字色与几何。
+
+        Args:
+            variant: 变体名。
+            color: 主题色名。
+            size: 尺寸名。
+            theme: 明暗主题名。
+            disable_animation: 是否禁用动画。
+            full_width: 是否让按钮水平拉伸。
+        """
         self._variant = variant
         self._color = color
         self._size = size
@@ -282,9 +309,11 @@ class TabItem(QAbstractButton):
     # -------------------- 选中态切换（带动画） --------------------
 
     def set_checked_silent(self, checked: bool):
-        """无动画地设置选中态（block toggled 信号 + 强制刷新色）。
+        """无动画地设置选中态并强制刷新文字色。
 
-        用于 Tabs 首次自动选中等场景，避免开屏闪一次淡入动画。
+        Note:
+            用于首次自动选中等场景，避免开屏闪一次淡入动画；通过
+            blockSignals 屏蔽 toggled 以跳过颜色过渡。
         """
         was = self.blockSignals(True)
         try:
@@ -298,6 +327,7 @@ class TabItem(QAbstractButton):
         self.update()
 
     def _on_toggled(self, checked: bool):
+        """选中态变化时把文字色过渡到目标色。"""
         target = self._selected_color if checked else self._unselected_color
         tween_value(
             self,
@@ -310,6 +340,7 @@ class TabItem(QAbstractButton):
         )
 
     def _on_color_step(self, value):
+        """动画帧回调：更新当前文字色并重绘图标。"""
         if isinstance(value, QColor):
             self._current_text_color = value
             # icon 跟随文字色
@@ -317,6 +348,7 @@ class TabItem(QAbstractButton):
             self.update()
 
     def _animate_opacity(self, target: float):
+        """把整体透明度过渡到 target。"""
         tween_value(
             self,
             "_opacity_anim_runner",
@@ -328,6 +360,7 @@ class TabItem(QAbstractButton):
         )
 
     def _on_opacity_step(self, value):
+        """动画帧回调：更新透明度并同步 custom 效果。"""
         try:
             self._current_opacity = float(value)
         except Exception:
@@ -350,12 +383,14 @@ class TabItem(QAbstractButton):
     # -------------------- Hover --------------------
 
     def enterEvent(self, ev):
+        """鼠标进入时记录 hover 态并降低未选中项透明度。"""
         self._is_hover = True
         if not self.isChecked() and not self._is_disabled:
             self._animate_opacity(0.5)
         super().enterEvent(ev)
 
     def leaveEvent(self, ev):
+        """鼠标离开时清除 hover 态并恢复透明度。"""
         self._is_hover = False
         self._animate_opacity(1.0)
         super().leaveEvent(ev)
@@ -363,7 +398,7 @@ class TabItem(QAbstractButton):
     # -------------------- Geometry --------------------
 
     def _icon_size_px(self) -> int:
-        """icon 像素尺寸 = 文字行高 ≈ font_size + 2"""
+        """返回 icon 像素尺寸，约等于文字行高。"""
         return self._size_cfg["tab_font_size"] + 2
 
     def _icon_gap(self) -> int:
@@ -388,6 +423,7 @@ class TabItem(QAbstractButton):
         self._end_icon_pixmap = _to_pixmap(self._end_icon_src)
 
     def _update_geometry(self):
+        """按尺寸配置与内容计算并应用最小宽高。"""
         cfg = self._size_cfg
         from ...core import make_text_qfont
 
@@ -419,6 +455,7 @@ class TabItem(QAbstractButton):
         self.setMinimumWidth(w)
 
     def sizeHint(self) -> QSize:
+        """返回按内容与尺寸配置计算的建议尺寸。"""
         cfg = self._size_cfg
         if self._custom is not None:
             ch = self._custom.sizeHint()
@@ -446,6 +483,12 @@ class TabItem(QAbstractButton):
     # -------------------- Paint --------------------
 
     def paintEvent(self, ev):
+        """自绘标题文字与起止图标，custom 模式交给子 widget 渲染。
+
+        Note:
+            文字基线按 capHeight 对齐行盒中心，避免 Qt 按 ascent/descent
+            整高居中导致的视觉偏下。
+        """
         # custom 模式：交给子 widget 自己渲染（QGraphicsOpacityEffect 套整体透明度）
         if self._custom is not None:
             return

@@ -1,14 +1,5 @@
-"""Tooltip 几何 / 定位工具（纯函数）。
-
-为什么独立出来：
-    tooltip.py 已经接近铁律 8 的 800 行红线。把"placement → 坐标"这套
-    纯几何逻辑（无 widget 状态依赖，只吃几何参数）迁出去后，主类瘦身
-    专注事件 / 动画 / 装配。
-
-核心入口：
-    calc_position(...)  根据 embedded 模式与否，返回 tooltip 应当 move() 到的坐标。
-                        - 顶层模式：屏幕坐标
-                        - embedded 模式：anchor_ancestor 的局部坐标
+"""Tooltip 定位纯函数：calc_position 返回 move 目标坐标（顶层为屏幕坐标，
+embedded 为 ancestor 局部坐标）。
 """
 
 from __future__ import annotations

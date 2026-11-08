@@ -1,9 +1,4 @@
-"""Pagination DOTS 图标 (省略号 ↔ 双 chevron 切换)。
-
-默认显示 ``heroicons--ellipsis-horizontal``;
-hover/focus 时显示 ``heroicons--chevron-double-left`` (isBefore) 或
-``heroicons--chevron-double-right`` (after) 暗示"快速跳转"。
-"""
+"""DOTS 图标：默认省略号，hover/focus 切双 chevron 暗示跳转。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor

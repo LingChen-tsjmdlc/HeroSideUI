@@ -15,17 +15,25 @@ class _ScaleEffect(QGraphicsEffect):
     """居中缩放控件的源图像。"""
 
     def __init__(self, parent: QObject | None = None):
+        """初始化缩放效果。
+
+        Args:
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._scale = 1.0
 
     def scale(self) -> float:
+        """返回当前缩放比例。"""
         return self._scale
 
     def setScale(self, value: float):
+        """设置缩放比例并请求重绘。"""
         self._scale = value
         self.update()
 
     def draw(self, painter: QPainter):
+        """将源图像按缩放比例居中绘制。"""
         if self._scale >= 0.999:
             self.drawSource(painter)
             return
@@ -83,12 +91,14 @@ class PressScaleEffect(QObject):
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
     def _get_scale(self) -> float:
+        """返回当前缩放比例。"""
         try:
             return self._effect.scale()
         except RuntimeError:
             return 1.0
 
     def _set_scale(self, value: float):
+        """设置缩放比例。"""
 
         try:
             self._effect.setScale(value)

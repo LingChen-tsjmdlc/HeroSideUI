@@ -130,6 +130,17 @@ from .radius import RADIUS
 # ``__init__`` 里拼 QSS，那时 QApplication 早就建出来了）才转发到
 # ``themes.font.__getattr__('FONT_FAMILY')``。
 def __getattr__(name: str):
+    """延迟解析 FONT_FAMILY，避免导入期触发字体初始化。
+
+    Args:
+        name: 被访问的模块属性名。
+
+    Returns:
+        FONT_FAMILY 对应的字族值。
+
+    Note:
+        仅放行 FONT_FAMILY，其余名字抛 AttributeError；延迟访问避免 import 阶段触发 themes.font 的 QFontDatabase 调用（无 QApplication 时会崩进程）。
+    """
     if name == "FONT_FAMILY":
         from .font import FONT_FAMILY as _ff
 

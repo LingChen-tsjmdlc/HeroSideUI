@@ -1,19 +1,4 @@
-"""HeroSideUI Breadcrumbs — 面包屑导航 (HeroUI v2)。完整 API/示例见 docs/breadcrumbs.md。
-
-结构对照官方 breadcrumbs.tsx + breadcrumb-item.tsx：nav > ol(list) >
-li(base)[item(startContent+children+endContent), separator]。桌面端项为
-自绘 _Crumb（hover 提亮/按下变淡/下划线模式），省略号折叠逻辑与官方
-maxItems/itemsBeforeCollapse/itemsAfterCollapse 一致。
-
-用法::
-
-    crumbs = Breadcrumbs(items=[
-        BreadcrumbItem("Home", key="home"),
-        BreadcrumbItem("Music", key="music"),
-        BreadcrumbItem("Current", key="now", is_current=True),
-    ])
-    crumbs.action_triggered.connect(lambda key: print(key))
-"""
+"""Breadcrumbs 面包屑导航：自绘 _Crumb 项 + 官方同款省略号折叠逻辑。"""
 
 from __future__ import annotations
 
@@ -44,11 +29,7 @@ _RADIUS_PX = {"none": 0, "sm": 8, "md": 12, "lg": 14, "full": 9999}
 
 
 class BreadcrumbItem:
-    """面包屑项配置（声明式，由 Breadcrumbs 渲染）。
-
-    start_content / end_content / separator 传 QWidget；separator 也可传
-    str（渲染为文本分隔符）。is_last 由 Breadcrumbs 自动推断。
-    """
+    """面包屑项配置（声明式，由 Breadcrumbs 渲染）。"""
 
     def __init__(
         self,
@@ -67,6 +48,23 @@ class BreadcrumbItem:
         bordered: bool = False,
         on_press: Callable[[], None] | None = None,
     ):
+        """创建声明式的面包屑项配置。
+
+        Args:
+            label: 显示文本。
+            key: 稳定标识，None 时由 Breadcrumbs 按下标补齐。
+            color: 项级语义色覆盖。
+            size: 项级尺寸覆盖。
+            underline: 下划线模式 none/hover/always/active/focus。
+            start_content: 文字前插入的 widget。
+            end_content: 文字后插入的 widget。
+            separator: 项级分隔符（widget 或文本）。
+            is_current: 是否当前项；None 由 isLast 推断。
+            hide_separator: 是否隐藏该项前的分隔符。
+            is_disabled: 是否禁用。
+            bordered: 胶囊边框样式（桌面扩展，对应官方 Menu Type）。
+            on_press: 点击回调。
+        """
         self.label = str(label)
         self.key = key
         self.color = color
@@ -87,7 +85,15 @@ class BreadcrumbItem:
 
 
 def _make_separator_widget(separator: str, theme: str) -> QWidget:
-    """文本分隔符：官方无 str 分支，桌面扩展为文本分隔符。"""
+    """文本分隔符：官方无 str 分支，桌面扩展为文本分隔符。
+
+    Args:
+        separator: 分隔符文本，如 "/"。
+        theme: 主题名，决定分隔符颜色。
+
+    Returns:
+        透明背景、跟随主题色的 QLabel。
+    """
     lbl = QLabel(separator)
     color = separator_color(theme)
     lbl.setStyleSheet(f"color: {color}; background: transparent;")
@@ -98,11 +104,25 @@ class _Chevron(QWidget):
     """官方默认分隔符 chevron-right：QPainter 自绘（线条粗细/颜色完全可控）。"""
 
     def __init__(self, color, parent: QWidget | None = None):
+        """初始化 12×12 的 chevron 分隔符。
+
+        Args:
+            color: 线条颜色（QColor 可接受的各种形态）。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._color = QColor(color) if isinstance(color, QColor) else QColor(color)
         self.setFixedSize(12, 12)
 
     def paintEvent(self, event):
+        """自绘 ">" 形 chevron 线条。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            圆头圆角 join 保证小尺寸下的线条观感；路径固定 (4,3)→(8,6)→(4,9)。
+        """
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         pen = QPen(self._color, 1.8)
@@ -118,6 +138,12 @@ class _EllipsisIcon(QLabel):
     """官方省略号图标（横向三点）。"""
 
     def __init__(self, color: str, parent: QWidget | None = None):
+        """初始化 20×20 的省略号图标。
+
+        Args:
+            color: 图标着色。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self.setFixedSize(20, 20)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -128,12 +154,28 @@ class _TextLabel(QWidget):
     """项文字绘制层：由 _Crumb 转发状态，本件不接收鼠标事件。"""
 
     def __init__(self, crumb: _Crumb, width: int, parent: QWidget):
+        """创建跟随 _Crumb 状态的文字绘制层。
+
+        Args:
+            crumb: 宿主 _Crumb，提供颜色 / 字体 / 按压悬停状态。
+            width: 文字宽度（像素）。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._crumb = crumb
         self.setFixedSize(width, crumb.height())
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def paintEvent(self, event):
+        """绘制项文字与下划线。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            颜色取常态 / hover 提亮 / 按压变淡三态；focus 模式的下划线
+            桌面语义为被点击后持久显示，直到点其它项转移。
+        """
         crumb = self._crumb
         item = crumb._item
         p = QPainter(self)
@@ -182,6 +224,19 @@ class _Crumb(QWidget):
         theme: str,
         parent: QWidget | None = None,
     ):
+        """创建单个可点项：start_content | 自绘文字层 | end_content。
+
+        Args:
+            item: 对应的 BreadcrumbItem 配置。
+            base_color: 列表级默认色，item.color 优先。
+            size: 列表级默认尺寸，item.size 优先。
+            theme: 主题名。
+            parent: Qt 父对象。
+
+        Note:
+            项高度 = max(文字行高, start/end content 高度)，避免内嵌
+            Button 等交互组件被文字行高压扁。
+        """
         super().__init__(parent)
         self._item = item
         self._color_name = item.color or base_color
@@ -232,10 +287,8 @@ class _Crumb(QWidget):
     # ---- 状态 ----
 
     def paintEvent(self, event):
-        """bordered 胶囊项（官方 Menu Type 的桌面等价）：
-        - current：flat chip（default-100 浅底、无边框，文字全色）
-        - 非 current：bordered chip（透明底、default-400 边框）
-        - disabled：default-100 底 + default-400 边框、文字 50%"""
+        """bordered 胶囊项：current 用 flat chip，非 current 用 bordered chip，
+        disabled 用 default-100 底 + default-400 边框、文字 50%。"""
         if not self._bordered:
             return
         p = QPainter(self)
@@ -267,34 +320,68 @@ class _Crumb(QWidget):
             p.drawRoundedRect(rect, 6, 6)
 
     def set_hover(self, hover: bool):
+        """更新悬停态并重绘。
+
+        Args:
+            hover: 是否处于悬停。
+        """
         self._hover = hover
         self.update()
 
     def set_pressed(self, pressed: bool):
+        """更新按压态并重绘。
+
+        Args:
+            pressed: 是否处于按压。
+        """
         self._pressed = pressed
         self.update()
 
     def set_clicked(self, clicked: bool):
-        """underline="focus" 的持久标记（Breadcrumbs 层单选转移）。"""
+        """underline="focus" 的持久标记（Breadcrumbs 层单选转移）。
+
+        Args:
+            clicked: True 表示该项持有 focus 下划线。
+        """
         self._clicked = clicked
         self.update()
 
     def item(self) -> BreadcrumbItem:
+        """返回该项的配置对象。
+
+        Returns:
+            构造时传入的 BreadcrumbItem。
+        """
         return self._item
 
     # ---- 事件 ----
 
     def enterEvent(self, event):
+        """鼠标进入：可交互项开启 hover。
+
+        Args:
+            event: Qt 进入事件。
+        """
         super().enterEvent(event)
         if not self._item.is_disabled and not self._item.is_current:
             self.set_hover(True)
 
     def leaveEvent(self, event):
+        """鼠标离开：复位 hover 与按压态。
+
+        Args:
+            event: Qt 离开事件。
+        """
         super().leaveEvent(event)
         self.set_hover(False)
         self.set_pressed(False)
 
     def mousePressEvent(self, event):
+        """鼠标按下：左键时置按压态。
+
+        Args:
+            event: Qt 鼠标按下事件。
+        """
         super().mousePressEvent(event)
         if self._item.is_disabled:
             return
@@ -302,6 +389,14 @@ class _Crumb(QWidget):
             self.set_pressed(True)
 
     def mouseReleaseEvent(self, event):
+        """鼠标释放：仍在项内才算一次有效点击。
+
+        Args:
+            event: Qt 鼠标释放事件。
+
+        Note:
+            依次触发 item.on_press 与 pressed 信号。
+        """
         super().mouseReleaseEvent(event)
         if self._item.is_disabled:
             return
@@ -313,11 +408,21 @@ class _Crumb(QWidget):
             self.pressed.emit(self._item)
 
     def focusInEvent(self, event):
+        """获得键盘焦点：记录并重绘。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         super().focusInEvent(event)
         self._focused = True
         self.update()
 
     def focusOutEvent(self, event):
+        """失去键盘焦点：清除标记并重绘。
+
+        Args:
+            event: Qt 焦点事件。
+        """
         super().focusOutEvent(event)
         self._focused = False
         self.update()
@@ -350,6 +455,30 @@ class Breadcrumbs(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """创建面包屑容器并按 items 初次构建整条链。
+
+        Args:
+            items: BreadcrumbItem 列表。
+            variant: light / solid / bordered。
+            color: 默认 foreground，可用语义色。
+            size: sm / md / lg。
+            radius: 容器圆角档位。
+            underline: 默认下划线模式。
+            separator: 全局分隔符（widget 或文本）。
+            max_items: 触发折叠的最少项数，下限 2。
+            items_before_collapse: 折叠后保留的前段项数。
+            items_after_collapse: 折叠后保留的后段项数。
+            hide_separator: 全局隐藏分隔符。
+            is_disabled: 全局禁用（末项除外）。
+            disable_animation: 关闭动画（当前版本未消费）。
+            render_ellipsis: 自定义省略号工厂 fn(collapsed_items) -> QWidget。
+            on_action: 点击回调 fn(key)。
+            theme: 主题名；auto 时跟随 ThemeProvider。
+            parent: Qt 父对象。
+
+        Note:
+            非法 variant / color / size / radius / underline 静默回退默认。
+        """
         super().__init__(parent)
         self.setObjectName("HeroBreadcrumbs")
 
@@ -390,7 +519,14 @@ class Breadcrumbs(QWidget):
     # ---- 构建 ----
 
     def _separator_widget(self, item: BreadcrumbItem) -> QWidget | None:
-        """项分隔符：item 级 > 全局级 > 默认 chevron。"""
+        """解析项前分隔符：item 级 > 全局级 > 默认 chevron。
+
+        Args:
+            item: 目标项（分隔符画在其之前）。
+
+        Returns:
+            分隔符 widget；hide_separator 或首项时为 None。
+        """
         if item.hide_separator:
             return None
         sep = item.separator if item.separator is not None else self._separator
@@ -404,6 +540,17 @@ class Breadcrumbs(QWidget):
         return _Chevron(color)
 
     def _crumb_for(self, item: BreadcrumbItem) -> _Crumb:
+        """为项构建 _Crumb 并接入 pressed 处理。
+
+        Args:
+            item: 目标项。
+
+        Returns:
+            已连接信号的 _Crumb 实例。
+
+        Note:
+            项级 underline 缺省继承全局（官方 itemProps 下发 color/underline/size）。
+        """
         # 项级 underline 缺省继承全局（官方 itemProps 下发 color/underline/size）
         if item.underline is None:
             item.underline = self._underline
@@ -515,6 +662,16 @@ class Breadcrumbs(QWidget):
                 self._list_lay.addWidget(self._crumb_for(item))
 
     def _on_item_pressed(self, item: BreadcrumbItem, crumb: _Crumb | None = None):
+        """处理项点击：转移 focus 下划线并触发回调与信号。
+
+        Args:
+            item: 被点击项。
+            crumb: 对应的可视 _Crumb，省略号点击时为 None。
+
+        Note:
+            underline="focus" 按单选语义转移持久标记；
+            依次触发 on_press 回调、action_triggered、item_pressed。
+        """
         # underline="focus"：点击转移持久下划线标记（单选）
         if crumb is not None:
             for c in self._crumbs:
@@ -530,31 +687,68 @@ class Breadcrumbs(QWidget):
     # ---- 公共 API ----
 
     def set_items(self, items: list[BreadcrumbItem]):
-        """替换整条面包屑。"""
+        """替换整条面包屑并重建。
+
+        Args:
+            items: 新的 BreadcrumbItem 列表。
+        """
         self._items = list(items)
         self._rebuild()
 
     def set_separator(self, separator: QWidget | str | None):
+        """替换全局分隔符并重建。
+
+        Args:
+            separator: 分隔符 widget、文本或 None（恢复默认 chevron）。
+        """
         self._separator = separator
         self._rebuild()
 
     def set_variant(self, variant: str):
+        """切换容器变体并重建。
+
+        Args:
+            variant: light / solid / bordered；非法值回退 light。
+        """
         self._variant = variant if variant in VALID_BREADCRUMBS_VARIANTS else "light"
         self._rebuild()
 
     def set_color(self, color: str):
+        """切换列表级默认色并重建。
+
+        Args:
+            color: 语义色名或 foreground；非法值回退 foreground。
+        """
         self._color = color if color in VALID_BREADCRUMBS_COLORS else "foreground"
         self._rebuild()
 
     def set_size(self, size: str):
+        """切换尺寸档位并重建。
+
+        Args:
+            size: sm / md / lg；非法值回退 md。
+        """
         self._size = size if size in VALID_BREADCRUMBS_SIZES else "md"
         self._rebuild()
 
     def set_disabled(self, disabled: bool):
+        """切换全局禁用并重建（末项仍保持当前态）。
+
+        Args:
+            disabled: True 表示除末项外全部禁用。
+        """
         self._is_disabled = bool(disabled)
         self._rebuild()
 
     def set_theme(self, theme: str):
+        """切换主题并维护 ThemeProvider 注册状态。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            从 auto 切回固定主题时先 unregister，避免广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = ThemeProvider.instance().current_theme
@@ -567,8 +761,17 @@ class Breadcrumbs(QWidget):
         self._rebuild()
 
     def _apply_provider_theme(self, theme: str):
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，只重建配色。
+        """
         self._theme = theme
         self._rebuild()
 
     def _apply_styles(self):
+        """兼容入口：整体重建即样式刷新。"""
         self._rebuild()

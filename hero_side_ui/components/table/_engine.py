@@ -1,31 +1,7 @@
-"""Table 行渲染引擎：行复用 + 虚拟化。
+"""Table 行渲染引擎：行槽池承载行复用与虚拟化。
 
-把"数据行"的装配从 Table 主体里抽出来，统一用一个**行槽池（slot pool）**承载，
-解决两类性能问题：
-
-行复用（默认，非虚拟化）
-    翻页 / 换数据时不再销毁重建所有单元格，而是复用已有的行槽：
-    cell 走 ``update_content`` 原地改文本、``rebind_row`` 改归属 key，多退少补。
-
-虚拟化（is_virtualized=True，需配合 max_height 滚动）
-    只为"可视区 + 缓冲"创建固定数量的行槽，固定占据 grid 的连续行；
-    上下各放一个 spacer 行用 ``setRowMinimumHeight`` 撑出滚动总高。
-    滚动时只改两个 spacer 高度 + 重填固定行槽内容，行槽本身不挪位、不增减。
-    代价：要求**行高统一**（取 token row_min_height），自定义高行内容会被按统一高度排布。
-
-行槽在 grid 中的布局::
-
-    grid row 0                 : 表头（由 Table 主体管理，不属本引擎）
-    grid row 1                 : 顶部 spacer（仅虚拟化用，非虚拟化高度 0）
-    grid row 2 .. 2+N-1        : N 个数据行槽（N=可视行数或全部行数）
-    grid row 2+N               : 底部 spacer（仅虚拟化用）
-
-宿主 Table 需提供：
-    _columns / _selection_mode / _render_cell / _row_order / _row_data /
-    _selected_keys / _disabled_keys / _color / _size / _theme / _radius /
-    _is_striped / _is_compact / _disable_animation / _grid / _grid_host /
-    _on_cell_hover / _on_row_clicked / _on_checkbox_clicked / _checkbox_holder /
-    _make_cell_content
+非虚拟化翻页原地改写复用行槽；虚拟化只为可视区+缓冲建固定槽，上下
+spacer 撑滚动总高，代价是行高统一。宿主需提供 _columns/_grid 等字段。
 """
 
 from __future__ import annotations
@@ -43,6 +19,7 @@ class _RowSlot:
     __slots__ = ("cells", "checkbox", "checkbox_holder", "grid_row", "row_key")
 
     def __init__(self):
+        """创建空行槽，初始化 checkbox 与各列 cell 容器。"""
         self.checkbox: Checkbox | None = None
         self.checkbox_holder: QWidget | None = None
         self.cells: dict[str, _TableCell] = {}
@@ -54,6 +31,11 @@ class _RowRenderer:
     """数据行渲染引擎，owner 为 Table。"""
 
     def __init__(self, owner):
+        """绑定 Table 持有者并初始化行槽池。
+
+        Args:
+            owner: 提供 _columns、_grid 等字段的 Table 实例。
+        """
         self.owner = owner
         self._pool: list[_RowSlot] = []
         self._structure_sig = None  # 列 + 是否多选 的结构签名
@@ -68,6 +50,7 @@ class _RowRenderer:
     # 结构管理
     # ------------------------------------------------------------
     def _structure_signature(self):
+        """返回列定义与多选模式组成的结构签名。"""
         return (
             tuple((c["key"], c["align"]) for c in self.owner._columns),
             self.owner._selection_mode == "multiple",
@@ -93,12 +76,21 @@ class _RowRenderer:
 
     @staticmethod
     def _slot_widgets(slot: _RowSlot):
+        """返回行槽中所有需要挂到网格的 widget。
+
+        Args:
+            slot: 目标行槽。
+
+        Returns:
+            各列 cell 与可选 checkbox holder 组成的列表。
+        """
         ws = list(slot.cells.values())
         if slot.checkbox_holder is not None:
             ws.append(slot.checkbox_holder)
         return ws
 
     def _ensure_structure(self):
+        """结构签名变化时销毁旧行槽并重建结构标记。"""
         sig = self._structure_signature()
         if sig != self._structure_sig:
             self.reset()
@@ -110,6 +102,17 @@ class _RowRenderer:
     # 行槽创建 / 定位
     # ------------------------------------------------------------
     def _create_slot(self, slot_index: int) -> _RowSlot:
+        """按槽位下标新建一个行槽并挂入网格。
+
+        Args:
+            slot_index: 槽位下标，用于计算网格行号。
+
+        Returns:
+            新建并加入池的 _RowSlot。
+
+        Note:
+            checkbox 必须带 parent=grid_host，否则无父 widget 会瞬间变顶层窗口。
+        """
         owner = self.owner
         grid = owner._grid
         slot = _RowSlot()
@@ -184,6 +187,14 @@ class _RowRenderer:
         self._publish_maps(keys, rendered_indices)
 
     def _fill_slot(self, slot: _RowSlot, row_key: str, *, abs_index: int, total: int):
+        """把一行数据填入指定行槽并刷新各单元格状态。
+
+        Args:
+            slot: 目标行槽。
+            row_key: 行 key。
+            abs_index: 该行在全量数据中的绝对下标。
+            total: 全量数据总行数。
+        """
         owner = self.owner
         slot.row_key = row_key
         is_multi = owner._selection_mode == "multiple"
@@ -216,15 +227,27 @@ class _RowRenderer:
             slot.checkbox.setEnabled(row_key not in owner._disabled_keys)
 
     def _show_slot(self, slot: _RowSlot, visible: bool):
+        """显示或隐藏行槽中的全部 widget。
+
+        Args:
+            slot: 目标行槽。
+            visible: 是否可见；隐藏时清空 row_key。
+        """
         if not visible:
             slot.row_key = None
         for w in self._slot_widgets(slot):
             w.setVisible(visible)
 
     def _publish_maps(self, keys, rendered_indices):
-        """把当前已渲染行的 cell / checkbox 暴露到 owner._cells / _row_checkboxes，
-        让 owner 的 _apply_row_states / _propagate_style 等沿用原逻辑。
-        只纳入仍持有 row_key 的行槽（隐藏槽 row_key 已被清空）。"""
+        """把已渲染行的 cell 与 checkbox 发布到 owner 的映射表。
+
+        Args:
+            keys: 当前行 key 序列，本实现不读取。
+            rendered_indices: 已渲染行的绝对下标序列，本实现不读取。
+
+        Note:
+            映射仅取自仍持有 row_key 的行槽，隐藏槽的 row_key 已被清空。
+        """
         owner = self.owner
         cells: dict[str, dict] = {}
         cbs: dict[str, Checkbox] = {}
@@ -241,6 +264,14 @@ class _RowRenderer:
     # spacer（仅虚拟化时撑滚动总高）
     # ------------------------------------------------------------
     def _make_spacer(self, grid_row: int) -> QWidget:
+        """在指定网格行创建跨列的透明 spacer。
+
+        Args:
+            grid_row: 网格行号。
+
+        Returns:
+            新建的 spacer QWidget。
+        """
         sp = QWidget(self.owner._grid_host)
         sp.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         span = max(1, len(self.owner._columns) + self._col_offset)
@@ -248,6 +279,15 @@ class _RowRenderer:
         return sp
 
     def _set_spacers(self, top_h: int, bottom_h: int):
+        """按上下留白高度设置虚拟化 spacer 的尺寸与可见性。
+
+        Args:
+            top_h: 顶部留白高度。
+            bottom_h: 底部留白高度。
+
+        Note:
+            上下高度都为 0 且尚未建 spacer 时直接返回，避免非虚拟化场景产生开销。
+        """
         # 非虚拟化（top/bottom 都 0）且从未建 spacer → 不创建，省开销
         if top_h <= 0 and bottom_h <= 0 and self._top_spacer is None:
             return

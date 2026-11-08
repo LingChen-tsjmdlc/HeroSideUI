@@ -1,31 +1,7 @@
-"""
-HeroSideUI Checkbox Component
-基于 HeroUI v2 设计风格，保持 PySide 原生 API
+"""Checkbox 组件：HeroUI v2 风格复选框，paintEvent 全自绘。
 
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/checkbox.ts
-
-结构:
-    Checkbox (继承 QCheckBox)
-        ├── 自绘 box (before: 边框 / after: 填充背景)
-        ├── QSvgRenderer 绘制 check icon
-        └── 原生 QCheckBox 文字 label (paintEvent 自己画以支持 line-through)
-
-特性对齐 HeroUI:
-    - 6 种颜色 (default / primary / secondary / success / warning / danger)
-    - 3 种尺寸 (sm / md / lg)
-    - 5 种圆角 (none / sm / md / lg / full)
-    - lineThrough：选中时 label 文字加下划线（从 0 扩展到 100%），label 透明度 0.6
-    - isDisabled / isInvalid / isIndeterminate
-    - disableAnimation
-    - 主题: light / dark
-    - 按压缩放 (scale-95) + after 填充从 scale 0.5 → 1、opacity 0 → 1 过渡
-
-CheckboxGroup:
-    - label / description / errorMessage
-    - orientation (horizontal / vertical)
-    - 统一 color / size / radius / theme 应用到子 Checkbox
-    - is_required / is_invalid
-    - value / default_value (选中的 checkbox value 列表)
+文件同时提供 CheckboxGroup（label/description/errorMessage、方向排布、
+组级样式下发与 value 聚合）。
 """
 
 from PySide6.QtCore import (
@@ -71,6 +47,15 @@ _MINUS_SVG = (
 
 
 def _render_icon_svg(svg_tpl: str, color: QColor) -> QSvgRenderer:
+    """把 SVG 模板里的 currentColor 替换成实际颜色并构造渲染器。
+
+    Args:
+        svg_tpl: 含 currentColor 占位符的 SVG 文本。
+        color: 要替换进去的 QColor。
+
+    Returns:
+        可直接 render 到 QPainter 的 QSvgRenderer。
+    """
     data = svg_tpl.replace("currentColor", color.name())
     return QSvgRenderer(QByteArray(data.encode("utf-8")))
 
@@ -79,24 +64,21 @@ def _render_icon_svg(svg_tpl: str, color: QColor) -> QSvgRenderer:
 # Checkbox
 # ============================================================
 class Checkbox(QCheckBox):
-    """HeroUI 风格的 Checkbox 组件
+    """HeroUI 风格 Checkbox，继承 QCheckBox 保留原生信号。
 
-    继承 QCheckBox，保留原生 API (stateChanged / toggled / setChecked / isChecked)。
-    外观由 paintEvent 全自绘（忽略系统风格），以完美对齐 HeroUI。
-
-    参数:
-        text: label 文字（可为空）
-        is_selected: 初始选中状态 (映射到 QCheckBox.checked)
-        color: default / primary / secondary / success / warning / danger
-        size: sm / md / lg
-        radius: none / sm / md / lg / full（None = 跟随 size 默认）
-        line_through: 选中时给 label 加下划线
-        is_disabled: 禁用
-        is_invalid: 无效态 (边框变红)
-        is_indeterminate: 未定态 (填充 minus 图标)
-        disable_animation: 禁用动画
-        theme: light / dark
-        value: 在 CheckboxGroup 中标识该 checkbox 的值
+    Args:
+        text: label 文字。
+        is_selected: 初始选中。
+        color: 语义色，默认 primary。
+        size: sm/md/lg。
+        radius: 圆角；None 跟随 size。
+        line_through: 选中时 label 加删除线。
+        is_disabled: 禁用。
+        is_invalid: 无效态（边框变红）。
+        is_indeterminate: 未定态（minus 图标）。
+        disable_animation: 关闭动画。
+        theme: light/dark/auto。
+        value: 在 CheckboxGroup 中的标识值。
     """
 
     def __init__(
@@ -115,6 +97,27 @@ class Checkbox(QCheckBox):
         value: str | None = None,
         parent: QWidget | None = None,
     ):
+        """创建复选框并接管外观自绘。
+
+        Args:
+            text: label 文字。
+            is_selected: 初始选中。
+            color: 语义色，默认 primary。
+            size: sm / md / lg。
+            radius: 圆角；None 跟随默认 md。
+            line_through: 选中时 label 加删除线。
+            is_disabled: 禁用。
+            is_invalid: 无效态（边框变红）。
+            is_indeterminate: 未定态（minus 图标）。
+            disable_animation: 关闭全部补间动画。
+            theme: light / dark / auto。
+            value: 在 CheckboxGroup 中的标识值；None 时用 text。
+            parent: Qt 父对象。
+
+        Note:
+            保留 QCheckBox 原生信号，stateChanged 驱动填充与对勾动画；
+            样式用空 QSS 让 paintEvent 完全接管外观。
+        """
         super().__init__(text, parent)
 
         self._color = color
@@ -176,36 +179,76 @@ class Checkbox(QCheckBox):
     # Qt 属性（供 QPropertyAnimation 驱动）
     # ============================================================
     def _get_fill(self) -> float:
+        """Property getter：填充进度。
+
+        Returns:
+            0.0 未选中、1.0 完全选中。
+        """
         return self._fill_progress
 
     def _set_fill(self, v: float):
+        """Property setter：写入填充进度并重绘。
+
+        Args:
+            v: 新进度，由 tween 每帧调用。
+        """
         self._fill_progress = v
         self.update()
 
     fill_progress = Property(float, _get_fill, _set_fill)
 
     def _get_line(self) -> float:
+        """Property getter：删除线展开进度。
+
+        Returns:
+            0.0 无线、1.0 全长。
+        """
         return self._line_progress
 
     def _set_line(self, v: float):
+        """Property setter：写入删除线进度并重绘。
+
+        Args:
+            v: 新进度，由 tween 每帧调用。
+        """
         self._line_progress = v
         self.update()
 
     line_progress = Property(float, _get_line, _set_line)
 
     def _get_press(self) -> float:
+        """Property getter：按压缩放进度。
+
+        Returns:
+            0.0 原始尺寸、1.0 缩到 0.95。
+        """
         return self._press_progress
 
     def _set_press(self, v: float):
+        """Property setter：写入按压进度并重绘。
+
+        Args:
+            v: 新进度，由 tween 每帧调用。
+        """
         self._press_progress = v
         self.update()
 
     press_progress = Property(float, _get_press, _set_press)
 
     def _get_check_draw(self) -> float:
+        """Property getter：对勾描绘进度。
+
+        Returns:
+            动画对象当前的 progress。
+        """
         return self._check_anim.progress
 
     def _set_check_draw(self, value: float):
+        """Property setter：驱动对勾动画进度。
+
+        Args:
+            value: 新的进度值。
+        """
         self._check_anim.progress = value
 
     check_draw = Property(float, _get_check_draw, _set_check_draw)
@@ -214,6 +257,14 @@ class Checkbox(QCheckBox):
     # 状态变化 / 动画
     # ============================================================
     def _on_state_changed(self, state):
+        """状态变化回调：同步填充、对勾与删除线三条动画。
+
+        Args:
+            state: Qt stateChanged 的整数状态（未直接使用，改用 isChecked）。
+
+        Note:
+            indeterminate 或禁用动画时，对勾走 set_immediate 直达终态。
+        """
         checked = self.isChecked()
         tween_property(
             self,
@@ -241,21 +292,41 @@ class Checkbox(QCheckBox):
     # 按压缩放
     # ============================================================
     def mousePressEvent(self, event):
+        """鼠标按下：启用且未禁用动画时播放缩放。
+
+        Args:
+            event: Qt 鼠标按下事件。
+        """
         if self.isEnabled() and not self._disable_animation:
             tween_property(self, "_press_anim", b"press_progress", 1.0, duration=80)
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """鼠标释放：恢复按压缩放。
+
+        Args:
+            event: Qt 鼠标释放事件。
+        """
         if self.isEnabled() and not self._disable_animation:
             tween_property(self, "_press_anim", b"press_progress", 0.0, duration=150)
         super().mouseReleaseEvent(event)
 
     def enterEvent(self, event):
+        """鼠标进入：置 hover 位并重绘。
+
+        Args:
+            event: Qt 进入事件。
+        """
         self._hover = True
         self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """鼠标离开：清 hover 位并重绘。
+
+        Args:
+            event: Qt 离开事件。
+        """
         self._hover = False
         self.update()
         super().leaveEvent(event)
@@ -264,9 +335,19 @@ class Checkbox(QCheckBox):
     # 几何计算 (基于 size)
     # ============================================================
     def _size_config(self) -> dict:
+        """取当前尺寸档位的配置。
+
+        Returns:
+            CHECKBOX_SIZES 中的配置字典；非法档位回退 md。
+        """
         return CHECKBOX_SIZES.get(self._size, CHECKBOX_SIZES["md"])
 
     def _refresh_geometry(self):
+        """按字体与文本重算最小尺寸并通知布局。
+
+        Note:
+            外围留 2px padding 作为 HeroUI 的 p-2 tap 热区。
+        """
         cfg = self._size_config()
         from ...core import make_text_qfont
 
@@ -285,10 +366,21 @@ class Checkbox(QCheckBox):
         self.updateGeometry()
 
     def setText(self, text: str):
+        """覆写 setText：文本变化后重算最小尺寸。
+
+        Args:
+            text: 新 label 文本。
+        """
         super().setText(text)
         self._refresh_geometry()
 
     def sizeHint(self) -> QSize:
+        """返回容纳 box + 间距 + 文本的推荐尺寸。
+
+        Returns:
+            宽度 = box + gap + 文字宽 + 4px padding，
+            高度 = max(box, 文字行高) + 4px padding。
+        """
         cfg = self._size_config()
         fm = QFontMetrics(self.font())
         text_w = fm.horizontalAdvance(self.text())
@@ -301,8 +393,13 @@ class Checkbox(QCheckBox):
     # 色彩决策
     # ============================================================
     def _palette(self):
-        """返回 (border_color, fill_color, icon_color, label_color,
-        hover_bg_color, disabled_opacity)"""
+        """按主题、语义色与状态解析全部绘制颜色。
+
+        Returns:
+            (border_color, fill_color, icon_color, label_color,
+            hover_bg_color) 五元组；invalid 态边框与文字改 danger 色，
+            default / warning 各有专门的填充与图标对比色。
+        """
         is_dark = self._theme == "dark"
         dc = HEROUI_COLORS["default"]
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
@@ -349,6 +446,15 @@ class Checkbox(QCheckBox):
     # 圆角计算
     # ============================================================
     def _resolve_box_radius(self, box_size: int) -> float:
+        """解析方框圆角像素值。
+
+        Args:
+            box_size: 方框边长。
+
+        Returns:
+            None 档默认 8px；full 为边长一半；none 为 0；
+            sm/md/lg 分别 4/8/14，未知档回退 8。
+        """
         if self._radius is None:
             # 默认 md = 8px
             return float(RADIUS["md"].replace("px", ""))
@@ -363,6 +469,16 @@ class Checkbox(QCheckBox):
     # paintEvent — 完整自绘
     # ============================================================
     def paintEvent(self, event):
+        """完整自绘：hover 底 → 边框 → 选中填充 → 图标 → 文字 → 删除线 → 蒙层。
+
+        Args:
+            event: Qt 绘制事件。
+
+        Note:
+            按压缩放围绕 box 中心做整体 scale；填充用 scale 0.5→1
+            叠加 opacity 淡入；indeterminate 恒画满并改用 minus 图标；
+            对勾描绘复用 animation/check_draw.paint_animated_check。
+        """
         cfg = self._size_config()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -532,19 +648,42 @@ class Checkbox(QCheckBox):
     # 公共 API (运行时切换)
     # ============================================================
     def set_color(self, color: str):
+        """切换语义色并重绘。
+
+        Args:
+            color: 语义色名。
+        """
         self._color = color
         self.update()
 
     def set_size(self, size: str):
+        """切换尺寸档位并重算几何。
+
+        Args:
+            size: sm / md / lg。
+        """
         self._size = size
         self._refresh_geometry()
         self.update()
 
     def set_radius(self, radius: str | None):
+        """切换圆角档位并重绘。
+
+        Args:
+            radius: 圆角档位；None 恢复默认。
+        """
         self._radius = radius
         self.update()
 
     def set_theme(self, theme: str):
+        """切换主题，并维护 ThemeProvider 注册状态。
+
+        Args:
+            theme: auto / light / dark。
+
+        Note:
+            从 auto 切回固定主题时先 unregister，避免广播覆盖设定。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -557,17 +696,37 @@ class Checkbox(QCheckBox):
         self.update()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用"""
+        """接收 ThemeProvider 的主题变更广播。
+
+        Args:
+            theme: 变更后的主题名。
+
+        Note:
+            广播入口不重新 register/unregister，也不改 _theme_mode。
+        """
         self._theme = theme
         self.update()
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析成实际主题名。
+
+        Args:
+            mode: light / dark / auto。
+
+        Returns:
+            light / dark 原样返回；其余取 ThemeProvider 当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
 
     def set_line_through(self, enabled: bool):
+        """切换选中文字删除线（无动画直达目标态）。
+
+        Args:
+            enabled: True 且当前已选中时展开删除线。
+        """
         self._line_through = enabled
         tween_property(
             self,
@@ -578,36 +737,73 @@ class Checkbox(QCheckBox):
         )
 
     def set_is_disabled(self, disabled: bool):
+        """切换禁用态并同步 Qt 启用状态。
+
+        Args:
+            disabled: True 表示禁用。
+        """
         self._is_disabled = disabled
         self.setEnabled(not disabled)
         self.update()
 
     def set_is_invalid(self, invalid: bool):
+        """切换无效态（红边框与红文字）。
+
+        Args:
+            invalid: True 表示无效。
+        """
         self._is_invalid = invalid
         self.update()
 
     def set_is_indeterminate(self, indeterminate: bool):
+        """切换未定态（minus 图标、恒满填充）。
+
+        Args:
+            indeterminate: True 表示未定态。
+        """
         self._is_indeterminate = indeterminate
         self._check_anim.set_immediate(self.isChecked() and not indeterminate)
         self.update()
 
     def set_disable_animation(self, disable: bool):
+        """切换动画开关，并立即把状态对齐到终态。
+
+        Args:
+            disable: True 关闭动画；关闭时重置 on_state_changed 与按压进度。
+        """
         self._disable_animation = disable
         if disable:
             self._on_state_changed(None)
             tween_property(self, "_press_anim", b"press_progress", 0.0, duration=0)
 
     def is_selected(self) -> bool:
-        """别名: isChecked()"""
+        """别名：isChecked()。
+
+        Returns:
+            当前勾选状态。
+        """
         return self.isChecked()
 
     def set_is_selected(self, selected: bool):
-        """别名: setChecked()"""
+        """别名：setChecked()。
+
+        Args:
+            selected: 目标勾选状态。
+        """
         self.setChecked(selected)
 
     def value(self) -> str:
-        """在 CheckboxGroup 中使用的值标识"""
+        """在 CheckboxGroup 中使用的值标识。
+
+        Returns:
+            构造时的 value；未指定时为 label 文本。
+        """
         return self._value
 
     def set_value(self, value: str):
+        """更新值标识。
+
+        Args:
+            value: 新的 value 字符串。
+        """
         self._value = value

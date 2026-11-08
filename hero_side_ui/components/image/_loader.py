@@ -1,12 +1,5 @@
-"""Image 组件统一图源加载器。
-
-支持三种 src：
-- str（http/https URL）→ QNetworkAccessManager 异步下载（全局节流 1.0–1.5s）
-- str（本地路径 / Qt 资源路径）→ QPixmap 直接加载
-- QPixmap / QImage → 直接发出 loaded 信号
-
-对外提供 status：pending / loading / loaded / failed，以及 loaded(pixmap) /
-failed() 两个信号。和 HeroUI use-image 行为对齐。
+"""Image 统一图源加载器：URL 异步（全局节流）/本地路径/QPixmap 三种 src。
+对外 status 四态与 loaded/failed 信号，对齐 HeroUI use-image。
 """
 
 from __future__ import annotations
@@ -30,21 +23,23 @@ _URL_THROTTLE_MAX_MS = 1500
 
 
 class _UrlRequestQueue(QObject):
-    """全局远程 URL 请求节流队列。
-
-    所有 ImageLoader 实例的 http(s) 请求都串行通过这里，相邻两次
-    实际发起请求的时间间隔随机 1000–1500ms。
-    """
+    """全局远程请求节流队列：http(s) 串行发起，相邻间隔随机 1000–1500ms。"""
 
     _instance: _UrlRequestQueue | None = None
 
     @classmethod
     def instance(cls) -> _UrlRequestQueue:
+        """取全局单例节流队列。
+
+        Returns:
+            唯一的 _UrlRequestQueue 实例。
+        """
         if cls._instance is None:
             cls._instance = _UrlRequestQueue()
         return cls._instance
 
     def __init__(self):
+        """初始化空队列、单次计时器与冷却标记。"""
         super().__init__()
         # 队列条目: (token, callable) —— callable 真正发起 NAM.get
         self._queue: deque[tuple[object, Callable[[], None]]] = deque()
@@ -56,6 +51,12 @@ class _UrlRequestQueue(QObject):
 
     # 提交一个请求；token 可用于后续 cancel
     def enqueue(self, token: object, fire: Callable[[], None]):
+        """提交一个远程请求，未在冷却中则立即派发。
+
+        Args:
+            token: 用于后续 cancel 的唯一标识。
+            fire: 真正发起 NAM.get 的可调用对象。
+        """
         self._queue.append((token, fire))
         if not self._cooling:
             # 队列空闲：立即处理
@@ -63,9 +64,22 @@ class _UrlRequestQueue(QObject):
 
     # 取消尚未发出的请求（已 dispatch 过的不影响）
     def cancel(self, token: object):
+        """取消仍未发出的请求。
+
+        Args:
+            token: 入队时提供的标识。
+
+        Note:
+            已 dispatch 过的请求不受影响，需由 ImageLoader._cancel 走 abort。
+        """
         self._queue = deque((t, f) for (t, f) in self._queue if t is not token)
 
     def _dispatch_next(self):
+        """派发队首请求并进入随机 1000–1500ms 冷却。
+
+        Note:
+            单条请求异常被吞掉，不能阻塞整条队列。
+        """
         if not self._queue:
             self._cooling = False
             return
@@ -81,6 +95,7 @@ class _UrlRequestQueue(QObject):
         self._timer.start(delay)
 
     def _on_tick(self):
+        """冷却结束：继续派发或清除冷却标记。"""
         if self._queue:
             self._dispatch_next()
         else:
@@ -97,6 +112,11 @@ class ImageLoader(QObject):
     _shared_nam: QNetworkAccessManager | None = None
 
     def __init__(self, parent: QObject | None = None):
+        """创建加载器，初始状态为 pending。
+
+        Args:
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._status: str = "pending"
         self._reply: QNetworkReply | None = None
@@ -106,16 +126,34 @@ class ImageLoader(QObject):
 
     @classmethod
     def _nam(cls) -> QNetworkAccessManager:
+        """取共享的 QNetworkAccessManager。
+
+        Returns:
+            全局唯一实例，避免每次请求新建。
+        """
         if cls._shared_nam is None:
             cls._shared_nam = QNetworkAccessManager()
         return cls._shared_nam
 
     @property
     def status(self) -> str:
+        """返回当前加载状态。
+
+        Returns:
+            pending / loading / loaded / failed。
+        """
         return self._status
 
     def load(self, src: ImageSrc):
-        """启动加载。"""
+        """启动加载，先取消上一次请求。
+
+        Args:
+            src: 图源，可为 QPixmap / QImage / URL / 本地路径 / None。
+
+        Note:
+            已是图像对象时异步一帧发 loaded；http(s) 走全局节流队列；
+            未知类型发 failed。
+        """
         self._cancel()
         self._current_src = src
 
@@ -151,6 +189,11 @@ class ImageLoader(QObject):
     # 本地 / Qt 资源
     # ============================================================
     def _load_local(self, path: str):
+        """同步读本地路径或 Qt 资源，异步一帧发结果。
+
+        Args:
+            path: 本地文件路径或 Qt 资源路径。
+        """
         self._status = "loading"
         pm = QPixmap(path)
         if pm.isNull():
@@ -165,6 +208,15 @@ class ImageLoader(QObject):
     # 远程 URL（走全局节流队列）
     # ============================================================
     def _enqueue_url(self, url: str):
+        """把远程请求放进全局节流队列。
+
+        Args:
+            url: http(s) 图片地址。
+
+        Note:
+            用唯一 token 标识，出队回调会校验 token，
+            loader 已被 _cancel 时直接丢弃。
+        """
         self._status = "loading"
         token = object()  # 唯一标识本次请求
         self._pending_token = token
@@ -179,6 +231,15 @@ class ImageLoader(QObject):
         _UrlRequestQueue.instance().enqueue(token, _fire)
 
     def _do_load_url(self, url: str):
+        """真正发起 NAM.get。
+
+        Args:
+            url: 图片地址。
+
+        Note:
+            允许 NoLessSafe 重定向（如 uapis.cn 会 302 到目标图），
+            并加简单 UA 避免部分服务端拒绝。
+        """
         req = QNetworkRequest(QUrl(url))
         # 允许重定向（uapis.cn 实际会 302 到目标图）
         req.setAttribute(
@@ -193,6 +254,12 @@ class ImageLoader(QObject):
         reply.finished.connect(self._on_reply_finished)
 
     def _on_reply_finished(self):
+        """网络回复完成：解析图片或发 failed，并清理 reply。
+
+        Note:
+            HTTP 错误、响应体不是有效图像都记 warning 后发 failed；
+            无论成功与否都在 finally 里 deleteLater 并清空 _reply。
+        """
         reply = self._reply
         if reply is None:
             return
@@ -223,6 +290,7 @@ class ImageLoader(QObject):
 
     # ============================================================
     def _cancel(self):
+        """取消当前加载：已发请求 abort、排队请求出队，状态回 pending。"""
         # 1) 已发出的请求：abort
         if self._reply is not None:
             try:

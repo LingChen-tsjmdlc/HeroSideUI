@@ -1,10 +1,4 @@
-"""Card 组件主题预设。
-
-对齐 HeroUI v2 的 Card 规范:
-  - header/body/footer 的 padding 均为 p-3 (12px) —— 写死在组件里，不再暴露 size prop
-  - shadow: none/sm/md/lg
-  - radius: none/sm/md/lg (默认 lg)
-"""
+"""Card 预设：padding 固定 12px、shadow 四档、radius 四档（默认 lg）。"""
 
 # Card 阴影配置: 对齐 HeroUI shadow-small / shadow-medium / shadow-large
 CARD_SHADOWS = {

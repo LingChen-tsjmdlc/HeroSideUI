@@ -1,14 +1,4 @@
-"""Table 列头单元格（自绘）。
-
-对齐 HeroUI v2 table.ts 的 ``th`` slot：
-  - bg-default-100，首列左圆角、尾列右圆角（rounded-s-lg / rounded-e-lg）
-  - text-tiny font-semibold text-foreground-500，hover 时 foreground-400
-  - data-[sortable=true] 可排序：hover 显示排序箭头；激活列箭头常显，
-    descending 旋转 180°（chevron-down 默认指向 ascending? HeroUI: 默认 down，
-    ascending 时 rotate-180 → 朝上）
-
-排序箭头用 chevron-down SVG 渲染到一个包内私有 QLabel（铁律 9 例外：纯图形）。
-"""
+"""Table 列头单元格：bg-default-100 + 可排序箭头（三状态循环旋转）。"""
 
 from __future__ import annotations
 
@@ -27,6 +17,11 @@ class _SortIcon(QLabel):
     """排序箭头（纯图形 QLabel，铁律 9 例外）。"""
 
     def __init__(self, parent=None):
+        """创建排序箭头并初始化尺寸、颜色与状态。
+
+        Args:
+            parent: 父级 QWidget。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._size = 14
@@ -35,6 +30,14 @@ class _SortIcon(QLabel):
         self._visible_icon = False
 
     def configure(self, *, size: int, color: QColor, descending: bool, visible: bool):
+        """设置箭头的外观与显隐并重新绘制。
+
+        Args:
+            size: 图标边长。
+            color: 图标颜色。
+            descending: 是否降序，降序时箭头朝下。
+            visible: 是否显示图标。
+        """
         self._size = size
         self._color = color
         self._descending = descending
@@ -42,6 +45,7 @@ class _SortIcon(QLabel):
         self._render()
 
     def _render(self):
+        """按当前状态绘制或清空箭头图标。"""
         if not self._visible_icon:
             self.clear()
             self.setFixedSize(self._size, self._size)
@@ -72,6 +76,18 @@ class _TableColumnHeader(QWidget):
         allows_sorting: bool = False,
         parent=None,
     ):
+        """创建列头单元格并装入标题与排序箭头。
+
+        Args:
+            key: 列 key。
+            label: 列标题文字。
+            align: 内容对齐方式。
+            allows_sorting: 是否允许排序。
+            parent: 父级 QWidget。
+
+        Note:
+            align 非法值回退到 start。
+        """
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
@@ -115,9 +131,11 @@ class _TableColumnHeader(QWidget):
             self.setCursor(Qt.CursorShape.PointingHandCursor)
 
     def key(self) -> str:
+        """返回列 key。"""
         return self._key
 
     def allows_sorting(self) -> bool:
+        """返回该列是否允许排序。"""
         return self._allows_sorting
 
     # ------------------------------------------------------------
@@ -132,6 +150,17 @@ class _TableColumnHeader(QWidget):
         is_last_col: bool,
         hide_header: bool,
     ):
+        """注入样式维度并刷新尺寸、标题与箭头。
+
+        Args:
+            color: 语义色。
+            size: 尺寸档位。
+            theme: 主题名。
+            radius: 圆角档位。
+            is_first_col: 是否首列。
+            is_last_col: 是否末列。
+            hide_header: 是否隐藏表头。
+        """
         self._color = color
         self._size = size
         self._theme = theme
@@ -163,6 +192,12 @@ class _TableColumnHeader(QWidget):
         self.update()
 
     def set_sort_state(self, *, active: bool, descending: bool):
+        """设置排序激活态与升降序并刷新外观。
+
+        Args:
+            active: 是否为当前排序列。
+            descending: 是否降序。
+        """
         self._is_sort_active = active
         self._sort_descending = descending
         self._refresh_sort_icon()
@@ -170,6 +205,7 @@ class _TableColumnHeader(QWidget):
 
     # ------------------------------------------------------------
     def _refresh_label_color(self):
+        """按悬停态刷新标题文字颜色。"""
         if self._hover and self._allows_sorting:
             c = pal.header_text_hover(self._theme)
         else:
@@ -177,6 +213,7 @@ class _TableColumnHeader(QWidget):
         self._label.set_color(c.name())
 
     def _refresh_sort_icon(self):
+        """按排序与悬停态刷新箭头图标。"""
         if not self._allows_sorting:
             self._sort_icon.setVisible(False)
             return
@@ -198,18 +235,33 @@ class _TableColumnHeader(QWidget):
 
     # ------------------------------------------------------------
     def enterEvent(self, e):
+        """进入列头时置悬停态并刷新文字与箭头。
+
+        Args:
+            e: Qt 进入事件。
+        """
         self._hover = True
         self._refresh_label_color()
         self._refresh_sort_icon()
         super().enterEvent(e)
 
     def leaveEvent(self, e):
+        """离开列头时清悬停态并刷新文字与箭头。
+
+        Args:
+            e: Qt 离开事件。
+        """
         self._hover = False
         self._refresh_label_color()
         self._refresh_sort_icon()
         super().leaveEvent(e)
 
     def mouseReleaseEvent(self, e):
+        """可排序列左键在格内释放时发出 sort_clicked。
+
+        Args:
+            e: Qt 鼠标释放事件。
+        """
         if (
             self._allows_sorting
             and e.button() == Qt.MouseButton.LeftButton
@@ -220,6 +272,14 @@ class _TableColumnHeader(QWidget):
 
     # ------------------------------------------------------------
     def paintEvent(self, e):
+        """自绘列表头背景，按首末列拼接圆角。
+
+        Args:
+            e: Qt 绘制事件，本实现不读取。
+
+        Note:
+            hide_header 时直接返回；背景块只画顶部高度，底部 header_gap 留白。
+        """
         if self._hide_header:
             return
         # 背景块只画顶部 (height - header_gap)，底部 header_gap 留白做表头与内容的间距

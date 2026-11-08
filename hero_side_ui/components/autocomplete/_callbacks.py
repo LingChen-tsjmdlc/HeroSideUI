@@ -1,9 +1,4 @@
-"""Autocomplete 内部信号处理 mixin（私有）。
-
-把 ``_on_input_changed`` / ``_on_listbox_action`` / ``_on_clear_clicked`` /
-``_on_selector_clicked`` / ``_on_popover_open_changed`` 等所有内部回调
-集中到一处，避免主组件文件被它们撑大。
-"""
+"""Autocomplete 内部信号回调 mixin：input/action/clear/popover 各回调集中处。"""
 
 from PySide6.QtCore import QTimer
 
@@ -17,6 +12,16 @@ class _AutocompleteCallbacksMixin:
     # 事件
     # ============================================================
     def _on_input_changed(self, text: str):
+        """处理输入框 textChanged。
+
+        Args:
+            text: 当前输入文本。
+
+        Note:
+            _programmatic_text 置位期间只同步 _input_value 不触发过滤；
+            用户键入会清掉 selected_key（HeroUI 行为），但 textChanged
+            重复触发且文本仍是选中项 label 时除外。
+        """
         if self._programmatic_text:
             self._input_value = text
             return
@@ -38,7 +43,16 @@ class _AutocompleteCallbacksMixin:
         self.input_changed.emit(text)
 
     def _on_listbox_action(self, key: str):
-        """用户在 listbox 点击某项。"""
+        """处理用户在 listbox 中点击某项。
+
+        Args:
+            key: 被点击项的 key。
+
+        Note:
+            选中后同步 input 文本并关闭 popover；_just_committed 守卫按
+            「事件序列」解锁——只拦截 Qt 还焦点触发的第一个 FocusIn，
+            命中即解锁，FocusIn 没来则 200ms 强制兜底解锁。
+        """
         it = self._listbox.item_by_key(key)
         if it is None:
             return
@@ -68,6 +82,10 @@ class _AutocompleteCallbacksMixin:
         QTimer.singleShot(200, lambda: setattr(self, "_just_committed", False))
 
     def _on_clear_clicked(self):
+        """处理清除按钮点击：清空选中与文本并还焦点。
+
+        对齐 HeroUI 行为：清除后重新打开 popover，焦点回到 input。
+        """
         self._selected_key = None
         self._listbox.set_selected_keys(set())
         self._programmatic_text = True
@@ -85,6 +103,12 @@ class _AutocompleteCallbacksMixin:
         QTimer.singleShot(0, self._input.line_edit.setFocus)
 
     def _on_selector_clicked(self):
+        """处理右侧 selector 按钮点击：切换 popover 并还焦点。
+
+        Note:
+            禁用态直接返回；QTimer.singleShot(0) 让焦点转移排在
+            当前点击事件处理完之后。
+        """
         if self._is_disabled:
             return
         self.toggle(trigger="manual")
@@ -92,7 +116,16 @@ class _AutocompleteCallbacksMixin:
         QTimer.singleShot(0, self._input.line_edit.setFocus)
 
     def _on_popover_open_changed(self, is_open: bool, trigger: str):
-        self._is_open = is_open
+        """同步 popover 开关态并处理图标旋转与文本回退。
+
+        Args:
+            is_open: popover 是否已打开。
+            trigger: 触发来源（input / clear / manual 等）。
+
+        Note:
+            关闭且不允许自定义值时，输入文本若不匹配任何 item.label，
+            回退到 selected_key 的 label；无选中则清空，避免游离文本。
+        """
         # popover 打开/关闭都刷一次 clear:open 时即使无 hover 也保留(键盘流),
         # close 时若 hover 也没了就该收起。
         self._refresh_clear_visibility()

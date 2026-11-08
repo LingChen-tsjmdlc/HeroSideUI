@@ -1,11 +1,5 @@
-"""主题感知的文字组件 ``Text``。完整 API / 示例见 ``docs/text.md``。
-
-本文件只负责：
-- token 解析（size / weight / color）
-- 主题广播接入 + selection 清除等 QLabel 行为调整
-- 选区调色板从 ``core.selection_palette`` 取，全项目共用
-
-"为什么这样写"的坑记在各函数内联。
+"""Text 主题感知文字组件：token 解析 + 主题广播 + 共用选区调色板。
+API 见 docs/text.md。
 """
 
 from __future__ import annotations
@@ -55,6 +49,25 @@ class Text(QLabel):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
+        """构造主题感知文字组件并初始化字体、颜色与选区样式。
+
+        Args:
+            text: 初始文本内容。
+            size: 字号 token。
+            weight: 字重 token。
+            color: 文字颜色输入。
+            transparency: 文字透明度。
+            selectable: 是否允许文本选区。
+            force_selection_text_color: 是否强制选区文字色。
+            selection_adapts_color: 选区色是否随文字色适配。
+            rich_text: 是否按富文本渲染。
+            word_wrap: 超出宽度时是否自动换行。
+            theme: 明暗主题名或 auto。
+            parent: Qt 父对象。
+
+        Note:
+            无论 theme 是否为 auto 都注册到 FontProvider，以跟随全局字体切换刷新。
+        """
         super().__init__(text, parent)
 
         # ---- 状态 ----
@@ -94,6 +107,7 @@ class Text(QLabel):
     # ============================================================
     @staticmethod
     def _clamp01(v: float) -> float:
+        """把数值夹到 0~1，非数值时回退为 1.0。"""
         try:
             v = float(v)
         except (TypeError, ValueError):
@@ -106,6 +120,14 @@ class Text(QLabel):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体的明暗主题。
+
+        Args:
+            mode: 主题模式，light / dark / auto。
+
+        Returns:
+            light 或 dark；auto 时取 ThemeProvider 的当前主题。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme
@@ -114,6 +136,12 @@ class Text(QLabel):
     # 字体
     # ============================================================
     def _apply_font(self) -> None:
+        """按 size/weight/富文本设置 QFont，输入未变时跳过重建。
+
+        Note:
+            以 size/weight/rich_text/全局 family 做幂等守卫，避免表格虚拟滚动
+            高频复用时反复重建 QFont 掉帧；富文本模式不锁 styleName。
+        """
         # FontProvider 会走 setStyleName 精确选 VF 原生 instance。
         # 富文本模式关闭 styleName 锁定，让内联 <b>/<i> 能切到 VF 对应物理档。
         # 幂等守卫：size/weight/rich_text/全局 family 均未变时跳过 QFont 重建——
@@ -130,6 +158,7 @@ class Text(QLabel):
     # 颜色 / 选区
     # ============================================================
     def _current_color(self) -> QColor:
+        """返回叠加透明度后的实际文字色。"""
         c = resolve_text_color(self._color_input, self._theme)
         # 透明度叠加
         if self._transparency < 1.0:
@@ -138,6 +167,12 @@ class Text(QLabel):
         return c
 
     def _apply_color(self) -> None:
+        """把当前文字色与选区色写入 QPalette 和 QSS。
+
+        Note:
+            QSS 颜色是创建时快照，主题切换必须重写；颜色签名未变时跳过
+            setPalette/setStyleSheet，避免表格滚动时高频样式重算。
+        """
         # 同时写 QPalette（a11y/测试读取）和 QSS（实际渲染）——
         # QSS 颜色是创建时快照，主题切换必须重写。
         # 幂等守卫：影响输出的输入维度均未变时跳过 setPalette + setStyleSheet——
@@ -181,6 +216,7 @@ class Text(QLabel):
     # 主题切换
     # ============================================================
     def set_theme(self, theme: str) -> None:
+        """设置主题，auto 时注册到 ThemeProvider 跟随广播。"""
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -193,6 +229,11 @@ class Text(QLabel):
         self._apply_color()
 
     def _apply_provider_theme(self, theme: str) -> None:
+        """响应 ThemeProvider 的主题广播并刷新文字色。
+
+        Note:
+            ThemeProvider 广播专用入口，不重新 register/unregister。
+        """
         # ThemeProvider 广播专用入口：不重新 register/unregister。
         self._theme = theme
         self._apply_color()
@@ -202,6 +243,12 @@ class Text(QLabel):
     # ============================================================
 
     def _clear_selection(self) -> None:
+        """清空当前选区，通过置空文本再赋回实现。
+
+        Note:
+            QLabel 没有 clearSelection() API，只能置空文本再赋回，并临时关闭
+            updates 避免闪烁。
+        """
         # QLabel 无 clearSelection() API；重置内部 QTextControl 的唯一手段是
         # “置空文本再赋回”，顺便关 updates 避免闪烁。
         text = self.text()
@@ -213,12 +260,14 @@ class Text(QLabel):
         self.setUpdatesEnabled(True)
 
     def mousePressEvent(self, event: QMouseEvent) -> None:
+        """非 Shift 点击时先清空选区再交给父类处理。"""
         # 非 Shift 点击 → 单选行为，先清自己的选区。
         if not (event.modifiers() & Qt.KeyboardModifier.ShiftModifier):
             self._clear_selection()
         super().mousePressEvent(event)
 
     def focusOutEvent(self, event: QFocusEvent) -> None:
+        """失去焦点时清空选区。"""
         self._clear_selection()
         super().focusOutEvent(event)
 
@@ -226,26 +275,32 @@ class Text(QLabel):
     # 公共动态 setter
     # ============================================================
     def set_size(self, size: SizeInput) -> None:
+        """设置字号并刷新字体。"""
         self._size = size
         self._apply_font()
 
     def set_weight(self, weight: WeightInput) -> None:
+        """设置字重并刷新字体。"""
         self._weight = weight
         self._apply_font()
 
     def set_color(self, color: ColorInput) -> None:
+        """设置文字色并刷新样式。"""
         self._color_input = color
         self._apply_color()
 
     def set_transparency(self, transparency: float) -> None:
+        """设置透明度，夹到 0~1 后刷新样式。"""
         self._transparency = self._clamp01(transparency)
         self._apply_color()
 
     def set_force_selection_text_color(self, force: bool) -> None:
+        """设置是否强制选区文字色并刷新样式。"""
         self._force_selection_text_color = bool(force)
         self._apply_color()
 
     def set_selection_adapts_color(self, enabled: bool) -> None:
+        """设置选区色是否随文字色适配并刷新样式。"""
         self._selection_adapts_color = bool(enabled)
         self._apply_color()
 
@@ -253,6 +308,7 @@ class Text(QLabel):
     # selectable
     # ============================================================
     def _apply_selectable(self) -> None:
+        """按 selectable 设置文本交互标志与焦点策略。"""
         if self._selectable:
             self.setTextInteractionFlags(Qt.TextInteractionFlag.TextBrowserInteraction)
             self.setFocusPolicy(Qt.FocusPolicy.ClickFocus)
@@ -261,6 +317,7 @@ class Text(QLabel):
             self.setFocusPolicy(Qt.FocusPolicy.NoFocus)
 
     def set_selectable(self, selectable: bool) -> None:
+        """设置是否允许文本选区并刷新交互标志。"""
         self._selectable = bool(selectable)
         self._apply_selectable()
 
@@ -269,11 +326,13 @@ class Text(QLabel):
     # ============================================================
     @property
     def text_color(self) -> QColor:
+        """返回已叠加 transparency 的实际渲染色。"""
         # 已叠加 transparency 的实际渲染色。
         return self._current_color()
 
     @property
     def theme(self) -> str:
+        """返回当前生效的明暗主题名。"""
         return self._theme
 
 
@@ -298,6 +357,7 @@ class Title(Text):
         parent: QWidget | None = None,
         **kwargs,
     ):
+        """按 level 映射 2xl/xl/lg 字号，以 Bold 字重创建主标题。"""
         size = self._LEVEL_SIZE.get(level, "2xl")
         super().__init__(
             text,
@@ -324,6 +384,7 @@ class Subtitle(Text):
         parent: QWidget | None = None,
         **kwargs,
     ):
+        """以 sm 字号创建副标题，未指定颜色时按主题取灰色。"""
         if color is None:
             theme_now = self._resolve_theme(theme)
             color = "#71717a" if theme_now == "light" else "#a1a1aa"
@@ -352,6 +413,7 @@ class Caption(Text):
         parent: QWidget | None = None,
         **kwargs,
     ):
+        """以 xs 字号创建辅助提示，未指定颜色时按主题取灰色。"""
         if color is None:
             theme_now = self._resolve_theme(theme)
             color = "#a1a1aa" if theme_now == "light" else "#71717a"
@@ -381,6 +443,7 @@ class Body(Text):
         parent: QWidget | None = None,
         **kwargs,
     ):
+        """以 md 字号创建正文，默认开启自动换行。"""
         super().__init__(
             text,
             size="md",

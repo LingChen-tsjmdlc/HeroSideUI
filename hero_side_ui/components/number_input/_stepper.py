@@ -1,9 +1,4 @@
-"""_NumberStepper — NumberInput 右侧垂直步进按钮组（私有）。
-
-对齐官方 NumberInputStepper：两个透明小按钮垂直排列（上=增、下=减），
-hover 降透明度到 0.7、按下 0.5；图标随语义色着色。单击单步，
-不做按住连发（官方原生按钮同样无连发）。
-"""
+"""_NumberStepper：两个透明小按钮（上增下减），hover/按下透明度反馈；无连发。"""
 
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QColor
@@ -25,6 +20,13 @@ class _StepperButton(QPushButton):
     """单个步进按钮：透明背景 + opacity hover/pressed 反馈。"""
 
     def __init__(self, icon_name: str, icon_size: int, parent: QWidget | None = None):
+        """构造单个步进按钮。
+
+        Args:
+            icon_name: SVG 图标名。
+            icon_size: 图标像素边长（按钮尺寸 = icon_size + 8）。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._icon_name = icon_name
         self._icon_size = icon_size
@@ -43,20 +45,24 @@ class _StepperButton(QPushButton):
         self.setIcon(load_svg_icon(self._icon_name, size=self._icon_size, color=color))
 
     def enterEvent(self, event):
+        """鼠标进入：未禁用时降到 0.7 透明度。"""
         if self.isEnabled():
             self._opacity_effect.setOpacity(0.7)
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """鼠标离开：恢复 1.0 透明度。"""
         self._opacity_effect.setOpacity(1.0)
         super().leaveEvent(event)
 
     def mousePressEvent(self, event):
+        """鼠标按下：未禁用时降到 0.5 透明度。"""
         if self.isEnabled():
             self._opacity_effect.setOpacity(0.5)
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """鼠标释放：按是否仍悬停恢复 0.7 或 1.0 透明度。"""
         self._opacity_effect.setOpacity(0.7 if self.underMouse() else 1.0)
         super().mouseReleaseEvent(event)
 
@@ -70,6 +76,12 @@ class _NumberStepper(QWidget):
     stepped = Signal(int)
 
     def __init__(self, button_size: int = 18, parent: QWidget | None = None):
+        """构造步进按钮组，连接上/下按钮到 stepped 信号。
+
+        Args:
+            button_size: 每个按钮的边长（图标取 button_size-6）。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._button_size = button_size
 

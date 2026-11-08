@@ -1,27 +1,8 @@
-"""HeroSideUI Table 主组件。
+"""Table 主组件：QGridLayout 网格 + 独立自绘单元格，外壳复用 Card。
 
-复刻 HeroUI v2 Table。结构::
-
-    Table (QWidget)
-        ├── top_content (outside, 可选)
-        ├── _card_host (Card 外壳，自带 content1 背景 + 阴影 + 圆角)
-        │     ├── top_content (inside, 可选)
-        │     ├── _grid_host (_GridHost + QGridLayout)  —— max_height 时套进 ScrollShadow
-        │     │     ├── row 0: 列头（_TableColumnHeader ...）
-        │     │     ├── row 1..n: 数据单元格（_TableCell ...）
-        │     │     └── 多选时 col 0 为 select-all / checkbox 列
-        │     ├── _empty_widget  (无数据时)
-        │     └── bottom_content (inside, 可选)
-        └── bottom_content (outside, 可选)
-
-设计要点：
-    - 用 QGridLayout 让同列单元格自动等宽，天然解决列对齐。
-    - 每个单元格是独立自绘 QWidget（_TableCell），行状态由 Table 集中管理后推入。
-    - 行 hover / 选中 / 斑马纹由 cell 自己绘制 before 行条，圆角按首尾列/行拼接。
-    - 外壳复用现成 Card；max_height 时表体套进 ScrollShadow 支持滚动 + sticky 表头。
-
-子模块: _cell.py / _header_cell.py / _hosts.py / _engine.py / _virtual.py /
-        _data.py / _props.py / _selection.py / _sorting.py / _palette.py / _constants.py
+max_height 时表体套 ScrollShadow 支持 sticky 表头；虚拟化由 _virtual.py
+承担。子模块：_cell/_header_cell/_hosts/_engine/_virtual/_data/_props/
+_selection/_sorting/_palette/_constants。
 """
 
 from __future__ import annotations
@@ -64,19 +45,7 @@ from ._virtual import _VirtualMixin
 
 
 class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMixin, QWidget):
-    """HeroUI 风格表格。
-
-    用法::
-
-        t = Table(color="primary", selection_mode="multiple", is_striped=True)
-        t.set_columns([
-            {"key": "name", "label": "NAME"},
-            {"key": "role", "label": "ROLE"},
-            {"key": "status", "label": "STATUS", "align": "center"},
-        ])
-        t.add_row("1", {"name": "Tony", "role": "CEO", "status": "Active"})
-        t.selection_changed.connect(print)
-    """
+    """HeroUI 风格表格，网格布局配独立自绘单元格与 Card 外壳。"""
 
     selection_changed = Signal(set)
     row_action = Signal(str)
@@ -111,6 +80,39 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         theme: str = "auto",
         parent=None,
     ):
+        """按外观、数据与交互配置创建表格。
+
+        Args:
+            color: 语义色，默认 default。
+            size: 尺寸档位，默认 md。
+            radius: 圆角档位，默认 lg。
+            shadow: 阴影档位，默认 sm。
+            layout: 列宽布局模式，默认 auto。
+            selection_mode: 选择模式，默认 none。
+            selected_keys: 初始选中行 key 集合。
+            disabled_keys: 初始禁用行 key 集合。
+            disallow_empty_selection: 是否禁止清空选中项。
+            is_striped: 是否显示斑马纹。
+            is_compact: 是否紧凑模式。
+            hide_header: 是否隐藏表头。
+            full_width: 是否撑满可用宽度。
+            remove_wrapper: 是否去掉 Card 外壳。
+            empty_content: 空状态提示文字。
+            top_content: 顶部内容 widget。
+            bottom_content: 底部内容 widget。
+            top_content_placement: 顶部内容位置 inside/outside。
+            bottom_content_placement: 底部内容位置 inside/outside。
+            max_height: 表体最大高度，None 表示不限。
+            is_header_sticky: 表头是否吸顶。
+            is_virtualized: 是否启用虚拟化。
+            disable_animation: 是否关闭过渡动画。
+            theme: 主题模式 auto/light/dark。
+            parent: 父级 QWidget。
+
+        Note:
+            非法枚举值分别回退到各自默认档位；auto 主题向 ThemeProvider 注册；
+            虚拟化未给 max_height 时自动取 420。
+        """
         super().__init__(parent)
 
         if color not in VALID_COLORS:
@@ -202,6 +204,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # UI 骨架
     # ------------------------------------------------------------
     def _build_ui(self):
+        """组装外层布局、Card 外壳、网格宿主与空状态占位。"""
         self._outer = QVBoxLayout(self)
         self._outer.setContentsMargins(0, 0, 0, 0)
         cfg = TABLE_SIZES.get(self._size, TABLE_SIZES["md"])
@@ -296,16 +299,34 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # 主题
     # ------------------------------------------------------------
     def _card_radius(self) -> str:
-        """外壳 Card 的圆角：full 仅作用于表头/行条（药丸），Card 不跟随 full，
-        退回 lg 保持外框正常圆角。"""
+        """返回外壳 Card 的圆角档位，full 时退回 lg。"""
         return "lg" if self._radius == "full" else self._radius
 
     def _resolve_theme(self, mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: auto、light 或 dark。
+
+        Returns:
+            具体主题名；auto 时取 ThemeProvider 当前主题。
+
+        Note:
+            mode 非 auto/light/dark 时回退到 light，未做报错。
+        """
         if mode == "auto":
             return ThemeProvider.instance().current_theme
         return mode if mode in ("light", "dark") else "light"
 
     def _apply_provider_theme(self, theme: str):
+        """响应 ThemeProvider 广播，刷新样式与空状态配色。
+
+        Args:
+            theme: 广播下发的新主题名。
+
+        Note:
+            仅 auto 模式生效；Card 在 auto 模式自行跟随，无需手动转发。
+        """
         if self._theme_mode != "auto":
             return
         self._theme = theme
@@ -316,6 +337,14 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         self.update()
 
     def set_theme(self, theme: str):
+        """设置主题模式并刷新样式。
+
+        Args:
+            theme: 主题名或 auto。
+
+        Note:
+            仅 auto、light、dark 生效，其他值直接返回。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             ThemeProvider.instance().register(self)
@@ -333,6 +362,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         self.update()
 
     def _refresh_empty_color(self):
+        """按当前主题刷新空状态提示文字颜色。"""
         from ...core.state_palette import StatePalette
 
         self._empty_label.set_color(StatePalette.text_description(self._theme).name())
@@ -357,6 +387,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self._select_all_cb = None
 
     def _rebuild(self):
+        """重建整张网格，期间暂停刷新以避免中间态闪烁。"""
         # 重建期间关掉刷新，避免中间态逐控件重绘导致的闪烁/卡顿
         self._grid_host.setUpdatesEnabled(False)
         try:
@@ -365,6 +396,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self._grid_host.setUpdatesEnabled(True)
 
     def _rebuild_inner(self):
+        """重建表头与数据行并统一下发样式和行状态。"""
         self._clear_header()
 
         has_checkbox_col = self._selection_mode == "multiple"
@@ -418,6 +450,15 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self._on_scroll_sticky(self._scroll.verticalScrollBar().value())
 
     def _checkbox_holder(self, cb: Checkbox, on_click) -> QWidget:
+        """创建整格可点的勾选框容器。
+
+        Args:
+            cb: 待装入的 Checkbox。
+            on_click: 整格点击回调。
+
+        Returns:
+            固定列宽的 _CheckboxCell 容器。
+        """
         # 整格可点（_CheckboxCell），消除复选框周围 padding/空白的点击死区。
         holder = _CheckboxCell(on_click, self._grid_host)
         h = QHBoxLayout(holder)
@@ -432,6 +473,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # 样式下发
     # ------------------------------------------------------------
     def _propagate_style(self):
+        """把当前样式维度下发到表头与各数据单元格。"""
         cfg = TABLE_SIZES.get(self._size, TABLE_SIZES["md"])
         self._inside_v.setSpacing(cfg["wrapper_gap"])
 
@@ -479,12 +521,15 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
                 )
 
     def _apply_row_states(self, *, animated: bool = True, only_rows=None):
-        """重绘行的 hover / selected / striped 视觉。
+        """重绘行的 hover/selected/striped 视觉。
 
-        only_rows 为 None 时刷当前已渲染的行；传入 row_key 集合时只刷这些行
-        —— hover 仅影响"离开的旧行 + 进入的新行"两行，避免每次移动重刷整表掉帧。
-        虚拟化下 _cells 只含可视行，故按 _cells 而非全量 _row_order 遍历，
-        保证开销与可视行数成正比、与总行数无关。
+        Args:
+            animated: 是否走过渡动画。
+            only_rows: 只刷这些行；None 刷当前已渲染行。
+
+        Note:
+            hover 只刷新旧两行防掉帧；虚拟化下按 _cells 遍历保证开销与
+            可视行数成正比。
         """
         # 行下标用于斑马纹奇偶；虚拟化时按全量数据下标算，保证滚动时条纹连续
         index_of = {k: i for i, k in enumerate(self._row_order)}
@@ -516,6 +561,15 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # 交互回调
     # ------------------------------------------------------------
     def _on_cell_hover(self, row_key: str, entered: bool):
+        """处理单元格上报的 hover，仅刷新受影响的行。
+
+        Args:
+            row_key: 上报的行 key。
+            entered: 是否进入该行。
+
+        Note:
+            none 模式不响应 hover；禁用行不高亮；只刷旧 hover 行与新 hover 行两行。
+        """
         # 仅可选模式响应行 hover 高亮（对齐 HeroUI isSelectable hover 语义）
         if self._selection_mode == "none":
             return
@@ -534,13 +588,20 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         self._apply_row_states(only_rows=dirty)
 
     def _on_checkbox_clicked(self, row_key: str):
+        """把行勾选框点击转交给行点击处理。
+
+        Args:
+            row_key: 被点击的行 key。
+        """
         self._on_row_clicked(row_key)
 
     def _on_select_all_clicked(self):
+        """处理全选框点击并同步其三态显示。"""
         self._toggle_select_all()
         self._sync_select_all()
 
     def _sync_select_all(self):
+        """按当前选中集合刷新全选框的选中与半选状态。"""
         if self._select_all_cb is None:
             return
         state = self._select_all_state()
@@ -559,9 +620,18 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # 选中 / 禁用 API
     # ------------------------------------------------------------
     def selected_keys(self) -> set:
+        """返回当前选中行 key 的副本。"""
         return set(self._selected_keys)
 
     def set_selected_keys(self, keys: Iterable[str]):
+        """设置选中行集合并刷新行状态。
+
+        Args:
+            keys: 目标行 key 集合。
+
+        Note:
+            none 模式直接返回；过滤不存在与禁用的行；single 模式只保留一项。
+        """
         keys = set(str(k) for k in keys)
         if self._selection_mode == "none":
             return
@@ -578,9 +648,18 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self.selection_changed.emit(set(self._selected_keys))
 
     def selection_mode(self) -> str:
+        """返回当前选择模式。"""
         return self._selection_mode
 
     def set_selection_mode(self, mode: str):
+        """切换选择模式并按新模式裁剪选中集合。
+
+        Args:
+            mode: 目标选择模式。
+
+        Note:
+            非法或同名模式直接返回；切到 none 清空选中，切到 single 只保留一项。
+        """
         if mode not in VALID_SELECTION_MODES or mode == self._selection_mode:
             return
         self._selection_mode = mode
@@ -596,9 +675,15 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self.selection_changed.emit(set(self._selected_keys))
 
     def disabled_keys(self) -> set:
+        """返回当前禁用行 key 的副本。"""
         return set(self._disabled_keys)
 
     def set_disabled_keys(self, keys: Iterable[str]):
+        """设置用户显式禁用的行 key 并重算禁用集合。
+
+        Args:
+            keys: 目标行 key 集合。
+        """
         self._user_disabled_keys = set(str(k) for k in keys)
         self._recompute_disabled()
         self._rebuild()
@@ -607,6 +692,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
     # 空状态
     # ------------------------------------------------------------
     def _refresh_empty(self):
+        """按是否有数据切换网格与空状态占位的可见性。"""
         is_empty = len(self._row_order) == 0
         grid_visible = not is_empty or len(self._columns) > 0
         host = self._scroll if self._scroll is not None else self._grid_host

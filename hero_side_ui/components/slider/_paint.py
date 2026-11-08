@@ -1,9 +1,6 @@
-"""Slider 自绘画布：_SliderCanvas 类，负责 track + filler + step + mark + thumb 全部绘制。
+"""Slider 自绘画布 _SliderCanvas：track/filler/step/mark/thumb 全部绘制。
 
-设计：
-    - canvas 是 Slider 的子 widget，独立持有 paintEvent；
-      鼠标事件转发回 owner（Slider）的 _canvas_mouse_xxx 方法，由 owner 处理拖拽/命中。
-    - 所有颜色查询走 _palette，所有几何走 _geometry —— 避免 owner.<私有方法> 紧耦合。
+鼠标事件转发回 owner 处理；颜色走 _palette、几何走 _geometry。
 """
 
 from __future__ import annotations
@@ -26,13 +23,14 @@ from ._geometry import (
 
 
 class _SliderCanvas(QWidget):
-    """slider 的纯绘图区 + 鼠标事件转发到 owner。
-
-    单独抽出来是因为父级 Slider 的 layout 还要承载 label_row_widget 等子 widget，
-    而 canvas 区域只关心 track 几何 —— 父子分工更清晰且方便定位事件坐标。
-    """
+    """纯绘图区，鼠标事件转发到 owner。"""
 
     def __init__(self, owner):
+        """记录 owner 并开启鼠标跟踪与 hover 属性。
+
+        Args:
+            owner: 接收鼠标事件的宿主 Slider。
+        """
         super().__init__(owner)
         self._owner = owner
         self.setMouseTracking(True)
@@ -43,21 +41,25 @@ class _SliderCanvas(QWidget):
     # 鼠标事件转发
     # ============================================================
     def mousePressEvent(self, event):
+        """把鼠标按下事件转发给 owner，未被接受时交回父类。"""
         self._owner._canvas_mouse_press(event)
         if not event.isAccepted():
             super().mousePressEvent(event)
 
     def mouseMoveEvent(self, event):
+        """把鼠标移动事件转发给 owner，未被接受时交回父类。"""
         self._owner._canvas_mouse_move(event)
         if not event.isAccepted():
             super().mouseMoveEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """把鼠标释放事件转发给 owner，未被接受时交回父类。"""
         self._owner._canvas_mouse_release(event)
         if not event.isAccepted():
             super().mouseReleaseEvent(event)
 
     def leaveEvent(self, event):
+        """鼠标离开时通知 owner 清除 hover 态，再交给父类。"""
         # 鼠标离开 canvas → 通知 owner 清 _hovered_idx，避免 hover 状态滞留
         self._owner._canvas_leave()
         super().leaveEvent(event)
@@ -66,6 +68,12 @@ class _SliderCanvas(QWidget):
     # 绘制
     # ============================================================
     def paintEvent(self, event):
+        """自绘 track、filler、step 点、marks 文字与 thumbs。
+
+        Note:
+            颜色取自 _palette、几何取自 _geometry；filler 两端的圆角按是否
+            被 thumb 覆盖分别处理，避免圆形 thumb 处出现反弧凹陷。
+        """
         owner = self._owner
         cfg = owner._cfg()
         is_v = owner._orientation == "vertical"
@@ -190,6 +198,7 @@ class _SliderCanvas(QWidget):
     # ============================================================
     @staticmethod
     def _paint_step_dots(painter, owner, track, is_v, filler_lo, filler_hi):
+        """沿 track 等距绘制 step 小点，范围内外的点用不同颜色。"""
         # 沿 track 等距画小点 (HeroUI: w-1.5 h-1.5；lg 用 w-2 h-2)
         dot_r = 3.0 if owner._size != "lg" else 4.0
         n = round((owner._max - owner._min) / owner._step)
@@ -211,6 +220,7 @@ class _SliderCanvas(QWidget):
             painter.drawEllipse(QPointF(cx, cy), dot_r, dot_r)
 
     def _paint_marks(self, painter, owner, track, is_v, filler_lo, filler_hi, cfg):
+        """绘制 marks 文字，范围内文字不透明、范围外半透明。"""
         painter.save()
         painter.setFont(make_text_qfont(cfg["mark_font_size"], "normal"))
         fm = QFontMetrics(painter.font())
@@ -249,6 +259,7 @@ class _SliderCanvas(QWidget):
         press_t: float,
         focused: bool,
     ):
+        """绘制单个 thumb 的 ring、阴影、外圈与 inner dot。"""
         cfg = owner._cfg()
         thumb_size = cfg["thumb"]
         inner_dot = cfg["inner_dot"]
@@ -330,14 +341,7 @@ class _SliderCanvas(QWidget):
         round_end: bool,
         is_v: bool,
     ) -> QPainterPath:
-        """构造一段 track 路径：只在指定端圆角，另一端直角。
-
-        为什么需要：thumb 是圆形，若 filler 那端也圆角则两个圆相切会
-        产生反弧凹陷；所以 filler 的 thumb 端必须是直角（被 thumb 圆盖住）。
-
-        坐标系统统一：“start 端”=水平 left / 垂直 bottom；“end 端”=水平 right / 垂直 top。
-        这跟 filler 的 r_lo / r_hi 语义对齐。
-        """
+        """构造只在指定端圆角、另一端直角的 track 路径。"""
         # radius 防过冲：不能超过“厚度/2”也不能超过“长度/2”
         thickness = rect.height() if not is_v else rect.width()
         length = rect.width() if not is_v else rect.height()

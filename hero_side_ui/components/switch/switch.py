@@ -1,28 +1,4 @@
-"""
-HeroSideUI Switch (Toggle) Component
-基于 HeroUI v2 设计风格，保持 PySide 原生 API
-
-样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/toggle.ts
-
-结构:
-    Switch (继承 QAbstractButton, checkable)
-        ├── wrapper (胶囊: bg-default-200 / 选中时 bg-<color>)
-        │     ├── startContent (开时显现, opacity 0→1 + scale 0.5→1)
-        │     ├── endContent   (关时显现, opacity 1→0 + translate-x 0→12px)
-        │     └── thumb (白底胶囊，从左滑到右；按压时加宽变椭圆)
-        │           └── thumbIcon (可选，随 thumb 移动)
-        └── label (wrapper 右侧，ms-2 = 8px)
-
-特性对齐 HeroUI:
-    - 6 种颜色 (default / primary / secondary / success / warning / danger)
-    - 3 种尺寸 (sm / md / lg)
-    - isSelected / isDisabled / isReadOnly
-    - startContent / endContent / thumbIcon (SVG string)
-    - disableAnimation
-    - 主题: light / dark / auto
-    - 按压时 thumb 加宽 (scale 拉长);
-    - 选中时 thumb 右移 selected_shift,按压且选中时右移 pressed_shift;
-"""
+"""Switch 组件：HeroUI v2 风格胶囊开关，paintEvent 全自绘。"""
 
 from __future__ import annotations
 
@@ -47,7 +23,15 @@ from ...themes import HEROUI_COLORS, SWITCH_SIZES
 
 
 def _render_svg(svg_str: str, color: QColor | None = None) -> QSvgRenderer:
-    """把 currentColor 占位符替换为指定色后生成 QSvgRenderer"""
+    """把 currentColor 占位符替换为指定色后生成 QSvgRenderer。
+
+    Args:
+        svg_str: 含 currentColor 占位符的 SVG 源文本。
+        color: 替换色；为 None 时保留占位符不替换。
+
+    Returns:
+        由替换后文本构造的 QSvgRenderer。
+    """
     data = svg_str
     if color is not None:
         data = data.replace("currentColor", color.name())
@@ -55,24 +39,7 @@ def _render_svg(svg_str: str, color: QColor | None = None) -> QSvgRenderer:
 
 
 class Switch(QAbstractButton):
-    """HeroUI 风格的 Switch (Toggle) 组件
-
-    继承 QAbstractButton 并设 checkable=True,保留原生 toggled / clicked / isChecked。
-    外观完全自绘(忽略系统风格)。
-
-    参数:
-        text: label 文字(可为空,放在 wrapper 右侧)
-        is_selected: 初始选中状态(映射到 checked)
-        color: default / primary / secondary / success / warning / danger
-        size: sm / md / lg
-        is_disabled: 禁用(opacity 0.5 + 不可交互)
-        is_read_only: 只读(可视但点击不切换)
-        disable_animation: 关闭所有过渡动画
-        theme: auto / light / dark
-        start_content: SVG 字符串(开时显现,位于 wrapper 左内侧)
-        end_content: SVG 字符串(关时显现,位于 wrapper 右内侧)
-        thumb_icon: SVG 字符串(随 thumb 一起移动)
-    """
+    """HeroUI 风格 Switch，继承 QAbstractButton（checkable）保留原生信号。"""
 
     # selected_changed 发射 True/False,语义对齐 HeroUI (onValueChange)
     selected_changed = Signal(bool)
@@ -92,6 +59,25 @@ class Switch(QAbstractButton):
         thumb_icon: str | None = None,
         parent: QWidget | None = None,
     ):
+        """按外观与状态配置创建胶囊开关。
+
+        Args:
+            text: label 文字，位于 wrapper 右侧。
+            is_selected: 初始选中状态。
+            color: 语义色，默认 primary。
+            size: 尺寸档位 sm/md/lg。
+            is_disabled: 是否禁用。
+            is_read_only: 是否只读，可视不切换。
+            disable_animation: 是否关闭过渡动画。
+            theme: 主题模式 auto/light/dark。
+            start_content: 开时显现的 SVG。
+            end_content: 关时显现的 SVG。
+            thumb_icon: 随 thumb 移动的 SVG。
+            parent: 父级 QWidget。
+
+        Note:
+            auto 主题会向 ThemeProvider 注册；color 与 size 直接赋值，未做非法值校验。
+        """
         super().__init__(parent)
 
         self._color = color
@@ -148,20 +134,28 @@ class Switch(QAbstractButton):
     # 尺寸 / 字体
     # ============================================================
     def _cfg(self) -> dict:
+        """返回当前尺寸档位的配置字典。"""
         return SWITCH_SIZES.get(self._size, SWITCH_SIZES["md"])
 
     def _refresh_font(self):
+        """按尺寸档位重设 label 字体。"""
         cfg = self._cfg()
         from ...core import make_text_qfont
 
         self.setFont(make_text_qfont(cfg["label_font_size"], "normal"))
 
     def setText(self, text: str):
+        """设置 label 文字并刷新字体与几何尺寸。
+
+        Args:
+            text: label 文字。
+        """
         super().setText(text)
         self._refresh_font()
         self.updateGeometry()
 
     def sizeHint(self) -> QSize:
+        """返回含 label 文字宽度的推荐尺寸。"""
         cfg = self._cfg()
         w = cfg["wrapper_w"]
         h = cfg["wrapper_h"]
@@ -172,13 +166,14 @@ class Switch(QAbstractButton):
         return QSize(w, h)
 
     def minimumSizeHint(self) -> QSize:
+        """返回与 sizeHint 相同的最小推荐尺寸。"""
         return self.sizeHint()
 
     # ============================================================
     # 色彩
     # ============================================================
     def _unchecked_bg(self) -> QColor:
-        """未选中时的 wrapper 背景(bg-default-200),暗色下用 default-200 更深版本"""
+        """返回未选中状态的 wrapper 背景色。"""
         dc = HEROUI_COLORS["default"]
         if self._theme == "dark":
             # HeroUI 暗色 default-100 ≈ #27272a*0.5 的层级;用 200 也偏灰
@@ -186,27 +181,22 @@ class Switch(QAbstractButton):
         return QColor(dc[200])
 
     def _checked_bg(self) -> QColor:
-        """选中时 wrapper 背景 = 所选 color 的 500 级"""
+        """返回选中状态的 wrapper 背景色。"""
         if self._color == "default":
             dc = HEROUI_COLORS["default"]
             return QColor(dc[300] if self._theme == "dark" else dc[500])
         return QColor(HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])[500])
 
     def _thumb_bg(self) -> QColor:
-        """thumb 始终是白色"""
+        """返回 thumb 的背景色，固定为白色。"""
         return QColor("#ffffff")
 
     def _thumb_icon_color(self) -> QColor:
-        """thumbIcon 默认黑色(对齐 HeroUI text-black)"""
+        """返回 thumbIcon 的默认颜色，固定为黑色。"""
         return QColor("#000000")
 
     def _content_color(self, on_checked: bool) -> QColor:
-        """startContent (on_checked=True) / endContent (on_checked=False) 的颜色
-
-        startContent 位于 wrapper 内左侧,选中时可见,使用 text-current → 前景对比色:
-          - warning 前景偏黑, 其他色前景白
-        endContent 位于 wrapper 内右侧,未选中可见,使用 text-default-600
-        """
+        """取 startContent/endContent 颜色：start 用前景对比色，end 用 default-600。"""
         if on_checked:
             if self._color == "default":
                 dc = HEROUI_COLORS["default"]
@@ -219,13 +209,18 @@ class Switch(QAbstractButton):
         return QColor(dc[400] if self._theme == "dark" else dc[600])
 
     def _label_color(self) -> QColor:
-        """wrapper 外 label 文字色 (text-foreground)"""
+        """返回 wrapper 外 label 的文字色。"""
         return QColor("#ecedee" if self._theme == "dark" else "#11181c")
 
     # ============================================================
     # 状态切换 → 动画
     # ============================================================
     def _on_toggled(self, checked: bool):
+        """响应选中态变化，发射语义信号并启动 thumb 与背景过渡。
+
+        Args:
+            checked: 新的选中状态。
+        """
         self.selected_changed.emit(checked)
         self._target_bg = self._checked_bg() if checked else self._unchecked_bg()
         tween_value(
@@ -248,18 +243,38 @@ class Switch(QAbstractButton):
         )
 
     def _on_thumb_step(self, v):
+        """接收 thumb 动画帧并触发重绘。
+
+        Args:
+            v: 当前动画值。
+        """
         self._thumb_t = float(v)
         self.update()
 
     def _on_bg_step(self, v):
+        """接收背景色动画帧并触发重绘。
+
+        Args:
+            v: 当前动画颜色值。
+        """
         self._bg_color = QColor(v)
         self.update()
 
     def _on_press_step(self, v):
+        """接收按压动画帧并触发重绘。
+
+        Args:
+            v: 当前动画值。
+        """
         self._press_t = float(v)
         self.update()
 
     def _animate_press_to(self, target: float):
+        """把按压进度过渡到目标值。
+
+        Args:
+            target: 目标按压进度，0 为静态宽、1 为按压宽。
+        """
         tween_value(
             self,
             "_press_anim_runner",
@@ -274,6 +289,11 @@ class Switch(QAbstractButton):
     # 事件
     # ============================================================
     def mousePressEvent(self, event):
+        """处理按下事件，只读或禁用时吞掉事件不切换。
+
+        Args:
+            event: Qt 鼠标事件。
+        """
         if self._is_read_only or not self.isEnabled():
             # read-only: 吃掉事件,不切换
             event.accept()
@@ -284,6 +304,11 @@ class Switch(QAbstractButton):
         super().mousePressEvent(event)
 
     def mouseReleaseEvent(self, event):
+        """处理释放事件，复位按压态并收敛按压动画。
+
+        Args:
+            event: Qt 鼠标事件。
+        """
         self._pressed = False
         self._animate_press_to(0.0)
         if self._is_read_only or not self.isEnabled():
@@ -292,17 +317,32 @@ class Switch(QAbstractButton):
         super().mouseReleaseEvent(event)
 
     def keyPressEvent(self, event):
+        """处理按键事件，只读时忽略输入。
+
+        Args:
+            event: Qt 按键事件。
+        """
         if self._is_read_only:
             event.ignore()
             return
         super().keyPressEvent(event)
 
     def enterEvent(self, event):
+        """进入组件时置悬停态并触发重绘。
+
+        Args:
+            event: Qt 进入事件。
+        """
         self._hover = True
         self.update()
         super().enterEvent(event)
 
     def leaveEvent(self, event):
+        """离开组件时清悬停态并收敛按压动画。
+
+        Args:
+            event: Qt 离开事件。
+        """
         self._hover = False
         if self._pressed:
             self._pressed = False
@@ -313,6 +353,11 @@ class Switch(QAbstractButton):
     # paintEvent
     # ============================================================
     def paintEvent(self, event):
+        """全自绘 wrapper、thumb、内容与 label。
+
+        Args:
+            event: Qt 绘制事件，本实现不读取。
+        """
         cfg = self._cfg()
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
@@ -446,13 +491,26 @@ class Switch(QAbstractButton):
     # 公共 API (运行时)
     # ============================================================
     def is_selected(self) -> bool:
-        """别名:isChecked"""
+        """返回当前选中状态，等价于 isChecked。"""
         return self.isChecked()
 
     def set_is_selected(self, selected: bool):
+        """设置选中状态。
+
+        Args:
+            selected: 目标选中状态。
+        """
         self.setChecked(selected)
 
     def set_color(self, color: str):
+        """设置语义色并过渡 wrapper 背景。
+
+        Args:
+            color: 目标语义色。
+
+        Note:
+            与当前色相同则直接返回；color 未做非法值校验。
+        """
         if color == self._color:
             return
         self._color = color
@@ -469,6 +527,14 @@ class Switch(QAbstractButton):
         self.update()
 
     def set_size(self, size: str):
+        """设置尺寸档位并刷新字体与几何尺寸。
+
+        Args:
+            size: 目标尺寸档位。
+
+        Note:
+            与当前档位相同则直接返回；size 未做非法值校验。
+        """
         if size == self._size:
             return
         self._size = size
@@ -477,15 +543,33 @@ class Switch(QAbstractButton):
         self.update()
 
     def set_is_disabled(self, disabled: bool):
+        """设置禁用状态并同步 Qt 启用状态。
+
+        Args:
+            disabled: 是否禁用。
+        """
         self._is_disabled = disabled
         self.setEnabled(not disabled)
         self.update()
 
     def set_is_read_only(self, read_only: bool):
+        """设置只读状态，只读时可视但不切换。
+
+        Args:
+            read_only: 是否只读。
+        """
         self._is_read_only = read_only
         self.update()
 
     def set_disable_animation(self, disable: bool):
+        """设置是否关闭过渡动画。
+
+        Args:
+            disable: 是否关闭动画。
+
+        Note:
+            关闭时用 duration=0 把 thumb、背景与按压进度立即收敛到当前状态。
+        """
         self._disable_animation = disable
         if disable:
             tween_value(
@@ -508,18 +592,41 @@ class Switch(QAbstractButton):
             self._animate_press_to(0.0)
 
     def set_start_content(self, svg: str | None):
+        """设置开时显现的 SVG 内容。
+
+        Args:
+            svg: SVG 源文本，None 表示不显示。
+        """
         self._start_content = svg
         self.update()
 
     def set_end_content(self, svg: str | None):
+        """设置关时显现的 SVG 内容。
+
+        Args:
+            svg: SVG 源文本，None 表示不显示。
+        """
         self._end_content = svg
         self.update()
 
     def set_thumb_icon(self, svg: str | None):
+        """设置随 thumb 移动的 SVG 图标。
+
+        Args:
+            svg: SVG 源文本，None 表示不显示。
+        """
         self._thumb_icon = svg
         self.update()
 
     def set_theme(self, theme: str):
+        """设置主题模式并立即刷新背景色。
+
+        Args:
+            theme: 主题名或 auto。
+
+        Note:
+            auto 会向 ThemeProvider 注册，从 auto 切到固定主题时注销；背景色直接刷新不做动画。
+        """
         if theme == "auto":
             self._theme_mode = "auto"
             self._theme = self._resolve_theme("auto")
@@ -535,7 +642,7 @@ class Switch(QAbstractButton):
         self.update()
 
     def _apply_provider_theme(self, theme: str):
-        """ThemeProvider 广播专用:只在 auto 模式下调用"""
+        """响应 ThemeProvider 广播并刷新背景色。"""
         self._theme = theme
         self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
         self._bg_color = QColor(self._target_bg)
@@ -543,6 +650,17 @@ class Switch(QAbstractButton):
 
     @staticmethod
     def _resolve_theme(mode: str) -> str:
+        """把主题模式解析为具体主题名。
+
+        Args:
+            mode: light、dark 或 auto。
+
+        Returns:
+            具体主题名；auto 时取 ThemeProvider 当前主题。
+
+        Note:
+            mode 非 light/dark 时一律按 auto 处理，未做校验。
+        """
         if mode in ("light", "dark"):
             return mode
         return ThemeProvider.instance().current_theme

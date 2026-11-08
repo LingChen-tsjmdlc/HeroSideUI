@@ -1,8 +1,5 @@
-"""Calendar 单个日期格子（自绘按钮，零业务判断由 CellState 驱动）。
-
-继承 QAbstractButton：自带 hover/press/clicked/focus。渲染只读注入的
-CellState + color/theme，绘制圆形底 + 日期数字 + today 圆点 + unavailable 删除线。
-hover 背景做 150ms 平滑补间（对齐 calendar.ts transition duration-150）。
+"""Calendar 日期格：QAbstractButton 自绘，只读注入 CellState 渲染。
+hover 背景 150ms 补间，对齐 calendar.ts。
 """
 
 from __future__ import annotations
@@ -22,6 +19,12 @@ _HOVER_ANIM_MS = 150
 
 class _CalendarCell(QAbstractButton):
     def __init__(self, size: int, parent=None) -> None:
+        """创建固定尺寸的日期格按钮。
+
+        Args:
+            size: 格子边长（像素）。
+            parent: Qt 父对象。
+        """
         super().__init__(parent)
         self._size = size
         self.setFixedSize(size, size)
@@ -43,6 +46,14 @@ class _CalendarCell(QAbstractButton):
     # ---- 父注入 -------------------------------------------------------
 
     def apply_state(self, cs: CellState, *, color: str, theme: str, font_size: int) -> None:
+        """注入渲染状态并按可交互性更新启用态与光标。
+
+        Args:
+            cs: 父层算好的 CellState（只读注入，本类不自持业务状态）。
+            color: 语义色名。
+            theme: 主题名。
+            font_size: 日期数字字号。
+        """
         self._cs = cs
         self._color = color
         self._theme = theme
@@ -57,6 +68,11 @@ class _CalendarCell(QAbstractButton):
     # ---- hover 动画 ---------------------------------------------------
 
     def _can_hover(self) -> bool:
+        """当前状态是否允许 hover 效果。
+
+        Returns:
+            非空格、非禁用、非不可用、非只读时为 True。
+        """
         cs = self._cs
         return bool(
             cs
@@ -67,17 +83,32 @@ class _CalendarCell(QAbstractButton):
         )
 
     def enterEvent(self, ev) -> None:
+        """鼠标进入：可 hover 时启动淡入补间。
+
+        Args:
+            ev: Qt 进入事件。
+        """
         if self._can_hover():
             self._hovered = True
             self._start_hover_anim(1.0)
         super().enterEvent(ev)
 
     def leaveEvent(self, ev) -> None:
+        """鼠标离开：回落补间到无底态。
+
+        Args:
+            ev: Qt 离开事件。
+        """
         self._hovered = False
         self._start_hover_anim(0.0)
         super().leaveEvent(ev)
 
     def _start_hover_anim(self, target: float) -> None:
+        """启动 hover 背景透明度补间。
+
+        Args:
+            target: 目标值，进入为 1.0、离开为 0.0。
+        """
         tween_value(
             self,
             "_hover_anim",
@@ -89,12 +120,25 @@ class _CalendarCell(QAbstractButton):
         )
 
     def _on_hover_tick(self, v) -> None:
+        """补间回调：写入进度并重绘。
+
+        Args:
+            v: 当前插值（0.0 ~ 1.0）。
+        """
         self._hover_t = float(v)
         self.update()
 
     # ---- 绘制 ---------------------------------------------------------
 
     def paintEvent(self, ev) -> None:
+        """自绘日期格：连接背景 → 圆形底 → 数字 → 删除线 → today 圆点。
+
+        Args:
+            ev: Qt 绘制事件。
+
+        Note:
+            空格（is_empty）直接返回不绘制。
+        """
         cs = self._cs
         if cs is None or cs.is_empty:
             return
@@ -145,7 +189,19 @@ class _CalendarCell(QAbstractButton):
     def _paint_range_bg(
         self, p: QPainter, w: float, h: float, crect: QRectF, radius: float
     ) -> None:
-        """范围连接背景：整格宽的浅底矩形，行首/行尾端收成半圆。"""
+        """绘制范围连接背景。
+
+        Args:
+            p: 当前 QPainter。
+            w: 整格宽度（连接背景铺满整格以衔接相邻格）。
+            h: 整格高度。
+            crect: 圆形日期区几何。
+            radius: 圆半径。
+
+        Note:
+            行首 / 行尾端收成半圆；单端（起点 / 终点）只画对应半边，
+            另半边留给端点的实底圆。
+        """
         cs = self._cs
         p.save()
         p.setPen(Qt.PenStyle.NoPen)
@@ -183,6 +239,12 @@ class _CalendarCell(QAbstractButton):
         p.restore()
 
     def _resolve_bg(self) -> QColor | None:
+        """解析圆形底色。
+
+        Returns:
+            选中 / range 端点为语义色实底；range 中间格无实底；
+            hover 期间返回按进度插值的透明 → hover 色过渡。
+        """
         cs = self._cs
         # range 端点：语义色实底圆
         if cs.is_range_selection:
@@ -198,6 +260,12 @@ class _CalendarCell(QAbstractButton):
         return _lerp_color(start, end, self._hover_t)
 
     def _resolve_text_color(self) -> QColor:
+        """解析数字文字色。
+
+        Returns:
+            禁用 / 不可用 → disabled 色；选中与端点 → 选中前景色；
+            range 中间 → 连接前景色；hover 过半 → hover 色；其余常态色。
+        """
         cs = self._cs
         if cs.is_disabled or cs.is_unavailable:
             return pal.disabled_text(self._theme)
@@ -213,6 +281,16 @@ class _CalendarCell(QAbstractButton):
 
 
 def _lerp_color(a: QColor, b: QColor, t: float) -> QColor:
+    """线性插值两个 QColor（含 alpha）。
+
+    Args:
+        a: 起始色。
+        b: 目标色。
+        t: 插值系数 0.0 ~ 1.0。
+
+    Returns:
+        插值后的新 QColor。
+    """
     return QColor(
         round(a.red() + (b.red() - a.red()) * t),
         round(a.green() + (b.green() - a.green()) * t),

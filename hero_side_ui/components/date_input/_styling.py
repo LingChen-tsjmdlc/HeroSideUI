@@ -1,10 +1,4 @@
-"""DateInput 的样式计算与应用 mixin（私有）。
-
-外框（背景/边框/圆角/hover/focus）配色规则与 Input 严格同源，直接复用
-Input 的 `_resolve_wrapper_colors` 系列决策，保证两个组件视觉不漂移。
-本文件只额外负责 DateInput 特有的"段"四态配色：
-editable / placeholder / invalid / focus。
-"""
+"""DateInput 样式 mixin：外框复用 Input 决策，额外负责段四态配色。"""
 
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLayout, QSizePolicy, QWidget
@@ -16,16 +10,26 @@ from ..input._styling import _InputStylingMixin
 class _DateInputStylingMixin(_InputStylingMixin):
     """DateInput 的样式 mixin。
 
-    继承 Input 的颜色决策方法（_flat_bg_colors / _resolve_wrapper_colors /
-    _resolve_label_*_color），但完全重写 _apply_styles —— DateInput 内部是
-    段列表而非 QLineEdit，布局与文本应用路径不同。
+    继承 Input 颜色决策方法，但重写 _apply_styles——内部是段列表而非
+    QLineEdit。
     """
 
     def _size_config(self) -> dict:
+        """取当前尺寸档位配置。
+
+        Returns:
+            DATE_INPUT_SIZES 中的配置字典；非法档位回退 md。
+        """
         return DATE_INPUT_SIZES.get(self._size, DATE_INPUT_SIZES["md"])
 
     def _apply_styles(self):
-        """计算并应用全部样式。"""
+        """计算并应用全部样式：尺寸、布局、外框、段配色、label、helper。
+
+        Note:
+            非 full_width 时 root 与 wrapper 的 sizePolicy 必须同时收紧，
+            否则 wrapper 默认 Expanding 会撑满 root；用户锁过宽度时
+            不再写 minWidth，并解除 wrapper 布局的 sizeConstraint。
+        """
         is_dark = self._theme == "dark"
         size_config = self._size_config()
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["default"])
@@ -127,10 +131,16 @@ class _DateInputStylingMixin(_InputStylingMixin):
         self._reposition_underline()
 
     def _qcolor(self, s) -> QColor:
-        """把 hex / "rgba(r,g,b,a)" / transparent / QColor 统一转成 QColor。
+        """把 hex / rgba / transparent / QColor 统一转 QColor。
 
-        必须自己解析 rgba 字符串：Qt 的 QColor 不认 "rgba(...)"，直接构造会
-        得到 invalid QColor，取 .name() 或用于填充都会变纯黑。
+        Args:
+            s: 颜色字符串或 QColor 实例。
+
+        Returns:
+            对应 QColor；非法值返回全透明黑。
+
+        Note:
+            Qt QColor 不认 "rgba(...)" 字符串，必须自行解析。
         """
         if isinstance(s, QColor):
             return QColor(s)
@@ -149,7 +159,18 @@ class _DateInputStylingMixin(_InputStylingMixin):
     # 外框绘制
     # ------------------------------------------------------------
     def _apply_wrapper_paint(self, is_dark, colors, dc, size_config):
-        """把 variant 对应的背景/边框/下划线交给 _InputWrapper 画。"""
+        """把 variant 对应的背景 / 边框 / 下划线交给 _InputWrapper 画。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+            size_config: 尺寸 token。
+
+        Note:
+            焦点优先于 hover 选色；首次应用不走颜色补间（animate=False），
+            之后由 _styles_applied_once 标记开启过渡。
+        """
         (
             bg,
             _border,
@@ -213,13 +234,17 @@ class _DateInputStylingMixin(_InputStylingMixin):
     # 段配色
     # ------------------------------------------------------------
     def _apply_segment_styles(self, is_dark, colors, dc, size_config):
-        """逐段套用字色/焦点底色/字体。
+        """逐段套用字色 / 焦点底色 / 字体（editable/placeholder/invalid/focus 四态）。
 
-        HeroUI 段四态（date-input.ts 的 segment slot）：
-          - 已填写(editable 非 placeholder)：主文字色
-          - 占位(placeholder)：更淡一档
-          - invalid：danger 系
-          - focus：底色 {color}-400 半透明 + 字色转主色
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+            size_config: 尺寸 token。
+
+        Note:
+            timeZone 是只读元信息恒用弱化色；字面量分隔符也恒定取
+            foreground-500 弱化色，不随填写状态变亮。
         """
         from ...core import make_text_qfont
 
@@ -257,7 +282,16 @@ class _DateInputStylingMixin(_InputStylingMixin):
             lit.apply_visual(text_color=placeholder_color)
 
     def _resolve_segment_text_colors(self, is_dark, colors, dc):
-        """返回 (已填写段字色, 占位段字色)，均为 QColor。"""
+        """返回 (已填写段字色, 占位段字色)。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            两个 QColor；invalid 态走 danger 色，其余按语义色 / default 取值。
+        """
         if self._is_invalid:
             d = HEROUI_COLORS["danger"]
             return QColor(d[500]), QColor(d[300] if not is_dark else d[400])
@@ -279,7 +313,16 @@ class _DateInputStylingMixin(_InputStylingMixin):
     def _resolve_segment_focus_bg(self, is_dark, colors, dc):
         """段聚焦底色：{color}-400 半透明（暗色更淡，对齐 dark: /20）。
 
-        必须 QColor(hex) + setAlphaF 构造，不能把 rgba() 字符串喂 QColor。
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            已设 alphaF 的 QColor。
+
+        Note:
+            必须 QColor(hex) + setAlphaF 构造，不能把 rgba() 字符串喂 QColor。
         """
         alpha = 0.20 if is_dark else 0.50
         if self._is_invalid:
@@ -293,7 +336,16 @@ class _DateInputStylingMixin(_InputStylingMixin):
         return c
 
     def _resolve_segment_focus_text(self, is_dark, colors, dc):
-        """段聚焦字色：default 走前景反色，其余走主色。"""
+        """段聚焦字色：default 走前景反色，其余走主色。
+
+        Args:
+            is_dark: 是否深色主题。
+            colors: 当前语义色阶字典。
+            dc: default 色阶字典。
+
+        Returns:
+            焦点段应使用的 QColor；invalid 态走 danger-500。
+        """
         if self._is_invalid:
             return QColor(HEROUI_COLORS["danger"][500])
         if self._color == "default":
@@ -306,6 +358,13 @@ class _DateInputStylingMixin(_InputStylingMixin):
     # helper 区
     # ------------------------------------------------------------
     def _apply_helper_styles(self, is_dark, dc, size_config):
+        """刷新 helper 文本：invalid 错误优先，其次描述，否则隐藏。
+
+        Args:
+            is_dark: 是否深色主题。
+            dc: default 色阶字典。
+            size_config: 尺寸 token（取 helper_font_size）。
+        """
         helper_font = size_config["helper_font_size"]
         if self._is_invalid and self._error_message:
             self._helper_label.setText(self._error_message)
@@ -324,11 +383,13 @@ class _DateInputStylingMixin(_InputStylingMixin):
     # 尺寸
     # ------------------------------------------------------------
     def _natural_min_width(self, size_config) -> int:
-        """按段文本实际宽度估算最小宽度。
+        """按段文本实测估算最小宽度，不用 INPUT_SIZES 的固定下限。
 
-        DateInput 内容宽度是确定的（段数固定），不像 Input 需要给用户留
-        输入空间，因此不沿用 INPUT_SIZES 的 240/260/300，改为实测撑开，
-        避免 granularity=second 时段被挤掉。
+        Args:
+            size_config: 尺寸 token（padding_x / gap）。
+
+        Returns:
+            至少 120px 的估算宽度 = 内容 sizeHint + padding + 可见插槽宽度。
         """
         content = self._inner.sizeHint().width()
         pad = size_config["padding_x"] * 2
@@ -340,6 +401,14 @@ class _DateInputStylingMixin(_InputStylingMixin):
         return max(120, content + pad + extras)
 
     def _resolve_radius(self, size_config: dict) -> str:
+        """解析外框圆角值。
+
+        Args:
+            size_config: 尺寸 token（default_radius / height / inside_height）。
+
+        Returns:
+            full 按当前高度折算；其余取全局 RADIUS token。
+        """
         radius_key = self._radius or size_config.get("default_radius", "md")
         if radius_key == "full":
             is_inside = self._label_placement == "inside" and self._has_label()

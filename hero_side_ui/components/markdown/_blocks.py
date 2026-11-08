@@ -1,11 +1,7 @@
-"""Markdown 私有块级容器：列表、引用块。
+"""Markdown 私有块级容器：_ListBlock 与 _QuoteBlock。
 
-这两类是 Markdown 中唯二的"容器节点"——内部可递归嵌套任意块级内容
-（段落、子列表、引用），库里没有现成组件可对应，故新写两个轻量容器。
-
-职责只有三件：缩进 / 符号或竖条 / 把子节点回调 renderer 递归渲染。
-不含业务逻辑、不发信号；引用竖条颜色随主题，取自 ``MARKDOWN_QUOTE``。
-所有子 widget 创建时显式传 parent，避免无父瞬间触发 Windows 闪窗。
+只负责缩进/符号/竖条并回调 renderer 递归渲染子节点；子 widget 显式传
+parent 防 Windows 无父闪窗。
 """
 
 from __future__ import annotations
@@ -27,10 +23,9 @@ if TYPE_CHECKING:
 
 
 def _task_state(item: SyntaxTreeNode) -> bool | None:
-    """列表项是否为任务项：是则返回勾选状态(True/False)，否则 None。
+    """判断列表项是否任务项：是则返回勾选状态，否则 None。
 
-    tasklists 插件把 task 项标 class=task-list-item，并在其 inline 首个
-    html_inline 注入 ``<input ... checked ...>``；据此判定并读勾选态。
+    按 tasklists 插件注入的 class 与 <input checked> 判定。
     """
     cls = str(item.attrs.get("class", "")) if _safe_has_attrs(item) else ""
     if "task-list-item" not in cls:
@@ -46,6 +41,11 @@ def _task_state(item: SyntaxTreeNode) -> bool | None:
 
 
 def _safe_has_attrs(node: SyntaxTreeNode) -> bool:
+    """安全探测节点是否带 attrs（部分节点读 attrs 会抛异常）。
+
+    Returns:
+        bool: True 表示可安全访问 node.attrs。
+    """
     try:
         _ = node.attrs
         return True
@@ -54,13 +54,16 @@ def _safe_has_attrs(node: SyntaxTreeNode) -> bool:
 
 
 class _ReadonlyCheckbox(Checkbox):
-    """只读任务勾选框：复用 Checkbox 默认外观，仅屏蔽点击/键盘/焦点切换。
-
-    不传 size/radius/disable_animation —— 全用组件默认样式。不用 is_disabled
-    （会置灰），只拦截交互事件保持正常配色。
-    """
+    """只读任务勾选框：复用 Checkbox 外观，仅拦截交互事件保持正常配色。"""
 
     def __init__(self, checked: bool, theme: str, parent: QWidget = None):
+        """构造只读勾选框。
+
+        Args:
+            checked: 初始勾选状态。
+            theme: 主题（light/dark）。
+            parent: 父控件。
+        """
         super().__init__(
             is_selected=checked,
             theme=theme,
@@ -71,22 +74,20 @@ class _ReadonlyCheckbox(Checkbox):
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
     def mousePressEvent(self, event):  # type: ignore[override]
+        """拦截按下事件，保持只读（不触发 toggle）。"""
         event.ignore()
 
     def mouseReleaseEvent(self, event):  # type: ignore[override]
+        """拦截释放事件，保持只读。"""
         event.ignore()
 
     def keyPressEvent(self, event):  # type: ignore[override]
+        """拦截键盘事件，保持只读。"""
         event.ignore()
 
 
 class _ListBlock(QWidget):
-    """有序 / 无序列表容器。
-
-    每个列表项 = 左侧符号(•)或序号(1.) + 右侧内容区；内容区把列表项的子节点
-    交回 renderer 递归渲染，从而支持项内嵌套段落 / 子列表。任务项(- [x]/- [ ])
-    的左侧符号换成只读 Checkbox。
-    """
+    """有序/无序列表容器：符号或序号 + 内容区递归渲染；任务项换只读 Checkbox。"""
 
     def __init__(
         self,
@@ -94,6 +95,13 @@ class _ListBlock(QWidget):
         renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
+        """构建列表块：遍历 list_item 生成「符号/序号 + 递归渲染内容」行。
+
+        Args:
+            node: 语法树中的 ordered_list / bullet_list 节点。
+            renderer: MarkdownRenderer，用于递归渲染子节点。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._ordered = node.type == "ordered_list"
         self._renderer = renderer
@@ -117,6 +125,16 @@ class _ListBlock(QWidget):
             lay.addWidget(self._build_item(marker, item, task))
 
     def _build_item(self, marker: str, item: SyntaxTreeNode, task: bool | None) -> QWidget:
+        """构建单行：左侧 marker（序号/符号/只读 Checkbox）+ 右侧递归渲染内容。
+
+        Args:
+            marker: 序号或项目符号文本。
+            item: list_item 语法树节点。
+            task: 任务勾选状态；None 表示非任务项。
+
+        Returns:
+            QWidget: 一行（marker + 内容）的容器。
+        """
         row = QWidget(self)
         row_lay = QHBoxLayout(row)
         row_lay.setContentsMargins(MARKDOWN_LIST["indent"], 0, 0, 0)
@@ -149,11 +167,7 @@ class _ListBlock(QWidget):
 
 
 class _QuoteBlock(QWidget):
-    """引用块：左侧主题色竖条 + 半透明黑/白底，右侧递归渲染子内容。
-
-    底色用半透明（亮色叠黑、暗色叠白），嵌套引用是层层子 widget，各自画一层
-    半透明底叠加在父底上，故越深层视觉越暗，天然区分嵌套层级。无边框。
-    """
+    """引用块：主题色竖条 + 半透明底，嵌套层层叠加天然区分层级。"""
 
     def __init__(
         self,
@@ -161,6 +175,13 @@ class _QuoteBlock(QWidget):
         renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
+        """构建引用块：半透明底容器 + 左侧主题色竖条，内部递归渲染子节点。
+
+        Args:
+            node: blockquote 语法树节点。
+            renderer: MarkdownRenderer，用于递归渲染子节点。
+            parent: 父控件。
+        """
         super().__init__(parent)
         self._renderer = renderer
         self._theme = renderer.theme
@@ -189,6 +210,11 @@ class _QuoteBlock(QWidget):
         lay.addWidget(content, 1)
 
     def _bar_color(self) -> QColor:
+        """返回左侧竖条颜色。
+
+        Returns:
+            QColor: 当前主题对应的竖条色。
+        """
         shade = (
             MARKDOWN_QUOTE["bar_shade_dark"]
             if self._theme == "dark"
@@ -197,6 +223,11 @@ class _QuoteBlock(QWidget):
         return QColor(HEROUI_COLORS["default"][shade])
 
     def _bg_color(self) -> QColor:
+        """返回半透明背景色。
+
+        Returns:
+            QColor: 带 alpha 的叠加底色。
+        """
         r, g, b = (
             MARKDOWN_QUOTE["overlay_dark"]
             if self._theme == "dark"
@@ -207,6 +238,7 @@ class _QuoteBlock(QWidget):
         return c
 
     def paintEvent(self, event):  # type: ignore[override]
+        """重绘：绘制圆角半透明底与左缘竖条。"""
         super().paintEvent(event)
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
