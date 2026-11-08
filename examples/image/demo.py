@@ -22,20 +22,18 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy
+from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
 from hero_side_ui import (
-    Image,
     Button,
     Caption,
+    Image,
 )
-from _base import DemoBase
 
 # 开启组件内部的加载失败警告日志，控制台可见
-logging.basicConfig(
-    level=logging.WARNING, format="[%(name)s] %(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.WARNING, format="[%(name)s] %(levelname)s: %(message)s")
 
 # 远程随机图 API（用户指定）
 RANDOM_IMG = "https://uapis.cn/api/v1/random/image"
@@ -248,9 +246,7 @@ def _make_fallback() -> QWidget:
         height=180,
         radius="lg",
     )
-    bad.failed.connect(
-        lambda: print(f"[demo] 主图加载失败，已切换到 fallback_src: {BING_DAILY}")
-    )
+    bad.failed.connect(lambda: print(f"[demo] 主图加载失败，已切换到 fallback_src: {BING_DAILY}"))
     return _column(bad, _label("主图加载失败 → 展示 fallback_src（Bing 每日一图）"))
 
 

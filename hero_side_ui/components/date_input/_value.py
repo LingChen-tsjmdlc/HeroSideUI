@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, replace
-from typing import Optional
 
 import icu
 
@@ -43,7 +42,7 @@ class DateTimeValue:
     minute: int = 0
     second: int = 0
     identifier: str = "gregorian"
-    timezone: Optional[str] = None
+    timezone: str | None = None
     has_time: bool = False
 
     # ---- 与 CalendarDate 互转 ------------------------------------------
@@ -60,9 +59,9 @@ class DateTimeValue:
         hour: int = 0,
         minute: int = 0,
         second: int = 0,
-        timezone: Optional[str] = None,
+        timezone: str | None = None,
         has_time: bool = False,
-    ) -> "DateTimeValue":
+    ) -> DateTimeValue:
         return DateTimeValue(
             year=date.year,
             month=date.month,
@@ -75,27 +74,25 @@ class DateTimeValue:
             has_time=has_time,
         )
 
-    def with_date(self, date: CalendarDate) -> "DateTimeValue":
+    def with_date(self, date: CalendarDate) -> DateTimeValue:
         """保留时间/时区，替换日期部分。"""
         return replace(self, year=date.year, month=date.month, day=date.day)
 
-    def with_fields(self, **kwargs) -> "DateTimeValue":
+    def with_fields(self, **kwargs) -> DateTimeValue:
         """替换任意字段并返回新实例。
 
         溢出的日按目标月实际天数**截断**而非进位（1/31 改成 2 月 → 2/29），
         与 react-aria 段编辑的约束语义一致；ICU lenient 模式会滚到 3/2，不可用。
         """
         merged = replace(self, **kwargs)
-        max_day = CalendarDate(
-            merged.year, merged.month, 1, merged.identifier
-        ).days_in_month
+        max_day = CalendarDate(merged.year, merged.month, 1, merged.identifier).days_in_month
         if merged.day > max_day:
             merged = replace(merged, day=max_day)
         return merged
 
     # ---- 历法转换 ------------------------------------------------------
 
-    def to_calendar(self, identifier: str) -> "DateTimeValue":
+    def to_calendar(self, identifier: str) -> DateTimeValue:
         """转换到另一历法，保持指向同一时刻（如公历 → 印度历）。"""
         if identifier == self.identifier:
             return self
@@ -118,16 +115,16 @@ class DateTimeValue:
         """跨历法可比的排序键：先归一到绝对时刻，再带上时间部分。"""
         return (self.date._ordinal(), self.hour, self.minute, self.second)
 
-    def __lt__(self, other: "DateTimeValue") -> bool:
+    def __lt__(self, other: DateTimeValue) -> bool:
         return self._ordinal() < other._ordinal()
 
-    def __le__(self, other: "DateTimeValue") -> bool:
+    def __le__(self, other: DateTimeValue) -> bool:
         return self._ordinal() <= other._ordinal()
 
-    def __gt__(self, other: "DateTimeValue") -> bool:
+    def __gt__(self, other: DateTimeValue) -> bool:
         return self._ordinal() > other._ordinal()
 
-    def __ge__(self, other: "DateTimeValue") -> bool:
+    def __ge__(self, other: DateTimeValue) -> bool:
         return self._ordinal() >= other._ordinal()
 
     # ---- 展示 ----------------------------------------------------------
@@ -159,8 +156,8 @@ def _locale_for_locale(locale: str, identifier: str) -> icu.Locale:
 
 def clamp_value(
     value: DateTimeValue,
-    min_value: Optional[DateTimeValue],
-    max_value: Optional[DateTimeValue],
+    min_value: DateTimeValue | None,
+    max_value: DateTimeValue | None,
 ) -> DateTimeValue:
     """把值夹到 [min, max] 区间内。"""
     if min_value is not None and value < min_value:
@@ -204,9 +201,7 @@ def parse_absolute_to_local(text: str, identifier: str = "gregorian") -> DateTim
     y, m, d = (int(p) for p in date_part.split("-"))
     hh, mm, ss = _parse_time_part(time_part)
 
-    utc = icu.Calendar.createInstance(
-        icu.TimeZone.getGMT(), _locale_for(identifier)
-    )
+    utc = icu.Calendar.createInstance(icu.TimeZone.getGMT(), _locale_for(identifier))
     utc.clear()
     utc.set(y, m - 1, d, hh, mm, ss)
 
@@ -227,13 +222,9 @@ def parse_absolute_to_local(text: str, identifier: str = "gregorian") -> DateTim
     )
 
 
-def now(timezone: Optional[str] = None, identifier: str = "gregorian") -> DateTimeValue:
+def now(timezone: str | None = None, identifier: str = "gregorian") -> DateTimeValue:
     """当前时刻（带时间，可指定时区）。"""
-    tz = (
-        icu.TimeZone.createTimeZone(timezone)
-        if timezone
-        else icu.TimeZone.createDefault()
-    )
+    tz = icu.TimeZone.createTimeZone(timezone) if timezone else icu.TimeZone.createDefault()
     cal = _fresh_calendar(identifier)
     cal.setTimeZone(tz)
     cal.setTime(icu.Calendar.getNow())

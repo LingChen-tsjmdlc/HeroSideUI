@@ -9,7 +9,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -21,6 +21,8 @@ from PySide6.QtWidgets import (
 
 from ...core import ThemeProvider
 from ...themes import CALENDAR_SIZES, RADIUS
+from ..text import Text
+from . import _palette as pal
 from ._date import (
     CalendarDate,
     month_name,
@@ -34,26 +36,24 @@ from ._picker import _CalendarPicker
 from ._state import CalendarState
 from ._transition import _SlideTransition
 from ._weekday_bar import _WeekdayBar
-from ..text import Text
-from . import _palette as pal
 
 VALID_COLORS = ("foreground", "primary", "secondary", "success", "warning", "danger")
 
 
 class Calendar(QWidget):
-    change = Signal(object)                  # 发射 CalendarDate（选中值）
-    focus_change = Signal(object)            # 发射 CalendarDate（焦点移动）
-    header_expanded_change = Signal(bool)    # 月/年选择器展开/收起
+    change = Signal(object)  # 发射 CalendarDate（选中值）
+    focus_change = Signal(object)  # 发射 CalendarDate（焦点移动）
+    header_expanded_change = Signal(bool)  # 月/年选择器展开/收起
 
     def __init__(
         self,
         *,
-        value: Optional[CalendarDate] = None,
-        min_value: Optional[CalendarDate] = None,
-        max_value: Optional[CalendarDate] = None,
+        value: CalendarDate | None = None,
+        min_value: CalendarDate | None = None,
+        max_value: CalendarDate | None = None,
         color: str = "primary",
         visible_months: int = 1,
-        first_day_of_week: Optional[str] = None,
+        first_day_of_week: str | None = None,
         weekday_style: str = "narrow",
         page_behavior: str = "visible",
         show_month_and_year_pickers: bool = False,
@@ -61,11 +61,11 @@ class Calendar(QWidget):
         is_disabled: bool = False,
         is_readonly: bool = False,
         is_invalid: bool = False,
-        error_message: Optional[str] = None,
-        is_date_unavailable: Optional[Callable[[CalendarDate], bool]] = None,
+        error_message: str | None = None,
+        is_date_unavailable: Callable[[CalendarDate], bool] | None = None,
         disable_animation: bool = False,
-        top_content: Optional[QWidget] = None,
-        bottom_content: Optional[QWidget] = None,
+        top_content: QWidget | None = None,
+        bottom_content: QWidget | None = None,
         identifier: str = "gregorian",
         theme: str = "auto",
         parent=None,
@@ -106,7 +106,7 @@ class Calendar(QWidget):
         self._state.on_change = self._on_state_change
         self._state.on_focus_change = self._on_state_focus_change
 
-        self._months: List[_MonthGrid] = []
+        self._months: list[_MonthGrid] = []
         self._picker = None
         self._build_ui()
 
@@ -135,18 +135,27 @@ class Calendar(QWidget):
         # 故此处仅占位，实际插入在 viewport 尺寸确定后（见下）。
 
         month_w = self._sizes["calendar_width"]
-        self._header = _CalendarHeader(self._sizes, visible_months=self._visible_months,
-                                       month_width=month_w, theme=self._theme,
-                                       show_pickers=self._show_pickers, parent=self)
+        self._header = _CalendarHeader(
+            self._sizes,
+            visible_months=self._visible_months,
+            month_width=month_w,
+            theme=self._theme,
+            show_pickers=self._show_pickers,
+            parent=self,
+        )
         self._header.prev_clicked.connect(self._on_prev)
         self._header.next_clicked.connect(self._on_next)
         self._header.title_clicked.connect(self._toggle_expanded)
         root.addWidget(self._header)
 
         # 固定星期名条（属顶部亮区，翻月不动、不参与滑动）
-        self._weekday_bar = _WeekdayBar(self._sizes, visible_months=self._visible_months,
-                                        col_width=self._col_width, theme=self._theme,
-                                        parent=self)
+        self._weekday_bar = _WeekdayBar(
+            self._sizes,
+            visible_months=self._visible_months,
+            col_width=self._col_width,
+            theme=self._theme,
+            parent=self,
+        )
         root.addWidget(self._weekday_bar)
 
         # 网格 viewport（固定尺寸，滑动裁剪窗口）+ content（横排 N 个月）
@@ -157,9 +166,14 @@ class Calendar(QWidget):
         cl.setContentsMargins(0, 0, 0, 0)
         cl.setSpacing(0)
         for _ in range(self._visible_months):
-            mg = _MonthGrid(self._state, self._sizes, color=self._color,
-                            theme=self._theme, col_width=self._col_width,
-                            parent=self._content)
+            mg = _MonthGrid(
+                self._state,
+                self._sizes,
+                color=self._color,
+                theme=self._theme,
+                col_width=self._col_width,
+                parent=self._content,
+            )
             mg.date_clicked.connect(self._on_date_clicked)
             mg.date_hovered.connect(self._on_date_hovered)
             cl.addWidget(mg)
@@ -186,10 +200,12 @@ class Calendar(QWidget):
 
         # 错误消息（is_invalid + 有文本时显示，danger 色）。总是创建以支持
         # 运行时 set_invalid 动态显隐。
-        self._error_label = Text(self._error_message or "", size="xs",
-                                 color="danger-500", theme=self._theme, parent=self)
-        self._error_label.setContentsMargins(self._sizes["grid_pad_x"], 2,
-                                              self._sizes["grid_pad_x"], 6)
+        self._error_label = Text(
+            self._error_message or "", size="xs", color="danger-500", theme=self._theme, parent=self
+        )
+        self._error_label.setContentsMargins(
+            self._sizes["grid_pad_x"], 2, self._sizes["grid_pad_x"], 6
+        )
         self._error_label.setVisible(bool(self._is_invalid and self._error_message))
         root.addWidget(self._error_label)
 
@@ -201,12 +217,15 @@ class Calendar(QWidget):
     def _compute_col_width(self) -> int:
         """列宽 = max(cell_size, 该周起点下最长星期名的文字宽 + 左右留白)。"""
         from PySide6.QtGui import QFontMetrics
+
         from ...core import make_text_qfont
 
         cell = self._sizes["cell_size"]
-        names = weekday_names(self._state.first_day_of_week, self._weekday_style,
-                              self._state.identifier if hasattr(self._state, "identifier")
-                              else "gregorian")
+        names = weekday_names(
+            self._state.first_day_of_week,
+            self._weekday_style,
+            self._state.identifier if hasattr(self._state, "identifier") else "gregorian",
+        )
         fm = QFontMetrics(make_text_qfont("xs", "normal"))
         longest = max((fm.horizontalAdvance(n) for n in names), default=0)
         return max(cell, longest + 10)
@@ -223,8 +242,10 @@ class Calendar(QWidget):
         area.setFrameShape(QScrollArea.Shape.NoFrame)
         area.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         area.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
-        area.setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget "
-                           "{ background: transparent; border: none; }")
+        area.setStyleSheet(
+            "QScrollArea, QScrollArea > QWidget > QWidget "
+            "{ background: transparent; border: none; }"
+        )
         area.viewport().setAutoFillBackground(False)
         content.setParent(area)
         content.adjustSize()
@@ -242,11 +263,14 @@ class Calendar(QWidget):
     def _build_picker(self) -> None:
         ident = self._state.identifier
         month_items = [(m, month_name(m, ident)) for m in range(1, 13)]
-        year_items = [(y, str(y)) for y in
-                      year_range(self._state.min_value, self._state.max_value)]
-        self._picker = _CalendarPicker(self._sizes, month_items=month_items,
-                                       year_items=year_items, theme=self._theme,
-                                       parent=self._viewport)
+        year_items = [(y, str(y)) for y in year_range(self._state.min_value, self._state.max_value)]
+        self._picker = _CalendarPicker(
+            self._sizes,
+            month_items=month_items,
+            year_items=year_items,
+            theme=self._theme,
+            parent=self._viewport,
+        )
         self._picker.setGeometry(0, 0, self._viewport.width(), self._viewport.height())
         self._picker.month_changed.connect(self._on_picker_month)
         self._picker.year_changed.connect(self._on_picker_year)
@@ -282,10 +306,11 @@ class Calendar(QWidget):
     def _on_picker_year(self, year: int) -> None:
         self._set_focused_month_year(year=year)
 
-    def _set_focused_month_year(self, *, month: int = None, year: int = None) -> None:
+    def _set_focused_month_year(self, *, month: int | None = None, year: int | None = None) -> None:
         f = self._state.focused_date
-        new = f.with_fields(month=month if month is not None else f.month,
-                            year=year if year is not None else f.year)
+        new = f.with_fields(
+            month=month if month is not None else f.month, year=year if year is not None else f.year
+        )
         self._state.set_focused_date(new)
         # picker 展开时焦点变了，同步底层月网格（收起后可见）
         self._render_months()
@@ -302,12 +327,12 @@ class Calendar(QWidget):
 
     # ---- 渲染 ---------------------------------------------------------
 
-    def _month_starts(self) -> List[CalendarDate]:
+    def _month_starts(self) -> list[CalendarDate]:
         return self._state.visible_month_starts()
 
     def _render_months(self) -> None:
         starts = self._month_starts()
-        for mg, start in zip(self._months, starts):
+        for mg, start in zip(self._months, starts, strict=False):
             mg.render_month(start)
 
     def _render_titles(self) -> None:
@@ -315,16 +340,16 @@ class Calendar(QWidget):
         self._header.set_titles(titles)
 
     def _render_weekdays(self) -> None:
-        names = weekday_names(self._state.first_day_of_week, self._weekday_style,
-                              self._month_starts()[0].identifier)
+        names = weekday_names(
+            self._state.first_day_of_week, self._weekday_style, self._month_starts()[0].identifier
+        )
         self._weekday_bar.set_names(names)
 
     def _render_all(self) -> None:
         self._render_months()
         self._render_titles()
         self._render_weekdays()
-        self._header.set_page_enabled(self._state.can_page_previous(),
-                                      self._state.can_page_next())
+        self._header.set_page_enabled(self._state.can_page_previous(), self._state.can_page_next())
 
     def _apply_styles(self) -> None:
         radius = int(RADIUS["lg"].rstrip("px"))
@@ -348,7 +373,7 @@ class Calendar(QWidget):
 
     # ---- state 回调 ---------------------------------------------------
 
-    def _on_state_change(self, value: Optional[CalendarDate]) -> None:
+    def _on_state_change(self, value: CalendarDate | None) -> None:
         self._render_all()
         self.change.emit(value)
 
@@ -384,10 +409,10 @@ class Calendar(QWidget):
 
     # ---- 公共 API -----------------------------------------------------
 
-    def value(self) -> Optional[CalendarDate]:
+    def value(self) -> CalendarDate | None:
         return self._state.value
 
-    def set_value(self, date: Optional[CalendarDate]) -> None:
+    def set_value(self, date: CalendarDate | None) -> None:
         if date is not None:
             self._state.select_date(date)
 
@@ -400,7 +425,7 @@ class Calendar(QWidget):
     def is_invalid(self) -> bool:
         return self._is_invalid
 
-    def set_invalid(self, is_invalid: bool, error_message: Optional[str] = None) -> None:
+    def set_invalid(self, is_invalid: bool, error_message: str | None = None) -> None:
         """运行时切换无效态：红框 + 底部错误提示。error_message 为 None 时保留原文本。"""
         self._is_invalid = bool(is_invalid)
         if error_message is not None:

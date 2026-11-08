@@ -39,14 +39,12 @@ HeroSideUI 全局滚动条样式管理器 (ScrollStyle)
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
-from PySide6.QtCore import QObject, QEvent, QEasingCurve
+from PySide6.QtCore import QEasingCurve, QEvent, QObject
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QApplication, QScrollBar
 
+from ..animation.tween import stop_tween, tween_value
 from ..themes import HEROUI_COLORS
-from ..animation.tween import tween_value, stop_tween
 from .theme_provider import ThemeProvider
 
 VALID_COLORS = (
@@ -66,10 +64,10 @@ class ScrollStyle(QObject):
     线程不安全，仅在 GUI 主线程使用。
     """
 
-    _instance: Optional["ScrollStyle"] = None
+    _instance: ScrollStyle | None = None
 
     @classmethod
-    def instance(cls) -> "ScrollStyle":
+    def instance(cls) -> ScrollStyle:
         if cls._instance is None:
             cls._instance = cls()
         # 幂等自动激活（仿 FontProvider.ensure_loaded 模式）：
@@ -149,9 +147,7 @@ class ScrollStyle(QObject):
     def set_easing(self, easing: QEasingCurve.Type):
         self._easing = easing
 
-    def set_shadow_alpha(
-        self, *, light: Optional[int] = None, dark: Optional[int] = None
-    ):
+    def set_shadow_alpha(self, *, light: int | None = None, dark: int | None = None):
         """设置 handle 阴影（border 模拟）的 alpha 强度（0-255）
 
         normal 状态用此 alpha；hover 时渐变到 0（border 消失）。
@@ -184,7 +180,7 @@ class ScrollStyle(QObject):
     # ============================================================
     # 单条 bar 颜色覆盖（典型用例: Textarea 让滚动条跟随自己的 color 属性）
     # ============================================================
-    def set_bar_color(self, bar: QScrollBar, color: Optional[str]):
+    def set_bar_color(self, bar: QScrollBar, color: str | None):
         """给单条 QScrollBar 注册一个颜色意图，覆盖全局 self._color
 
         Args:
@@ -233,18 +229,16 @@ class ScrollStyle(QObject):
                 bar.setStyleSheet("")
             except RuntimeError:
                 pass
-            setattr(bar, "_hs_scroll_progress", 0.0)
+            bar._hs_scroll_progress = 0.0
             return
         # 自定义色 或 进度>0 → setStyleSheet 让其生效
         self._apply_progress_to_bar(bar, progress, normal, hover)
-        setattr(bar, "_hs_scroll_progress", progress)
+        bar._hs_scroll_progress = progress
 
     # ============================================================
     # 颜色 ramp：亮色 300→400，暗色 700→600
     # ============================================================
-    def _resolve_handle_colors(
-        self, color: str, is_dark: bool
-    ) -> Tuple[QColor, QColor]:
+    def _resolve_handle_colors(self, color: str, is_dark: bool) -> tuple[QColor, QColor]:
         ramp = HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
         if is_dark:
             return QColor(ramp[700]), QColor(ramp[600])
@@ -264,8 +258,8 @@ class ScrollStyle(QObject):
         *,
         thickness: int,
         handle_color: QColor,
-        border_color: Optional[QColor] = None,
-        color: Optional[str] = None,
+        border_color: QColor | None = None,
+        color: str | None = None,
     ) -> str:
         """根据当前 thickness（瞬时插值值）和 handle 颜色生成单条 QScrollBar 的 QSS
 
@@ -339,9 +333,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
 }}
         """.strip()
 
-    def build_qss(
-        self, color: Optional[str] = None, is_dark: Optional[bool] = None
-    ) -> str:
+    def build_qss(self, color: str | None = None, is_dark: bool | None = None) -> str:
         """对外公开的 QSS 生成方法（默认 normal 状态，无 hover 信息）
 
         组件想要把这套样式应用到自己的 widget 上时调用此方法。例如：
@@ -386,9 +378,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
 
         normal_color, _hover = self._resolve_handle_colors(self._color, self._is_dark())
         # 静态层（normal 状态）：handle 带满 alpha 的 border 阴影
-        max_alpha = (
-            self._shadow_alpha_dark if self._is_dark() else self._shadow_alpha_light
-        )
+        max_alpha = self._shadow_alpha_dark if self._is_dark() else self._shadow_alpha_light
         static_border = QColor(0, 0, 0, max_alpha) if max_alpha > 0 else None
         static_qss = self._build_bar_qss(
             thickness=self._thickness,
@@ -485,17 +475,9 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
         thickness_now = t + (ht - t) * progress
         # 颜色插值（QColor 线性混合）
         c = QColor(
-            int(
-                normal_color.red() + (hover_color.red() - normal_color.red()) * progress
-            ),
-            int(
-                normal_color.green()
-                + (hover_color.green() - normal_color.green()) * progress
-            ),
-            int(
-                normal_color.blue()
-                + (hover_color.blue() - normal_color.blue()) * progress
-            ),
+            int(normal_color.red() + (hover_color.red() - normal_color.red()) * progress),
+            int(normal_color.green() + (hover_color.green() - normal_color.green()) * progress),
+            int(normal_color.blue() + (hover_color.blue() - normal_color.blue()) * progress),
         )
         # border 阴影：仅在 bar **使用全局色**（neutral）时才有，
         # 自定义语义色（primary/success/...）色阶本身鲜明，不需要描边
@@ -505,12 +487,12 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             is_dark = self._is_dark()
             max_alpha = self._shadow_alpha_dark if is_dark else self._shadow_alpha_light
             # alpha 反向插值：progress=0 满 alpha；progress=1 alpha=0
-            border_alpha = int(round(max_alpha * (1.0 - progress)))
+            border_alpha = round(max_alpha * (1.0 - progress))
             border_color = QColor(0, 0, 0, border_alpha) if border_alpha > 0 else None
 
         bar.setStyleSheet(
             self._build_bar_qss(
-                thickness=int(round(thickness_now)),
+                thickness=round(thickness_now),
                 handle_color=c,
                 border_color=border_color,
             )
@@ -527,7 +509,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             pass  # bar 可能已销毁
         # 进度回到 0
         try:
-            setattr(bar, "_hs_scroll_progress", 0.0)
+            bar._hs_scroll_progress = 0.0
         except Exception:
             pass
 

@@ -8,10 +8,10 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import QRect, QObject
+from PySide6.QtCore import QObject, QRect
 from PySide6.QtGui import QColor, QImage, QPainter
 
-from hero_side_ui.animation import paint_animated_check, CheckDrawAnimation
+from hero_side_ui.animation import CheckDrawAnimation, paint_animated_check
 
 
 def _make_canvas(size: int = 60) -> QImage:
@@ -129,8 +129,7 @@ class TestCheckDrawAnimationProgress:
     def test_play_false_with_draw_out_animates_down(self, qtbot):
         """draw_out=True：play(False) 播 1→0。"""
         h = _Holder()
-        anim = CheckDrawAnimation(h, duration_in=50, duration_out=60,
-                                  delay_in=0, draw_out=True)
+        anim = CheckDrawAnimation(h, duration_in=50, duration_out=60, delay_in=0, draw_out=True)
         anim.play(True)
         qtbot.wait(120)
         assert anim.progress == pytest.approx(1.0, abs=0.01)

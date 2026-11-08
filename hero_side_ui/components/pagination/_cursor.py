@@ -8,23 +8,19 @@
   - 鼠标穿透,首次出现淡入
 """
 
-from ...animation import tween_value, stop_tween
-
-from typing import Optional
-
 from PySide6.QtCore import QRectF, Qt, QVariantAnimation
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
 
+from ...animation import stop_tween, tween_value
 from ...core.text_style import make_text_qfont
-
 from ._palette import resolve_cursor_fill, resolve_cursor_text
 
 
 class _CursorWidget(QWidget):
     """active 页面的高亮光标(浮于 items 之上)。"""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -46,7 +42,7 @@ class _CursorWidget(QWidget):
         self._text_progress = 1.0
         self._font_size = 13
         # 文字交叉淡入动画 runner
-        self._text_anim: Optional[QVariantAnimation] = None
+        self._text_anim: QVariantAnimation | None = None
         # 文字切换偏移幅度 (px)
         self._text_swap_offset = 4.0
         # 当前文字滚动方向:"up" 旧字向上滚出/新字从下方滚入(页码增大);
@@ -60,11 +56,11 @@ class _CursorWidget(QWidget):
     def configure(
         self,
         *,
-        variant: Optional[str] = None,
-        color: Optional[str] = None,
-        theme: Optional[str] = None,
-        radius_px: Optional[int] = None,
-        font_size: Optional[int] = None,
+        variant: str | None = None,
+        color: str | None = None,
+        theme: str | None = None,
+        radius_px: int | None = None,
+        font_size: int | None = None,
     ):
         if variant is not None:
             self._variant = variant
@@ -95,8 +91,7 @@ class _CursorWidget(QWidget):
         """是否已设置过页码文本 (空字符串视为未设置)。"""
         return bool(self._page_text)
 
-    def start_text_swap(self, new_text: str, *, duration_ms: int = 300,
-                        direction: str = "up"):
+    def start_text_swap(self, new_text: str, *, duration_ms: int = 300, direction: str = "up"):
         new_text = str(new_text)
         if new_text == self._page_text:
             return
@@ -117,8 +112,9 @@ class _CursorWidget(QWidget):
             self._old_page_text = ""
             self.update()
 
-        tween_value(self, "_text_anim", 0.0, 1.0, step,
-                    duration=max(1, int(duration_ms)), on_finished=done)
+        tween_value(
+            self, "_text_anim", 0.0, 1.0, step, duration=max(1, int(duration_ms)), on_finished=done
+        )
 
     def _stop_text_anim(self):
         stop_tween(self, "_text_anim")

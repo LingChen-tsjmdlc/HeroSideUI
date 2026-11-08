@@ -3,7 +3,6 @@
 import ast
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parents[2] / "hero_side_ui"
 
 
@@ -11,7 +10,8 @@ def calls(path):
     tree = ast.parse(path.read_text(encoding="utf-8-sig"))
     aliases = {
         alias.asname or alias.name: alias.name
-        for node in ast.walk(tree) if isinstance(node, ast.ImportFrom)
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom)
         for alias in node.names
     }
     for node in ast.walk(tree):
@@ -28,14 +28,17 @@ def test_components_use_shared_transition_entry_points():
             for name, line in calls(path):
                 if name in ("QPropertyAnimation", "QVariantAnimation"):
                     violations.append(f"{path.relative_to(ROOT)}:{line}")
-    assert not violations, "Use animation/ drivers or define a shared semantic effect: " + ", ".join(violations)
+    assert not violations, (
+        "Use animation/ drivers or define a shared semantic effect: " + ", ".join(violations)
+    )
 
 
 def test_repeating_interpolation_has_one_implementation():
     owners = {
         path.relative_to(ROOT).as_posix()
         for path in ROOT.rglob("*.py")
-        for name, _ in calls(path) if name == "setLoopCount"
+        for name, _ in calls(path)
+        if name == "setLoopCount"
     }
     assert owners == {"animation/loop.py"}
 

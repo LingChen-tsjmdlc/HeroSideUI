@@ -6,14 +6,10 @@
 - paintEvent: 阴影 + 圆角主体 + 箭头自绘
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QPoint, QRect, QRectF, QSize, Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QWidget
+from PySide6.QtCore import QRectF, QSize, Qt
+from PySide6.QtGui import QColor, QPainter, QPainterPath
 
 from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
-
 from ._constants import ARROW_INSET, ARROW_SIZE
 
 
@@ -76,9 +72,7 @@ class _PopoverPaintMixin:
 
     def _content_rect_size(self) -> QSize:
         m = self._frame_margins()
-        return QSize(
-            max(0, self.width() - m[0] - m[2]), max(0, self.height() - m[1] - m[3])
-        )
+        return QSize(max(0, self.width() - m[0] - m[2]), max(0, self.height() - m[1] - m[3]))
 
     # ============================================================
     # 绘制：阴影 + 圆角主体 + 箭头
@@ -115,9 +109,7 @@ class _PopoverPaintMixin:
         radius = self._resolve_radius()
 
         # 内容矩形（即 frame 内层）
-        content_rect = QRectF(
-            m[0], m[1], self.width() - m[0] - m[2], self.height() - m[1] - m[3]
-        )
+        content_rect = QRectF(m[0], m[1], self.width() - m[0] - m[2], self.height() - m[1] - m[3])
 
         # ---- 1) 阴影：多层半透明，越往外越透明 ----
         if cfg["layers"] > 0:
@@ -218,4 +210,3 @@ class _PopoverPaintMixin:
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(bg)
         painter.drawPath(path)
-

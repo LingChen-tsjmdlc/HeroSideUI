@@ -32,7 +32,7 @@ TEXTAREA_SIZES = {
         # inside label 浮起偏移 & 文本顶部预留
         "label_float_x": 0,
         "label_float_y": 5,
-        "inside_input_top_space": 18,   # textarea 比 input 多一点，让浮起 label 与第一行文字有呼吸
+        "inside_input_top_space": 18,  # textarea 比 input 多一点，让浮起 label 与第一行文字有呼吸
         "min_width": 240,
     },
     "md": {

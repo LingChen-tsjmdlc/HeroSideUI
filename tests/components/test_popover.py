@@ -1,7 +1,7 @@
 """Popover 测试 — 注意：popover 是顶层窗口，测试时不调用 .open() 避免抢焦点"""
 
 import pytest
-from PySide6.QtWidgets import QPushButton, QLabel
+from PySide6.QtWidgets import QLabel, QPushButton
 
 from hero_side_ui import Button, Popover, PopoverContent, ThemeProvider
 
@@ -23,21 +23,39 @@ class TestPopoverInit:
         qtbot.addWidget(p)
         assert p._placement == "top"
 
-    @pytest.mark.parametrize("place", [
-        "top", "top-start", "top-end",
-        "bottom", "bottom-start", "bottom-end",
-        "left", "left-start", "left-end",
-        "right", "right-start", "right-end",
-    ])
+    @pytest.mark.parametrize(
+        "place",
+        [
+            "top",
+            "top-start",
+            "top-end",
+            "bottom",
+            "bottom-start",
+            "bottom-end",
+            "left",
+            "left-start",
+            "left-end",
+            "right",
+            "right-start",
+            "right-end",
+        ],
+    )
     def test_all_placements(self, qtbot, place):
         p = Popover(placement=place)
         qtbot.addWidget(p)
         assert p._placement == place
 
-    @pytest.mark.parametrize("color", [
-        "default", "primary", "secondary",
-        "success", "warning", "danger",
-    ])
+    @pytest.mark.parametrize(
+        "color",
+        [
+            "default",
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "danger",
+        ],
+    )
     def test_all_colors(self, qtbot, color):
         p = Popover(color=color)
         qtbot.addWidget(p)
@@ -178,19 +196,22 @@ class TestPopoverDynamicAPI:
 
 
 class TestFlipPlacement:
-    @pytest.mark.parametrize("place,flipped", [
-        ("top", "bottom"),
-        ("top-start", "bottom-start"),
-        ("top-end", "bottom-end"),
-        ("bottom", "top"),
-        ("bottom-start", "top-start"),
-        ("bottom-end", "top-end"),
-        ("left", "right"),
-        ("left-start", "right-start"),
-        ("left-end", "right-end"),
-        ("right", "left"),
-        ("right-start", "left-start"),
-        ("right-end", "left-end"),
-    ])
+    @pytest.mark.parametrize(
+        "place,flipped",
+        [
+            ("top", "bottom"),
+            ("top-start", "bottom-start"),
+            ("top-end", "bottom-end"),
+            ("bottom", "top"),
+            ("bottom-start", "top-start"),
+            ("bottom-end", "top-end"),
+            ("left", "right"),
+            ("left-start", "right-start"),
+            ("left-end", "right-end"),
+            ("right", "left"),
+            ("right-start", "left-start"),
+            ("right-end", "left-end"),
+        ],
+    )
     def test_flip(self, place, flipped):
         assert Popover._flip_placement(place) == flipped

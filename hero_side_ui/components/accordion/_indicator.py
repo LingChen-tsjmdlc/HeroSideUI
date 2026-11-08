@@ -48,7 +48,6 @@ class _IndicatorWidget(QWidget):
 
     def _update_pixmap(self):
         """重新渲染 SVG 图标"""
-        from ...utils import load_svg_icon
         size = max(self.width(), self.height(), 18)
         self._pixmap = load_svg_icon(self._icon_name, size=size, color=self._color)
 

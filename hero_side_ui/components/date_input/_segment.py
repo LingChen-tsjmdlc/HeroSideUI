@@ -9,7 +9,7 @@ Backspace/Delete 清空、滚轮增减，并把变化上报给宿主 DateInput�
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -36,10 +36,10 @@ class _DateSegment(Text):
         seg_type: str,
         *,
         min_digits: int = 1,
-        on_edit: Optional[Callable[[str, str, object], None]] = None,
-        on_focus_move: Optional[Callable[[int], None]] = None,
-        on_focus_change: Optional[Callable[[str, bool], None]] = None,
-        parent: Optional[QWidget] = None,
+        on_edit: Callable[[str, str, object], None] | None = None,
+        on_focus_move: Callable[[int], None] | None = None,
+        on_focus_change: Callable[[str, bool], None] | None = None,
+        parent: QWidget | None = None,
     ):
         # theme 非 "auto" 才不会注册进 ThemeProvider。段的颜色由宿主 DateInput
         # 按 variant/color/焦点态统一决策，若让 Text 保留主题自治，主题广播时
@@ -76,12 +76,8 @@ class _DateSegment(Text):
     def set_editable(self, editable: bool) -> None:
         """字面量段不可聚焦，走这里关掉焦点与光标。"""
         self._editable = editable
-        self.setFocusPolicy(
-            Qt.FocusPolicy.StrongFocus if editable else Qt.FocusPolicy.NoFocus
-        )
-        self.setCursor(
-            Qt.CursorShape.IBeamCursor if editable else Qt.CursorShape.ArrowCursor
-        )
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus if editable else Qt.FocusPolicy.NoFocus)
+        self.setCursor(Qt.CursorShape.IBeamCursor if editable else Qt.CursorShape.ArrowCursor)
 
     def set_readonly(self, readonly: bool) -> None:
         self._readonly = readonly
@@ -93,7 +89,7 @@ class _DateSegment(Text):
         self,
         *,
         text_color: QColor,
-        focus_bg: Optional[QColor],
+        focus_bg: QColor | None,
         radius_px: int,
         padding_x: int,
         focused: bool,
@@ -208,7 +204,7 @@ class _DateSegment(Text):
 class _SegmentLiteral(Text):
     """段之间的字面量分隔符（"/"、":"、", "）。不可聚焦、不响应鼠标。"""
 
-    def __init__(self, text: str, parent: Optional[QWidget] = None):
+    def __init__(self, text: str, parent: QWidget | None = None):
         # 同 _DateSegment：退出 Text 的主题自治，颜色由宿主统一决策。
         super().__init__(text, selectable=False, theme="light", parent=parent)
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)

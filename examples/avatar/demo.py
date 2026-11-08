@@ -23,14 +23,12 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QVBoxLayout
 
 from hero_side_ui import Avatar, AvatarGroup, Text
-from _base import DemoBase
 
-logging.basicConfig(
-    level=logging.WARNING, format="[%(name)s] %(levelname)s: %(message)s"
-)
+logging.basicConfig(level=logging.WARNING, format="[%(name)s] %(levelname)s: %(message)s")
 
 _IMG = "https://uapis.cn/api/v1/random/image"
 
@@ -48,31 +46,36 @@ class AvatarDemo(DemoBase):
 
         # 2. Sizes
         self.add_section(
-            layout, "Sizes",
+            layout,
+            "Sizes",
             [Avatar(name="JW", size=s) for s in SIZES],
         )
 
         # 3. Colors
         self.add_section(
-            layout, "Colors",
+            layout,
+            "Colors",
             [Avatar(name=c[0].upper(), color=c) for c in COLORS],
         )
 
         # 4. Radius
         self.add_section(
-            layout, "Radius",
+            layout,
+            "Radius",
             [Avatar(name="R", color="primary", radius=r) for r in RADII],
         )
 
         # 5. Bordered
         self.add_section(
-            layout, "Bordered",
+            layout,
+            "Bordered",
             [Avatar(name=c[0].upper(), color=c, is_bordered=True) for c in COLORS],
         )
 
         # 6. Disabled
         self.add_section(
-            layout, "Disabled",
+            layout,
+            "Disabled",
             [
                 Avatar(name="JW", color="secondary", is_bordered=True, is_disabled=True),
                 Avatar(name="AB", color="danger", is_disabled=True),
@@ -81,7 +84,8 @@ class AvatarDemo(DemoBase):
 
         # 7. WithText — 首字母缩写
         self.add_section(
-            layout, "With Text (首字母)",
+            layout,
+            "With Text (首字母)",
             [
                 Avatar(name="Jane Wu", color="danger"),
                 Avatar(name="张伟", color="primary"),
@@ -91,17 +95,23 @@ class AvatarDemo(DemoBase):
 
         # 8. WithImage — 图片头像
         self.add_section(
-            layout, "With Image",
+            layout,
+            "With Image",
             [Avatar(src=_IMG, size="lg") for _ in range(3)],
         )
 
         # 9. Fallback — 图片加载中/失败显示首字母
         self.add_section(
-            layout, "Fallback (加载中显示首字母)",
+            layout,
+            "Fallback (加载中显示首字母)",
             [
                 Avatar(src=_IMG, name="Junior", color="warning", show_fallback=True),
-                Avatar(src="https://invalid.example/broken.png", name="404",
-                       color="danger", show_fallback=True),
+                Avatar(
+                    src="https://invalid.example/broken.png",
+                    name="404",
+                    color="danger",
+                    show_fallback=True,
+                ),
             ],
         )
 

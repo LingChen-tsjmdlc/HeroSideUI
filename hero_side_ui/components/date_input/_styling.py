@@ -6,7 +6,7 @@ Input 的 `_resolve_wrapper_colors` 系列决策，保证两个组件视觉不�
 editable / placeholder / invalid / focus。
 """
 
-from PySide6.QtGui import QColor, QPalette
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLayout, QSizePolicy, QWidget
 
 from ...themes import DATE_INPUT_SIZES, HEROUI_COLORS, RADIUS
@@ -34,16 +34,12 @@ class _DateInputStylingMixin(_InputStylingMixin):
         # ---- 根控件尺寸策略 ----
         if self._full_width:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
-            self._wrapper.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-            )
+            self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
             # wrapper 默认 Expanding 会撑满 root，root 自己的 policy 拦不住，
             # 必须两处同时收紧才能真正紧凑显示。
             self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
-            self._wrapper.setSizePolicy(
-                QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed
-            )
+            self._wrapper.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
 
         # ---- 高度 ----
         is_inside = self._label_placement == "inside" and self._has_label()
@@ -64,17 +60,13 @@ class _DateInputStylingMixin(_InputStylingMixin):
 
         # ---- outside 浮动 label 的顶部预留 ----
         if is_outside_float:
-            self._root.setContentsMargins(
-                0, size_config["label_float_font_size"] + 6, 0, 0
-            )
+            self._root.setContentsMargins(0, size_config["label_float_font_size"] + 6, 0, 0)
         else:
             self._root.setContentsMargins(0, 0, 0, 0)
 
         # ---- wrapper padding ----
         pad_x = size_config["padding_x"]
-        pad_y = (
-            size_config["padding_y"] if not is_inside else size_config["inside_padding_y"]
-        )
+        pad_y = size_config["padding_y"] if not is_inside else size_config["inside_padding_y"]
         if self._radius == "full":
             pad_x += 4
         if self._variant == "underlined":
@@ -110,12 +102,8 @@ class _DateInputStylingMixin(_InputStylingMixin):
             self.setGraphicsEffect(None)
 
         # ---- label 配色 ----
-        self._label_color_resting = QColor(
-            self._resolve_label_resting_color(is_dark, colors, dc)
-        )
-        self._label_color_floated = QColor(
-            self._resolve_label_floated_color(is_dark, colors, dc)
-        )
+        self._label_color_resting = QColor(self._resolve_label_resting_color(is_dark, colors, dc))
+        self._label_color_floated = QColor(self._resolve_label_floated_color(is_dark, colors, dc))
 
         req_mark = ""
         if self._is_required and self._label_text:
@@ -153,9 +141,7 @@ class _DateInputStylingMixin(_InputStylingMixin):
             inner = s[s.index("(") + 1 : s.rindex(")")]
             parts = [p.strip() for p in inner.split(",")]
             a = int(float(parts[3]) * 255) if len(parts) == 4 else 255
-            return QColor(
-                int(float(parts[0])), int(float(parts[1])), int(float(parts[2])), a
-            )
+            return QColor(int(float(parts[0])), int(float(parts[1])), int(float(parts[2])), a)
         c = QColor(s)
         return c if c.isValid() else QColor(0, 0, 0, 0)
 
@@ -166,7 +152,7 @@ class _DateInputStylingMixin(_InputStylingMixin):
         """把 variant 对应的背景/边框/下划线交给 _InputWrapper 画。"""
         (
             bg,
-            border,
+            _border,
             border_color,
             bg_hover,
             bg_focus,
@@ -203,25 +189,19 @@ class _DateInputStylingMixin(_InputStylingMixin):
             self._underline.set_color(QColor(main_color))
             self._underline.show()
         elif self._variant == "flat":
-            self._wrapper.set_static(
-                border_width=0, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
             self._underline.hide()
         elif self._variant == "faded":
-            self._wrapper.set_static(
-                border_width=bw, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
             self._underline.hide()
         else:  # bordered
-            self._wrapper.set_static(
-                border_width=bw, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
@@ -244,9 +224,7 @@ class _DateInputStylingMixin(_InputStylingMixin):
         from ...core import make_text_qfont
 
         font = make_text_qfont(size_config["input_font_size"], "normal")
-        filled_color, placeholder_color = self._resolve_segment_text_colors(
-            is_dark, colors, dc
-        )
+        filled_color, placeholder_color = self._resolve_segment_text_colors(is_dark, colors, dc)
         focus_bg = self._resolve_segment_focus_bg(is_dark, colors, dc)
         focus_text = self._resolve_segment_focus_text(is_dark, colors, dc)
         radius_px = size_config["segment_radius"]

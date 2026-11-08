@@ -5,10 +5,9 @@ missing icons, original SVG colors and the Provider-aware default contrast.
 New widgets use hero_side_ui.Icon; new rendering code uses hero_side_ui.icons.
 """
 
-from typing import Optional, Union
-
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPixmap
+
 from ..icons import IconNotFoundError, get_icon, resolve_icon
 
 
@@ -24,7 +23,7 @@ def load_svg_icon(
     name_or_path: str,
     size: int = 24,
     color=None,
-    stroke_width: Optional[Union[int, float]] = None,
+    stroke_width: int | float | None = None,
 ) -> QPixmap:
     """Return the legacy static snapshot; remote names should be preloaded.
 

@@ -20,7 +20,6 @@
 from __future__ import annotations
 
 import webbrowser
-from typing import Optional, Union
 
 from PySide6.QtCore import QEvent, QSize, Qt, Signal
 from PySide6.QtGui import (
@@ -73,7 +72,7 @@ class _LinkIconLabel(QLabel):
         icon_name: str,
         size: int,
         color: QColor,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -127,11 +126,11 @@ class Link(QFrame):
         is_external: bool = False,
         is_disabled: bool = False,
         show_anchor_icon: bool = False,
-        anchor_icon: Optional[Union[str, QWidget]] = None,
+        anchor_icon: str | QWidget | None = None,
         disable_animation: bool = False,
         is_text_selectable: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -147,7 +146,7 @@ class Link(QFrame):
         self._is_external = bool(is_external)
         self._is_disabled = bool(is_disabled)
         self._show_anchor_icon = bool(show_anchor_icon)
-        self._anchor_icon_input: Optional[Union[str, QWidget]] = anchor_icon
+        self._anchor_icon_input: str | QWidget | None = anchor_icon
         self._disable_animation = bool(disable_animation)
         self._is_text_selectable = bool(is_text_selectable)
 
@@ -185,8 +184,8 @@ class Link(QFrame):
         self._layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         # 子控件
-        self._text: Optional[Text] = None
-        self._icon: Optional[QWidget] = None
+        self._text: Text | None = None
+        self._icon: QWidget | None = None
         self._build_children()
         self._apply_padding()
 
@@ -217,9 +216,7 @@ class Link(QFrame):
     @staticmethod
     def _validate_underline(underline: str) -> str:
         if underline not in VALID_LINK_UNDERLINES:
-            raise ValueError(
-                f"Link: underline 必须是 {VALID_LINK_UNDERLINES}，传入 {underline!r}"
-            )
+            raise ValueError(f"Link: underline 必须是 {VALID_LINK_UNDERLINES}，传入 {underline!r}")
         return underline
 
     def _spec(self) -> dict:
@@ -296,6 +293,7 @@ class Link(QFrame):
         # 取出 icon
         self._layout.removeWidget(self._icon)
         from ...utils import safe_delete
+
         safe_delete(self._icon)
         self._icon = None
         # 取出 spacer（layout 最后一项）
@@ -356,11 +354,7 @@ class Link(QFrame):
     # opacity / 背景动画
     # ============================================================
     def _hover_opacity(self) -> float:
-        return (
-            LINK_OPACITY["hover_dark"]
-            if self._theme == "dark"
-            else LINK_OPACITY["hover_light"]
-        )
+        return LINK_OPACITY["hover_dark"] if self._theme == "dark" else LINK_OPACITY["hover_light"]
 
     def _target_opacity(self) -> float:
         """is_block=False 时根据状态返回目标透明度；is_block=True 永远 1.0。"""
@@ -375,9 +369,15 @@ class Link(QFrame):
         return 1.0
 
     def _animate_opacity(self) -> None:
-        tween_value(self, "_opacity_anim_runner", float(self._opacity_effect.opacity()),
-                    float(self._target_opacity()), self._opacity_effect.setOpacity,
-                    duration=LINK_OPACITY_DURATION, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_opacity_anim_runner",
+            float(self._opacity_effect.opacity()),
+            float(self._target_opacity()),
+            self._opacity_effect.setOpacity,
+            duration=LINK_OPACITY_DURATION,
+            animated=not self._disable_animation,
+        )
 
     def _animate_block_bg(self) -> None:
         target = 1.0 if self._is_hovered and not self._is_disabled else 0.0
@@ -386,9 +386,15 @@ class Link(QFrame):
             self._block_bg_progress = float(value)
             self.update()
 
-        tween_value(self, "_block_bg_anim_runner", float(self._block_bg_progress),
-                    target, step, duration=LINK_BLOCK["anim_duration"],
-                    animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_block_bg_anim_runner",
+            float(self._block_bg_progress),
+            target,
+            step,
+            duration=LINK_BLOCK["anim_duration"],
+            animated=not self._disable_animation,
+        )
 
     # ============================================================
     # 文字色 / icon 色推送
@@ -601,7 +607,7 @@ class Link(QFrame):
         else:
             self._unmount_anchor_icon()
 
-    def set_anchor_icon(self, anchor_icon: Optional[Union[str, QWidget]]) -> None:
+    def set_anchor_icon(self, anchor_icon: str | QWidget | None) -> None:
         """切换锚点图标内容。show_anchor_icon=False 时仅记录，不挂载。"""
         self._anchor_icon_input = anchor_icon
         if not self._show_anchor_icon:

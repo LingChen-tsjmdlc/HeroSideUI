@@ -4,8 +4,6 @@
 返回纯 QColor / px 值，供 _cursor / _item 自绘。
 """
 
-from typing import Optional, Tuple
-
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS, RADIUS
@@ -85,7 +83,7 @@ def resolve_item_disabled_text(theme: str) -> QColor:
 
 def resolve_item_bg(
     variant: str, theme: str, *, hover: bool, pressed: bool, active: bool
-) -> Optional[QColor]:
+) -> QColor | None:
     """item 底色（透明返回 None）。对齐 HeroUI v2 pagination.ts。
 
     - flat:     bg-default-100  hover bg-default-200  pressed bg-default-300
@@ -122,7 +120,7 @@ def resolve_item_bg(
     return None
 
 
-def resolve_item_border(variant: str, theme: str) -> Optional[QColor]:
+def resolve_item_border(variant: str, theme: str) -> QColor | None:
     """item 边框色（None=无边框）。bordered/faded 用 border-default 色。
 
     border-default: light=default-300, dark=反转 default-200/300 (=palette[700])
@@ -160,7 +158,7 @@ def resolve_compact_corners(
     is_first: bool,
     is_last: bool,
     radius_px: int,
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """isCompact 模式下,中间 item 无圆角,首/尾仅外侧两角圆角。
 
     返回 (tl, tr, br, bl) 四角圆角值。
@@ -179,12 +177,12 @@ def resolve_compact_corners(
 
 
 __all__ = [
+    "resolve_compact_corners",
     "resolve_cursor_fill",
     "resolve_cursor_text",
-    "resolve_item_text",
-    "resolve_item_disabled_text",
     "resolve_item_bg",
     "resolve_item_border",
+    "resolve_item_disabled_text",
+    "resolve_item_text",
     "resolve_radius_px",
-    "resolve_compact_corners",
 ]

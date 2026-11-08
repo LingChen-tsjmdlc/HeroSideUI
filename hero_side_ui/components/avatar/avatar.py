@@ -15,9 +15,7 @@ name 存在时 fallback 显示首字母（safe_initials），否则显示默认�
 
 from __future__ import annotations
 
-from ...animation import tween_property, stop_tween
-
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import (
     Property,
@@ -28,6 +26,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QWidget
 
+from ...animation import stop_tween, tween_property
 from ...core import ThemeProvider
 from ...themes import (
     AVATAR_RING_OFFSET,
@@ -64,7 +63,7 @@ class _IconCanvas(QLabel):
     非文字用途 QLabel（承载 icon pixmap），不走 Text 组件。
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
@@ -96,9 +95,9 @@ class Avatar(QWidget):
     def __init__(
         self,
         src: ImageSrc = None,
-        name: Optional[str] = None,
-        icon: Optional[str] = None,
-        fallback: Optional[QWidget] = None,
+        name: str | None = None,
+        icon: str | None = None,
+        fallback: QWidget | None = None,
         color: str = "default",
         radius: str = "full",
         size: str = "md",
@@ -107,10 +106,10 @@ class Avatar(QWidget):
         show_fallback: bool = False,
         disable_animation: bool = False,
         is_pressable: bool = False,
-        on_click: Optional[Callable[[], None]] = None,
-        on_hover: Optional[Callable[[bool], None]] = None,
+        on_click: Callable[[], None] | None = None,
+        on_hover: Callable[[bool], None] | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroAvatar")
@@ -129,13 +128,11 @@ class Avatar(QWidget):
         self._is_pressable = is_pressable
         self._is_pressed = False
         self._theme_mode = theme
-        self._theme = (
-            ThemeProvider.instance().current_theme if theme == "auto" else theme
-        )
+        self._theme = ThemeProvider.instance().current_theme if theme == "auto" else theme
 
         # 图像状态
         self._status = "pending"  # pending / loading / loaded / failed
-        self._pixmap: Optional[QPixmap] = None
+        self._pixmap: QPixmap | None = None
         self._img_opacity = 0.0
 
         self._build_ui()
@@ -167,9 +164,7 @@ class Avatar(QWidget):
             parent=self,
         )
         self._name_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._name_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._name_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
 
         # 默认人像图标画布
         self._icon_canvas = _IconCanvas(self)
@@ -234,8 +229,14 @@ class Avatar(QWidget):
         stop_tween(self, "_fade_anim")
         if not self._disable_animation:
             self.imgOpacity = 0.0
-        tween_property(self, "_fade_anim", b"imgOpacity", 1.0,
-                       duration=500, animated=not self._disable_animation)
+        tween_property(
+            self,
+            "_fade_anim",
+            b"imgOpacity",
+            1.0,
+            duration=500,
+            animated=not self._disable_animation,
+        )
 
     # ============================================================
     # fallback 显隐
@@ -458,7 +459,7 @@ class Avatar(QWidget):
             self._status = "pending"
             self._refresh_overlay()
 
-    def set_name(self, name: Optional[str]):
+    def set_name(self, name: str | None):
         self._name = name
         self._refresh_overlay()
 
@@ -499,7 +500,7 @@ class Avatar(QWidget):
     def status(self) -> str:
         return self._status
 
-    def pixmap(self) -> Optional[QPixmap]:
+    def pixmap(self) -> QPixmap | None:
         return self._pixmap
 
     # ============================================================

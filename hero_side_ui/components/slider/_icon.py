@@ -20,8 +20,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QLabel, QWidget
@@ -45,7 +43,7 @@ class _SliderIconLabel(QLabel):
         self,
         icon_name: str,
         size: int = 16,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._icon_name = icon_name

@@ -3,19 +3,11 @@
 负责自绘容器底色 + 圆角（variant 决定外观）；不直接管理 item 切换逻辑。
 """
 
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QPainter, QPainterPath, QPen
+from PySide6.QtWidgets import QFrame
 
-from typing import Optional
-
-from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout
-
-from ...themes import HEROUI_COLORS, RADIUS
 from ._helpers import _resolve_list_bg, _resolve_list_border
-
-
-
 
 # ============================================================
 # TabList: 容器（自绘背景 + 边框 + 圆角）
@@ -37,10 +29,14 @@ class _TabList(QFrame):
         self.setAutoFillBackground(False)
 
     def configure(self, *, variant=None, theme=None, radius_px=None, border_width=None):
-        if variant is not None: self._variant = variant
-        if theme is not None: self._theme = theme
-        if radius_px is not None: self._radius_px = radius_px
-        if border_width is not None: self._border_width = border_width
+        if variant is not None:
+            self._variant = variant
+        if theme is not None:
+            self._theme = theme
+        if radius_px is not None:
+            self._radius_px = radius_px
+        if border_width is not None:
+            self._border_width = border_width
         self._bg = _resolve_list_bg(self._variant, self._theme)
         self._border = _resolve_list_border(self._variant, self._theme)
         self.update()

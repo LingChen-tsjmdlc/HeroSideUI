@@ -117,7 +117,7 @@ class TestEnsureLoaded:
             "Heavy": 900,
         }
         assert p.native_instances == expected
-        assert _NATIVE_INSTANCES == expected
+        assert expected == _NATIVE_INSTANCES
 
 
 # ============================================================
@@ -423,9 +423,7 @@ class TestMakeQFont:
             (900, "Heavy", 900),
         ],
     )
-    def test_weight_routes_to_native_style(
-        self, qtbot, weight_in, expected_style, expected_weight
-    ):
+    def test_weight_routes_to_native_style(self, qtbot, weight_in, expected_style, expected_weight):
         f = make_qfont(weight=weight_in)
         assert f.styleName() == expected_style
         assert int(f.weight()) == expected_weight
@@ -485,9 +483,7 @@ class TestGhostFamilyFilter:
         assert _is_ghost_family("Microsoft YaHei", _VF_FAMILY_NAME) is False
 
     def test_instance_subnames_are_ghost(self):
-        assert (
-            _is_ghost_family(f"{_VF_FAMILY_NAME} ExtraLight", _VF_FAMILY_NAME) is True
-        )
+        assert _is_ghost_family(f"{_VF_FAMILY_NAME} ExtraLight", _VF_FAMILY_NAME) is True
         assert _is_ghost_family(f"{_VF_FAMILY_NAME} Heavy", _VF_FAMILY_NAME) is True
 
     def test_empty_name_is_not_ghost(self):

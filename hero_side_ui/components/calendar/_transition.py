@@ -7,11 +7,10 @@ QLabel 覆盖层无交互子控件、不加 QGraphicsEffect，规避离屏渲染
 
 from __future__ import annotations
 
-from ...animation import tween_property, stop_tween
-
-from PySide6.QtCore import QPropertyAnimation, QPoint, Qt
+from PySide6.QtCore import QPoint, QPropertyAnimation
 from PySide6.QtWidgets import QLabel, QWidget
 
+from ...animation import stop_tween, tween_property
 from ...utils import safe_delete
 
 _DURATION_MS = 250
@@ -46,15 +45,22 @@ class _SlideTransition:
         on_render_new()
         self._content.move(direction * width, self._content.y())
         self._anim_in = tween_property(
-            self._content, "_calendar_slide_in", b"pos", QPoint(0, self._content.y()),
-            owner=self._viewport, duration=_DURATION_MS,
+            self._content,
+            "_calendar_slide_in",
+            b"pos",
+            QPoint(0, self._content.y()),
+            owner=self._viewport,
+            duration=_DURATION_MS,
         )
         self._anim_out = tween_property(
-            overlay, "_calendar_slide_out", b"pos", QPoint(-direction * width, overlay.y()),
-            owner=self._viewport, duration=_DURATION_MS, on_finished=self._finish,
+            overlay,
+            "_calendar_slide_out",
+            b"pos",
+            QPoint(-direction * width, overlay.y()),
+            owner=self._viewport,
+            duration=_DURATION_MS,
+            on_finished=self._finish,
         )
-
-
 
     def _finish(self) -> None:
         stop_tween(self._viewport, "_calendar_slide_in")

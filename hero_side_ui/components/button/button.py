@@ -5,20 +5,19 @@ HeroSideUI Button Component
 样式来源: https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/button.ts
 """
 
+from PySide6.QtCore import QObject, QSize, Qt
+from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QPushButton
-from PySide6.QtCore import QObject, Qt, QSize, QEvent
-from PySide6.QtGui import QColor, QIcon, QPixmap
-from typing import Optional
 
+from ...animation import PressScaleEffect, RippleOverlay
+from ...core import ThemeProvider
 from ...themes import (
+    BUTTON_SIZES,
     HEROUI_COLORS,
     RADIUS,
-    BUTTON_SIZES,
     VALID_BUTTON_VARIANTS,
 )
 from ...utils import hex_to_rgba, load_svg_icon
-from ...animation import RippleOverlay, PressScaleEffect
-from ...core import ThemeProvider
 
 
 class Button(QPushButton):
@@ -53,14 +52,14 @@ class Button(QPushButton):
         color: str = "primary",
         variant: str = "solid",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         is_disabled: bool = False,
         full_width: bool = False,
         icon_only: bool = False,
-        icon: Optional[str] = None,
-        icon_size: Optional[int] = None,
+        icon: str | None = None,
+        icon_size: int | None = None,
         icon_color=None,
-        parent: Optional[QObject] = None,
+        parent: QObject | None = None,
         theme: str = "auto",
         disable_ripple: bool = False,
     ):
@@ -75,7 +74,7 @@ class Button(QPushButton):
         self._icon_src = icon
         self._icon_size_override = icon_size
         self._icon_color_override = icon_color  # 用户显式指定则覆盖自动配色
-        self._icon_only_side_override: Optional[int] = None  # 外部锁 icon_only 边长(px)
+        self._icon_only_side_override: int | None = None  # 外部锁 icon_only 边长(px)
         self._is_hovered = False
         self._theme_mode = theme  # 用户设定的模式: "auto"/"light"/"dark"
         self._theme = self._resolve_theme(theme)  # 实际生效: "light"/"dark"
@@ -205,10 +204,10 @@ class Button(QPushButton):
         QPushButton {{
             {normal_colors}
             border-radius: {radius};
-            font-size: {size_config['font_size']};
+            font-size: {size_config["font_size"]};
             {box_constraints}
             padding: {padding_y}px {padding_x}px;
-            font-weight: {size_config['font_weight']};
+            font-weight: {size_config["font_weight"]};
             outline: none;
         }}
         QPushButton:hover {{
@@ -293,7 +292,9 @@ class Button(QPushButton):
 
         elif variant == "bordered":
             if is_dark:
-                normal = f"background-color: transparent; color: {c_text}; border: 1px solid {c500};"
+                normal = (
+                    f"background-color: transparent; color: {c_text}; border: 1px solid {c500};"
+                )
                 hover = f"background-color: {hex_to_rgba(c500, 0.15)}; color: {c_text_hover}; border: 1px solid {colors[400]};"
             else:
                 normal = f"background-color: transparent; color: {c500}; border: 1px solid {c500};"
@@ -301,17 +302,19 @@ class Button(QPushButton):
 
         elif variant == "flat":
             if is_dark:
-                normal = f"background-color: {hex_to_rgba(c500, 0.2)}; color: {c_text}; border: none;"
+                normal = (
+                    f"background-color: {hex_to_rgba(c500, 0.2)}; color: {c_text}; border: none;"
+                )
                 hover = f"background-color: {hex_to_rgba(c500, 0.3)}; color: {c_text_hover};"
             else:
-                normal = f"background-color: {hex_to_rgba(c500, 0.15)}; color: {c600}; border: none;"
+                normal = (
+                    f"background-color: {hex_to_rgba(c500, 0.15)}; color: {c600}; border: none;"
+                )
                 hover = f"background-color: {hex_to_rgba(c500, 0.25)}; color: {colors[700]};"
 
         elif variant == "light":
             if is_dark:
-                normal = (
-                    f"background-color: transparent; color: {c_text}; border: none;"
-                )
+                normal = f"background-color: transparent; color: {c_text}; border: none;"
                 hover = f"background-color: {hex_to_rgba(c500, 0.2)}; color: {c_text_hover};"
             else:
                 normal = f"background-color: transparent; color: {c500}; border: none;"
@@ -320,7 +323,9 @@ class Button(QPushButton):
         elif variant == "faded":
             dc = HEROUI_COLORS["default"]
             if is_dark:
-                normal = f"background-color: {dc[800]}; color: {c_text}; border: 1px solid {dc[700]};"
+                normal = (
+                    f"background-color: {dc[800]}; color: {c_text}; border: 1px solid {dc[700]};"
+                )
                 hover = f"background-color: {dc[700]}; color: {c_text_hover}; border: 1px solid {dc[600]};"
             else:
                 normal = f"background-color: {dc[100]}; color: {c500}; border: 1px solid {dc[300]};"
@@ -328,7 +333,9 @@ class Button(QPushButton):
 
         elif variant == "ghost":
             if is_dark:
-                normal = f"background-color: transparent; color: {c_text}; border: 1px solid {c500};"
+                normal = (
+                    f"background-color: transparent; color: {c_text}; border: 1px solid {c500};"
+                )
                 hover = f"background-color: {c500}; color: {fg_on_solid}; border: 1px solid {c500};"
             else:
                 normal = f"background-color: transparent; color: {c500}; border: 1px solid {c500};"
@@ -511,7 +518,7 @@ class Button(QPushButton):
         """
         self.setIcon(icon)
 
-    def setIcon(self, icon):  # noqa: N802 —— 重写 Qt 原生 setIcon
+    def setIcon(self, icon):
         """重写 QPushButton.setIcon 支持字符串（内置图标名或 SVG 路径）
 
         传字符串 → Button 自动 render（根据 variant/color/theme/hover 动态着色）
@@ -530,7 +537,7 @@ class Button(QPushButton):
         self._icon_color_override = color
         self._refresh_icon()
 
-    def set_icon_size(self, size: Optional[int]):
+    def set_icon_size(self, size: int | None):
         """显式指定 icon 渲染尺寸（px）。传 None 恢复"按按钮尺寸自动算"模式。
 
         默认行为（None）下,Button 会根据自身 size 自动选 icon_size:
@@ -542,7 +549,7 @@ class Button(QPushButton):
         self._icon_size_override = size
         self._refresh_icon()
 
-    def set_icon_only_side(self, side: Optional[int]):
+    def set_icon_only_side(self, side: int | None):
         """显式锁定 icon_only 模式下按钮的边长（px）。传 None 恢复自动算。
 
         默认行为（None）：side = height + 2*padding_y(由 BUTTON_SIZES 决定,

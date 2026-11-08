@@ -10,10 +10,6 @@
 
 from __future__ import annotations
 
-from ...animation import tween_value
-
-from typing import List, Optional
-
 from PySide6.QtCore import (
     QRectF,
     Qt,
@@ -28,14 +24,15 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ...animation import tween_value
 from ..text import Text
 from . import _palette as pal
 
 _ITEM_H = 32
 _EMPTY_OFFSET = 3
-_SETTLE_MS = 90            # 滚动停止判定
-_SNAP_ANIM_MS = 250        # 吸附 / 点击滚动动画时长
-_FADE_SIZE = 90            # 顶/底渐隐高度
+_SETTLE_MS = 90  # 滚动停止判定
+_SNAP_ANIM_MS = 250  # 吸附 / 点击滚动动画时长
+_FADE_SIZE = 90  # 顶/底渐隐高度
 
 
 class _PickerColumn(QScrollArea):
@@ -43,14 +40,13 @@ class _PickerColumn(QScrollArea):
 
     value_committed = Signal(object)
 
-    def __init__(self, items: List[tuple], *, theme: str, align_left: bool,
-                 parent=None) -> None:
+    def __init__(self, items: list[tuple], *, theme: str, align_left: bool, parent=None) -> None:
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._theme = theme
         self._align_left = align_left
         self._items = items
-        self._rows: List[_PickerItem] = []
+        self._rows: list[_PickerItem] = []
         self._value_to_index: dict = {}
         self._snapping = False
 
@@ -58,8 +54,10 @@ class _PickerColumn(QScrollArea):
         self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setWidgetResizable(True)
-        self.setStyleSheet("QScrollArea, QScrollArea > QWidget > QWidget "
-                           "{ background: transparent; border: none; }")
+        self.setStyleSheet(
+            "QScrollArea, QScrollArea > QWidget > QWidget "
+            "{ background: transparent; border: none; }"
+        )
         self.viewport().setAutoFillBackground(False)
 
         # 平滑滚动动画
@@ -80,8 +78,9 @@ class _PickerColumn(QScrollArea):
         col = QVBoxLayout(body)
         # 左对齐列（年）加左内边距，让文字落在中央高亮框内、不贴左边缘；
         # 右对齐/居中列不需要。
-        col.setContentsMargins(12 if self._align_left else 0, 0,
-                               12 if not self._align_left else 0, 0)
+        col.setContentsMargins(
+            12 if self._align_left else 0, 0, 12 if not self._align_left else 0, 0
+        )
         col.setSpacing(0)
         align = Qt.AlignmentFlag.AlignLeft if self._align_left else Qt.AlignmentFlag.AlignHCenter
 
@@ -97,7 +96,7 @@ class _PickerColumn(QScrollArea):
 
         self.setWidget(body)
 
-    def _make_row(self, label: str, value) -> "_PickerItem":
+    def _make_row(self, label: str, value) -> _PickerItem:
         row = _PickerItem(label, value, theme=self._theme)
         row.clicked.connect(self._on_item_clicked)
         return row
@@ -152,8 +151,16 @@ class _PickerColumn(QScrollArea):
             if emit:
                 self.value_committed.emit(self._items[idx][0])
 
-        tween_value(self, "_anim", bar.value(), target, lambda v: bar.setValue(int(v)),
-                    duration=_SNAP_ANIM_MS, on_finished=done, animated=target != bar.value())
+        tween_value(
+            self,
+            "_anim",
+            bar.value(),
+            target,
+            lambda v: bar.setValue(int(v)),
+            duration=_SNAP_ANIM_MS,
+            on_finished=done,
+            animated=target != bar.value(),
+        )
 
     def scroll_to_value(self, value, *, animated: bool) -> None:
         idx = self._value_to_index.get(value)
@@ -185,8 +192,15 @@ class _PickerItem(Text):
     clicked = Signal(object)
 
     def __init__(self, label: str, value, *, theme: str, parent=None) -> None:
-        super().__init__(label, size=18, weight="normal", color="default-300",
-                         theme=theme, selectable=False, parent=parent)
+        super().__init__(
+            label,
+            size=18,
+            weight="normal",
+            color="default-300",
+            theme=theme,
+            selectable=False,
+            parent=parent,
+        )
         self._value = value
         self.setFixedHeight(_ITEM_H)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -234,8 +248,10 @@ class _FadeOverlay(QWidget):
         w, h = self.width(), self.height()
         # 顶部渐隐
         top = QLinearGradient(0, 0, 0, _FADE_SIZE)
-        c0 = QColor(base); c0.setAlpha(255)
-        c1 = QColor(base); c1.setAlpha(0)
+        c0 = QColor(base)
+        c0.setAlpha(255)
+        c1 = QColor(base)
+        c1.setAlpha(0)
         top.setColorAt(0.0, c0)
         top.setColorAt(1.0, c1)
         p.fillRect(QRectF(0, 0, w, _FADE_SIZE), top)
@@ -253,8 +269,15 @@ class _CalendarPicker(QWidget):
     month_changed = Signal(int)
     year_changed = Signal(int)
 
-    def __init__(self, sizes: dict, *, month_items: List[tuple], year_items: List[tuple],
-                 theme: str, parent=None) -> None:
+    def __init__(
+        self,
+        sizes: dict,
+        *,
+        month_items: list[tuple],
+        year_items: list[tuple],
+        theme: str,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self._sizes = sizes
         self._theme = theme

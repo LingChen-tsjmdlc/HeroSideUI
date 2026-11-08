@@ -6,10 +6,14 @@ from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
 
-
 VALID_VARIANTS = ("default", "simple", "gradient", "spinner", "wave", "dots")
 VALID_COLORS = (
-    "default", "primary", "secondary", "success", "warning", "danger",
+    "default",
+    "primary",
+    "secondary",
+    "success",
+    "warning",
+    "danger",
 )
 VALID_SIZES = ("sm", "md", "lg", "small", "medium", "large")
 
@@ -29,8 +33,8 @@ def resolve_indicator_color(name: str, theme: str) -> QColor:
 
 
 __all__ = [
-    "VALID_VARIANTS",
     "VALID_COLORS",
     "VALID_SIZES",
+    "VALID_VARIANTS",
     "resolve_indicator_color",
 ]

@@ -1,16 +1,10 @@
 """_EndContentWidget — Autocomplete Input 右侧的 clear / arrow 复合槽（私有）。"""
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from ..button import Button
-
 from ..._shared.selection import SelectorButton as _SelectorButton
-
-
-
+from ..button import Button
 
 # ============================================================
 # Clear 按钮：data-visible 行为

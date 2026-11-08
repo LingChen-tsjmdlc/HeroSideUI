@@ -48,8 +48,7 @@ class Owner(QObject):
 def test_start_equals_end_returns_none(qtbot):
     owner = Owner()
     captured = []
-    anim = tween_value(owner, "_r", QColor("#fff"), QColor("#fff"),
-                       captured.append, duration=100)
+    anim = tween_value(owner, "_r", QColor("#fff"), QColor("#fff"), captured.append, duration=100)
     assert anim is None
     assert getattr(owner, "_r", None) is None
     assert captured == []
@@ -93,8 +92,7 @@ def test_check_progress_0_paints_nothing(qtbot):
     img = QImage(40, 40, QImage.Format_ARGB32)
     img.fill(QColor("white"))
     p = QPainter(img)
-    paint_animated_check(p, img.rect(), color=QColor("black"),
-                         progress=0.0, stroke_width=2)
+    paint_animated_check(p, img.rect(), color=QColor("black"), progress=0.0, stroke_width=2)
     p.end()
     # 中心仍是白色
     assert img.pixelColor(20, 20).name() == "#ffffff"
@@ -104,14 +102,10 @@ def test_check_progress_1_paints_full(qtbot):
     img = QImage(40, 40, QImage.Format_ARGB32)
     img.fill(QColor("white"))
     p = QPainter(img)
-    paint_animated_check(p, img.rect(), color=QColor("black"),
-                         progress=1.0, stroke_width=3)
+    paint_animated_check(p, img.rect(), color=QColor("black"), progress=1.0, stroke_width=3)
     p.end()
     # 描线区域应有黑色像素
-    has_black = any(
-        img.pixelColor(x, y).red() < 50
-        for x in range(40) for y in range(40)
-    )
+    has_black = any(img.pixelColor(x, y).red() < 50 for x in range(40) for y in range(40))
     assert has_black
 ```
 
@@ -121,7 +115,10 @@ def test_check_progress_1_paints_full(qtbot):
 def test_ripple_is_removed_after_finish(qtbot):
     from PySide6.QtWidgets import QPushButton
     from hero_side_ui.animation import RippleOverlay
-    btn = QPushButton("X"); qtbot.addWidget(btn); btn.resize(120, 36)
+
+    btn = QPushButton("X")
+    qtbot.addWidget(btn)
+    btn.resize(120, 36)
     ripple = RippleOverlay(btn)
     ripple.add_ripple(btn.rect().center())
     assert ripple._ripples

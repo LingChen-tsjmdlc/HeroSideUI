@@ -166,7 +166,7 @@ class TestPlacementGeometry:
         r = self._content_rect(b)
         half = min(r.width(), r.height()) / 2
         d = half + 0.65 * b._badge.width() / 2
-        step = d / 2 ** 0.5
+        step = d / 2**0.5
         c = self._center(b)
         cx0, cy0 = r.x() + r.width() / 2, r.y() + r.height() / 2
         sx = 1 if "right" in b._placement else -1
@@ -190,11 +190,15 @@ class TestPlacementGeometry:
             b._update_badge_geometry()
             c = self._center(b)
             r = b.widget().geometry()
-            dist = ((c.x() - (r.x() + r.width() / 2)) ** 2 + (c.y() - (r.y() + r.height() / 2)) ** 2) ** 0.5
+            dist = (
+                (c.x() - (r.x() + r.width() / 2)) ** 2 + (c.y() - (r.y() + r.height() / 2)) ** 2
+            ) ** 0.5
             overshoot = dist - r.width() / 2
             expected = 0.65 * b._badge.width() / 2
             # 容差 1.2px：setGeometry 取整损失约 0.7px
-            assert abs(overshoot - expected) <= 1.2, f"side={side}: overshoot {overshoot:.1f} != {expected:.1f}"
+            assert abs(overshoot - expected) <= 1.2, (
+                f"side={side}: overshoot {overshoot:.1f} != {expected:.1f}"
+            )
 
     def test_badge_fully_inside_container(self, qtbot):
         # 回归：角标悬出内容边缘但不得超出 Badge 容器（超出部分被父裁剪）

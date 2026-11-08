@@ -8,8 +8,6 @@ QLabel 子类，承担：
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Property, QRectF, QSize, Qt
 from PySide6.QtGui import QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QLabel, QWidget
@@ -20,13 +18,13 @@ from ._styling import resolve_radius_px
 class _RoundedImage(QLabel):
     """圆角图像层，hover 缩放 + fade-in 通过 Qt Property 驱动。"""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         # QLabel 默认会画 palette 背景把下层 _blurred 整片挡住
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setAutoFillBackground(False)
-        self._pixmap: Optional[QPixmap] = None
+        self._pixmap: QPixmap | None = None
         self._radius: str = "lg"
         self._object_fit: str = "cover"
         self._zoom: float = 1.0
@@ -52,7 +50,7 @@ class _RoundedImage(QLabel):
     fadeOpacity = Property(float, _get_op, _set_op)
 
     # ============================================================
-    def set_source_pixmap(self, pm: Optional[QPixmap]):
+    def set_source_pixmap(self, pm: QPixmap | None):
         self._pixmap = pm
         self.update()
 

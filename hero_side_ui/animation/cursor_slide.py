@@ -51,7 +51,6 @@ def start_cursor_slide(
 
     group = QSequentialAnimationGroup(owner)
 
-
     phase_one = QVariantAnimation(group)
     phase_one.setStartValue(0.0)
     phase_one.setEndValue(1.0)
@@ -67,7 +66,6 @@ def start_cursor_slide(
 
     connect_owned(phase_one, phase_one.valueChanged, _phase_one_step)
     group.addAnimation(phase_one)
-
 
     phase_two = QVariantAnimation(group)
     phase_two.setStartValue(0.0)
@@ -87,11 +85,7 @@ def start_cursor_slide(
     def _on_done():
         before = revision(owner, runner_attr)
         on_step(float(end_x), 1.0)
-        if (
-            alive(owner)
-            and revision(owner, runner_attr) == before
-            and on_finished is not None
-        ):
+        if alive(owner) and revision(owner, runner_attr) == before and on_finished is not None:
             on_finished()
 
     return start_runner(owner, runner_attr, group, _on_done)

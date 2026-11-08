@@ -9,12 +9,10 @@ change 信号发射 (start, end) 元组（均为 CalendarDate）。
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
-from .calendar import Calendar
 from ._date import CalendarDate
 from ._range_state import RangeCalendarState
 from ._state import CalendarState
+from .calendar import Calendar
 
 
 class RangeCalendar(Calendar):
@@ -43,10 +41,10 @@ class RangeCalendar(Calendar):
 
     # ---- 公共 API -----------------------------------------------------
 
-    def value(self) -> Optional[Tuple[CalendarDate, CalendarDate]]:
+    def value(self) -> tuple[CalendarDate, CalendarDate] | None:
         return self._state.range_value
 
-    def set_value(self, value: Optional[Tuple[CalendarDate, CalendarDate]]) -> None:
+    def set_value(self, value: tuple[CalendarDate, CalendarDate] | None) -> None:
         if value is not None:
             self._state.select_date(value[0])
             self._state.select_date(value[1])

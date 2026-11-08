@@ -21,11 +21,7 @@ def settle(owner, attribute, apply=None, on_finished=None):
     before = revision(owner, attribute)
     if apply is not None:
         apply()
-    if (
-        alive(owner)
-        and revision(owner, attribute) == before
-        and on_finished is not None
-    ):
+    if alive(owner) and revision(owner, attribute) == before and on_finished is not None:
         on_finished()
 
 

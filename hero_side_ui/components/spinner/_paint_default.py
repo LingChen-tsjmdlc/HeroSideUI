@@ -18,7 +18,6 @@ import math
 from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 
-
 _TAIL_ALPHAS = (0.75, 0.50, 0.28)
 
 

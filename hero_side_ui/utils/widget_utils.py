@@ -15,12 +15,12 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from PySide6.QtWidgets import QLayout, QWidget
 
 
-def safe_delete(widget: Optional[QWidget]) -> None:
+def safe_delete(widget: QWidget | None) -> None:
     """安全销毁单个 widget：hide 后 deleteLater。
 
     绝不调用 ``setParent(None)`` —— 那会让 widget 瞬间变顶层窗口在 Windows 闪原生 frame。
@@ -32,13 +32,13 @@ def safe_delete(widget: Optional[QWidget]) -> None:
     widget.deleteLater()
 
 
-def safe_delete_many(widgets: Iterable[Optional[QWidget]]) -> None:
+def safe_delete_many(widgets: Iterable[QWidget | None]) -> None:
     """批量安全销毁。"""
     for w in widgets:
         safe_delete(w)
 
 
-def clear_layout(layout: Optional[QLayout]) -> None:
+def clear_layout(layout: QLayout | None) -> None:
     """清空布局中的所有子 widget（安全销毁），保留布局本身。"""
     if layout is None:
         return
@@ -49,4 +49,4 @@ def clear_layout(layout: Optional[QLayout]) -> None:
             safe_delete(w)
 
 
-__all__ = ["safe_delete", "safe_delete_many", "clear_layout"]
+__all__ = ["clear_layout", "safe_delete", "safe_delete_many"]

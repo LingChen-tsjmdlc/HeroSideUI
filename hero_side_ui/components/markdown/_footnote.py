@@ -7,10 +7,9 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Dict
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt, QTimer
-from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
 from ...themes import HEROUI_COLORS, MARKDOWN_LIST, MARKDOWN_SPACING
@@ -19,10 +18,11 @@ from ..tooltip import Tooltip
 
 if TYPE_CHECKING:
     from markdown_it.tree import SyntaxTreeNode
+
     from ._renderer import MarkdownRenderer
 
 
-def footnote_label(node: "SyntaxTreeNode") -> str:
+def footnote_label(node: SyntaxTreeNode) -> str:
     """从 footnote_ref/footnote 节点取显示序号（meta.id 为 0 基，展示 +1）。"""
     meta = getattr(node, "meta", None) or {}
     if "id" in meta:
@@ -35,6 +35,7 @@ def footnote_label(node: "SyntaxTreeNode") -> str:
 
 class _FootnoteRef(QWidget):
     """行内脚注角标：上标序号 + hover Tooltip 显示正文。"""
+
 
 class _FootnoteRef(QWidget):
     """行内脚注角标：上标序号 chip + hover Tooltip 显示正文。
@@ -52,7 +53,7 @@ class _FootnoteRef(QWidget):
         super().__init__(parent)
         self._theme = theme
         self._body = body
-        self._tip: "Tooltip | None" = None
+        self._tip: Tooltip | None = None
         self._tip_attached = False
 
         lay = QHBoxLayout(self)
@@ -114,8 +115,8 @@ class _FootnoteList(QWidget):
 
     def __init__(
         self,
-        node: "SyntaxTreeNode",
-        renderer: "MarkdownRenderer",
+        node: SyntaxTreeNode,
+        renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
         super().__init__(parent)
@@ -130,7 +131,7 @@ class _FootnoteList(QWidget):
                 continue
             lay.addWidget(self._build_item(footnote_label(item), item))
 
-    def _build_item(self, marker: str, item: "SyntaxTreeNode") -> QWidget:
+    def _build_item(self, marker: str, item: SyntaxTreeNode) -> QWidget:
         row = QWidget(self)
         row_lay = QHBoxLayout(row)
         row_lay.setContentsMargins(0, 0, 0, 0)
@@ -155,22 +156,20 @@ class _FootnoteList(QWidget):
         return row
 
 
-def collect_footnote_texts(root: "SyntaxTreeNode") -> Dict[str, str]:
+def collect_footnote_texts(root: SyntaxTreeNode) -> dict[str, str]:
     """遍历语法树，收集 {显示序号: 脚注正文纯文本}，供行内角标 Tooltip 使用。"""
     from ._renderer import _plain_text
 
-    out: Dict[str, str] = {}
+    out: dict[str, str] = {}
 
-    def walk(node: "SyntaxTreeNode") -> None:
+    def walk(node: SyntaxTreeNode) -> None:
         for child in node.children:
             if child.type == "footnote_block":
                 for fn in child.children:
                     if fn.type != "footnote":
                         continue
                     parts = [
-                        _plain_text(c).strip()
-                        for c in fn.children
-                        if c.type != "footnote_anchor"
+                        _plain_text(c).strip() for c in fn.children if c.type != "footnote_anchor"
                     ]
                     out[footnote_label(fn)] = " ".join(p for p in parts if p)
             walk(child)
@@ -179,4 +178,4 @@ def collect_footnote_texts(root: "SyntaxTreeNode") -> Dict[str, str]:
     return out
 
 
-__all__ = ["_FootnoteRef", "_FootnoteList", "footnote_label", "collect_footnote_texts"]
+__all__ = ["_FootnoteList", "_FootnoteRef", "collect_footnote_texts", "footnote_label"]

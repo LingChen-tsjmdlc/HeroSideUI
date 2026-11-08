@@ -7,8 +7,6 @@
 
 from __future__ import annotations
 
-from typing import List
-
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QPainter
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
@@ -18,14 +16,15 @@ from . import _palette as pal
 
 
 class _WeekdayBar(QWidget):
-    def __init__(self, sizes: dict, *, visible_months: int, col_width: int,
-                 theme: str, parent=None) -> None:
+    def __init__(
+        self, sizes: dict, *, visible_months: int, col_width: int, theme: str, parent=None
+    ) -> None:
         super().__init__(parent)
         self._sizes = sizes
         self._visible_months = visible_months
         self._col_width = col_width
         self._theme = theme
-        self._labels: List[Text] = []
+        self._labels: list[Text] = []
 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self.setFixedHeight(self._sizes["weekday_font"] + 20)
@@ -63,7 +62,7 @@ class _WeekdayBar(QWidget):
 
     # ---- API ----------------------------------------------------------
 
-    def set_names(self, names: List[str]) -> None:
+    def set_names(self, names: list[str]) -> None:
         """names 为一个月的 7 个星期名；多月时重复填充每段。"""
         for i, lbl in enumerate(self._labels):
             lbl.setText(names[i % 7])

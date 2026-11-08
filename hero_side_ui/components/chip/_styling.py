@@ -63,6 +63,7 @@ def _base_token(bg, fg, border, dot_color, shadow_color=None, has_shadow=False) 
 
 # ---- solid ----
 
+
 def _solid(c, d, is_dark, color_name) -> dict:
     bg = (d[700] if is_dark else d[500]) if color_name == "default" else c[500]
     fg = _fg_on_solid(color_name, is_dark)
@@ -70,6 +71,7 @@ def _solid(c, d, is_dark, color_name) -> dict:
 
 
 # ---- shadow = solid + 彩色投影 ----
+
 
 def _shadow(c, d, is_dark, color_name) -> dict:
     tok = _solid(c, d, is_dark, color_name)
@@ -79,6 +81,7 @@ def _shadow(c, d, is_dark, color_name) -> dict:
 
 
 # ---- flat ----
+
 
 def _flat(c, d, is_dark, color_name) -> dict:
     if color_name == "default":
@@ -92,6 +95,7 @@ def _flat(c, d, is_dark, color_name) -> dict:
 
 # ---- bordered ----
 
+
 def _bordered(c, d, is_dark, color_name) -> dict:
     if color_name == "default":
         bd = d[300] if not is_dark else d[600]
@@ -104,6 +108,7 @@ def _bordered(c, d, is_dark, color_name) -> dict:
 
 # ---- light ----
 
+
 def _light(c, d, is_dark, color_name) -> dict:
     if color_name == "default":
         fg = d[700] if not is_dark else d[200]
@@ -113,6 +118,7 @@ def _light(c, d, is_dark, color_name) -> dict:
 
 
 # ---- faded = flat 背景 + 浅色细边框 ----
+
 
 def _faded(c, d, is_dark, color_name) -> dict:
     bg = d[100] if not is_dark else d[800]
@@ -125,6 +131,7 @@ def _faded(c, d, is_dark, color_name) -> dict:
 
 
 # ---- dot = 透明底 + default 细边框 + foreground 文字 + 彩色圆点 ----
+
 
 def _dot(c, d, is_dark, color_name) -> dict:
     bd = d[300] if not is_dark else d[600]

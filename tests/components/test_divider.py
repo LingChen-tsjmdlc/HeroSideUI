@@ -150,7 +150,8 @@ class TestDividerText:
     def test_custom_text_size(self, qtbot):
         d_small = Divider(text="OR", text_size=10)
         d_large = Divider(text="OR", text_size=20)
-        qtbot.addWidget(d_small); qtbot.addWidget(d_large)
+        qtbot.addWidget(d_small)
+        qtbot.addWidget(d_large)
         # 字号越大，Divider 越高
         assert d_large.height() > d_small.height()
 

@@ -6,9 +6,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional
+from collections.abc import Callable
 
-from PySide6.QtCore import Qt, QTimer
+from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from ...themes import CODE_BLOCK_SPEC, HEROUI_COLORS
@@ -31,12 +31,12 @@ class _CodeHeaderBar(QWidget):
     def __init__(
         self,
         filename: str,
-        tabs: List[str],
+        tabs: list[str],
         theme: str,
         on_tab: Callable[[int], None],
         on_wrap: Callable[[bool], None],
         on_copy: Callable[[], None],
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._theme = theme
@@ -46,7 +46,7 @@ class _CodeHeaderBar(QWidget):
         self._on_copy = on_copy
         self._active_tab = 0
         self._wrap = False
-        self._tab_buttons: List[Button] = []
+        self._tab_buttons: list[Button] = []
 
         lay = QHBoxLayout(self)
         lay.setContentsMargins(

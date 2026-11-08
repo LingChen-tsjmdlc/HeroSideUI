@@ -47,10 +47,10 @@ VALID_BADGE_SHAPES = ("circle", "rectangle")
 VALID_BADGE_PLACEMENTS = ("top-right", "top-left", "bottom-right", "bottom-left")
 
 __all__ = [
-    "BADGE_SIZES",
     "BADGE_PLACEMENT_OFFSETS",
+    "BADGE_SIZES",
+    "VALID_BADGE_PLACEMENTS",
+    "VALID_BADGE_SHAPES",
     "VALID_BADGE_SIZES",
     "VALID_BADGE_VARIANTS",
-    "VALID_BADGE_SHAPES",
-    "VALID_BADGE_PLACEMENTS",
 ]

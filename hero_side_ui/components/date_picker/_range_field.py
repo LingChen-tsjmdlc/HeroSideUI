@@ -7,8 +7,6 @@ HeroUI 的 DateRangePicker 是一个输入框内放两组段（中间夹分隔�
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 from PySide6.QtCore import Qt, Signal
 
 from ..date_input._field_state import DateFieldState
@@ -16,7 +14,7 @@ from ..date_input._segment import _DateSegment, _SegmentLiteral
 from ..date_input._value import DateTimeValue
 from ..date_input.date_input import DateInput
 
-RangeValue = Tuple[Optional[DateTimeValue], Optional[DateTimeValue]]
+RangeValue = tuple[DateTimeValue | None, DateTimeValue | None]
 
 
 class _RangeDateField(DateInput):
@@ -28,7 +26,7 @@ class _RangeDateField(DateInput):
 
     # 类级默认：super().__init__ 期间会调用 _rebuild_segments，
     # 此时实例属性尚未赋值，靠类属性判空退回单组渲染
-    _end_state: Optional[DateFieldState] = None
+    _end_state: DateFieldState | None = None
     _separator_text = "–"
 
     range_changed = Signal(object)
@@ -36,7 +34,7 @@ class _RangeDateField(DateInput):
     def __init__(
         self,
         *,
-        end_value: Optional[DateTimeValue] = None,
+        end_value: DateTimeValue | None = None,
         separator: str = "–",
         **kwargs,
     ):
@@ -99,13 +97,9 @@ class _RangeDateField(DateInput):
             seg = _DateSegment(
                 spec.type,
                 min_digits=spec.min_digits,
-                on_edit=(
-                    lambda st, a, p, f=field: self._on_field_edit(f, st, a, p)
-                ),
+                on_edit=(lambda st, a, p, f=field: self._on_field_edit(f, st, a, p)),
                 on_focus_move=self._on_segment_focus_move,
-                on_focus_change=(
-                    lambda st, foc, f=field: self._on_field_focus_change(f, st, foc)
-                ),
+                on_focus_change=(lambda st, foc, f=field: self._on_field_focus_change(f, st, foc)),
                 parent=self._segment_row,
             )
             seg.field = field
@@ -193,9 +187,7 @@ class _RangeDateField(DateInput):
         if self._explicit_invalid():
             return
         self._is_invalid = (
-            self._state.is_invalid()
-            or self._end_state.is_invalid()
-            or self._is_reversed()
+            self._state.is_invalid() or self._end_state.is_invalid() or self._is_reversed()
         )
 
     def _is_reversed(self) -> bool:

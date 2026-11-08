@@ -1,4 +1,4 @@
-from .progress import Progress
 from .circular import CircularProgress
+from .progress import Progress
 
-__all__ = ["Progress", "CircularProgress"]
+__all__ = ["CircularProgress", "Progress"]

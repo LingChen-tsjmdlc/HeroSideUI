@@ -10,12 +10,24 @@
 """
 
 import sys
-from PySide6.QtWidgets import (
-    QApplication, QWidget, QVBoxLayout, QHBoxLayout, QLabel, QScrollArea,
-)
-from PySide6.QtCore import QRectF, QPointF, Qt
+
+from PySide6.QtCore import QPointF, QRectF, Qt
 from PySide6.QtGui import (
-    QPainter, QColor, QPen, QBrush, QPainterPath, QFont, QLinearGradient,
+    QBrush,
+    QColor,
+    QFont,
+    QLinearGradient,
+    QPainter,
+    QPainterPath,
+    QPen,
+)
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
 
 from hero_side_ui.utils.squircle import squircle_path
@@ -23,8 +35,8 @@ from hero_side_ui.utils.squircle import squircle_path
 # ─── 配色 ──────────────────────────────────────────────
 BG = "#0f0f11"
 CARD_BG = "#1e1e22"
-G1_COLOR = QColor(255, 95, 86)     # 红 — 标准
-G2_COLOR = QColor(64, 169, 255)    # 蓝 — 超椭圆
+G1_COLOR = QColor(255, 95, 86)  # 红 — 标准
+G2_COLOR = QColor(64, 169, 255)  # 蓝 — 超椭圆
 TEXT_COLOR = QColor(200, 200, 200)
 HINT_DIM = QColor(150, 150, 150)
 
@@ -88,9 +100,9 @@ class RealComponentCompare(QWidget):
             # 标签
             p.setFont(_font(9, True))
             p.setPen(TEXT_COLOR)
-            p.drawText(QRectF(x, y_off + ch + 6, cw, 20),
-                       Qt.AlignmentFlag.AlignCenter,
-                       f"{label} R={r}")
+            p.drawText(
+                QRectF(x, y_off + ch + 6, cw, 20), Qt.AlignmentFlag.AlignCenter, f"{label} R={r}"
+            )
         p.end()
 
 
@@ -115,7 +127,6 @@ class BigZoomCorner(QWidget):
         # 用 R=14 的卡片尺寸（最常用）
         full_w, full_h = 300, 200
         R = 14
-        n_samples = 500
 
         # 构建两个路径
         rect_full = QRectF(0, 0, full_w, full_h)
@@ -129,10 +140,12 @@ class BigZoomCorner(QWidget):
         margin_x = 30
         y_top = 35
 
-        for idx, (label, color, path) in enumerate([
-            ("G1 标准 border-radius", G1_COLOR, g1),
-            ("G2 超椭圆 (n=5)", G2_COLOR, g2),
-        ]):
+        for idx, (label, color, path) in enumerate(
+            [
+                ("G1 标准 border-radius", G1_COLOR, g1),
+                ("G2 超椭圆 (n=5)", G2_COLOR, g2),
+            ]
+        ):
             zx = margin_x + idx * (zoom_w + 50)
 
             # 放大背景
@@ -244,9 +257,11 @@ class OutlineOverlay(QWidget):
         # 标题
         p.setFont(_font(10, True))
         p.setPen(TEXT_COLOR)
-        p.drawText(QRectF(0, 0, self.width(), 35),
-                   Qt.AlignmentFlag.AlignCenter,
-                   f"描边叠加 R={self.r} — 角部双色分离")
+        p.drawText(
+            QRectF(0, 0, self.width(), 35),
+            Qt.AlignmentFlag.AlignCenter,
+            f"描边叠加 R={self.r} — 角部双色分离",
+        )
 
         # 图例
         ly = y0 + sz + 16
@@ -258,8 +273,7 @@ class OutlineOverlay(QWidget):
 
         p.setPen(HINT_DIM)
         p.setFont(_font(8))
-        p.drawText(x0, ly + 18,
-                   "四条边完全重合 → 四个角蓝线向外鼓出 → 这就是 iOS 的感觉")
+        p.drawText(x0, ly + 18, "四条边完全重合 → 四个角蓝线向外鼓出 → 这就是 iOS 的感觉")
 
         p.end()
 
@@ -312,8 +326,7 @@ class ExponentGradient(QWidget):
 
             p.setPen(QColor("#ddd"))
             p.setFont(_font(8))
-            p.drawText(QRectF(x, y_off, card_w, card_h),
-                       Qt.AlignmentFlag.AlignCenter, label)
+            p.drawText(QRectF(x, y_off, card_w, card_h), Qt.AlignmentFlag.AlignCenter, label)
         p.end()
 
 
@@ -340,10 +353,12 @@ class GradientShapePair(QWidget):
         y_off = 35
         r = 20
 
-        for idx, (label, color, s) in enumerate([
-            ("标准 G1 圆角矩形", G1_COLOR, None),
-            ("超椭圆 Squircle (n=5)", G2_COLOR, 0.6),
-        ]):
+        for idx, (label, color, s) in enumerate(
+            [
+                ("标准 G1 圆角矩形", G1_COLOR, None),
+                ("超椭圆 Squircle (n=5)", G2_COLOR, 0.6),
+            ]
+        ):
             x = 28 + idx * (w + gap)
             rect = QRectF(x, y_off, w, h)
 
@@ -363,8 +378,7 @@ class GradientShapePair(QWidget):
 
             p.setPen(color)
             p.setFont(_font(9, True))
-            p.drawText(QRectF(x, y_off, w, h),
-                       Qt.AlignmentFlag.AlignCenter, label)
+            p.drawText(QRectF(x, y_off, w, h), Qt.AlignmentFlag.AlignCenter, label)
         p.end()
 
 
@@ -382,9 +396,7 @@ def main():
     layout.setContentsMargins(22, 22, 22, 22)
 
     title = QLabel("Superellipse (超椭圆) vs 标准 G1 圆角")
-    title.setStyleSheet(
-        "color: white; font-size: 17px; font-weight: bold; padding: 8px;"
-    )
+    title.setStyleSheet("color: white; font-size: 17px; font-weight: bold; padding: 8px;")
     layout.addWidget(title)
 
     hint = QLabel(

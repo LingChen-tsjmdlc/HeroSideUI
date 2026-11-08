@@ -41,8 +41,7 @@ class TestInitialState:
 
 class TestPlayIn:
     def test_play_in_reaches_one(self, qtbot, widget):
-        fade = FadeScaleAnimation(widget, apply_opacity_via="effect",
-                                  duration_in=80)
+        fade = FadeScaleAnimation(widget, apply_opacity_via="effect", duration_in=80)
         with qtbot.waitSignal(fade.finished_in, timeout=1000):
             fade.play_in()
         assert fade.progress_value() == pytest.approx(1.0, abs=0.001)
@@ -58,8 +57,9 @@ class TestPlayIn:
 
 class TestPlayOut:
     def test_play_out_from_open(self, qtbot, widget):
-        fade = FadeScaleAnimation(widget, apply_opacity_via="effect",
-                                  duration_in=50, duration_out=50)
+        fade = FadeScaleAnimation(
+            widget, apply_opacity_via="effect", duration_in=50, duration_out=50
+        )
         # 先打开
         with qtbot.waitSignal(fade.finished_in, timeout=500):
             fade.play_in()
@@ -74,8 +74,7 @@ class TestScaleValueRange:
     """scale_value 与 progress 严格线性。"""
 
     def test_scale_at_half_progress(self, qtbot, widget):
-        fade = FadeScaleAnimation(widget, apply_opacity_via="manual",
-                                  scale_min=0.5)
+        fade = FadeScaleAnimation(widget, apply_opacity_via="manual", scale_min=0.5)
         fade._progress = 0.5
         # scale = 0.5 + (1 - 0.5) * 0.5 = 0.75
         assert fade.scale_value() == pytest.approx(0.75, abs=0.001)

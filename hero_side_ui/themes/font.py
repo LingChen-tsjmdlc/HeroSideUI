@@ -24,8 +24,7 @@ from __future__ import annotations
 # 与 FontProvider 内部 ``_FALLBACK_FAMILY_CSS`` 保持一致；
 # 这一份独立常量用于 FontProvider 还没初始化（譬如还没 QApplication）的早期 import。
 _FALLBACK_FONT_FAMILY = (
-    '"Inter", "SF Pro Display", -apple-system, '
-    '"Segoe UI", "Helvetica Neue", Arial, sans-serif'
+    '"Inter", "SF Pro Display", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif'
 )
 
 
@@ -49,4 +48,4 @@ def __getattr__(name: str):
     raise AttributeError(f"module 'hero_side_ui.themes.font' has no attribute {name!r}")
 
 
-__all__ = ["FONT_FAMILY"]
+__all__ = ["FONT_FAMILY"]  # noqa: F822  # PEP 562 动态属性，见上方 __getattr__

@@ -12,7 +12,7 @@ block 回调；策略是文档变化时全文 lex 一遍，把结果缓存成"�
 
 from __future__ import annotations
 
-from PySide6.QtGui import QColor, QTextCharFormat, QSyntaxHighlighter, QTextDocument
+from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat, QTextDocument
 
 from ...themes import CODE_EDITOR_SYNTAX
 from ..code_block._highlight import _token_color
@@ -33,9 +33,10 @@ class PygmentsHighlighter(QSyntaxHighlighter):
         super().__init__(doc)
         self._theme = theme
         self._lexer = None
-        self._cache: dict[int, list[tuple[int, int, str]]] = {}   # blockNumber → [(start,end,hex)]
+        self._cache: dict[int, list[tuple[int, int, str]]] = {}  # blockNumber → [(start,end,hex)]
         try:
             from pygments.lexers import get_lexer_by_name
+
             self._lexer = get_lexer_by_name(language, stripnl=False)
         except Exception:
             self._lexer = None
@@ -51,6 +52,7 @@ class PygmentsHighlighter(QSyntaxHighlighter):
     def set_language(self, language: str) -> None:
         try:
             from pygments.lexers import get_lexer_by_name
+
             self._lexer = get_lexer_by_name(language, stripnl=False)
         except Exception:
             self._lexer = None
@@ -75,23 +77,22 @@ class PygmentsHighlighter(QSyntaxHighlighter):
 
         new_cache: dict[int, list[tuple[int, int, str]]] = {}
         import bisect
+
         from pygments import lex
 
-        pos = 0   # 跨 token 累加；每个 token 内部的 \n 段间再各 +1
+        pos = 0  # 跨 token 累加；每个 token 内部的 \n 段间再各 +1
         for ttype, value in lex(doc.toPlainText(), self._lexer):
             color = _token_color(ttype, syn)
             first = True
             for seg in value.split("\n"):
                 if not first:
-                    pos += 1   # 跨过 token 内的换行符
+                    pos += 1  # 跨过 token 内的换行符
                 first = False
                 if seg:
                     bno = bisect.bisect_right(block_starts, pos) - 1
                     if 0 <= bno < len(block_starts):
                         rel = pos - block_starts[bno]
-                        new_cache.setdefault(bno, []).append(
-                            (rel, rel + len(seg), color)
-                        )
+                        new_cache.setdefault(bno, []).append((rel, rel + len(seg), color))
                 pos += len(seg)
 
         self._cache = new_cache

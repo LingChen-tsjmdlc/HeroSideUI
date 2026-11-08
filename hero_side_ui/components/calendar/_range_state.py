@@ -10,7 +10,7 @@ cell 算 range_selection / selection_start·end / range_start·end。
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
 
 from ._date import CalendarDate
 from ._state import CalendarState
@@ -20,32 +20,32 @@ class RangeCalendarState(CalendarState):
     def __init__(
         self,
         *,
-        value: Optional[Tuple[CalendarDate, CalendarDate]] = None,
+        value: tuple[CalendarDate, CalendarDate] | None = None,
         **kwargs,
     ) -> None:
         # 父类的 value 是单个日期，这里改用 range，故传 None 给父类
         start_focus = value[0] if value else None
         super().__init__(value=start_focus, **kwargs)
 
-        self._range: Optional[Tuple[CalendarDate, CalendarDate]] = value
-        self._anchor: Optional[CalendarDate] = None
-        self._hover: Optional[CalendarDate] = None
+        self._range: tuple[CalendarDate, CalendarDate] | None = value
+        self._anchor: CalendarDate | None = None
+        self._hover: CalendarDate | None = None
         # 范围版 on_change 参数是 (start, end)
-        self.on_range_change: Optional[
-            Callable[[Optional[Tuple[CalendarDate, CalendarDate]]], None]
-        ] = None
+        self.on_range_change: Callable[[tuple[CalendarDate, CalendarDate] | None], None] | None = (
+            None
+        )
 
     # ---- 只读视图 -----------------------------------------------------
 
     @property
-    def range_value(self) -> Optional[Tuple[CalendarDate, CalendarDate]]:
+    def range_value(self) -> tuple[CalendarDate, CalendarDate] | None:
         return self._range
 
     @property
-    def anchor_date(self) -> Optional[CalendarDate]:
+    def anchor_date(self) -> CalendarDate | None:
         return self._anchor
 
-    def highlighted_range(self) -> Optional[Tuple[CalendarDate, CalendarDate]]:
+    def highlighted_range(self) -> tuple[CalendarDate, CalendarDate] | None:
         """已选或预览中的范围（升序）。选择中优先用 anchor+hover 预览。"""
         if self._anchor is not None:
             other = self._hover or self._anchor
@@ -57,7 +57,7 @@ class RangeCalendarState(CalendarState):
     def is_range(self) -> bool:
         return True
 
-    def selected_range(self) -> Optional[Tuple[CalendarDate, CalendarDate]]:
+    def selected_range(self) -> tuple[CalendarDate, CalendarDate] | None:
         return self.highlighted_range()
 
     def is_selected(self, date: CalendarDate) -> bool:
@@ -72,10 +72,7 @@ class RangeCalendarState(CalendarState):
         if self._range is None:
             return False
         start, end = self._range
-        for d in (start, end):
-            if d < self._min or d > self._max or self.is_unavailable(d):
-                return True
-        return False
+        return any(d < self._min or d > self._max or self.is_unavailable(d) for d in (start, end))
 
     # ---- 操作 ---------------------------------------------------------
 
@@ -101,12 +98,12 @@ class RangeCalendarState(CalendarState):
         if self.on_range_change:
             self.on_range_change(self._range)
 
-    def set_hover_date(self, date: Optional[CalendarDate]) -> None:
+    def set_hover_date(self, date: CalendarDate | None) -> None:
         """选择进行中（已设 anchor）时更新预览端点。"""
         if self._anchor is None:
             return
         self._hover = date
 
 
-def _sorted_pair(a: CalendarDate, b: CalendarDate) -> Tuple[CalendarDate, CalendarDate]:
+def _sorted_pair(a: CalendarDate, b: CalendarDate) -> tuple[CalendarDate, CalendarDate]:
     return (a, b) if a <= b else (b, a)

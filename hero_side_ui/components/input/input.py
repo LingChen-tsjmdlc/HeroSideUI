@@ -8,19 +8,14 @@
     - ``_InputWrapper`` → ``_wrapper.py``
 """
 
-from PySide6.QtWidgets import QFrame, QPushButton
-
-from typing import Callable, Optional
-
 from PySide6.QtCore import (
     QEvent,
-    QPoint,
-    QSize,
     Qt,
     Signal,
 )
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
+    QFrame,
     QHBoxLayout,
     QSizePolicy,
     QVBoxLayout,
@@ -29,8 +24,6 @@ from PySide6.QtWidgets import (
 
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import ThemeProvider
-from ...themes import INPUT_SIZES
-
 from ..text import Text
 from ._clear_button import _ClearButton
 from ._layout import _InputLayoutMixin
@@ -82,7 +75,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
         is_disabled: bool = False,
         is_invalid: bool = False,
@@ -97,7 +90,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         on_start_content_click=None,
         on_end_content_click=None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -168,13 +161,9 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
         # --- outside label (仅 outside / outside-top 模式显示) ---
         self._outside_label = Text(self._label_text, weight="medium", selectable=False)
-        self._outside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_label.setContentsMargins(0, 0, 0, 0)
-        self._outside_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._outside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._outside_label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._outside_label, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -185,12 +174,8 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         _row.setSpacing(8)
 
         # outside-left label
-        self._outside_left_label = Text(
-            self._label_text, weight="medium", selectable=False
-        )
-        self._outside_left_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_left_label = Text(self._label_text, weight="medium", selectable=False)
+        self._outside_left_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_left_label.setContentsMargins(0, 0, 0, 0)
         self._outside_left_label.setTextFormat(Qt.TextFormat.RichText)
         _row.addWidget(
@@ -201,9 +186,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
         # --- inputWrapper (背景容器) ---
         self._wrapper = _InputWrapper()
-        self._wrapper.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
+        self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         wrap_layout = QHBoxLayout(self._wrapper)
         wrap_layout.setContentsMargins(12, 6, 12, 6)
@@ -230,13 +213,9 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         # 文字颜色由 _layout._apply_label_progress() 动画插值后用 RichText <span> 覆写，
         # Text 本身的 set_color 不介入 inside-label 的动画路径。
         self._inside_label = Text(self._label_text, parent=self, selectable=False)
-        self._inside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._inside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._inside_label.setContentsMargins(0, 0, 0, 0)
-        self._inside_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
+        self._inside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self._inside_label.raise_()
 
         # 真正的输入框
@@ -273,9 +252,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         # --- helper 区域 ---
         self._helper_label = Text("", weight="normal", selectable=False)
         self._helper_label.setWordWrap(True)
-        self._helper_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._helper_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._helper_label.hide()
         self._root.addWidget(self._helper_label)
 
@@ -453,14 +430,14 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         self._size = size
         self._apply_styles()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._radius = radius
         self._apply_styles()
 
     # ============================================================
     # 宽度接管：用户一旦显式设宽，_apply_styles 就不再覆盖
     # ============================================================
-    def setFixedWidth(self, w: int):  # noqa: N802
+    def setFixedWidth(self, w: int):
         """拦截 Qt 原生 setFixedWidth：标记用户接管宽度。
 
         否则 _apply_styles() 每次重跑都会用 size_config[min_width]
@@ -473,12 +450,12 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         # 构造期写入的 260，导致 chevron 被推出 Input 视口
         self._apply_styles()
 
-    def setMinimumWidth(self, w: int):  # noqa: N802
+    def setMinimumWidth(self, w: int):
         self._user_width_locked = True
         super().setMinimumWidth(w)
         self._apply_styles()
 
-    def setMaximumWidth(self, w: int):  # noqa: N802
+    def setMaximumWidth(self, w: int):
         self._user_width_locked = True
         super().setMaximumWidth(w)
         self._apply_styles()

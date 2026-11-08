@@ -8,7 +8,6 @@
 - input.line_edit 强制只读、点击切换 popover
 """
 
-from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS, SELECT_SIZES

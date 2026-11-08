@@ -6,15 +6,17 @@ Button 组件示例 — 统一亮暗色切换
 color / theme / hover 状态决定 icon 颜色，demo 里完全不写颜色判断。
 """
 
-import os, sys
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout
 
 from hero_side_ui import Button
-from _base import DemoBase
 
 
 def make_icon_btn(icon_name: str, **btn_kwargs) -> Button:
@@ -31,14 +33,16 @@ class ButtonDemo(DemoBase):
         # 各种变体
         for variant in ["solid", "bordered", "flat", "light", "faded", "ghost"]:
             self.add_section(
-                layout, variant.capitalize(),
+                layout,
+                variant.capitalize(),
                 [{"text": c.capitalize(), "color": c, "variant": variant} for c in colors],
                 labels_bag,
             )
 
         # 尺寸
         self.add_section(
-            layout, "Sizes",
+            layout,
+            "Sizes",
             [
                 {"text": "Small", "color": "primary", "size": "sm"},
                 {"text": "Medium", "color": "primary", "size": "md"},
@@ -49,7 +53,8 @@ class ButtonDemo(DemoBase):
 
         # 圆角
         self.add_section(
-            layout, "Radius",
+            layout,
+            "Radius",
             [
                 {"text": "None", "color": "primary", "radius": "none"},
                 {"text": "Small", "color": "primary", "radius": "sm"},
@@ -62,7 +67,8 @@ class ButtonDemo(DemoBase):
 
         # 禁用
         self.add_section(
-            layout, "Disabled",
+            layout,
+            "Disabled",
             [
                 {"text": c.capitalize(), "color": c, "is_disabled": True}
                 for c in ["primary", "secondary", "success", "warning", "danger"]
@@ -73,21 +79,41 @@ class ButtonDemo(DemoBase):
         # icon_only
         icon_btns = []
         for s in ["sm", "md", "lg"]:
-            icon_btns.append(make_icon_btn(
-                "heroicons--check-solid", color="primary", variant="flat", size=s,
-            ))
+            icon_btns.append(
+                make_icon_btn(
+                    "heroicons--check-solid",
+                    color="primary",
+                    variant="flat",
+                    size=s,
+                )
+            )
         for v in ["solid", "bordered", "flat", "light", "ghost"]:
-            icon_btns.append(make_icon_btn(
-                "heroicons--x-circle-solid", color="danger", variant=v, size="md",
-            ))
+            icon_btns.append(
+                make_icon_btn(
+                    "heroicons--x-circle-solid",
+                    color="danger",
+                    variant=v,
+                    size="md",
+                )
+            )
         for c in ["default", "primary", "secondary", "success", "warning"]:
-            icon_btns.append(make_icon_btn(
-                "heroicons--eye-solid", color=c, variant="solid", size="md",
-            ))
-        icon_btns.append(make_icon_btn(
-            "heroicons--chevron-right-solid",
-            color="primary", variant="solid", size="md", radius="full",
-        ))
+            icon_btns.append(
+                make_icon_btn(
+                    "heroicons--eye-solid",
+                    color=c,
+                    variant="solid",
+                    size="md",
+                )
+            )
+        icon_btns.append(
+            make_icon_btn(
+                "heroicons--chevron-right-solid",
+                color="primary",
+                variant="solid",
+                size="md",
+                radius="full",
+            )
+        )
         self.add_section(layout, "Icon Only (正方形图标按钮)", icon_btns, labels_bag)
 
 

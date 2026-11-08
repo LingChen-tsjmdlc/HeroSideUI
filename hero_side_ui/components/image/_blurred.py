@@ -10,10 +10,8 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QImage, QPainter, QPixmap, QColor
+from PySide6.QtGui import QColor, QImage, QPainter, QPixmap
 from PySide6.QtWidgets import QGraphicsBlurEffect, QLabel, QWidget
 
 # 处理前先缩放到的最大边长。模糊副本会被 blur 抹掉细节，
@@ -74,7 +72,7 @@ class BlurredImage(QLabel):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         blur_amount: float = 1.0,
     ):
         super().__init__(parent)
@@ -87,7 +85,7 @@ class BlurredImage(QLabel):
         self._blur.setBlurHints(QGraphicsBlurEffect.BlurHint.QualityHint)
         self.setGraphicsEffect(self._blur)
 
-        self._processed: Optional[QPixmap] = None
+        self._processed: QPixmap | None = None
 
     def set_blur_amount(self, amount: float):
         """运行期调整模糊强度倍率。"""

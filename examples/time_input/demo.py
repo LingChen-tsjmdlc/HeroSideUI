@@ -7,14 +7,14 @@
   Hourly Cycle。
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import (
     Body,
     TimeInput,
@@ -81,30 +81,21 @@ class TimeInputDemo(DemoBase):
 
         # ---------- Disabled ----------
         layout.addWidget(self._section_title("Disabled 禁用"))
-        layout.addWidget(
-            self._row(TimeInput(label="Event time", value=MORNING, is_disabled=True))
-        )
+        layout.addWidget(self._row(TimeInput(label="Event time", value=MORNING, is_disabled=True)))
 
         # ---------- Read Only ----------
         layout.addWidget(self._section_title("Read Only 只读"))
-        layout.addWidget(
-            self._row(TimeInput(label="Event time", value=MORNING, is_readonly=True))
-        )
+        layout.addWidget(self._row(TimeInput(label="Event time", value=MORNING, is_readonly=True)))
 
         # ---------- Required ----------
         layout.addWidget(self._section_title("Required 必填"))
-        layout.addWidget(
-            self._row(TimeInput(label="Event time", is_required=True))
-        )
+        layout.addWidget(self._row(TimeInput(label="Event time", is_required=True)))
 
         # ---------- Variants ----------
         layout.addWidget(self._section_title("Variants 变体"))
         layout.addWidget(
             self._col(
-                *[
-                    TimeInput(label="Event time", variant=v)
-                    for v in VALID_DATE_INPUT_VARIANTS
-                ]
+                *[TimeInput(label="Event time", variant=v) for v in VALID_DATE_INPUT_VARIANTS]
             )
         )
 
@@ -133,9 +124,7 @@ class TimeInputDemo(DemoBase):
         layout.addWidget(
             self._row(
                 *[
-                    TimeInput(
-                        label=size, size=size, value=MORNING, full_width=False
-                    )
+                    TimeInput(label=size, size=size, value=MORNING, full_width=False)
                     for size in VALID_DATE_INPUT_SIZES
                 ],
                 spacing=12,
@@ -219,9 +208,7 @@ class TimeInputDemo(DemoBase):
 
         # ---------- Controlled ----------
         layout.addWidget(self._section_title("Controlled 受控"))
-        controlled = TimeInput(
-            label="Time (controlled)", variant="bordered", value=MORNING
-        )
+        controlled = TimeInput(label="Time (controlled)", variant="bordered", value=MORNING)
         selected = Body(f"Selected time: {_fmt_time(MORNING)}")
 
         def _on_change(value):
@@ -246,9 +233,7 @@ class TimeInputDemo(DemoBase):
                 TimeInput(
                     label="Event time",
                     label_placement="outside",
-                    value=parse_zoned_datetime(
-                        "2022-11-07T00:45[America/Los_Angeles]"
-                    ),
+                    value=parse_zoned_datetime("2022-11-07T00:45[America/Los_Angeles]"),
                 ),
                 TimeInput(
                     label="Event time",
@@ -271,9 +256,7 @@ class TimeInputDemo(DemoBase):
         )
 
         # ---------- Min Time And Max Time ----------
-        layout.addWidget(
-            self._section_title("Min Time And Max Time 时刻范围")
-        )
+        layout.addWidget(self._section_title("Min Time And Max Time 时刻范围"))
         layout.addWidget(
             self._row(
                 self._captioned(
@@ -302,9 +285,7 @@ class TimeInputDemo(DemoBase):
                 TimeInput(
                     label="Event time",
                     hide_time_zone=True,
-                    value=parse_zoned_datetime(
-                        "2022-11-07T00:45[America/Los_Angeles]"
-                    ),
+                    value=parse_zoned_datetime("2022-11-07T00:45[America/Los_Angeles]"),
                 )
             )
         )

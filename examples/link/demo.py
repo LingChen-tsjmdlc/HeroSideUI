@@ -9,11 +9,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
 from hero_side_ui import Body, Caption, Link
-from _base import DemoBase
 
 
 # ============================================================
@@ -257,9 +257,7 @@ class LinkDemo(DemoBase):
         layout.addWidget(self._section_title("isBlock (hover 显示色块)"))
         layout.addWidget(_make_block())
 
-        layout.addWidget(
-            self._section_title("External + showAnchorIcon (点击在浏览器打开)")
-        )
+        layout.addWidget(self._section_title("External + showAnchorIcon (点击在浏览器打开)"))
         layout.addWidget(_make_external())
 
         layout.addWidget(self._section_title("自定义 anchor_icon"))

@@ -7,11 +7,7 @@ Slider thumb tooltip：顶层无边框 widget，自绘背景 + 文字 + 箭头�
 
 from __future__ import annotations
 
-from ...animation import tween_property
-
-from typing import Optional
-
-from PySide6.QtCore import QEasingCurve, Qt, QPoint, QPointF, QRectF
+from PySide6.QtCore import QEasingCurve, QPoint, QPointF, QRectF, Qt
 from PySide6.QtGui import (
     QColor,
     QFontMetrics,
@@ -20,6 +16,7 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QWidget
 
+from ...animation import tween_property
 from ...core import ThemeProvider, make_text_qfont
 from ...themes import HEROUI_COLORS, TOOLTIP_SIZES
 
@@ -156,9 +153,7 @@ class _SliderThumbTip(QWidget):
             grow = _SHADOW_SPREAD * i / _SHADOW_LAYERS
             # 外层 alpha 低，内层 alpha 高；整体强度比之前减半
             alpha = int(4 + 3 * (_SHADOW_LAYERS - i))  # 4, 7, 10, 13
-            r = body_rect.adjusted(
-                -grow, -grow + _SHADOW_OFFSET_Y, grow, grow + _SHADOW_OFFSET_Y
-            )
+            r = body_rect.adjusted(-grow, -grow + _SHADOW_OFFSET_Y, grow, grow + _SHADOW_OFFSET_Y)
             p.setBrush(QColor(0, 0, 0, alpha))
             p.drawRoundedRect(r, radius + grow, radius + grow)
 
@@ -168,9 +163,7 @@ class _SliderThumbTip(QWidget):
         self._relayout()
         w = self.width()
         h = self.height()
-        gp = self._anchor.mapToGlobal(
-            QPoint(int(thumb_top_center.x()), int(thumb_top_center.y()))
-        )
+        gp = self._anchor.mapToGlobal(QPoint(int(thumb_top_center.x()), int(thumb_top_center.y())))
         # 箭头尖端在 widget 内部 y = _SHADOW_MARGIN + body_h + _ARROW；下方还有 _SHADOW_MARGIN + offset
         # 希望箭头尖端到 thumb_top 距离 = _GAP → widget.y = gp.y - _GAP - (箭头尖在 widget 内的 y)
         arrow_tip_in_widget = h - _SHADOW_MARGIN - _SHADOW_OFFSET_Y
@@ -188,9 +181,16 @@ class _SliderThumbTip(QWidget):
         self._fade(0.0, on_done=self.hide)
 
     def _fade(self, target: float, on_done=None):
-        tween_property(self, "_anim", b"windowOpacity", target, duration=120,
-                       animated=not self._disable_animation and self.windowOpacity() != target,
-                       on_finished=on_done, easing=QEasingCurve.Type.Linear)
+        tween_property(
+            self,
+            "_anim",
+            b"windowOpacity",
+            target,
+            duration=120,
+            animated=not self._disable_animation and self.windowOpacity() != target,
+            on_finished=on_done,
+            easing=QEasingCurve.Type.Linear,
+        )
 
     # ---- 绘制 ----
     def paintEvent(self, _event):

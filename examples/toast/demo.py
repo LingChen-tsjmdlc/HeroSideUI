@@ -8,6 +8,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import QTimer
 
 from hero_side_ui import (
@@ -18,7 +19,6 @@ from hero_side_ui import (
     close_toast,
     get_toast_provider,
 )
-from _base import DemoBase
 
 COLORS = ("default", "primary", "secondary", "success", "warning", "danger")
 VARIANTS = ("flat", "bordered", "solid")
@@ -77,7 +77,12 @@ class ToastDemo(DemoBase):
             layout,
             "5 radius",
             [
-                self._btn(r, lambda r=r: self._styled("primary", "flat", radius=r), color="primary", variant="flat")
+                self._btn(
+                    r,
+                    lambda r=r: self._styled("primary", "flat", radius=r),
+                    color="primary",
+                    variant="flat",
+                )
                 for r in RADII
             ],
             labels_bag,
@@ -86,7 +91,12 @@ class ToastDemo(DemoBase):
             layout,
             "4 shadow",
             [
-                self._btn(s, lambda s=s: self._styled("default", "flat", shadow=s), color="default", variant="flat")
+                self._btn(
+                    s,
+                    lambda s=s: self._styled("default", "flat", shadow=s),
+                    color="default",
+                    variant="flat",
+                )
                 for s in SHADOWS
             ],
             labels_bag,
@@ -112,28 +122,43 @@ class ToastDemo(DemoBase):
             layout,
             "超时 / 进度（timeout=0 常驻，需手动关或拖拽）",
             [
-                self._btn("2s + 进度条", lambda: add_toast(
-                    title="即将关闭",
-                    description="底部进度条走完即消失",
+                self._btn(
+                    "2s + 进度条",
+                    lambda: add_toast(
+                        title="即将关闭",
+                        description="底部进度条走完即消失",
+                        color="primary",
+                        timeout=2000,
+                        should_show_timeout_progress=True,
+                        parent=self._host,
+                    ),
                     color="primary",
-                    timeout=2000,
-                    should_show_timeout_progress=True,
-                    parent=self._host,
-                ), color="primary", variant="flat"),
-                self._btn("常驻 + 进度条", lambda: add_toast(
-                    title="一直显示",
-                    description="timeout=0 时不启动倒计时",
+                    variant="flat",
+                ),
+                self._btn(
+                    "常驻 + 进度条",
+                    lambda: add_toast(
+                        title="一直显示",
+                        description="timeout=0 时不启动倒计时",
+                        color="warning",
+                        timeout=0,
+                        parent=self._host,
+                    ),
                     color="warning",
-                    timeout=0,
-                    parent=self._host,
-                ), color="warning", variant="flat"),
-                self._btn("长文本换行", lambda: add_toast(
-                    title="这是一条比较长的标题会被单行省略号截断处理",
-                    description="描述区会自动换行，卡片高度随内容增长，堆叠区会跟着重排。",
+                    variant="flat",
+                ),
+                self._btn(
+                    "长文本换行",
+                    lambda: add_toast(
+                        title="这是一条比较长的标题会被单行省略号截断处理",
+                        description="描述区会自动换行，卡片高度随内容增长，堆叠区会跟着重排。",
+                        color="default",
+                        timeout=8000,
+                        parent=self._host,
+                    ),
                     color="default",
-                    timeout=8000,
-                    parent=self._host,
-                ), color="default", variant="flat"),
+                    variant="flat",
+                ),
             ],
             labels_bag,
         )
@@ -155,25 +180,40 @@ class ToastDemo(DemoBase):
             layout,
             "图标与附加内容",
             [
-                self._btn("自定义图标", lambda: add_toast(
-                    title="使用自定义图标",
-                    icon="lucide--bell",
-                    parent=self._host,
-                ), color="default", variant="flat"),
-                self._btn("隐藏图标", lambda: add_toast(
-                    title="没有图标",
-                    description="hide_icon=True",
-                    hide_icon=True,
-                    parent=self._host,
-                ), color="default", variant="flat"),
-                self._btn("隐藏关闭按钮", lambda: add_toast(
-                    title="只能等超时",
-                    description="hide_close_button=True",
-                    hide_close_button=True,
+                self._btn(
+                    "自定义图标",
+                    lambda: add_toast(
+                        title="使用自定义图标",
+                        icon="lucide--bell",
+                        parent=self._host,
+                    ),
+                    color="default",
+                    variant="flat",
+                ),
+                self._btn(
+                    "隐藏图标",
+                    lambda: add_toast(
+                        title="没有图标",
+                        description="hide_icon=True",
+                        hide_icon=True,
+                        parent=self._host,
+                    ),
+                    color="default",
+                    variant="flat",
+                ),
+                self._btn(
+                    "隐藏关闭按钮",
+                    lambda: add_toast(
+                        title="只能等超时",
+                        description="hide_close_button=True",
+                        hide_close_button=True,
+                        color="danger",
+                        timeout=3000,
+                        parent=self._host,
+                    ),
                     color="danger",
-                    timeout=3000,
-                    parent=self._host,
-                ), color="danger", variant="flat"),
+                    variant="flat",
+                ),
                 self._btn("end_content", self._with_action, color="default", variant="bordered"),
             ],
             labels_bag,
@@ -186,17 +226,27 @@ class ToastDemo(DemoBase):
             layout,
             "堆叠（连点几次：新的在前，旧的被隐藏；鼠标移入展开全部并暂停倒计时）",
             [
-                self._btn("弹一条", lambda: add_toast(
-                    title=f"第 {self._seq()} 条",
-                    description="鼠标移入展开，移开 120ms 后折叠",
+                self._btn(
+                    "弹一条",
+                    lambda: add_toast(
+                        title=f"第 {self._seq()} 条",
+                        description="鼠标移入展开，移开 120ms 后折叠",
+                        color="success",
+                        timeout=10000,
+                        parent=self._host,
+                    ),
                     color="success",
-                    timeout=10000,
-                    parent=self._host,
-                ), color="success", variant="flat"),
-                self._btn("一次 5 条", lambda: [self._stack_one(i) for i in range(5)],
-                          color="primary", variant="flat"),
-                self._btn("清空", lambda: clear_toasts(self._host),
-                          color="danger", variant="bordered"),
+                    variant="flat",
+                ),
+                self._btn(
+                    "一次 5 条",
+                    lambda: [self._stack_one(i) for i in range(5)],
+                    color="primary",
+                    variant="flat",
+                ),
+                self._btn(
+                    "清空", lambda: clear_toasts(self._host), color="danger", variant="bordered"
+                ),
             ],
             labels_bag,
         )
@@ -210,7 +260,9 @@ class ToastDemo(DemoBase):
     # ============================================================
     # 内部工具
     # ============================================================
-    def _btn(self, label: str, slot, *, color: str = "default", variant: str = "bordered") -> Button:
+    def _btn(
+        self, label: str, slot, *, color: str = "default", variant: str = "bordered"
+    ) -> Button:
         b = Button(label, variant=variant, color=color, size="sm")
         # clicked 带 checked 参数，直接连会把 bool 塞进 slot 的首个位置参数
         b.clicked.connect(lambda *_: slot())

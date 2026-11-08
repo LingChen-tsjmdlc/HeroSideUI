@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 
-from typing import List, Optional, Sequence, Union
+from collections.abc import Sequence
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
@@ -45,7 +45,7 @@ from ._keys import (
     resolve_icon,
 )
 
-KbdKeysInput = Optional[Union[str, Sequence[str]]]
+KbdKeysInput = str | Sequence[str] | None
 
 # size 未显式传 radius 时的推断表
 # —— 统一默认 md：三档 size 各取所属规格的 md 像素值
@@ -70,7 +70,7 @@ class _KbdIconLabel(QLabel):
         title: str,
         size: int,
         color: QColor,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setToolTip(title)
@@ -102,18 +102,18 @@ class Kbd(QFrame):
         *,
         keys: KbdKeysInput = None,
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         platform: str = "auto",
         theme: str = "auto",
         use_unicode: bool = False,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
         self._children_text = str(children or "")
-        self._keys: List[str] = self._normalize_keys(keys)
+        self._keys: list[str] = self._normalize_keys(keys)
         self._use_unicode = bool(use_unicode)
         self._size = self._validate_size(size)
         # radius=None 哨兵：未显式传时跟随 size 推断
@@ -135,7 +135,7 @@ class Kbd(QFrame):
         self._layout = QHBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
-        self._slots: List[QWidget] = []
+        self._slots: list[QWidget] = []
         self._rebuild_slots()
         self._apply_styles()
 
@@ -152,7 +152,7 @@ class Kbd(QFrame):
         return ThemeProvider.instance().current_theme
 
     @staticmethod
-    def _normalize_keys(keys: KbdKeysInput) -> List[str]:
+    def _normalize_keys(keys: KbdKeysInput) -> list[str]:
         if keys is None:
             return []
         if isinstance(keys, str):
@@ -172,7 +172,7 @@ class Kbd(QFrame):
         return radius
 
     @classmethod
-    def _resolve_radius(cls, radius: Optional[str], size: str) -> str:
+    def _resolve_radius(cls, radius: str | None, size: str) -> str:
         # None → 按 size 推荐默认；显式值→传验证
         if radius is None:
             return DEFAULT_RADIUS_BY_SIZE[size]
@@ -181,9 +181,7 @@ class Kbd(QFrame):
     @staticmethod
     def _validate_platform(platform: str) -> str:
         if platform not in VALID_PLATFORMS:
-            raise ValueError(
-                f"Kbd: platform 必须是 {VALID_PLATFORMS}，传入 {platform!r}"
-            )
+            raise ValueError(f"Kbd: platform 必须是 {VALID_PLATFORMS}，传入 {platform!r}")
         return platform
 
     def _spec(self) -> dict:
@@ -238,9 +236,7 @@ class Kbd(QFrame):
         )
         # 推送色：Text 走 set_color；icon 走 set_color 重渲染
         for w in self._slots:
-            if isinstance(w, _KbdIconLabel):
-                w.set_color(fg)
-            elif isinstance(w, Text):
+            if isinstance(w, (_KbdIconLabel, Text)):
                 w.set_color(fg)
         self.setMinimumHeight(spec["min_height"])
 
@@ -249,6 +245,7 @@ class Kbd(QFrame):
     # ============================================================
     def _clear_slots(self) -> None:
         from ...utils import clear_layout
+
         clear_layout(self._layout)
         self._slots.clear()
 
@@ -285,9 +282,7 @@ class Kbd(QFrame):
             title = KBD_KEYS_LABEL_MAP.get(key, key)
             icon_name = None if self._use_unicode else resolve_icon(key, self._platform)
             if icon_name:
-                w: QWidget = _KbdIconLabel(
-                    icon_name, title, spec["icon_size"], fg, self
-                )
+                w: QWidget = _KbdIconLabel(icon_name, title, spec["icon_size"], fg, self)
             else:
                 glyph = KBD_KEYS_GLYPH_MAP.get(key, key)
                 w = self._make_text(glyph, title=title)
@@ -305,7 +300,7 @@ class Kbd(QFrame):
         self._rebuild_slots()
         self._apply_styles()
 
-    def keys(self) -> List[str]:
+    def keys(self) -> list[str]:
         return list(self._keys)
 
     def set_children(self, text: str) -> None:
@@ -334,7 +329,7 @@ class Kbd(QFrame):
         self._rebuild_slots()
         self._apply_styles()
 
-    def set_radius(self, radius: Optional[str]) -> None:
+    def set_radius(self, radius: str | None) -> None:
         # 传 None → 切回“跟随 size 推断”
         if radius is None:
             self._radius_explicit = False

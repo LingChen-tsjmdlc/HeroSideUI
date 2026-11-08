@@ -17,11 +17,10 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtGui import QColor, QPixmap, QImage
+from PySide6.QtGui import QColor, QImage, QPixmap
 
-from hero_side_ui.utils import load_svg_icon
 from hero_side_ui import ThemeProvider
-
+from hero_side_ui.utils import load_svg_icon
 
 # ============================================================
 # 辅助：从 QPixmap 里抽样找"非透明的有色像素"
@@ -48,12 +47,15 @@ def _non_transparent_pixels(pix: QPixmap) -> list[QColor]:
 class TestBuiltinIconLoading:
     """内置 heroicons 应能找到并返回有内容的 pixmap。"""
 
-    @pytest.mark.parametrize("name", [
-        "heroicons--check-solid",
-        "heroicons--chevron-down",
-        "heroicons--x-mark",
-        "heroicons--eye-solid",
-    ])
+    @pytest.mark.parametrize(
+        "name",
+        [
+            "heroicons--check-solid",
+            "heroicons--chevron-down",
+            "heroicons--x-mark",
+            "heroicons--eye-solid",
+        ],
+    )
     def test_builtin_returns_nonempty_pixmap(self, qtbot, name):
         pix = load_svg_icon(name, size=24, color="#FF0000")
         assert isinstance(pix, QPixmap)
@@ -161,10 +163,8 @@ class TestStrokeWidth:
     """stroke_width 数值生效（视觉上加粗描边 → 黑色/有色像素更多）。"""
 
     def test_thicker_stroke_paints_more_pixels(self, qtbot):
-        thin = load_svg_icon("heroicons--check-solid", size=64, color="#FF0000",
-                             stroke_width=1.5)
-        thick = load_svg_icon("heroicons--check-solid", size=64, color="#FF0000",
-                              stroke_width=4.0)
+        thin = load_svg_icon("heroicons--check-solid", size=64, color="#FF0000", stroke_width=1.5)
+        thick = load_svg_icon("heroicons--check-solid", size=64, color="#FF0000", stroke_width=4.0)
         thin_count = len(_non_transparent_pixels(thin))
         thick_count = len(_non_transparent_pixels(thick))
         # 加粗后应该明显画得更多
@@ -172,8 +172,7 @@ class TestStrokeWidth:
 
     def test_stroke_width_none_uses_default(self, qtbot):
         """stroke_width=None 保留 SVG 原始值，不应崩。"""
-        pix = load_svg_icon("heroicons--check-solid", size=24, color="#FF0000",
-                            stroke_width=None)
+        pix = load_svg_icon("heroicons--check-solid", size=24, color="#FF0000", stroke_width=None)
         assert not pix.isNull()
 
 
@@ -189,7 +188,7 @@ class TestExternalPath:
         svg.write_text(
             '<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">'
             '<rect x="0" y="0" width="24" height="24" fill="currentColor"/>'
-            '</svg>',
+            "</svg>",
             encoding="utf-8",
         )
         pix = load_svg_icon(str(svg), size=24, color="#FF0000")

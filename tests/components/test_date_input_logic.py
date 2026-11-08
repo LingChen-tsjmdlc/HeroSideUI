@@ -27,9 +27,7 @@ from hero_side_ui.components.date_input._value import (
 def _render(state: DateFieldState) -> str:
     """把状态机当前的段列表拼成完整显示文本。"""
     return "".join(
-        spec.text
-        if spec.is_literal
-        else state.segment_text(spec.type, spec.min_digits)
+        spec.text if spec.is_literal else state.segment_text(spec.type, spec.min_digits)
         for spec in state.specs
     )
 
@@ -154,8 +152,7 @@ def test_segment_order_follows_locale():
 )
 def test_granularity_adds_time_segments(granularity, expected_tail):
     types = [
-        s.type for s in build_segments(locale="en_US", granularity=granularity)
-        if s.is_editable
+        s.type for s in build_segments(locale="en_US", granularity=granularity) if s.is_editable
     ]
     assert types[:3] == ["month", "day", "year"]
     assert sorted(types[3:]) == sorted(expected_tail)
@@ -172,10 +169,7 @@ def test_hour_cycle_24_drops_day_period():
 
 def test_timezone_segment_present_only_when_zoned():
     with_tz = [
-        s.type
-        for s in build_segments(
-            locale="en_US", granularity="minute", has_timezone=True
-        )
+        s.type for s in build_segments(locale="en_US", granularity="minute", has_timezone=True)
     ]
     assert "timeZone" in with_tz
 
@@ -230,9 +224,7 @@ def test_typing_year_digit_by_digit_is_not_clamped():
     若 append_digit 走 clamp，输入 "2" 会立刻变成 1900，四位年份根本
     输不进去 —— 这是本组件最容易踩的坑。
     """
-    st = DateFieldState(
-        min_value=parse_date("1900-01-01"), max_value=parse_date("2099-12-31")
-    )
+    st = DateFieldState(min_value=parse_date("1900-01-01"), max_value=parse_date("2099-12-31"))
     for digit in (2, 0, 2, 4):
         st.append_digit("year", digit)
     assert st.segment_text("year", 1) == "2024"
@@ -294,9 +286,7 @@ def test_clear_resets_all():
 
 
 def test_day_period_toggle_shifts_hour():
-    st = DateFieldState(
-        value=parse_datetime("2024-04-04T09:30:00"), granularity="minute"
-    )
+    st = DateFieldState(value=parse_datetime("2024-04-04T09:30:00"), granularity="minute")
     assert st.value().hour == 9
     st.increment("dayPeriod", 1)
     assert st.value().hour == 21
@@ -329,22 +319,16 @@ def test_timezone_segment_text():
 
 def test_derived_segments_not_placeholder_once_dependency_filled():
     """AM/PM 不该在时间已填时仍显示为占位色。"""
-    st = DateFieldState(
-        value=parse_datetime("2024-04-04T09:30:00"), granularity="minute"
-    )
+    st = DateFieldState(value=parse_datetime("2024-04-04T09:30:00"), granularity="minute")
     assert st.is_placeholder("dayPeriod") is False
     assert st.is_placeholder("timeZone") is False
 
 
 def test_is_invalid_detects_out_of_range():
-    st = DateFieldState(
-        value=parse_date("2024-04-03"), min_value=parse_date("2024-04-10")
-    )
+    st = DateFieldState(value=parse_date("2024-04-03"), min_value=parse_date("2024-04-10"))
     assert st.is_invalid() is True
 
-    ok = DateFieldState(
-        value=parse_date("2024-04-15"), min_value=parse_date("2024-04-10")
-    )
+    ok = DateFieldState(value=parse_date("2024-04-15"), min_value=parse_date("2024-04-10"))
     assert ok.is_invalid() is False
 
 
@@ -372,9 +356,7 @@ def test_editable_types_excludes_literals_and_timezone():
 
 
 def test_leading_zeros_can_be_disabled():
-    st = DateFieldState(
-        value=parse_date("2024-04-04"), should_force_leading_zeros=False
-    )
+    st = DateFieldState(value=parse_date("2024-04-04"), should_force_leading_zeros=False)
     assert st.segment_text("month", 1) == "4"
 
 

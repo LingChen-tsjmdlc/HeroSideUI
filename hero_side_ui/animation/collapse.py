@@ -39,17 +39,13 @@ class CollapseAnimation(QObject):
         self._expanded = expanded
         self._cached_height = 0
 
-
         self._opacity_effect = QGraphicsOpacityEffect(content)
         content.setGraphicsEffect(self._opacity_effect)
-
 
         self._height_anim = QPropertyAnimation(wrapper, b"maximumHeight")
         self._height_anim.finished.connect(self._on_height_finished)
 
-
         self._opacity_anim = QPropertyAnimation(self._opacity_effect, b"opacity")
-
 
         if expanded:
             self._opacity_effect.setOpacity(1.0)
@@ -93,13 +89,11 @@ class CollapseAnimation(QObject):
         self._cached_height = target_height
         self._wrapper.setMaximumHeight(old_max)
 
-
         self._height_anim.setStartValue(old_max)
         self._height_anim.setEndValue(target_height)
         self._height_anim.setDuration(450)
         self._height_anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._height_anim.start()
-
 
         self._opacity_anim.setStartValue(self._opacity_effect.opacity())
         self._opacity_anim.setEndValue(1.0)
@@ -116,9 +110,7 @@ class CollapseAnimation(QObject):
         self._opacity_anim.stop()
         self._expanded = False
 
-
         self._content.setFixedWidth(self._wrapper.width())
-
 
         current_height = min(self._wrapper.height(), self._wrapper.maximumHeight())
         self._height_anim.setStartValue(current_height)
@@ -126,7 +118,6 @@ class CollapseAnimation(QObject):
         self._height_anim.setDuration(400)
         self._height_anim.setEasingCurve(QEasingCurve.Type.InOutCubic)
         self._height_anim.start()
-
 
         self._opacity_anim.setStartValue(self._opacity_effect.opacity())
         self._opacity_anim.setEndValue(0.0)

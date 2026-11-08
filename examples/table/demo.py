@@ -2,24 +2,24 @@
 Table 组件示例 — 静态/动态表 × 6 colors × 单选/多选 × 斑马纹 × 紧凑 × 排序 × 自定义 cell
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget
+from _base import DemoBase
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import (
-    Table,
-    Chip,
     Button,
+    Caption,
+    Chip,
     Input,
     Pagination,
+    Table,
     Title,
-    Caption,
 )
-from _base import DemoBase
-
 
 COLUMNS = [
     {"key": "name", "label": "NAME"},
@@ -189,7 +189,8 @@ class TableDemo(DemoBase):
 
         layout.addWidget(Title("禁止空选 (disallowEmptySelection)", level=3))
         t_must = _basic_table(
-            selection_mode="single", color="secondary",
+            selection_mode="single",
+            color="secondary",
             disallow_empty_selection=True,
         )
         t_must.set_selected_keys({"1"})
@@ -202,10 +203,16 @@ class TableDemo(DemoBase):
         # ============================================================
         # 9) 顶部内容（搜索框） + 底部内容（分页）
         # ============================================================
-        layout.addWidget(Title("顶部 + 底部内容 (topContent / bottomContent + Pagination)", level=3))
+        layout.addWidget(
+            Title("顶部 + 底部内容 (topContent / bottomContent + Pagination)", level=3)
+        )
         many_rows = [
-            {"key": str(i), "name": f"User {i}", "role": f"Role {i}",
-             "status": ("Active", "Paused", "Vacation")[i % 3]}
+            {
+                "key": str(i),
+                "name": f"User {i}",
+                "role": f"Role {i}",
+                "status": ("Active", "Paused", "Vacation")[i % 3],
+            }
             for i in range(1, 21)
         ]
         page_size = 5
@@ -216,13 +223,17 @@ class TableDemo(DemoBase):
         search.setMaximumWidth(280)
         t_page.set_top_content(search)
 
-        pager = Pagination(total=(len(many_rows) + page_size - 1) // page_size,
-                           initial_page=1, color="primary", show_controls=True)
+        pager = Pagination(
+            total=(len(many_rows) + page_size - 1) // page_size,
+            initial_page=1,
+            color="primary",
+            show_controls=True,
+        )
         t_page.set_bottom_content(pager)
 
         def _load_page(page):
             start = (page - 1) * page_size
-            t_page.set_rows(many_rows[start:start + page_size])
+            t_page.set_rows(many_rows[start : start + page_size])
 
         pager.page_changed.connect(_load_page)
         _load_page(1)

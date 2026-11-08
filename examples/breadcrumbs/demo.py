@@ -7,19 +7,19 @@
   Customizing the Ellipsis Item
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import (
+    Body,
     BreadcrumbItem,
     Breadcrumbs,
-    Body,
     Button,
     Dropdown,
     ThemeProvider,
@@ -87,13 +87,15 @@ class BreadcrumbsDemo(DemoBase):
         layout.addWidget(self._section_title("Usage 基础用法"))
         layout.addWidget(
             self._row(
-                Breadcrumbs(items=[
-                    BreadcrumbItem("Home", key="home"),
-                    BreadcrumbItem("Music", key="music"),
-                    BreadcrumbItem("Artist", key="artist"),
-                    BreadcrumbItem("Album", key="album"),
-                    BreadcrumbItem("Song", key="song"),
-                ])
+                Breadcrumbs(
+                    items=[
+                        BreadcrumbItem("Home", key="home"),
+                        BreadcrumbItem("Music", key="music"),
+                        BreadcrumbItem("Artist", key="artist"),
+                        BreadcrumbItem("Album", key="album"),
+                        BreadcrumbItem("Song", key="song"),
+                    ]
+                )
             )
         )
 
@@ -101,11 +103,16 @@ class BreadcrumbsDemo(DemoBase):
         layout.addWidget(self._section_title("Disabled 禁用（last 项保持可用，官方语义）"))
         layout.addWidget(
             self._row(
-                Breadcrumbs(items=[
-                    BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                    BreadcrumbItem("Artist"), BreadcrumbItem("Album"),
-                    BreadcrumbItem("Song"),
-                ], is_disabled=True)
+                Breadcrumbs(
+                    items=[
+                        BreadcrumbItem("Home"),
+                        BreadcrumbItem("Music"),
+                        BreadcrumbItem("Artist"),
+                        BreadcrumbItem("Album"),
+                        BreadcrumbItem("Song"),
+                    ],
+                    is_disabled=True,
+                )
             )
         )
 
@@ -116,10 +123,15 @@ class BreadcrumbsDemo(DemoBase):
                 *[
                     self._captioned(
                         s,
-                        Breadcrumbs(items=[
-                            BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                            BreadcrumbItem("Artist"),
-                        ], size=s, color="primary"),
+                        Breadcrumbs(
+                            items=[
+                                BreadcrumbItem("Home"),
+                                BreadcrumbItem("Music"),
+                                BreadcrumbItem("Artist"),
+                            ],
+                            size=s,
+                            color="primary",
+                        ),
                     )
                     for s in VALID_BREADCRUMBS_SIZES
                 ]
@@ -133,10 +145,14 @@ class BreadcrumbsDemo(DemoBase):
                 *[
                     self._captioned(
                         c,
-                        Breadcrumbs(items=[
-                            BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                            BreadcrumbItem("Games"),
-                        ], color=c),
+                        Breadcrumbs(
+                            items=[
+                                BreadcrumbItem("Home"),
+                                BreadcrumbItem("Music"),
+                                BreadcrumbItem("Games"),
+                            ],
+                            color=c,
+                        ),
                     )
                     for c in DEMO_COLORS
                 ],
@@ -151,10 +167,15 @@ class BreadcrumbsDemo(DemoBase):
                 *[
                     self._captioned(
                         v,
-                        Breadcrumbs(items=[
-                            BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                            BreadcrumbItem("Games"),
-                        ], variant=v, color="primary"),
+                        Breadcrumbs(
+                            items=[
+                                BreadcrumbItem("Home"),
+                                BreadcrumbItem("Music"),
+                                BreadcrumbItem("Games"),
+                            ],
+                            variant=v,
+                            color="primary",
+                        ),
                     )
                     for v in VALID_BREADCRUMBS_VARIANTS
                 ]
@@ -168,10 +189,15 @@ class BreadcrumbsDemo(DemoBase):
                 *[
                     self._captioned(
                         u,
-                        Breadcrumbs(items=[
-                            BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                            BreadcrumbItem("Games"),
-                        ], underline=u, color="primary"),
+                        Breadcrumbs(
+                            items=[
+                                BreadcrumbItem("Home"),
+                                BreadcrumbItem("Music"),
+                                BreadcrumbItem("Games"),
+                            ],
+                            underline=u,
+                            color="primary",
+                        ),
                     )
                     for u in VALID_BREADCRUMBS_UNDERLINES
                 ],
@@ -186,10 +212,16 @@ class BreadcrumbsDemo(DemoBase):
                 *[
                     self._captioned(
                         r,
-                        Breadcrumbs(items=[
-                            BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                            BreadcrumbItem("Games"),
-                        ], variant="solid", radius=r, color="primary"),
+                        Breadcrumbs(
+                            items=[
+                                BreadcrumbItem("Home"),
+                                BreadcrumbItem("Music"),
+                                BreadcrumbItem("Games"),
+                            ],
+                            variant="solid",
+                            radius=r,
+                            color="primary",
+                        ),
                     )
                     for r in VALID_BREADCRUMBS_RADII
                 ],
@@ -200,11 +232,14 @@ class BreadcrumbsDemo(DemoBase):
         # ---------- Routing ----------
         layout.addWidget(self._section_title("Routing 路由（on_action 回调，桌面以 key 分发）"))
         routing_label = Body("route: -")
-        bc_route = Breadcrumbs(items=[
-            BreadcrumbItem("Home", key="/home"),
-            BreadcrumbItem("Music", key="/music"),
-            BreadcrumbItem("Artist", key="/artist"),
-        ], on_action=lambda key: routing_label.setText(f"route: {key}"))
+        bc_route = Breadcrumbs(
+            items=[
+                BreadcrumbItem("Home", key="/home"),
+                BreadcrumbItem("Music", key="/music"),
+                BreadcrumbItem("Artist", key="/artist"),
+            ],
+            on_action=lambda key: routing_label.setText(f"route: {key}"),
+        )
         layout.addWidget(self._row(bc_route, routing_label))
 
         # ---------- Controlled ----------
@@ -232,7 +267,9 @@ class BreadcrumbsDemo(DemoBase):
         # ---------- Menu Type ----------
         # 官方 Menu Type：每项 border 胶囊（itemClasses）；桌面等价 = bordered 项，
         # current 反白边框、Song 禁用灰底
-        layout.addWidget(self._section_title("Menu Type 菜单型（bordered 胶囊项，点击切换 current）"))
+        layout.addWidget(
+            self._section_title("Menu Type 菜单型（bordered 胶囊项，点击切换 current）")
+        )
         menu_items = [
             BreadcrumbItem("Home", key="home", bordered=True),
             BreadcrumbItem("Music", key="music", bordered=True),
@@ -258,21 +295,41 @@ class BreadcrumbsDemo(DemoBase):
             self._row(
                 self._captioned(
                     "startContent",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem("Home", start_content=_icon_label("heroui--avatar-person")),
-                        BreadcrumbItem("Music", start_content=_icon_label("heroicons--clock")),
-                        BreadcrumbItem("Artist", start_content=_icon_label("heroicons--information-circle-solid")),
-                        BreadcrumbItem("Album", start_content=_icon_label("heroicons--check-solid")),
-                        BreadcrumbItem("Song", start_content=_icon_label("icon-park-outline--share")),
-                    ], color="primary"),
+                    Breadcrumbs(
+                        items=[
+                            BreadcrumbItem(
+                                "Home", start_content=_icon_label("heroui--avatar-person")
+                            ),
+                            BreadcrumbItem("Music", start_content=_icon_label("heroicons--clock")),
+                            BreadcrumbItem(
+                                "Artist",
+                                start_content=_icon_label("heroicons--information-circle-solid"),
+                            ),
+                            BreadcrumbItem(
+                                "Album", start_content=_icon_label("heroicons--check-solid")
+                            ),
+                            BreadcrumbItem(
+                                "Song", start_content=_icon_label("icon-park-outline--share")
+                            ),
+                        ],
+                        color="primary",
+                    ),
                 ),
                 self._captioned(
                     "endContent",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem("Home", end_content=_icon_label("heroui--avatar-person")),
-                        BreadcrumbItem("Music", end_content=_icon_label("heroicons--clock")),
-                        BreadcrumbItem("Artist", end_content=_icon_label("heroicons--information-circle-solid")),
-                    ], color="primary"),
+                    Breadcrumbs(
+                        items=[
+                            BreadcrumbItem(
+                                "Home", end_content=_icon_label("heroui--avatar-person")
+                            ),
+                            BreadcrumbItem("Music", end_content=_icon_label("heroicons--clock")),
+                            BreadcrumbItem(
+                                "Artist",
+                                end_content=_icon_label("heroicons--information-circle-solid"),
+                            ),
+                        ],
+                        color="primary",
+                    ),
                 ),
             )
         )
@@ -283,18 +340,24 @@ class BreadcrumbsDemo(DemoBase):
             self._row(
                 self._captioned(
                     "slash",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem("Home"), BreadcrumbItem("Music"),
-                        BreadcrumbItem("Games"),
-                    ], separator="/"),
+                    Breadcrumbs(
+                        items=[
+                            BreadcrumbItem("Home"),
+                            BreadcrumbItem("Music"),
+                            BreadcrumbItem("Games"),
+                        ],
+                        separator="/",
+                    ),
                 ),
                 self._captioned(
                     "item-level chevron-double",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem("Home"),
-                        BreadcrumbItem("Music"),
-                        BreadcrumbItem("Games"),
-                    ]),
+                    Breadcrumbs(
+                        items=[
+                            BreadcrumbItem("Home"),
+                            BreadcrumbItem("Music"),
+                            BreadcrumbItem("Games"),
+                        ]
+                    ),
                 ),
             )
         )
@@ -318,13 +381,15 @@ class BreadcrumbsDemo(DemoBase):
         )
         layout.addWidget(
             self._row(
-                Breadcrumbs(items=[
-                    BreadcrumbItem("Home", key="home"),
-                    BreadcrumbItem("Music", key="music"),
-                    BreadcrumbItem("Artist", key="artist"),
-                    BreadcrumbItem("Album", key="album"),
-                    BreadcrumbItem("", key="songs", start_content=songs_dd),
-                ])
+                Breadcrumbs(
+                    items=[
+                        BreadcrumbItem("Home", key="home"),
+                        BreadcrumbItem("Music", key="music"),
+                        BreadcrumbItem("Artist", key="artist"),
+                        BreadcrumbItem("Album", key="album"),
+                        BreadcrumbItem("", key="songs", start_content=songs_dd),
+                    ]
+                )
             )
         )
 
@@ -334,15 +399,19 @@ class BreadcrumbsDemo(DemoBase):
             self._row(
                 self._captioned(
                     "before=1 after=2",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem(f"Level {i}", key=f"k{i}") for i in range(7)
-                    ], max_items=3),
+                    Breadcrumbs(
+                        items=[BreadcrumbItem(f"Level {i}", key=f"k{i}") for i in range(7)],
+                        max_items=3,
+                    ),
                 ),
                 self._captioned(
                     "before=2 after=1",
-                    Breadcrumbs(items=[
-                        BreadcrumbItem(f"Level {i}", key=f"k{i}") for i in range(7)
-                    ], max_items=3, items_before_collapse=2, items_after_collapse=1),
+                    Breadcrumbs(
+                        items=[BreadcrumbItem(f"Level {i}", key=f"k{i}") for i in range(7)],
+                        max_items=3,
+                        items_before_collapse=2,
+                        items_after_collapse=1,
+                    ),
                 ),
             )
         )
@@ -358,9 +427,7 @@ class BreadcrumbsDemo(DemoBase):
         ellipsis_label = Body("collapsed: -")
 
         def _ellipsis_with_dropdown(collapsed):
-            menu_items = [
-                {"key": it.key or it.label, "label": it.label} for it in collapsed
-            ]
+            menu_items = [{"key": it.key or it.label, "label": it.label} for it in collapsed]
             dd = Dropdown(
                 trigger=Button(
                     icon_only=True,

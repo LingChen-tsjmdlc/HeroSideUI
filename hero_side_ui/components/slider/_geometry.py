@@ -12,7 +12,6 @@
 from __future__ import annotations
 
 import math
-from typing import List, Tuple
 
 from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QFontMetrics
@@ -26,20 +25,20 @@ RING_GAP = 2  # ring 与 thumb 之间的留白
 HALO_EXTRA = 6  # canvas 上下额外留白，避免 thumb 贴边裁剪
 
 __all__ = [
-    "RING_WIDTH",
-    "RING_GAP",
     "HALO_EXTRA",
-    "marks_band_size",
-    "track_geom",
-    "track_visual_geom",
-    "thumb_centers",
+    "RING_GAP",
+    "RING_WIDTH",
+    "clamp_value",
     "hit_thumb",
+    "marks_band_size",
     "ratio_at_pos",
     "ratio_of",
-    "value_at_ratio",
     "resolve_thumb_radius",
     "snap_value",
-    "clamp_value",
+    "thumb_centers",
+    "track_geom",
+    "track_visual_geom",
+    "value_at_ratio",
 ]
 
 
@@ -141,7 +140,7 @@ def thumb_centers(
     vmax: float,
     value,  # float 或 (lo, hi)
     is_range: bool,
-) -> List[QPointF]:
+) -> list[QPointF]:
     """根据当前值计算 thumb 中心坐标列表。
 
     垂直方向 "下=min / 上=max"（HeroUI flex-col-reverse 视觉）。
@@ -172,7 +171,7 @@ def thumb_centers(
 
 def hit_thumb(
     pt: QPointF,
-    centers: List[QPointF],
+    centers: list[QPointF],
     thumb_size: float,
     hide_thumb: bool,
 ) -> int:

@@ -26,7 +26,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Iterable, Optional
+from collections.abc import Callable, Iterable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
@@ -53,19 +53,17 @@ from ._constants import (
     VALID_SHADOWS,
     VALID_SIZES,
 )
-from ._header_cell import _TableColumnHeader
-from ._hosts import _CheckboxCell, _GridHost
 from ._data import _DataMixin
 from ._engine import _RowRenderer
+from ._header_cell import _TableColumnHeader
+from ._hosts import _CheckboxCell, _GridHost
 from ._props import _PropsMixin
 from ._selection import _SelectionMixin
 from ._sorting import _SortingMixin
 from ._virtual import _VirtualMixin
 
 
-class Table(
-    _SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMixin, QWidget
-):
+class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMixin, QWidget):
     """HeroUI 风格表格。
 
     用法::
@@ -93,20 +91,20 @@ class Table(
         shadow: str = "sm",
         layout: str = "auto",
         selection_mode: str = "none",
-        selected_keys: Optional[Iterable[str]] = None,
-        disabled_keys: Optional[Iterable[str]] = None,
+        selected_keys: Iterable[str] | None = None,
+        disabled_keys: Iterable[str] | None = None,
         disallow_empty_selection: bool = False,
         is_striped: bool = False,
         is_compact: bool = False,
         hide_header: bool = False,
         full_width: bool = True,
         remove_wrapper: bool = False,
-        empty_content: Optional[str] = None,
-        top_content: Optional[QWidget] = None,
-        bottom_content: Optional[QWidget] = None,
+        empty_content: str | None = None,
+        top_content: QWidget | None = None,
+        bottom_content: QWidget | None = None,
         top_content_placement: str = "inside",
         bottom_content_placement: str = "inside",
-        max_height: Optional[int] = None,
+        max_height: int | None = None,
         is_header_sticky: bool = False,
         is_virtualized: bool = False,
         disable_animation: bool = False,
@@ -141,8 +139,14 @@ class Table(
         self._full_width = full_width
         self._remove_wrapper = remove_wrapper
         self._empty_content_text = empty_content
-        self._top_placement = top_content_placement if top_content_placement in ("inside", "outside") else "inside"
-        self._bottom_placement = bottom_content_placement if bottom_content_placement in ("inside", "outside") else "inside"
+        self._top_placement = (
+            top_content_placement if top_content_placement in ("inside", "outside") else "inside"
+        )
+        self._bottom_placement = (
+            bottom_content_placement
+            if bottom_content_placement in ("inside", "outside")
+            else "inside"
+        )
         self._max_height = max_height
         self._is_header_sticky = bool(is_header_sticky)
         # 虚拟化需要滚动容器；未给 max_height 时自动给一个兜底高度
@@ -162,7 +166,7 @@ class Table(
         self._row_order: list[str] = []
         self._row_data: dict[str, dict] = {}
         self._row_disabled_flags: dict[str, bool] = {}
-        self._render_cell: Optional[Callable] = None
+        self._render_cell: Callable | None = None
 
         # 选中 / hover
         self._selected_keys: set[str] = set(selected_keys or [])
@@ -172,17 +176,17 @@ class Table(
         # _disabled_keys 是二者的并集，每次数据变动后由 _recompute_disabled() 重算。
         self._user_disabled_keys: set[str] = set(str(k) for k in (disabled_keys or []))
         self._disabled_keys: set[str] = set(self._user_disabled_keys)
-        self._hover_key: Optional[str] = None
+        self._hover_key: str | None = None
 
         # 排序（None = 无排序）
-        self._sort_column: Optional[str] = None
-        self._sort_direction: Optional[str] = None
+        self._sort_column: str | None = None
+        self._sort_direction: str | None = None
 
         # widget 引用
         self._headers: dict[str, _TableColumnHeader] = {}
         self._cells: dict[str, dict[str, _TableCell]] = {}  # row_key -> col_key -> cell
         self._row_checkboxes: dict[str, Checkbox] = {}
-        self._select_all_cb: Optional[Checkbox] = None
+        self._select_all_cb: Checkbox | None = None
 
         self._build_ui()
 
@@ -203,11 +207,11 @@ class Table(
         cfg = TABLE_SIZES.get(self._size, TABLE_SIZES["md"])
         self._outer.setSpacing(cfg["wrapper_gap"])
 
-        self._top_content: Optional[QWidget] = None
-        self._bottom_content: Optional[QWidget] = None
+        self._top_content: QWidget | None = None
+        self._bottom_content: QWidget | None = None
 
         # 外壳：复用现成 Card（自带阴影系统 + content1 背景 + 圆角 + 主题）
-        self._card: Optional[Card] = None
+        self._card: Card | None = None
         if self._remove_wrapper:
             self._card_host = QWidget(self)
             self._inside_v = QVBoxLayout(self._card_host)
@@ -229,7 +233,7 @@ class Table(
 
         # grid host：表头行 0 + 数据行 1..n（单网格，列宽天然对齐）。
         # 套滚动区时必须有实心底色（_GridHost 自绘），否则黑底+重影。
-        self._scroll: Optional[QScrollArea] = None  # paintEvent 会读，先占位
+        self._scroll: QScrollArea | None = None  # paintEvent 会读，先占位
         self._grid_host = _GridHost(self)
         self._grid = QGridLayout(self._grid_host)
         self._grid.setContentsMargins(0, 0, 0, 0)
@@ -249,13 +253,9 @@ class Table(
             self._scroll.setMaximumHeight(int(self._max_height))
             self._scroll.setWidget(self._grid_host)
             if self._is_header_sticky:
-                self._scroll.verticalScrollBar().valueChanged.connect(
-                    self._on_scroll_sticky
-                )
+                self._scroll.verticalScrollBar().valueChanged.connect(self._on_scroll_sticky)
             if self._is_virtualized:
-                self._scroll.verticalScrollBar().valueChanged.connect(
-                    self._on_virtual_scroll
-                )
+                self._scroll.verticalScrollBar().valueChanged.connect(self._on_virtual_scroll)
             self._inside_v.addWidget(self._scroll)
         else:
             self._inside_v.addWidget(self._grid_host)
@@ -374,7 +374,9 @@ class Table(
         if has_checkbox_col:
             # 带 parent 防止无父 widget 瞬间变顶层窗口（Windows 闪原生空窗）
             self._select_all_cb = Checkbox(
-                color=self._color, size=self._size, theme="auto",
+                color=self._color,
+                size=self._size,
+                theme="auto",
                 parent=self._grid_host,
             )
             self._select_all_cb.clicked.connect(lambda *_: self._on_select_all_clicked())
@@ -383,8 +385,11 @@ class Table(
 
         for ci, col in enumerate(self._columns):
             header = _TableColumnHeader(
-                col["key"], col["label"], align=col["align"],
-                allows_sorting=col["allows_sorting"], parent=self._grid_host,
+                col["key"],
+                col["label"],
+                align=col["align"],
+                allows_sorting=col["allows_sorting"],
+                parent=self._grid_host,
             )
             header.sort_clicked.connect(self._on_header_sort_clicked)
             self._grid.addWidget(header, 0, ci + col_offset)
@@ -435,9 +440,13 @@ class Table(
             header = self._headers.get(col["key"])
             if header:
                 header.apply_style(
-                    color=self._color, size=self._size, theme=self._theme,
-                    radius=self._radius, is_first_col=(ci == 0),
-                    is_last_col=(ci == n_cols - 1), hide_header=self._hide_header,
+                    color=self._color,
+                    size=self._size,
+                    theme=self._theme,
+                    radius=self._radius,
+                    is_first_col=(ci == 0),
+                    is_last_col=(ci == n_cols - 1),
+                    hide_header=self._hide_header,
                 )
 
         n_rows = len(self._row_order)
@@ -452,15 +461,21 @@ class Table(
                 if ci is None:
                     continue
                 cell.apply_style(
-                    color=self._color, size=self._size, theme=self._theme,
-                    radius=self._radius, is_striped=self._is_striped,
-                    is_compact=self._is_compact, is_multi=is_multi,
+                    color=self._color,
+                    size=self._size,
+                    theme=self._theme,
+                    radius=self._radius,
+                    is_striped=self._is_striped,
+                    is_compact=self._is_compact,
+                    is_multi=is_multi,
                     align=self._columns[ci]["align"],
                     disable_animation=self._disable_animation,
                 )
                 cell.set_position(
-                    is_first_row=(ri == 0), is_last_row=(ri == n_rows - 1),
-                    is_first_col=(ci == 0), is_last_col=(ci == n_cols - 1),
+                    is_first_row=(ri == 0),
+                    is_last_row=(ri == n_rows - 1),
+                    is_first_col=(ci == 0),
+                    is_last_col=(ci == n_cols - 1),
                 )
 
     def _apply_row_states(self, *, animated: bool = True, only_rows=None):
@@ -484,8 +499,11 @@ class Table(
             odd = (index_of.get(row_key, 0) % 2) == 1
             for cell in cells.values():
                 cell.set_row_state(
-                    hover=hover, selected=selected, odd=odd,
-                    disabled=disabled, animated=animated,
+                    hover=hover,
+                    selected=selected,
+                    odd=odd,
+                    disabled=disabled,
+                    animated=animated,
                 )
             cb = self._row_checkboxes.get(row_key)
             if cb is not None and cb.is_selected() != selected:

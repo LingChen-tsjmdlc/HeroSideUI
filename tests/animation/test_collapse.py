@@ -12,7 +12,7 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from hero_side_ui.animation import CollapseAnimation
 

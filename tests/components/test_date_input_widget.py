@@ -5,12 +5,10 @@
 """
 
 import pytest
-
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
 from hero_side_ui import DateInput
-from hero_side_ui.themes import HEROUI_COLORS
 from hero_side_ui.components.date_input._value import (
     parse_absolute_to_local,
     parse_date,
@@ -18,6 +16,7 @@ from hero_side_ui.components.date_input._value import (
     parse_zoned_datetime,
     today,
 )
+from hero_side_ui.themes import HEROUI_COLORS
 
 
 def _make(qtbot, **kwargs) -> DateInput:
@@ -132,9 +131,7 @@ def test_construct_states(qtbot):
 
 def test_out_of_range_value_is_invalid_on_construct(qtbot):
     """越界初始值应自动进入 invalid，不依赖外部传 is_invalid。"""
-    di = _make(
-        qtbot, value=parse_date("2024-04-03"), min_value=parse_date("2024-04-10")
-    )
+    di = _make(qtbot, value=parse_date("2024-04-03"), min_value=parse_date("2024-04-10"))
     assert di._is_invalid is True
 
 
@@ -221,8 +218,7 @@ def test_segments_never_clipped_across_state_changes(qtbot):
         di._segment_row.layout().activate()
         for w in di._literal_widgets + di._segment_widgets:
             assert w.width() >= w.sizeHint().width(), (
-                f"{tag}: {w.text()!r} 被裁 "
-                f"(width={w.width()} < sizeHint={w.sizeHint().width()})"
+                f"{tag}: {w.text()!r} 被裁 (width={w.width()} < sizeHint={w.sizeHint().width()})"
             )
 
     assert_not_clipped("初始")
@@ -333,9 +329,7 @@ def test_a_p_keys_toggle_day_period(qtbot):
     )
     _show_active(qtbot, di)
 
-    period = next(
-        s for s in di._editable_segments() if s.seg_type == "dayPeriod"
-    )
+    period = next(s for s in di._editable_segments() if s.seg_type == "dayPeriod")
     period.setFocus()
     QTest.keyClick(period, Qt.Key.Key_P)
     assert di.value().hour == 21

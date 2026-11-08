@@ -1,0 +1,66 @@
+# ============================================================
+# Ruff 配置 — lint + format 一体（等价 TS 生态 ESLint + Prettier）
+# 文档: https://docs.astral.sh/ruff/configuration/
+# ============================================================
+
+src = ["hero_side_ui"]
+target-version = "py310"
+line-length = 100
+extend-exclude = ["dist", "build", ".venv"]
+
+[lint]
+# 规则集（中档强度）:
+#   E  — pycodestyle 错误（风格错误）
+#   W  — pycodestyle 警告
+#   F  — pyflakes（未定义名/未使用导入等真错误）
+#   I  — isort（import 排序）
+#   UP — pyupgrade（现代化语法，Optional[X] → X | None 等）
+#   B  — flake8-bugbear（常见 bug 模式）
+#   SIM — flake8-simplify（可简化的写法）
+#   RUF — Ruff 自有规则（__all__ 排序等）
+select = ["E", "W", "F", "I", "UP", "B", "SIM", "RUF"]
+
+ignore = [
+    # Qt 组件库常见合理场景，整体豁免:
+    "E501",   # 行长 — 交给 formatter 管，lint 不重复管（超长字符串/URL 免误伤）
+    "E741",   # 模糊变量名 l/I/O — Qt 坐标代码 l = left 常见
+    "UP015",  # open(textmode) 显式 "r" — 保留显式写法
+    "SIM117", # 嵌套 with 合并 — PySide6 多 context manager 合并写法可读性更差
+    "SIM105", # try-except-pass → contextlib.suppress — Qt 防御性清理代码保留显式写法
+    "SIM102", # 嵌套 if 合并 — 自动合并会丢行内注释/破坏 eventFilter 类代码的可读性
+    "SIM103", # 直接 return 条件 — bool(x and y) 显式转换有文档价值
+    "SIM108", # if-else → 三元 — 三元不适合多行 QSS/颜色计算，保留块状写法
+    "RUF034", # 无意义 if-else — 两分支相同常是刻意的对称结构（见 tabs/_cursor.py）
+    "E731",   # lambda 赋值 — 短回调 lambda 赋名是 Qt 代码常见惯用法
+    # 中文项目必豁免 — 全角标点（，、。）在 docstring/注释/字符串中被判"歧义字符":
+    "RUF001", "RUF002", "RUF003",
+]
+
+[lint.per-file-ignores]
+"examples/**" = [
+    "F401",   # 示例允许未使用导入（演示 import 本身是教学内容的一部分）
+    "E402",   # 示例常在 import 前打 print/setup 说明
+]
+"tests/**" = [
+    "F401",   # 测试允许未使用导入（conftest 副作用导入）
+    "S101",   # （未启用 S 规则，占位防未来开启）
+]
+"hero_side_ui/__init__.py" = [
+    "F401",   # 顶层 re-export 仓库的立身之本，全部豁免
+    "E402",   # re-export 排版需要
+]
+"**/__init__.py" = [
+    "F401",   # 组件包 __init__ 的职责就是 re-export
+    "F811",   # re-export 型 __init__ 偶发同名（别名导出）
+]
+
+[lint.isort]
+known-first-party = ["hero_side_ui"]
+# 与 ruff format 兼容的 import 排序风格
+force-sort-within-sections = false
+
+[format]
+# quote-style = double 与项目现状一致（QSS 字符串大量内嵌双引号转义单引号）
+quote-style = "double"
+indent-style = "space"
+skip-magic-trailing-comma = false

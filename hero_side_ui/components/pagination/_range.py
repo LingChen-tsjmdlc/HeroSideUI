@@ -3,14 +3,12 @@
 输出 range 列表，元素是 int (页码) 或 PaginationItemType (PREV/NEXT/DOTS)。
 """
 
-from typing import List, Union
-
 from ._constants import PaginationItemType
 
-PaginationItemValue = Union[int, PaginationItemType]
+PaginationItemValue = int | PaginationItemType
 
 
-def _int_range(start: int, end: int) -> List[int]:
+def _int_range(start: int, end: int) -> list[int]:
     """闭区间整数序列 [start, end]。end < start 时返回空列表。"""
     if end < start:
         return []
@@ -24,7 +22,7 @@ def compute_pagination_range(
     siblings: int = 1,
     boundaries: int = 1,
     show_controls: bool = False,
-) -> List[PaginationItemValue]:
+) -> list[PaginationItemValue]:
     """生成 pagination 显示项序列。
 
     严格对齐 use-pagination-base.ts 的 paginationRange 算法。
@@ -34,7 +32,7 @@ def compute_pagination_range(
     siblings = max(0, int(siblings))
     boundaries = max(0, int(boundaries))
 
-    def _wrap(items: List[PaginationItemValue]) -> List[PaginationItemValue]:
+    def _wrap(items: list[PaginationItemValue]) -> list[PaginationItemValue]:
         if show_controls:
             return [PaginationItemType.PREV, *items, PaginationItemType.NEXT]
         return items
@@ -85,4 +83,4 @@ def compute_pagination_range(
     )
 
 
-__all__ = ["compute_pagination_range", "PaginationItemValue"]
+__all__ = ["PaginationItemValue", "compute_pagination_range"]

@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Tuple
+from collections.abc import Callable
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
@@ -30,8 +30,9 @@ class _PopoverRangeCalendar(RangeCalendar):
 
     def _apply_styles(self) -> None:
         super()._apply_styles()
-        from ..calendar import _palette as pal
         from ...themes import RADIUS
+        from ..calendar import _palette as pal
+
         radius = int(RADIUS["lg"].rstrip("px"))
         bg = "#ffffff" if self._theme != "dark" else "#27272a"
         header_bg = pal.surface_content1(self._theme).name()
@@ -63,20 +64,20 @@ class DateRangePicker(QWidget):
     def __init__(
         self,
         label: str = "",
-        start_value: Optional[DateTimeValue] = None,
-        end_value: Optional[DateTimeValue] = None,
-        placeholder_value: Optional[DateTimeValue] = None,
+        start_value: DateTimeValue | None = None,
+        end_value: DateTimeValue | None = None,
+        placeholder_value: DateTimeValue | None = None,
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
         granularity: str = "day",
-        hour_cycle: Optional[int] = None,
+        hour_cycle: int | None = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
-        min_value: Optional[DateTimeValue] = None,
-        max_value: Optional[DateTimeValue] = None,
+        min_value: DateTimeValue | None = None,
+        max_value: DateTimeValue | None = None,
         locale: str = "en_US",
         calendar: str = "gregorian",
         is_disabled: bool = False,
@@ -90,19 +91,19 @@ class DateRangePicker(QWidget):
         selector_button_placement: str = "end",
         # RangeCalendar 专属
         visible_months: int = 2,
-        first_day_of_week: Optional[str] = None,
+        first_day_of_week: str | None = None,
         weekday_style: str = "narrow",
         page_behavior: str = "visible",
         show_month_and_year_pickers: bool = True,
-        is_date_unavailable: Optional[Callable[[CalendarDate], bool]] = None,
-        calendar_top_content: Optional[QWidget] = None,
-        calendar_bottom_content: Optional[QWidget] = None,
+        is_date_unavailable: Callable[[CalendarDate], bool] | None = None,
+        calendar_top_content: QWidget | None = None,
+        calendar_bottom_content: QWidget | None = None,
         calendar_header_default_expanded: bool = False,
         # Popover 专属
         popover_placement: str = "bottom-start",
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroDateRangePicker")
@@ -187,7 +188,9 @@ class DateRangePicker(QWidget):
             theme=theme,
             parent=self,
         )
-        self._selector_btn.setFixedSize(_SELECTOR_BTN_SIZE.get(size, 28), _SELECTOR_BTN_SIZE.get(size, 28))
+        self._selector_btn.setFixedSize(
+            _SELECTOR_BTN_SIZE.get(size, 28), _SELECTOR_BTN_SIZE.get(size, 28)
+        )
         self._popover.attach(self._selector_btn, event="manual")
         self._selector_btn.clicked.connect(self._on_selector_click)
 
@@ -219,7 +222,7 @@ class DateRangePicker(QWidget):
         else:
             self._popover.open(near=self)
 
-    def _on_calendar_change(self, rng: Optional[Tuple[CalendarDate, CalendarDate]]):
+    def _on_calendar_change(self, rng: tuple[CalendarDate, CalendarDate] | None):
         """日历选定范围 → 写回两组段。"""
         if self._syncing or not rng:
             return

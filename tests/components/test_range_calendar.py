@@ -71,6 +71,7 @@ def test_range_multi_month(qtbot):
 
 # ---- 边界组合：picker × range / multi-month ----
 
+
 def test_pickers_disabled_when_multi_month(qtbot):
     # 月/年选择器仅单月生效，多月时强制关闭且不可展开
     c = _make(qtbot, show_month_and_year_pickers=True, visible_months=2)
@@ -86,10 +87,9 @@ def test_pickers_with_range_preserve_value(qtbot):
     c = _make(qtbot, show_month_and_year_pickers=True, value=v)
     assert c._show_pickers is True and c._picker is not None
     c.set_header_expanded(True)
-    c._on_picker_month(9)                      # picker 改月只动 focused
+    c._on_picker_month(9)  # picker 改月只动 focused
     assert c._state.focused_date.month == 9
-    assert c.value()[0].is_same_day(v[0])      # range 值保持
+    assert c.value()[0].is_same_day(v[0])  # range 值保持
     assert c.value()[1].is_same_day(v[1])
     c.set_header_expanded(False)
     assert c.is_header_expanded() is False
-

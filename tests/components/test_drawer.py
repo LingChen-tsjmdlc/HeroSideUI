@@ -87,9 +87,9 @@ def test_opens_on_construct_when_is_open(host):
 @pytest.mark.parametrize(
     "placement,expected",
     [
-        ("left", (0, 0, 448, 600)),    # 宽度固定为档位（内容宽 hint 348 < 448 也不缩）
+        ("left", (0, 0, 448, 600)),  # 宽度固定为档位（内容宽 hint 348 < 448 也不缩）
         ("right", (352, 0, 448, 600)),
-        ("top", (0, 0, 800, 248)),     # 高度内容自适应（内容 hint 248 < 448）
+        ("top", (0, 0, 800, 248)),  # 高度内容自适应（内容 hint 248 < 448）
         ("bottom", (0, 352, 800, 248)),
     ],
 )
@@ -118,11 +118,11 @@ def test_full_size_fills_host(host):
 @pytest.mark.parametrize(
     "size,placement,expected",
     [
-        (600, "right", (200, 0, 600, 600)),   # 数字 = 强制宽度（左右）
+        (600, "right", (200, 0, 600, 600)),  # 数字 = 强制宽度（左右）
         (600, "left", (0, 0, 600, 600)),
         (200, "bottom", (0, 400, 800, 200)),  # 数字 = 强制高度（上下），不看内容
         (200, "top", (0, 0, 800, 200)),
-        (1200, "right", (0, 0, 800, 600)),    # 超过宿主按宿主钳制
+        (1200, "right", (0, 0, 800, 600)),  # 超过宿主按宿主钳制
     ],
 )
 def test_numeric_size(host, size, placement, expected):
@@ -139,7 +139,7 @@ def test_numeric_size_forces_slide_axis(host):
     _add_fixed(d, 300, 900)  # 内容想要 hint 948
     d.set_is_open(True)
     assert d._panel.height() == 200  # 仍强制 200
-    assert d._panel.width() == 800   # 贴边轴照常铺满
+    assert d._panel.width() == 800  # 贴边轴照常铺满
 
 
 def test_numeric_size_normalized_to_int(host):

@@ -7,8 +7,6 @@ isBlurred 副本 scale 1.18 + translate-y 6 也需要四向不对称留白。
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsDropShadowEffect, QWidget
 
@@ -17,7 +15,7 @@ from ._styling import resolve_shadow
 
 def make_shadow_effect(
     parent: QWidget, shadow: str, remove_wrapper: bool
-) -> Optional[QGraphicsDropShadowEffect]:
+) -> QGraphicsDropShadowEffect | None:
     """构造 QGraphicsDropShadowEffect，无阴影/移除 wrapper 时返回 None。"""
     cfg = resolve_shadow(shadow)
     if cfg["opacity"] <= 0 or remove_wrapper:
@@ -49,7 +47,7 @@ def blur_margin(is_blurred: bool, remove_wrapper: bool) -> int:
 
 def content_margins(
     shadow: str, is_blurred: bool, remove_wrapper: bool
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """图像可视区距 wrapper 边缘的四向 margin (top, right, bottom, left)。
 
     阴影主要向下扩散，因此顶/底/侧三向独立计算后再与 isBlurred 取最大值。
@@ -77,8 +75,8 @@ def content_margins(
 
 
 __all__ = [
-    "make_shadow_effect",
-    "shadow_margin",
     "blur_margin",
     "content_margins",
+    "make_shadow_effect",
+    "shadow_margin",
 ]

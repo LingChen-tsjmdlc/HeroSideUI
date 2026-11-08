@@ -23,7 +23,6 @@ class _SingleRipple(QObject):
         finished: 完成时携带自身对象的信号。
     """
 
-
     finished = Signal(object)
 
     def __init__(
@@ -49,14 +48,12 @@ class _SingleRipple(QObject):
         self._color = QColor(color)
         self._progress = 0.0
 
-
         self._anim = QPropertyAnimation(self, b"progress")
         self._anim.setStartValue(0.0)
         self._anim.setEndValue(1.0)
         self._anim.setDuration(duration_ms)
         self._anim.setEasingCurve(QEasingCurve.Type.OutQuad)
         self._anim.finished.connect(self._on_finished)
-
 
     def _get_progress(self) -> float:
         return self._progress
@@ -68,7 +65,6 @@ class _SingleRipple(QObject):
             self.parent().update()
 
     progress = Property(float, _get_progress, _set_progress)
-
 
     @property
     def center(self) -> QPoint:
@@ -86,7 +82,6 @@ class _SingleRipple(QObject):
         c.setAlpha(max(alpha, 0))
         return c
 
-
     def start(self):
         self._anim.start()
 
@@ -97,9 +92,7 @@ class _SingleRipple(QObject):
 class RippleOverlay(QWidget):
     """在宿主上叠加可独立退场的水波纹。"""
 
-    def __init__(
-        self, parent: QWidget, color: QColor | None = None, ripple_enabled: bool = True
-    ):
+    def __init__(self, parent: QWidget, color: QColor | None = None, ripple_enabled: bool = True):
         """初始化不拦截鼠标的透明覆盖层。
 
         Args:
@@ -112,12 +105,10 @@ class RippleOverlay(QWidget):
         self._color = color or QColor(255, 255, 255)
         self._enabled = ripple_enabled
 
-
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setGeometry(parent.rect())
         parent.installEventFilter(self)
-
 
     def add_ripple(self, pos: QPoint):
         """在启用状态下添加并播放水波纹。
@@ -128,7 +119,6 @@ class RippleOverlay(QWidget):
         if not self._enabled:
             return
 
-
         w, h = self.width(), self.height()
         max_radius = max(
             _distance(pos, QPoint(0, 0)),
@@ -136,7 +126,6 @@ class RippleOverlay(QWidget):
             _distance(pos, QPoint(0, h)),
             _distance(pos, QPoint(w, h)),
         )
-
 
         duration = int(max(500, min(max_radius * 4.0, 900)))
 
@@ -161,7 +150,6 @@ class RippleOverlay(QWidget):
         """
         self._enabled = enabled
 
-
     def _remove_ripple(self, ripple: _SingleRipple):
         """移除已完成的水波纹并安排延迟删除。"""
         if ripple in self._ripples:
@@ -182,7 +170,6 @@ class RippleOverlay(QWidget):
 
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-
 
         clip_path = QPainterPath()
         radius = self._get_parent_radius()

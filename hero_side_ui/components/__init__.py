@@ -1,38 +1,17 @@
 # Components module
-from .button import Button
-from .icon import Icon
 from .accordion import Accordion, AccordionItem
-from .input import Input
-from .textarea import Textarea
-from .divider import Divider
-from .card import Card, CardHeader, CardBody, CardFooter
-from .checkbox import Checkbox, CheckboxGroup
-from .progress import Progress, CircularProgress
-from .spinner import Spinner
-from .popover import Popover, PopoverContent
-from .tooltip import Tooltip
-from .tabs import Tabs, TabItem
-from .theme_switcher import ThemeSwitcher
-from .text import Text, Title, Subtitle, Caption, Body
-from .switch import Switch
-from .scroll_shadow import ScrollShadow
-from .listbox import Listbox, ListboxItem, ListboxSection
-from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
-from .select import Select, SelectItem, SelectSection
-from .dropdown import Dropdown, DropdownItem, DropdownSection
-from .slider import Slider
-from .radio import Radio, RadioBase, RadioGroup
-from .pagination import Pagination
 from .alert import Alert
-from .skeleton import Skeleton
-from .image import Image
-from .kbd import Kbd
-from .link import Link
-from .chip import Chip
-from .badge import Badge
+from .autocomplete import Autocomplete, AutocompleteItem, AutocompleteSection
 from .avatar import Avatar, AvatarGroup
-from .table import Table
+from .badge import Badge
+from .breadcrumbs import BreadcrumbItem, Breadcrumbs
+from .button import Button
 from .calendar import Calendar, RangeCalendar
+from .card import Card, CardBody, CardFooter, CardHeader
+from .checkbox import Checkbox, CheckboxGroup
+from .chip import Chip
+from .code_block import CodeBlock
+from .code_editor import CodeEditor
 from .date_input import (
     DateInput,
     DateTimeValue,
@@ -43,112 +22,133 @@ from .date_input import (
     parse_zoned_datetime,
     today,
 )
-from .markdown import Markdown
-from .code_block import CodeBlock
-from .code_editor import CodeEditor
 from .date_picker import DatePicker, DateRangePicker
+from .divider import Divider
 from .drawer import Drawer
-from .time_input import TimeInput
-from .number_input import NumberInput
+from .dropdown import Dropdown, DropdownItem, DropdownSection
+from .icon import Icon
+from .image import Image
+from .input import Input
 from .input_otp import InputOtp
-from .breadcrumbs import Breadcrumbs, BreadcrumbItem
+from .kbd import Kbd
+from .link import Link
+from .listbox import Listbox, ListboxItem, ListboxSection
+from .markdown import Markdown
+from .number_input import NumberInput
+from .pagination import Pagination
+from .popover import Popover, PopoverContent
+from .progress import CircularProgress, Progress
+from .radio import Radio, RadioBase, RadioGroup
+from .scroll_shadow import ScrollShadow
+from .select import Select, SelectItem, SelectSection
+from .skeleton import Skeleton
+from .slider import Slider
 from .spacer import Spacer
+from .spinner import Spinner
+from .switch import Switch
+from .table import Table
+from .tabs import TabItem, Tabs
+from .text import Body, Caption, Subtitle, Text, Title
+from .textarea import Textarea
+from .theme_switcher import ThemeSwitcher
+from .time_input import TimeInput
 from .toast import (
     Toast,
-    ToastRegion,
     ToastProvider,
+    ToastRegion,
     add_toast,
-    close_toast,
     clear_toasts,
+    close_toast,
     configure_toasts,
     get_toast_provider,
 )
+from .tooltip import Tooltip
 
 __all__ = [
-    "Button",
-    "Icon",
     "Accordion",
     "AccordionItem",
-    "Input",
-    "Textarea",
-    "Divider",
-    "Card",
-    "CardHeader",
-    "CardBody",
-    "CardFooter",
-    "Checkbox",
-    "CheckboxGroup",
-    "Progress",
-    "CircularProgress",
-    "Spinner",
-    "Popover",
-    "PopoverContent",
-    "Tooltip",
-    "Tabs",
-    "TabItem",
-    "ThemeSwitcher",
-    "Text",
-    "Title",
-    "Subtitle",
-    "Caption",
-    "Body",
-    "Switch",
-    "ScrollShadow",
-    "Listbox",
-    "ListboxItem",
-    "ListboxSection",
+    "Alert",
     "Autocomplete",
     "AutocompleteItem",
     "AutocompleteSection",
-    "Select",
-    "SelectItem",
-    "SelectSection",
+    "Avatar",
+    "AvatarGroup",
+    "Badge",
+    "Body",
+    "BreadcrumbItem",
+    "Breadcrumbs",
+    "Button",
+    "Calendar",
+    "Caption",
+    "Card",
+    "CardBody",
+    "CardFooter",
+    "CardHeader",
+    "Checkbox",
+    "CheckboxGroup",
+    "Chip",
+    "CircularProgress",
+    "CodeBlock",
+    "CodeEditor",
+    "DateInput",
+    "DatePicker",
+    "DateRangePicker",
+    "DateTimeValue",
+    "Divider",
+    "Drawer",
     "Dropdown",
     "DropdownItem",
     "DropdownSection",
-    "Slider",
+    "Icon",
+    "Image",
+    "Input",
+    "InputOtp",
+    "Kbd",
+    "Link",
+    "Listbox",
+    "ListboxItem",
+    "ListboxSection",
+    "Markdown",
+    "NumberInput",
+    "Pagination",
+    "Popover",
+    "PopoverContent",
+    "Progress",
     "Radio",
     "RadioBase",
     "RadioGroup",
-    "Pagination",
-    "Alert",
-    "Skeleton",
-    "Image",
-    "Kbd",
-    "Link",
-    "Chip",
-    "Badge",
-    "Avatar",
-    "AvatarGroup",
-    "Table",
-    "Calendar",
     "RangeCalendar",
-    "DateInput",
-    "DateTimeValue",
+    "ScrollShadow",
+    "Select",
+    "SelectItem",
+    "SelectSection",
+    "Skeleton",
+    "Slider",
+    "Spacer",
+    "Spinner",
+    "Subtitle",
+    "Switch",
+    "TabItem",
+    "Table",
+    "Tabs",
+    "Text",
+    "Textarea",
+    "ThemeSwitcher",
+    "TimeInput",
+    "Title",
+    "Toast",
+    "ToastProvider",
+    "ToastRegion",
+    "Tooltip",
+    "add_toast",
+    "clear_toasts",
+    "close_toast",
+    "configure_toasts",
+    "get_toast_provider",
     "now",
     "parse_absolute_to_local",
     "parse_date",
     "parse_datetime",
     "parse_zoned_datetime",
     "today",
-    "Markdown",
-    "CodeBlock",
-    "CodeEditor",
-    "DatePicker",
-    "DateRangePicker",
-    "Drawer",
-    "TimeInput",
-    "NumberInput",
-    "InputOtp",
-    "Breadcrumbs",
-    "BreadcrumbItem",
-    "Spacer",
-    "Toast",
-    "ToastRegion",
-    "ToastProvider",
-    "add_toast",
-    "close_toast",
-    "clear_toasts",
-    "configure_toasts",
-    "get_toast_provider",
 ]

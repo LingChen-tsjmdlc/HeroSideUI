@@ -6,14 +6,14 @@
   Min & Max Values / Step / Hide Steppers / Format Options。
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Body, NumberInput
 from hero_side_ui.themes import (
     VALID_DATE_INPUT_LABEL_PLACEMENTS,
@@ -73,28 +73,20 @@ class NumberInputDemo(DemoBase):
 
         # ---------- Disabled ----------
         layout.addWidget(self._section_title("Disabled 禁用"))
-        layout.addWidget(
-            self._row(NumberInput(label="Amount", value=1024, is_disabled=True))
-        )
+        layout.addWidget(self._row(NumberInput(label="Amount", value=1024, is_disabled=True)))
 
         # ---------- Read Only ----------
         layout.addWidget(self._section_title("Read Only 只读"))
-        layout.addWidget(
-            self._row(NumberInput(label="Amount", value=2048, is_readonly=True))
-        )
+        layout.addWidget(self._row(NumberInput(label="Amount", value=2048, is_readonly=True)))
 
         # ---------- Required ----------
         layout.addWidget(self._section_title("Required 必填"))
-        layout.addWidget(
-            self._row(NumberInput(label="Amount", is_required=True))
-        )
+        layout.addWidget(self._row(NumberInput(label="Amount", is_required=True)))
 
         # ---------- Variants ----------
         layout.addWidget(self._section_title("Variants 变体"))
         layout.addWidget(
-            self._col(
-                *[NumberInput(label="Amount", variant=v) for v in VALID_DATE_INPUT_VARIANTS]
-            )
+            self._col(*[NumberInput(label="Amount", variant=v) for v in VALID_DATE_INPUT_VARIANTS])
         )
 
         # ---------- Colors（HeroSideUI 扩展，官方文档无此分节）----------
@@ -122,9 +114,7 @@ class NumberInputDemo(DemoBase):
         layout.addWidget(
             self._row(
                 *[
-                    NumberInput(
-                        label=size, size=size, value=512, full_width=False
-                    )
+                    NumberInput(label=size, size=size, value=512, full_width=False)
                     for size in VALID_DATE_INPUT_SIZES
                 ],
                 spacing=12,
@@ -208,9 +198,7 @@ class NumberInputDemo(DemoBase):
 
         # ---------- Controlled ----------
         layout.addWidget(self._section_title("Controlled 受控"))
-        controlled = NumberInput(
-            label="Amount (controlled)", variant="bordered", value=10.5
-        )
+        controlled = NumberInput(label="Amount (controlled)", variant="bordered", value=10.5)
         selected = Body(f"Selected amount: {_fmt_num(10.5)}")
 
         def _on_change(value):
@@ -229,9 +217,7 @@ class NumberInputDemo(DemoBase):
         )
 
         # ---------- Min & Max Values ----------
-        layout.addWidget(
-            self._section_title("Min & Max Values 最小最大值")
-        )
+        layout.addWidget(self._section_title("Min & Max Values 最小最大值"))
         layout.addWidget(
             self._row(
                 self._captioned(
@@ -272,9 +258,7 @@ class NumberInputDemo(DemoBase):
         layout.addWidget(self._section_title("Hide Steppers 隐藏步进按钮"))
         layout.addWidget(
             self._row(
-                NumberInput(
-                    label="Amount", hide_stepper=True, description="仍可用上下键与滚轮步进"
-                )
+                NumberInput(label="Amount", hide_stepper=True, description="仍可用上下键与滚轮步进")
             )
         )
 

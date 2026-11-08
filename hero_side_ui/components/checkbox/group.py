@@ -4,8 +4,6 @@
 selection_changed(List[str]) 信号，适合表单多选场景。
 """
 
-from typing import List, Optional
-
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -15,7 +13,6 @@ from PySide6.QtWidgets import (
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS
-
 from ..text import Text
 from .checkbox import Checkbox
 
@@ -47,14 +44,14 @@ class CheckboxGroup(QWidget):
         orientation: str = "vertical",
         color: str = "primary",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         line_through: bool = False,
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
-        default_value: Optional[List[str]] = None,
+        default_value: list[str] | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -73,7 +70,7 @@ class CheckboxGroup(QWidget):
         self._theme = Checkbox._resolve_theme(theme)
         self._default_value = default_value or []
 
-        self._checkboxes: List[Checkbox] = []
+        self._checkboxes: list[Checkbox] = []
 
         self._setup_ui()
         self._apply_styles()
@@ -172,7 +169,7 @@ class CheckboxGroup(QWidget):
         self._checkboxes.append(checkbox)
         self._wrapper_layout.addWidget(checkbox)
 
-    def create_checkbox(self, text: str, value: Optional[str] = None) -> Checkbox:
+    def create_checkbox(self, text: str, value: str | None = None) -> Checkbox:
         """便利方法：创建一个 Checkbox 并加入 group"""
         cb = Checkbox(
             text=text,
@@ -191,10 +188,10 @@ class CheckboxGroup(QWidget):
         vals = [cb.value() for cb in self._checkboxes if cb.isChecked()]
         self.value_changed.emit(vals)
 
-    def value(self) -> List[str]:
+    def value(self) -> list[str]:
         return [cb.value() for cb in self._checkboxes if cb.isChecked()]
 
-    def set_value(self, values: List[str]):
+    def set_value(self, values: list[str]):
         for cb in self._checkboxes:
             cb.setChecked(cb.value() in values)
 
@@ -213,7 +210,7 @@ class CheckboxGroup(QWidget):
         self._size = size
         self._broadcast(lambda c: c.set_size(size))
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._radius = radius
         self._broadcast(lambda c: c.set_radius(radius))
 

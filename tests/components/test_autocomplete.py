@@ -29,10 +29,12 @@ class TestAutocompleteInit:
         assert ac._popover._allow_flip is False
 
     def test_with_items(self, qtbot):
-        ac = Autocomplete(items=[
-            {"key": "a", "label": "Apple"},
-            {"key": "b", "label": "Banana"},
-        ])
+        ac = Autocomplete(
+            items=[
+                {"key": "a", "label": "Apple"},
+                {"key": "b", "label": "Banana"},
+            ]
+        )
         qtbot.addWidget(ac)
         assert len(ac.items()) == 2
         assert ac.item_by_key("a").title() == "Apple"
@@ -78,9 +80,14 @@ class TestAutocompleteInit:
 # ============================================================
 class TestAutocompleteFilter:
     def _make(self, qtbot):
-        ac = Autocomplete(items=[
-            ("a", "Apple"), ("b", "Banana"), ("c", "Cherry"), ("d", "Date"),
-        ])
+        ac = Autocomplete(
+            items=[
+                ("a", "Apple"),
+                ("b", "Banana"),
+                ("c", "Cherry"),
+                ("d", "Date"),
+            ]
+        )
         qtbot.addWidget(ac)
         return ac
 
@@ -112,6 +119,7 @@ class TestAutocompleteFilter:
         # 只匹配以 query 开头的项（startsWith）
         def starts_with(label, q):
             return label.lower().startswith(q.lower()) if q else True
+
         ac = Autocomplete(
             items=[("a", "Apple"), ("b", "Banana"), ("ap", "Apricot")],
             default_filter=starts_with,
@@ -128,9 +136,7 @@ class TestAutocompleteFilter:
         visible1 = [it.title() for it in ac.items() if not it.isHidden()]
         assert "Date" in visible1
         # 切到 startsWith
-        ac.set_default_filter(
-            lambda label, q: label.lower().startswith(q.lower()) if q else True
-        )
+        ac.set_default_filter(lambda label, q: label.lower().startswith(q.lower()) if q else True)
         visible2 = [it.title() for it in ac.items() if not it.isHidden()]
         assert visible2 == ["Apple"]
 
@@ -140,9 +146,13 @@ class TestAutocompleteFilter:
 # ============================================================
 class TestAutocompleteSelection:
     def _make(self, qtbot):
-        ac = Autocomplete(items=[
-            ("cat", "Cat"), ("dog", "Dog"), ("bird", "Bird"),
-        ])
+        ac = Autocomplete(
+            items=[
+                ("cat", "Cat"),
+                ("dog", "Dog"),
+                ("bird", "Bird"),
+            ]
+        )
         qtbot.addWidget(ac)
         return ac
 
@@ -372,15 +382,17 @@ class TestAutocompletePopover:
         # 初始 _is_open=False，toggle 应该调度到 open()
         assert ac._is_open is False
         ac.toggle()
-        assert any(c[0] == "open" for c in call_log), \
+        assert any(c[0] == "open" for c in call_log), (
             f"toggle() 在 _is_open=False 时应调 open()，实际 calls: {call_log}"
+        )
 
         # 模拟"已打开"：直接设状态（不依赖 popover 真的 show）
         call_log.clear()
         ac._is_open = True
         ac.toggle()
-        assert any(c[0] == "close" for c in call_log), \
+        assert any(c[0] == "close" for c in call_log), (
             f"toggle() 在 _is_open=True 时应调 close()，实际 calls: {call_log}"
+        )
 
     def test_long_list_uses_md_popover_max_height(self, qtbot):
         """长列表应实际撑到 md token 上限，而不是停在 QScrollArea 默认约 260px"""

@@ -16,7 +16,6 @@ Tooltip = Popover 的 hover-only 简化版。测试关注：
 from __future__ import annotations
 
 import pytest
-
 from PySide6.QtWidgets import QLabel, QPushButton, QWidget
 
 from hero_side_ui import ThemeProvider, Tooltip
@@ -62,10 +61,18 @@ class TestTooltipInit:
     @pytest.mark.parametrize(
         "place",
         [
-            "top", "top-start", "top-end",
-            "bottom", "bottom-start", "bottom-end",
-            "left", "left-start", "left-end",
-            "right", "right-start", "right-end",
+            "top",
+            "top-start",
+            "top-end",
+            "bottom",
+            "bottom-start",
+            "bottom-end",
+            "left",
+            "left-start",
+            "left-end",
+            "right",
+            "right-start",
+            "right-end",
         ],
     )
     def test_all_placements(self, qtbot, place):

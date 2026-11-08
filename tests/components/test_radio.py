@@ -254,9 +254,7 @@ class TestRadioGroupBasic:
         assert g._radios[0]._theme == "dark"
 
     def test_invalid_and_required(self, qtbot):
-        g = RadioGroup(
-            is_invalid=True, is_required=True, label="L", error_message="Oops"
-        )
+        g = RadioGroup(is_invalid=True, is_required=True, label="L", error_message="Oops")
         qtbot.addWidget(g)
         assert g._is_invalid is True
         assert g._is_required is True

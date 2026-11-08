@@ -4,20 +4,12 @@
 持续旋转，作为加载指示。
 """
 
-from ...animation import tween_property
-
-import math
-from typing import Optional
-
 from PySide6.QtCore import (
     Property,
-    QByteArray,
     QRectF,
     Qt,
-    Signal,
 )
-from PySide6.QtGui import QColor, QFont, QPainter, QPen
-from PySide6.QtSvg import QSvgRenderer
+from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QSizePolicy,
@@ -25,7 +17,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import SpinAnimation
+from ...animation import SpinAnimation, tween_property
 from ...core import ThemeProvider
 from ...themes import CIRCULAR_PROGRESS_SIZES, HEROUI_COLORS
 from ..text import Text
@@ -60,12 +52,12 @@ class CircularProgress(QWidget):
         value_label_formatter=None,
         color: str = "primary",
         size: str = "md",
-        stroke_width: Optional[float] = None,
+        stroke_width: float | None = None,
         is_indeterminate: bool = False,
         is_disabled: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -134,9 +126,7 @@ class CircularProgress(QWidget):
 
         # value label 放在 SVG 上方（作为子控件，绝对居中）
         self._value_label = Text("", parent=self._svg, selectable=False)
-        self._value_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._value_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._value_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         layout.addWidget(self._svg, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -175,7 +165,7 @@ class CircularProgress(QWidget):
         if self._formatter is not None:
             v = self._min + ratio * (self._max - self._min)
             return str(self._formatter(v, self._min, self._max))
-        return f"{int(round(ratio * 100))}%"
+        return f"{round(ratio * 100)}%"
 
     # ----- 色彩 / 尺寸 -----
     def _progress_ratio(self) -> float:
@@ -221,15 +211,20 @@ class CircularProgress(QWidget):
         self._value = max(self._min, min(self._max, v))
         self._refresh_text_labels()
         if not self._is_indeterminate:
-            tween_property(self, "_ratio_anim", b"anim_ratio", self._progress_ratio(),
-                           duration=500, animated=not self._disable_animation)
+            tween_property(
+                self,
+                "_ratio_anim",
+                b"anim_ratio",
+                self._progress_ratio(),
+                duration=500,
+                animated=not self._disable_animation,
+            )
 
     def set_range(self, min_value: float, max_value: float):
         self._min = min_value
         self._max = max_value
         self._value = max(self._min, min(self._max, self._value))
-        tween_property(self, "_ratio_anim", b"anim_ratio", self._progress_ratio(),
-                       duration=0)
+        tween_property(self, "_ratio_anim", b"anim_ratio", self._progress_ratio(), duration=0)
         self._refresh_text_labels()
 
     def set_color(self, color: str):
@@ -288,7 +283,7 @@ class CircularProgress(QWidget):
 class _CircularSvg(QWidget):
     """圆形进度条的自绘核心（track + indicator arc）"""
 
-    def __init__(self, owner: "CircularProgress", parent: Optional[QWidget] = None):
+    def __init__(self, owner: "CircularProgress", parent: QWidget | None = None):
         super().__init__(parent)
         self._owner = owner
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)

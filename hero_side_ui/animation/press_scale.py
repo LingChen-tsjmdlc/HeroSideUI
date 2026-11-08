@@ -27,10 +27,8 @@ class _ScaleEffect(QGraphicsEffect):
 
     def draw(self, painter: QPainter):
         if self._scale >= 0.999:
-
             self.drawSource(painter)
             return
-
 
         pixmap = self.sourcePixmap()
         if pixmap.isNull():
@@ -42,7 +40,6 @@ class _ScaleEffect(QGraphicsEffect):
         w = pixmap.width()
         h = pixmap.height()
         s = self._scale
-
 
         sw = w * s
         sh = h * s
@@ -79,14 +76,11 @@ class PressScaleEffect(QObject):
         self._press_duration = press_duration
         self._release_duration = release_duration
 
-
         self._effect = _ScaleEffect(target)
         target.setGraphicsEffect(self._effect)
 
-
         self._anim = QPropertyAnimation(self, b"scale_value")
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
-
 
     def _get_scale(self) -> float:
         try:
@@ -96,14 +90,12 @@ class PressScaleEffect(QObject):
 
     def _set_scale(self, value: float):
 
-
         try:
             self._effect.setScale(value)
         except RuntimeError:
             self._anim.stop()
 
     scale_value = Property(float, _get_scale, _set_scale)
-
 
     def press(self):
         """过渡到按下缩放比例。"""

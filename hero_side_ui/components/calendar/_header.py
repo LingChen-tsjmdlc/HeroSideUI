@@ -7,14 +7,11 @@ show_pickers 时（仅单月）标题变可点胶囊，带 chevron-down，展开
 
 from __future__ import annotations
 
-from ...animation import tween_value
-
-from typing import List, Optional
-
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QTransform
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
+from ...animation import tween_value
 from ...utils import load_svg_icon
 from ..button import Button
 from ..text import Text
@@ -31,14 +28,16 @@ class _TitleButton(QWidget):
     def __init__(self, theme: str, parent=None) -> None:
         super().__init__(parent)
         from PySide6.QtWidgets import QLabel
+
         self._theme = theme
         self._expanded = False
         self._angle = 0.0
         self._base_pixmap = None
 
         # 底层用真正的 Button 组件承载文字 + 交互 + full 圆角
-        self._btn = Button("", variant="light", radius="full", size="sm",
-                           color="default", theme=theme, parent=self)
+        self._btn = Button(
+            "", variant="light", radius="full", size="sm", color="default", theme=theme, parent=self
+        )
         self._btn.clicked.connect(self.clicked.emit)
 
         # 右侧 chevron（叠加，鼠标穿透，随点击落到底层 Button）
@@ -63,7 +62,9 @@ class _TitleButton(QWidget):
         if self._base_pixmap is None:
             return
         transform = QTransform().rotate(self._angle)
-        rotated = self._base_pixmap.transformed(transform, Qt.TransformationMode.SmoothTransformation)
+        rotated = self._base_pixmap.transformed(
+            transform, Qt.TransformationMode.SmoothTransformation
+        )
         self._chevron.setPixmap(rotated)
 
     def _on_rot_tick(self, v) -> None:
@@ -90,8 +91,14 @@ class _TitleButton(QWidget):
         if expanded == self._expanded:
             return
         self._expanded = expanded
-        tween_value(self, "_rot_anim", self._angle, 180.0 if expanded else 0.0,
-                    self._on_rot_tick, duration=200)
+        tween_value(
+            self,
+            "_rot_anim",
+            self._angle,
+            180.0 if expanded else 0.0,
+            self._on_rot_tick,
+            duration=200,
+        )
 
     def set_theme(self, theme: str) -> None:
         self._theme = theme
@@ -105,8 +112,16 @@ class _CalendarHeader(QWidget):
     next_clicked = Signal()
     title_clicked = Signal()
 
-    def __init__(self, sizes: dict, *, visible_months: int, month_width: int,
-                 theme: str, show_pickers: bool = False, parent=None) -> None:
+    def __init__(
+        self,
+        sizes: dict,
+        *,
+        visible_months: int,
+        month_width: int,
+        theme: str,
+        show_pickers: bool = False,
+        parent=None,
+    ) -> None:
         super().__init__(parent)
         self.setObjectName("HeroCalendarHeader")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -115,8 +130,8 @@ class _CalendarHeader(QWidget):
         self._month_width = month_width
         self._theme = theme
         self._show_pickers = show_pickers and visible_months == 1
-        self._titles: List = []
-        self._title_btn: Optional[_TitleButton] = None
+        self._titles: list = []
+        self._title_btn: _TitleButton | None = None
 
         header_h = _BTN_SIDE + sizes["header_pad_y"] * 2
         self.setFixedHeight(header_h)
@@ -126,17 +141,28 @@ class _CalendarHeader(QWidget):
 
     def _build_ui(self) -> None:
         hb = QHBoxLayout(self)
-        hb.setContentsMargins(self._sizes["header_pad_x"], 0,
-                              self._sizes["header_pad_x"], 0)
+        hb.setContentsMargins(self._sizes["header_pad_x"], 0, self._sizes["header_pad_x"], 0)
         hb.setSpacing(0)
         vcenter = Qt.AlignmentFlag.AlignVCenter
 
-        self._prev_btn = Button(icon_only=True, icon="heroicons--chevron-left",
-                                variant="light", color="default", size="sm",
-                                theme=self._theme, parent=self)
-        self._next_btn = Button(icon_only=True, icon="heroicons--chevron-right",
-                                variant="light", color="default", size="sm",
-                                theme=self._theme, parent=self)
+        self._prev_btn = Button(
+            icon_only=True,
+            icon="heroicons--chevron-left",
+            variant="light",
+            color="default",
+            size="sm",
+            theme=self._theme,
+            parent=self,
+        )
+        self._next_btn = Button(
+            icon_only=True,
+            icon="heroicons--chevron-right",
+            variant="light",
+            color="default",
+            size="sm",
+            theme=self._theme,
+            parent=self,
+        )
         self._prev_btn.setFixedSize(_BTN_SIDE, _BTN_SIDE)
         self._next_btn.setFixedSize(_BTN_SIDE, _BTN_SIDE)
         self._prev_btn.clicked.connect(self.prev_clicked.emit)
@@ -155,8 +181,14 @@ class _CalendarHeader(QWidget):
         else:
             for _i in range(self._visible_months):
                 hb.addStretch(1)
-                title = Text("", size="sm", weight="medium", color="default-500",
-                             theme=self._theme, parent=self)
+                title = Text(
+                    "",
+                    size="sm",
+                    weight="medium",
+                    color="default-500",
+                    theme=self._theme,
+                    parent=self,
+                )
                 title.setAlignment(Qt.AlignmentFlag.AlignCenter)
                 self._titles.append(title)
                 hb.addWidget(title, 0, vcenter)
@@ -166,8 +198,8 @@ class _CalendarHeader(QWidget):
 
     # ---- API ----------------------------------------------------------
 
-    def set_titles(self, titles: List[str]) -> None:
-        for lbl, text in zip(self._titles, titles):
+    def set_titles(self, titles: list[str]) -> None:
+        for lbl, text in zip(self._titles, titles, strict=False):
             lbl.setText(text)
 
     def set_page_enabled(self, prev_enabled: bool, next_enabled: bool) -> None:

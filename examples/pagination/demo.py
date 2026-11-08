@@ -3,14 +3,14 @@
 覆盖维度: variant × color × size × radius × compact × shadow × controls × loop × disabled。
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Body, Button, Pagination
 
 
@@ -88,9 +88,7 @@ class PaginationDemo(DemoBase):
             label = Body(f"compact + {v}")
             label.setFixedWidth(140)
             row_layout.addWidget(label)
-            row_layout.addWidget(
-                Pagination(total=10, initial_page=3, variant=v, is_compact=True)
-            )
+            row_layout.addWidget(Pagination(total=10, initial_page=3, variant=v, is_compact=True))
             row_layout.addStretch()
             layout.addWidget(row)
 
@@ -98,14 +96,10 @@ class PaginationDemo(DemoBase):
         layout.addWidget(self._section_title("方向控件 (show_controls)"))
         layout.addWidget(Pagination(total=10, initial_page=5, show_controls=True))
         layout.addWidget(self._section_title("方向控件 + loop"))
-        layout.addWidget(
-            Pagination(total=10, initial_page=10, show_controls=True, loop=True)
-        )
+        layout.addWidget(Pagination(total=10, initial_page=10, show_controls=True, loop=True))
 
         # ---------- 自定义方向控件 (外部 Button) ----------
-        layout.addWidget(
-            self._section_title("自定义方向控件 (show_controls=False + 外部 Button)")
-        )
+        layout.addWidget(self._section_title("自定义方向控件 (show_controls=False + 外部 Button)"))
         custom_pag = Pagination(total=10, initial_page=1, show_controls=False)
         custom_prev = Button(
             icon="heroicons--chevron-left",
@@ -133,9 +127,7 @@ class PaginationDemo(DemoBase):
 
         # ---------- 大数据 (省略号 + dots_jump) ----------
         layout.addWidget(self._section_title("大数据集 (total=50, dots_jump=5)"))
-        layout.addWidget(
-            Pagination(total=50, initial_page=20, show_controls=True, dots_jump=5)
-        )
+        layout.addWidget(Pagination(total=50, initial_page=20, show_controls=True, dots_jump=5))
         layout.addWidget(self._section_title("更大跨步 (dots_jump=10, siblings=2)"))
         layout.addWidget(
             Pagination(
@@ -148,9 +140,7 @@ class PaginationDemo(DemoBase):
         )
 
         # ---------- 禁用动画 ----------
-        layout.addWidget(
-            self._section_title("禁用 cursor 动画 (disable_cursor_animation)")
-        )
+        layout.addWidget(self._section_title("禁用 cursor 动画 (disable_cursor_animation)"))
         layout.addWidget(
             Pagination(
                 total=10,
@@ -169,9 +159,7 @@ class PaginationDemo(DemoBase):
 
         # ---------- 信号联动 ----------
         layout.addWidget(self._section_title("信号: page_changed (查看控制台输出)"))
-        live = Pagination(
-            total=20, initial_page=1, show_controls=True, color="secondary"
-        )
+        live = Pagination(total=20, initial_page=1, show_controls=True, color="secondary")
         status = Body("当前页: 1")
         live.page_changed.connect(lambda p: status.setText(f"当前页: {p}"))
         layout.addWidget(live)

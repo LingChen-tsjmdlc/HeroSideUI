@@ -12,21 +12,36 @@ Table 进阶综合示例 — 完整复刻 HeroUI v2 文档页 "real-world data t
   - 自定义 cell：头像+姓名+邮箱(User)、角色+团队、状态 Chip、操作 ⋮ 菜单(Dropdown)
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import (
-    QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-)
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import (
+    QApplication,
+    QHBoxLayout,
+    QLabel,
+    QMainWindow,
+    QVBoxLayout,
+    QWidget,
+)
 
 from hero_side_ui import (
-    HeroSideUIProvider, ThemeSwitcher, Title,
-    Table, Chip, Button, Input, Select, SelectItem, Pagination,
-    Popover, Listbox, Text,
+    Button,
+    Chip,
+    HeroSideUIProvider,
+    Input,
+    Listbox,
+    Pagination,
+    Popover,
+    Select,
+    SelectItem,
+    Table,
+    Text,
+    ThemeSwitcher,
+    Title,
 )
-
 
 # ============================================================
 # 数据（对齐 React 示例的 columns / statusOptions / users）
@@ -102,8 +117,7 @@ def _avatar(name: str, index: int) -> QLabel:
     dot.setFixedSize(34, 34)
     dot.setAlignment(Qt.AlignmentFlag.AlignCenter)
     dot.setStyleSheet(
-        f"background:{color}; color:white; border-radius:17px;"
-        f"font-size:12px; font-weight:600;"
+        f"background:{color}; color:white; border-radius:17px;font-size:12px; font-weight:600;"
     )
     return dot
 
@@ -147,11 +161,11 @@ class TableAdvancedDemo(QMainWindow):
 
         # 受控状态（对齐 React useState）
         self._filter_text = ""
-        self._status_filter: set[str] = set()          # 空集 = all（不筛选）
+        self._status_filter: set[str] = set()  # 空集 = all（不筛选）
         self._visible_cols: set[str] = set(INITIAL_VISIBLE_COLUMNS)
         self._rows_per_page = 5
         self._page = 1
-        self._sort_col = "age"                          # 默认 age ascending
+        self._sort_col = "age"  # 默认 age ascending
         self._sort_dir = "ascending"
 
         central = QWidget()
@@ -207,8 +221,12 @@ class TableAdvancedDemo(QMainWindow):
         if col_key == "role":
             return _role_cell(user)
         if col_key == "status":
-            return Chip(_capitalize(value), color=STATUS_COLOR.get(value, "default"),
-                        variant="flat", size="sm")
+            return Chip(
+                _capitalize(value),
+                color=STATUS_COLOR.get(value, "default"),
+                variant="flat",
+                size="sm",
+            )
         if col_key == "actions":
             return self._actions_cell(row_key)
         # id / age / team / email 直接显示
@@ -224,8 +242,14 @@ class TableAdvancedDemo(QMainWindow):
         h = QHBoxLayout(w)
         h.setContentsMargins(0, 0, 0, 0)
         h.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        btn = Button("", variant="light", size="sm", color="default", icon_only=True,
-                     icon="heroicons--ellipsis-horizontal")
+        btn = Button(
+            "",
+            variant="light",
+            size="sm",
+            color="default",
+            icon_only=True,
+            icon="heroicons--ellipsis-horizontal",
+        )
         btn.clicked.connect(lambda *_a, b=btn, rk=row_key: self._open_actions_menu(b, rk))
         h.addWidget(btn)
         return w
@@ -265,7 +289,9 @@ class TableAdvancedDemo(QMainWindow):
         # Status 多选筛选（disallowEmptySelection 语义：空集视为 all）
         status_sel = Select(
             [SelectItem(label, key=uid) for uid, label in STATUS_OPTIONS],
-            selection_mode="multiple", placeholder="Status", size="sm",
+            selection_mode="multiple",
+            placeholder="Status",
+            size="sm",
         )
         status_sel.selection_changed.connect(self._on_status_filter)
         row1.addWidget(status_sel)
@@ -273,7 +299,9 @@ class TableAdvancedDemo(QMainWindow):
         # Columns 列显隐（初始仅 name/role/status/actions）
         cols_sel = Select(
             [SelectItem(_capitalize(c["label"]), key=c["key"]) for c in COLUMNS],
-            selection_mode="multiple", placeholder="Columns", size="sm",
+            selection_mode="multiple",
+            placeholder="Columns",
+            size="sm",
             selected_keys=set(INITIAL_VISIBLE_COLUMNS),
         )
         cols_sel.selection_changed.connect(self._on_cols_change)
@@ -291,7 +319,9 @@ class TableAdvancedDemo(QMainWindow):
         row2.addWidget(Text("Rows per page:", size="sm", color="default-400"))
         rpp = Select(
             [SelectItem(n, key=n) for n in ("5", "10", "15")],
-            selection_mode="single", size="sm", selected_keys={"5"},
+            selection_mode="single",
+            size="sm",
+            selected_keys={"5"},
         )
         rpp.selection_changed.connect(self._on_rpp_change)
         row2.addWidget(rpp)
@@ -312,8 +342,9 @@ class TableAdvancedDemo(QMainWindow):
         h.addWidget(self._sel_label)
         h.addStretch()
 
-        self._pager = Pagination(total=1, initial_page=1, color="primary",
-                                 is_compact=True, show_controls=True)
+        self._pager = Pagination(
+            total=1, initial_page=1, color="primary", is_compact=True, show_controls=True
+        )
         self._pager.page_changed.connect(self._on_page)
         h.addWidget(self._pager)
         h.addStretch()
@@ -364,7 +395,7 @@ class TableAdvancedDemo(QMainWindow):
         if self._page > total_pages:
             self._page = total_pages
         start = (self._page - 1) * self._rows_per_page
-        page_rows = rows[start:start + self._rows_per_page]
+        page_rows = rows[start : start + self._rows_per_page]
 
         self._table.set_columns(self._visible_columns())
         self._table.set_rows(page_rows)

@@ -1,13 +1,15 @@
 """_Backdrop — Popover 弹出时的全屏遮罩层（私有，可选启用）。"""
 
-from PySide6.QtCore import Signal
-from typing import Optional
+from typing import TYPE_CHECKING, ClassVar
 
-from PySide6.QtCore import Qt
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget
 
 from ...animation import BackdropFade
+
+if TYPE_CHECKING:
+    from PySide6.QtGui import QPixmap
 
 
 # ============================================================
@@ -45,7 +47,7 @@ class _Backdrop(QWidget):
     """
 
     # blur_quality → 金字塔级数映射；'high' 走 QGraphicsBlurEffect 不在此表。
-    _PYRAMID_LEVELS = {"low": 2, "fast": 3, "great": 4}
+    _PYRAMID_LEVELS: ClassVar[dict[str, int]] = {"low": 2, "fast": 3, "great": 4}
     _VALID_QUALITY = ("low", "fast", "great", "high")
 
     clicked = Signal()
@@ -61,7 +63,7 @@ class _Backdrop(QWidget):
     def __init__(
         self,
         kind: str = "transparent",
-        host: Optional[QWidget] = None,
+        host: QWidget | None = None,
         blur_quality: str = "fast",
     ):
         # 关键：parent = host，不是独立顶层窗口
@@ -75,7 +77,7 @@ class _Backdrop(QWidget):
                 f"blur_quality must be one of {self._VALID_QUALITY}, got {blur_quality!r}"
             )
         self._blur_quality = blur_quality
-        self._blur_pixmap: Optional["QPixmap"] = None
+        self._blur_pixmap: QPixmap | None = None
         # 在 host.grab() 期间抑制自己的 paintEvent：避免抢到包含
         # backdrop 本身的 snapshot（黑底+模糊会叠加到下一帧中，造成“越滚越黑”累积 bug）。
         self._suppress_paint = False
@@ -83,9 +85,7 @@ class _Backdrop(QWidget):
         # 作为 host 的子 widget，不需要 window flags
         self.setAttribute(Qt.WidgetAttribute.WA_NoSystemBackground, True)
         # transparent 模式不拦截点击（事件穿透）
-        self.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, kind == "transparent"
-        )
+        self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, kind == "transparent")
 
         # 淡入淡出 —— 复用通用 BackdropFade 动画
         self._fade = BackdropFade(owner=self, duration_in=260, duration_out=200)
@@ -165,9 +165,9 @@ class _Backdrop(QWidget):
             return
         from PySide6.QtGui import QPixmap
         from PySide6.QtWidgets import (
-            QGraphicsScene,
-            QGraphicsPixmapItem,
             QGraphicsBlurEffect,
+            QGraphicsPixmapItem,
+            QGraphicsScene,
         )
 
         # 首次 grab 一般在 backdrop show() 之前，应不会被护到自己；
@@ -288,9 +288,9 @@ class _Backdrop(QWidget):
         与 ``great``（4 级金字塔）的视觉差距很小，仅在大半径 + 静帧细看时能分辨。"""
         from PySide6.QtGui import QPixmap
         from PySide6.QtWidgets import (
-            QGraphicsScene,
-            QGraphicsPixmapItem,
             QGraphicsBlurEffect,
+            QGraphicsPixmapItem,
+            QGraphicsScene,
         )
 
         scene = QGraphicsScene()

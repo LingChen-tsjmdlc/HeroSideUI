@@ -5,11 +5,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QVBoxLayout
 
 from hero_side_ui import CodeBlock
-from _base import DemoBase
-
 
 PY_CODE = '''import asyncio
 
@@ -27,20 +26,20 @@ if __name__ == "__main__":
     print(data)
 '''
 
-JSON_CODE = '''{
+JSON_CODE = """{
   "firstName": "John",
   "lastName": "Smith",
   "age": 25,
   "roles": ["admin", "editor"]
-}'''
+}"""
 
-CSS_CODE = '''.code-block {
+CSS_CODE = """.code-block {
   border-radius: 16px;
   background: #1d1f21;
   padding: 12px 16px;
-}'''
+}"""
 
-TS_CODE = '''type CodeBlockProps = {
+TS_CODE = """type CodeBlockProps = {
   language: string;
   filename?: string;
 };
@@ -48,7 +47,7 @@ TS_CODE = '''type CodeBlockProps = {
 export const CodeBlock = ({ language, filename }: CodeBlockProps) => {
   const [copied, setCopied] = useState(false);
   return <div className="rounded-2xl" />;
-};'''
+};"""
 
 
 class CodeBlockDemo(DemoBase):
@@ -60,7 +59,9 @@ class CodeBlockDemo(DemoBase):
 
         layout.addWidget(self._section_title("行高亮（第 4~6 行）"))
         layout.addWidget(
-            CodeBlock(PY_CODE, language="python", filename="highlight.py", highlight_lines=[4, 5, 6])
+            CodeBlock(
+                PY_CODE, language="python", filename="highlight.py", highlight_lines=[4, 5, 6]
+            )
         )
 
         layout.addWidget(self._section_title("JSON（无文件名，显示语言名）"))

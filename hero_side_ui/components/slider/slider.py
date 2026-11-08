@@ -10,9 +10,9 @@
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Callable, Sequence
 
-from PySide6.QtCore import QPointF, Qt, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -25,6 +25,7 @@ from ...animation.tween import tween_value
 from ...core import ThemeProvider
 from ...themes import SLIDER_SIZES
 from ..text import Text
+from ._api import _SliderAPIMixin
 from ._geometry import (
     HALO_EXTRA,
     RING_GAP,
@@ -38,16 +39,15 @@ from ._geometry import (
     track_geom,
     value_at_ratio,
 )
+from ._icon import _SliderIconLabel
 from ._marks import format_value, parse_marks
 from ._paint import _SliderCanvas
-from ._icon import _SliderIconLabel
-from ._api import _SliderAPIMixin
 from ._tooltip import _SliderTooltipMixin
 
 # 类型别名（对外语义，docs/tests 引用）
-NumPair = Tuple[float, float]
-ValueT = Union[float, NumPair]
-MarkT = Union[float, Tuple[float, str], dict]
+NumPair = tuple[float, float]
+ValueT = float | NumPair
+MarkT = float | tuple[float, str] | dict
 
 # 仅本模块用的常量
 _KEY_PAGE_FRAC = 0.1  # PageUp/PageDown = 10% range
@@ -79,7 +79,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
 
     def __init__(
         self,
-        value: Optional[ValueT] = None,
+        value: ValueT | None = None,
         min_value: float = 0.0,
         max_value: float = 100.0,
         step: float = 1.0,
@@ -95,26 +95,24 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         disable_thumb_scale: bool = False,
         disable_animation: bool = False,
         show_steps: bool = False,
-        marks: Optional[Sequence[MarkT]] = None,
-        start_content: Optional[Union[QWidget, str]] = None,
-        end_content: Optional[Union[QWidget, str]] = None,
-        top_end_content: Optional[QWidget] = None,
-        bottom_start_content: Optional[QWidget] = None,
-        value_formatter: Optional[Callable[[ValueT], str]] = None,
-        fill_offset: Optional[float] = None,
+        marks: Sequence[MarkT] | None = None,
+        start_content: QWidget | str | None = None,
+        end_content: QWidget | str | None = None,
+        top_end_content: QWidget | None = None,
+        bottom_start_content: QWidget | None = None,
+        value_formatter: Callable[[ValueT], str] | None = None,
+        fill_offset: float | None = None,
         show_tooltip: bool = False,
-        tooltip_props: Optional[dict] = None,
+        tooltip_props: dict | None = None,
         enable_wheel: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
         # ---- 范围 / 步长 ----
         if max_value <= min_value:
-            raise ValueError(
-                f"Slider: max_value({max_value}) must be > min_value({min_value})"
-            )
+            raise ValueError(f"Slider: max_value({max_value}) must be > min_value({min_value})")
         if step <= 0:
             raise ValueError(f"Slider: step({step}) must be positive")
         self._min = float(min_value)
@@ -167,9 +165,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
         self._fill_offset = fill_offset
         self._value_formatter = value_formatter
 
-        self._marks: List[Tuple[float, str]] = parse_marks(
-            marks or [], self._min, self._max
-        )
+        self._marks: list[tuple[float, str]] = parse_marks(marks or [], self._min, self._max)
 
         # start/end_content 接受 str（icon name）或 QWidget（自定义控件）。
         # str 路径走内置 _SliderIconLabel：load_svg_icon 自动跟主题着色，零样板。
@@ -234,19 +230,13 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
 
         # label / value 行
         self._label_row_widget = QWidget(self)
-        row = (
-            QVBoxLayout(self._label_row_widget)
-            if is_v
-            else QHBoxLayout(self._label_row_widget)
-        )
+        row = QVBoxLayout(self._label_row_widget) if is_v else QHBoxLayout(self._label_row_widget)
         row.setContentsMargins(0, 0, 0, 0)
         row.setSpacing(4)
         self._label = Text("", selectable=False, theme=self._theme_mode)
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._value_label = Text("", selectable=False, theme=self._theme_mode)
-        self._value_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._value_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         if is_v:
             row.addWidget(self._label, 0, Qt.AlignmentFlag.AlignHCenter)
             row.addWidget(self._value_label, 0, Qt.AlignmentFlag.AlignHCenter)
@@ -258,9 +248,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             # 与 value_label 并存；如果用户希望只显示插槽，可同时传 hide_value=True
             if self._top_end_content_widget is not None:
                 self._top_end_content_widget.setParent(self._label_row_widget)
-                row.addWidget(
-                    self._top_end_content_widget, 0, Qt.AlignmentFlag.AlignRight
-                )
+                row.addWidget(self._top_end_content_widget, 0, Qt.AlignmentFlag.AlignRight)
                 self._top_end_content_widget.show()
 
         # 自绘画布
@@ -279,16 +267,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             # → end_content 靠近 max（顶），start_content 靠近 min（底）
             if self._end_content_widget is not None:
                 self._end_content_widget.setParent(self._canvas_band)
-                band.addWidget(
-                    self._end_content_widget, 0, Qt.AlignmentFlag.AlignHCenter
-                )
+                band.addWidget(self._end_content_widget, 0, Qt.AlignmentFlag.AlignHCenter)
                 self._end_content_widget.show()
             band.addWidget(self._canvas, 1)
             if self._start_content_widget is not None:
                 self._start_content_widget.setParent(self._canvas_band)
-                band.addWidget(
-                    self._start_content_widget, 0, Qt.AlignmentFlag.AlignHCenter
-                )
+                band.addWidget(self._start_content_widget, 0, Qt.AlignmentFlag.AlignHCenter)
                 self._start_content_widget.show()
         else:
             band = QHBoxLayout(self._canvas_band)
@@ -296,16 +280,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             band.setSpacing(6)
             if self._start_content_widget is not None:
                 self._start_content_widget.setParent(self._canvas_band)
-                band.addWidget(
-                    self._start_content_widget, 0, Qt.AlignmentFlag.AlignVCenter
-                )
+                band.addWidget(self._start_content_widget, 0, Qt.AlignmentFlag.AlignVCenter)
                 self._start_content_widget.show()
             band.addWidget(self._canvas, 1)
             if self._end_content_widget is not None:
                 self._end_content_widget.setParent(self._canvas_band)
-                band.addWidget(
-                    self._end_content_widget, 0, Qt.AlignmentFlag.AlignVCenter
-                )
+                band.addWidget(self._end_content_widget, 0, Qt.AlignmentFlag.AlignVCenter)
                 self._end_content_widget.show()
 
         if is_v:
@@ -348,17 +328,13 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             if self._marks:
                 w += marks_band_size(cfg)
             self._canvas.setMinimumSize(w, 80)
-            self._canvas.setSizePolicy(
-                QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding
-            )
+            self._canvas.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         else:
             h = thumb + pad * 2
             if self._marks:
                 h += marks_band_size(cfg)
             self._canvas.setFixedHeight(h)
-            self._canvas.setSizePolicy(
-                QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-            )
+            self._canvas.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     # ============================================================
     # 文字刷新
@@ -372,24 +348,25 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             self._value_label.hide()
         else:
             self._value_label.setText(
-                format_value(
-                    self._value, self._is_range, self._step, self._value_formatter
-                )
+                format_value(self._value, self._is_range, self._step, self._value_formatter)
             )
             self._value_label.show()
 
-        self._label_row_widget.setVisible(
-            bool(self._label_text) or not self._hide_value
-        )
+        self._label_row_widget.setVisible(bool(self._label_text) or not self._hide_value)
 
     # ============================================================
     # 拖拽 scale-80 动画
     # ============================================================
     def _animate_press(self, idx: int, target: float):
-        tween_value(self, f"_drag_runner_{idx}", float(self._drag_press_t[idx]),
-                    float(target), lambda value: self._on_press_step(idx, value),
-                    duration=_DRAG_PRESS_DURATION,
-                    animated=not self._disable_animation and not self._disable_thumb_scale)
+        tween_value(
+            self,
+            f"_drag_runner_{idx}",
+            float(self._drag_press_t[idx]),
+            float(target),
+            lambda value: self._on_press_step(idx, value),
+            duration=_DRAG_PRESS_DURATION,
+            animated=not self._disable_animation and not self._disable_thumb_scale,
+        )
 
     def _on_press_step(self, idx: int, v):
         self._drag_press_t[idx] = float(v)
@@ -398,12 +375,8 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
     # ============================================================
     # 写入 thumb 值（拖拽/键盘/滚轮 共享入口）
     # ============================================================
-    def _set_thumb_value(
-        self, idx: int, raw: float, animate_signal: bool = True
-    ) -> bool:
-        new_v = snap_value(
-            clamp_value(raw, self._min, self._max), self._min, self._max, self._step
-        )
+    def _set_thumb_value(self, idx: int, raw: float, animate_signal: bool = True) -> bool:
+        new_v = snap_value(clamp_value(raw, self._min, self._max), self._min, self._max, self._step)
         if self._is_range:
             lo, hi = self._value  # type: ignore[misc]
             if idx == 0:

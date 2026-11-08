@@ -7,15 +7,9 @@
 - 暴露 focus_in / focus_out 信号
 """
 
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget
-from typing import Optional
-
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QTextEdit
-
-
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QTextEdit, QWidget
 
 
 # ============================================================
@@ -34,9 +28,10 @@ class _TextEdit(QTextEdit):
     - viewport setAutoFillBackground(False) + palette.Base 透明 同步
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         from PySide6.QtWidgets import QFrame
+
         self.setFrameStyle(QFrame.Shape.NoFrame)
         self.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)
 

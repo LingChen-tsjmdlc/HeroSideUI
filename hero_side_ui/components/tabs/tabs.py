@@ -6,35 +6,23 @@
     - ``_TabList``      → ``_tab_list.py``（标签容器）
 """
 
-from PySide6.QtWidgets import QBoxLayout
-
-from PySide6.QtCore import QTimer
-from typing import List
-
-from typing import Callable, Optional, Union
-
 from PySide6.QtCore import (
-    QEvent,
-    QPoint,
     QRect,
-    QSize,
-    Qt,
+    QTimer,
     Signal,
 )
 from PySide6.QtWidgets import (
+    QBoxLayout,
     QButtonGroup,
     QHBoxLayout,
     QSizePolicy,
     QStackedWidget,
-    QVBoxLayout,
     QWidget,
 )
 
 from ...animation import stop_tween, tween_geometry
 from ...core import ThemeProvider
-from ...themes import HEROUI_COLORS, RADIUS, TABS_SIZES
-from ...utils import load_svg_icon
-
+from ...themes import TABS_SIZES
 from ._constants import (
     VALID_COLORS,
     VALID_PLACEMENTS,
@@ -65,18 +53,18 @@ class Tabs(QWidget):
 
     def __init__(
         self,
-        items: Optional[List[Union[str, tuple, dict]]] = None,
+        items: list[str | tuple | dict] | None = None,
         *,
         variant: str = "solid",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         placement: str = "top",
         theme: str = "auto",
         full_width: bool = False,
         is_disabled: bool = False,
         disable_animation: bool = False,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -107,8 +95,8 @@ class Tabs(QWidget):
         self._is_disabled = bool(is_disabled)
         self._disable_animation = bool(disable_animation)
 
-        self._tabs: List[TabItem] = []
-        self._panels: List[QWidget] = []
+        self._tabs: list[TabItem] = []
+        self._panels: list[QWidget] = []
         self._current_index = -1
         self._cursor_initialized = False
 
@@ -181,13 +169,13 @@ class Tabs(QWidget):
     def add_tab(
         self,
         title: str = "",
-        content: Optional[QWidget] = None,
+        content: QWidget | None = None,
         *,
-        key: Optional[str] = None,
+        key: str | None = None,
         disabled: bool = False,
         start_icon=None,
         end_icon=None,
-        custom: Optional[QWidget] = None,
+        custom: QWidget | None = None,
     ) -> TabItem:
         """添加一个 tab。
 
@@ -237,6 +225,7 @@ class Tabs(QWidget):
         self._group.removeButton(tab)
         self._list_layout.removeWidget(tab)
         from ...utils import safe_delete
+
         safe_delete(tab)
         self._stack.removeWidget(panel)
         # 重新映射 button id
@@ -255,12 +244,12 @@ class Tabs(QWidget):
     def count(self) -> int:
         return len(self._tabs)
 
-    def tab_at(self, index: int) -> Optional[TabItem]:
+    def tab_at(self, index: int) -> TabItem | None:
         if 0 <= index < len(self._tabs):
             return self._tabs[index]
         return None
 
-    def panel_at(self, index: int) -> Optional[QWidget]:
+    def panel_at(self, index: int) -> QWidget | None:
         if 0 <= index < len(self._panels):
             return self._panels[index]
         return None
@@ -268,17 +257,15 @@ class Tabs(QWidget):
     def current_index(self) -> int:
         return self._current_index
 
-    def current_key(self) -> Optional[str]:
+    def current_key(self) -> str | None:
         if 0 <= self._current_index < len(self._tabs):
             return self._tabs[self._current_index].key()
         return None
 
-    def set_selected(self, index_or_key: Union[int, str], *, animate: bool = True):
+    def set_selected(self, index_or_key: int | str, *, animate: bool = True):
         """切换到指定 tab。"""
         if isinstance(index_or_key, str):
-            index = next(
-                (i for i, t in enumerate(self._tabs) if t.key() == index_or_key), -1
-            )
+            index = next((i for i, t in enumerate(self._tabs) if t.key() == index_or_key), -1)
         else:
             index = int(index_or_key)
         if not 0 <= index < len(self._tabs):
@@ -322,9 +309,7 @@ class Tabs(QWidget):
             raise ValueError(f"{name} must be one of {tuple(valid)}")
 
     def _reposition_cursor_async(self):
-        QTimer.singleShot(
-            0, lambda: self._move_cursor_to(self._current_index, animate=False)
-        )
+        QTimer.singleShot(0, lambda: self._move_cursor_to(self._current_index, animate=False))
 
     def set_variant(self, variant: str):
         self._validate("variant", variant, VALID_VARIANTS)
@@ -430,9 +415,7 @@ class Tabs(QWidget):
         else:
             est_h = cfg["tab_height"]
 
-        list_radius_px, tab_radius_px = _resolve_radius_px(
-            self._radius, self._size, est_h
-        )
+        list_radius_px, tab_radius_px = _resolve_radius_px(self._radius, self._size, est_h)
         # underlined 强制无圆角（compoundSlots）
         if self._variant == "underlined":
             list_radius_px = 0
@@ -449,9 +432,7 @@ class Tabs(QWidget):
         list_pad = cfg["list_padding"]
         # underlined / light / bordered 不需要 padding（保持紧凑）
         # solid 才需要内 padding 露出底色
-        if self._variant in ("solid",):
-            self._list_layout.setContentsMargins(list_pad, list_pad, list_pad, list_pad)
-        elif self._variant == "bordered":
+        if self._variant in ("solid",) or self._variant == "bordered":
             self._list_layout.setContentsMargins(list_pad, list_pad, list_pad, list_pad)
         else:
             self._list_layout.setContentsMargins(0, 0, 0, 0)
@@ -545,9 +526,13 @@ class Tabs(QWidget):
             self._cursor.hide()
             return
         target = QRect(self._tabs[index].geometry())
-        tween_geometry(self._cursor, "_cursor_anim_runner", target,
-                       duration=self.CURSOR_ANIM_DURATION,
-                       animated=animate and not self._disable_animation and self._cursor.isVisible())
+        tween_geometry(
+            self._cursor,
+            "_cursor_anim_runner",
+            target,
+            duration=self.CURSOR_ANIM_DURATION,
+            animated=animate and not self._disable_animation and self._cursor.isVisible(),
+        )
         self._cursor.show()
         self._cursor.lower()
 
@@ -561,4 +546,4 @@ class Tabs(QWidget):
         self._reposition_cursor_async()
 
 
-__all__ = ["Tabs", "TabItem"]
+__all__ = ["TabItem", "Tabs"]

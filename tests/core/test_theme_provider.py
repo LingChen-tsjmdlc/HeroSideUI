@@ -7,7 +7,7 @@ import gc
 import pytest
 from PySide6.QtWidgets import QWidget
 
-from hero_side_ui import ThemeProvider, Button, Divider, Card, Checkbox, Input
+from hero_side_ui import Button, Card, Checkbox, Divider, Input, ThemeProvider
 from hero_side_ui.core.theme_provider import VALID_MODES
 
 
@@ -143,6 +143,7 @@ class TestRegisterUnregister:
         count_before = p.registered_count
         btn.deleteLater()
         from PySide6.QtWidgets import QApplication
+
         QApplication.instance().processEvents()
         gc.collect()
         # weakref 应已被清理

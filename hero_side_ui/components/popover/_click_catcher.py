@@ -3,11 +3,12 @@
 挂在 QApplication 上监听 MouseButtonPress，配合 Popover 的 ``close on outside click`` 行为。
 """
 
-from PySide6.QtCore import QPoint
+from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QEvent, QObject, Signal
+from PySide6.QtCore import QEvent, QObject, QPoint
 
-
+if TYPE_CHECKING:
+    from .popover import Popover
 
 
 # ============================================================

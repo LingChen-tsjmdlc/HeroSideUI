@@ -10,7 +10,7 @@ _render_cell/_selected_keys/_user_disabled_keys/_disabled_keys/_hover_key
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from ._constants import VALID_ALIGNS
 
@@ -31,7 +31,9 @@ class _DataMixin:
                 {
                     "key": col["key"],
                     "label": col.get("label", ""),
-                    "align": col.get("align", "start") if col.get("align") in VALID_ALIGNS else "start",
+                    "align": col.get("align", "start")
+                    if col.get("align") in VALID_ALIGNS
+                    else "start",
                     "allows_sorting": bool(col.get("allows_sorting", False)),
                     "width": col.get("width"),
                 }
@@ -90,7 +92,7 @@ class _DataMixin:
             return dict(cells)
         # list：按列顺序映射
         result = {}
-        for col, val in zip(self._columns, cells):
+        for col, val in zip(self._columns, cells, strict=False):
             result[col["key"]] = val
         return result
 
@@ -103,7 +105,7 @@ class _DataMixin:
         self._recompute_disabled()
         self._rebuild()
 
-    def set_render_cell(self, fn: Optional[Callable]):
+    def set_render_cell(self, fn: Callable | None):
         """设置自定义单元格渲染回调 ``fn(row_key, col_key, value) -> str | QWidget``。"""
         self._render_cell = fn
         self._rebuild()

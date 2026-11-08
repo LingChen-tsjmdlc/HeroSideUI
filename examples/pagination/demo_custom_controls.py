@@ -12,9 +12,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Body, Button, Pagination
 
 
@@ -60,12 +60,8 @@ class PaginationCustomControlsDemo(DemoBase):
         status2 = Body("当前页: 10")
         pag2.page_changed.connect(lambda p: status2.setText(f"当前页: {p}"))
 
-        first_btn = Button(
-            "首页", icon="heroicons--chevron-double-left-solid", variant="bordered"
-        )
-        last_btn = Button(
-            "末页", icon="heroicons--chevron-double-right", variant="bordered"
-        )
+        first_btn = Button("首页", icon="heroicons--chevron-double-left-solid", variant="bordered")
+        last_btn = Button("末页", icon="heroicons--chevron-double-right", variant="bordered")
         first_btn.clicked.connect(pag2.go_first)
         last_btn.clicked.connect(pag2.go_last)
 

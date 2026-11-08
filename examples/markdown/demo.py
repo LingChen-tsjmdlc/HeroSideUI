@@ -17,11 +17,10 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import Button, Card, CardBody, Markdown
-from _base import DemoBase
-
 
 BASIC = """# 一级标题 H1
 
@@ -38,7 +37,7 @@ BASIC = """# 一级标题 H1
 这是一个普通段落。段落之间用空行分隔。
 这一行与上一行之间只有软换行，会被合并到同一段。
 
-若要强制换行，在行尾加两个空格：  
+若要强制换行，在行尾加两个空格：
 这一行就换行了。
 
 **粗体文本**、*斜体文本*、***粗体加斜体***、~~删除线文本~~，
@@ -180,7 +179,7 @@ def _build_custom_md() -> Markdown:
     def quote_as_card(ctx):
         card = Card(parent=ctx.parent)
         body = CardBody()
-        for child in ctx.render_children(body):   # 插槽 children
+        for child in ctx.render_children(body):  # 插槽 children
             body.layout().addWidget(child)
         card.add_body(body)
         return card
@@ -215,15 +214,15 @@ class MarkdownDemo(DemoBase):
         layout.addWidget(bar)
         layout.addWidget(self._md)
 
-        layout.addWidget(self._section_title("扩展语法（表格 / 代码块 / 任务列表 / 脚注 / 定义列表 / 转义）"))
+        layout.addWidget(
+            self._section_title("扩展语法（表格 / 代码块 / 任务列表 / 脚注 / 定义列表 / 转义）")
+        )
         layout.addWidget(Markdown(EXTENDED))
 
         layout.addWidget(self._section_title("自定义渲染（行内样式 + 块级 widget）"))
         layout.addWidget(_build_custom_md())
 
-        layout.addWidget(
-            self._section_title("inline_styles 声明式行内样式（连续框选）")
-        )
+        layout.addWidget(self._section_title("inline_styles 声明式行内样式（连续框选）"))
         layout.addWidget(
             Markdown(
                 STYLE_SAMPLE,

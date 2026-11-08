@@ -11,6 +11,7 @@ class IndeterminateBarAnimation(LoopDriver):
     Attributes:
         position: 从负滑块宽度比例到 1 的位置。
     """
+
     def __init__(
         self,
         owner,
@@ -50,9 +51,8 @@ class SpinAnimation(LoopDriver):
     Attributes:
         angle: 当前角度，单位为度。
     """
-    def __init__(
-        self, owner, duration=900, easing=QEasingCurve.Type.Linear, parent=None
-    ):
+
+    def __init__(self, owner, duration=900, easing=QEasingCurve.Type.Linear, parent=None):
         """初始化旋转循环。
 
         Args:

@@ -10,10 +10,6 @@
     - 任意 `RadioBase` 子类皆可被 `RadioGroup.add_radio` 接纳
 """
 
-from ...animation import tween_property
-
-from typing import Optional
-
 from PySide6.QtCore import (
     Property,
     QSize,
@@ -22,6 +18,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 
+from ...animation import tween_property
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIO_SIZES
 
@@ -45,7 +42,7 @@ class RadioBase(QAbstractButton):
     def __init__(
         self,
         text: str = "",
-        value: Optional[str] = None,
+        value: str | None = None,
         description: str = "",
         is_selected: bool = False,
         color: str = "primary",
@@ -55,7 +52,7 @@ class RadioBase(QAbstractButton):
         is_invalid: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -64,9 +61,7 @@ class RadioBase(QAbstractButton):
         if size not in VALID_SIZES:
             raise ValueError(f"size must be one of {VALID_SIZES}, got {size!r}")
         if variant not in VALID_VARIANTS:
-            raise ValueError(
-                f"variant must be one of {VALID_VARIANTS}, got {variant!r}"
-            )
+            raise ValueError(f"variant must be one of {VALID_VARIANTS}, got {variant!r}")
 
         self._color = color
         self._size = size
@@ -133,8 +128,14 @@ class RadioBase(QAbstractButton):
     # 状态变化
     # ============================================================
     def _on_toggled(self, checked: bool):
-        tween_property(self, "_control_anim", b"control_progress", 1.0 if checked else 0.0,
-                       duration=180, animated=not self._disable_animation)
+        tween_property(
+            self,
+            "_control_anim",
+            b"control_progress",
+            1.0 if checked else 0.0,
+            duration=180,
+            animated=not self._disable_animation,
+        )
         if checked:
             self.selected.emit(self._value)
 
@@ -235,8 +236,13 @@ class RadioBase(QAbstractButton):
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
         if disable:
-            tween_property(self, "_control_anim", b"control_progress",
-                           1.0 if self.isChecked() else 0.0, duration=0)
+            tween_property(
+                self,
+                "_control_anim",
+                b"control_progress",
+                1.0 if self.isChecked() else 0.0,
+                duration=0,
+            )
             tween_property(self, "_press_anim", b"press_progress", 0.0, duration=0)
 
     def set_theme(self, theme: str):

@@ -30,7 +30,6 @@ class UnderlineBar(QWidget):
         self._anim.setDuration(200)
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
 
-
     def _get_progress(self) -> float:
         return self._progress
 

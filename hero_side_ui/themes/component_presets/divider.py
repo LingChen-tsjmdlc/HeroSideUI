@@ -5,10 +5,10 @@
 
 DIVIDER_SIZES = {
     "horizontal": {
-        "thickness": 1,   # 分割线高度 (px)
+        "thickness": 1,  # 分割线高度 (px)
     },
     "vertical": {
-        "thickness": 1,   # 分割线宽度 (px)
+        "thickness": 1,  # 分割线宽度 (px)
     },
 }
 

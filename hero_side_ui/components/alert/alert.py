@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
@@ -31,8 +31,8 @@ _GAP = 6  # icon ↔ text 间距
 class Alert(QWidget):
     """HeroUI 风格 Alert。用法::
 
-        Alert(title="注意", description="内容", color="warning")
-        Alert(title="成功", color="success", is_closable=True, on_close=fn)
+    Alert(title="注意", description="内容", color="warning")
+    Alert(title="成功", color="success", is_closable=True, on_close=fn)
     """
 
     closed = Signal()
@@ -44,16 +44,16 @@ class Alert(QWidget):
         color: str = "default",
         variant: str = "flat",
         radius: str = "md",
-        icon: Optional[str] = None,
-        start_content: Optional[QWidget] = None,
-        end_content: Optional[QWidget] = None,
+        icon: str | None = None,
+        start_content: QWidget | None = None,
+        end_content: QWidget | None = None,
         is_visible: bool = True,
         is_closable: bool = False,
         hide_icon: bool = False,
         hide_icon_wrapper: bool = False,
-        on_close: Optional[Callable[[], None]] = None,
+        on_close: Callable[[], None] | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroAlert")
@@ -125,8 +125,12 @@ class Alert(QWidget):
 
         # close button
         self._close_btn = Button(
-            icon_only=True, icon="heroicons--x-mark-16-solid",
-            icon_size=18, variant="light", radius="full", size="sm",
+            icon_only=True,
+            icon="heroicons--x-mark-16-solid",
+            icon_size=18,
+            variant="light",
+            radius="full",
+            size="sm",
             theme=self._theme,
         )
         self._close_btn.clicked.connect(self._handle_close)
@@ -140,7 +144,9 @@ class Alert(QWidget):
 
     def _apply_styles(self):
         s = build_alert_styles(
-            variant=self._variant, color=self._color, theme=self._theme,
+            variant=self._variant,
+            color=self._color,
+            theme=self._theme,
             radius=self._radius,
         )
         r = self._radius
@@ -157,7 +163,7 @@ class Alert(QWidget):
             f"}}"
         )
         # hide_icon_wrapper 时去掉圆形底色
-        iwr_bg = "transparent" if self._hide_icon_wrapper else s['icon_wrapper_bg']
+        iwr_bg = "transparent" if self._hide_icon_wrapper else s["icon_wrapper_bg"]
         self._icon_wrapper.setStyleSheet(
             f"QWidget#HeroAlertIconWrapper {{ "
             f"background-color: {iwr_bg}; "
@@ -173,7 +179,7 @@ class Alert(QWidget):
 
     # ---- icon ----
 
-    def _resolve_icon_name(self) -> Optional[str]:
+    def _resolve_icon_name(self) -> str | None:
         if self._icon_src:
             return self._icon_src
         return _ICON_MAP.get(self._color, _ICON_MAP["primary"])
@@ -188,7 +194,12 @@ class Alert(QWidget):
         self._icon_label.clear()
         size = _ICO_SIZE
         self._icon_label.setPixmap(
-            pix.scaled(size, size, Qt.AspectRatioMode.KeepAspectRatio, Qt.TransformationMode.SmoothTransformation)
+            pix.scaled(
+                size,
+                size,
+                Qt.AspectRatioMode.KeepAspectRatio,
+                Qt.TransformationMode.SmoothTransformation,
+            )
         )
 
     # ---- close ----
@@ -205,13 +216,16 @@ class Alert(QWidget):
     # ---- setters ----
 
     def set_color(self, color: str):
-        self._color = color; self._apply_styles()
+        self._color = color
+        self._apply_styles()
 
     def set_variant(self, variant: str):
-        self._variant = variant; self._apply_styles()
+        self._variant = variant
+        self._apply_styles()
 
     def set_radius(self, radius: str):
-        self._radius = radius; self._apply_styles()
+        self._radius = radius
+        self._apply_styles()
 
     def set_theme(self, theme: str):
         if theme == "auto":
@@ -248,8 +262,9 @@ class Alert(QWidget):
     def set_description(self, description: str):
         self._desc_label.setText(description)
 
-    def set_icon(self, icon: Optional[str]):
-        self._icon_src = icon; self._refresh_icon()
+    def set_icon(self, icon: str | None):
+        self._icon_src = icon
+        self._refresh_icon()
 
     def set_hide_icon(self, hide: bool):
         self._hide_icon = hide

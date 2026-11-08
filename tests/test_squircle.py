@@ -1,10 +1,11 @@
 """Squircle 路径生成器单元测试"""
 
-import sys
-import os
 import math
+import os
+import sys
+
 import pytest
-from PySide6.QtCore import QRectF, QPointF
+from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QPainterPath
 
 # 确保能导入

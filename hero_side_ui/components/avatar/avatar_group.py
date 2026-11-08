@@ -14,9 +14,7 @@
 
 from __future__ import annotations
 
-from ...animation import tween_property
-
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import (
     QEvent,
@@ -25,6 +23,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtWidgets import QGridLayout, QWidget
 
+from ...animation import tween_property
 from ...themes import (
     AVATAR_GROUP_GRID_COLS,
     AVATAR_GROUP_GRID_GAP,
@@ -58,24 +57,24 @@ class AvatarGroup(QWidget):
 
     def __init__(
         self,
-        avatars: Optional[List[Avatar]] = None,
+        avatars: list[Avatar] | None = None,
         max: int = 5,
-        total: Optional[int] = None,
-        color: Optional[str] = None,
-        radius: Optional[str] = None,
-        size: Optional[str] = None,
+        total: int | None = None,
+        color: str | None = None,
+        radius: str | None = None,
+        size: str | None = None,
         is_bordered: bool = False,
         is_disabled: bool = False,
         is_grid: bool = False,
-        render_count: Optional[Callable[[int], QWidget]] = None,
+        render_count: Callable[[int], QWidget] | None = None,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroAvatarGroup")
 
-        self._avatars: List[Avatar] = list(avatars or [])
+        self._avatars: list[Avatar] = list(avatars or [])
         self._max = max
         self._total = total
         self._color = color
@@ -88,10 +87,10 @@ class AvatarGroup(QWidget):
         self._disable_animation = disable_animation
         self._theme = theme
 
-        self._count_widget: Optional[QWidget] = None
+        self._count_widget: QWidget | None = None
         # 堆叠模式下：item -> 其在原位的 x 基准值；以及 item -> hover 平移动画
-        self._items: List[QWidget] = []
-        self._base_x: Dict[QWidget, int] = {}
+        self._items: list[QWidget] = []
+        self._base_x: dict[QWidget, int] = {}
 
         self._build()
 
@@ -116,7 +115,7 @@ class AvatarGroup(QWidget):
             return len(self._avatars) - self._max
         return -1
 
-    def _visible_avatars(self) -> List[Avatar]:
+    def _visible_avatars(self) -> list[Avatar]:
         if self._max is None:
             return self._avatars
         return self._avatars[: self._max]
@@ -132,7 +131,7 @@ class AvatarGroup(QWidget):
     # ============================================================
     def _build_stack(self):
         # 分别收集头像与可选计数控件：头像重叠堆叠，计数控件另作小间距排在末尾
-        avatars: List[Avatar] = []
+        avatars: list[Avatar] = []
         for av in self._visible_avatars():
             av.setParent(self)
             self._apply_group_props(av)
@@ -145,7 +144,7 @@ class AvatarGroup(QWidget):
             self._count_widget.setParent(self)
 
         # items = 头像 + 计数（计数不参与 hover/overlap，但纳入 z-order 与总尺寸）
-        items: List[QWidget] = list(avatars)
+        items: list[QWidget] = list(avatars)
         if self._count_widget is not None:
             items.append(self._count_widget)
         self._items = items
@@ -221,9 +220,15 @@ class AvatarGroup(QWidget):
             return
         w.raise_()
         target_x = base - AVATAR_GROUP_HOVER_SHIFT if enter else base
-        tween_property(w, "_avatar_group_shift", b"pos", QPoint(target_x, w.y()),
-                       duration=250, animated=not self._disable_animation,
-                       on_finished=self._restore_z_order if not enter else None)
+        tween_property(
+            w,
+            "_avatar_group_shift",
+            b"pos",
+            QPoint(target_x, w.y()),
+            duration=250,
+            animated=not self._disable_animation,
+            on_finished=self._restore_z_order if not enter else None,
+        )
 
     def _restore_z_order(self):
         # 复位到自然堆叠：越靠后的头像 z 越高（正序 raise）
@@ -239,7 +244,7 @@ class AvatarGroup(QWidget):
         layout.setSpacing(AVATAR_GROUP_GRID_GAP)
         layout.setAlignment(Qt.AlignmentFlag.AlignLeft)
 
-        items: List[QWidget] = []
+        items: list[QWidget] = []
         for av in self._visible_avatars():
             av.setParent(self)
             self._apply_group_props(av)
@@ -278,13 +283,13 @@ class AvatarGroup(QWidget):
     # ============================================================
     # 公共访问器
     # ============================================================
-    def avatars(self) -> List[Avatar]:
+    def avatars(self) -> list[Avatar]:
         return list(self._avatars)
 
     def remaining_count(self) -> int:
         return self._remaining_count()
 
-    def count_widget(self) -> Optional[QWidget]:
+    def count_widget(self) -> QWidget | None:
         return self._count_widget
 
 

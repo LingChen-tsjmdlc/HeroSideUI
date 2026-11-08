@@ -8,29 +8,30 @@ ThemeProvider 示例 — 一键切换全局亮暗色
 """
 
 import sys
+
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt
 
 from hero_side_ui import (
-    ThemeProvider,
+    Body,
     Button,
-    Input,
+    Caption,
     Card,
-    CardHeader,
     CardBody,
+    CardHeader,
     Checkbox,
-    Progress,
     Divider,
+    Input,
+    Progress,
     Tabs,
+    ThemeProvider,
     ThemeSwitcher,
     Title,
-    Body,
-    Caption,
 )
 
 
@@ -95,9 +96,7 @@ class DemoWindow(QWidget):
         root.addLayout(row1)
 
         root.addWidget(Input(label="邮箱", placeholder="请输入邮箱", color="primary"))
-        root.addWidget(
-            Progress(value=65, label="下载进度", color="success", show_value_label=True)
-        )
+        root.addWidget(Progress(value=65, label="下载进度", color="success", show_value_label=True))
 
         cb_row = QHBoxLayout()
         cb_row.addWidget(Checkbox("React", is_selected=True, color="primary"))

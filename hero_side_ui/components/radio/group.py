@@ -4,8 +4,6 @@
 语义：选中其中一个时其他自动取消。聚合 value_changed(str | None) 信号。
 """
 
-from typing import List, Optional
-
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -15,10 +13,9 @@ from PySide6.QtWidgets import (
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS
-
 from ..text import Text
-from .radio import Radio, VALID_COLORS, VALID_SIZES, VALID_VARIANTS
 from ._base import RadioBase
+from .radio import VALID_COLORS, VALID_SIZES, VALID_VARIANTS, Radio
 
 
 class RadioGroup(QWidget):
@@ -49,10 +46,10 @@ class RadioGroup(QWidget):
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
-        default_value: Optional[str] = None,
+        default_value: str | None = None,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -61,9 +58,7 @@ class RadioGroup(QWidget):
         if size not in VALID_SIZES:
             raise ValueError(f"size must be one of {VALID_SIZES}, got {size!r}")
         if variant not in VALID_VARIANTS:
-            raise ValueError(
-                f"variant must be one of {VALID_VARIANTS}, got {variant!r}"
-            )
+            raise ValueError(f"variant must be one of {VALID_VARIANTS}, got {variant!r}")
         if orientation not in ("vertical", "horizontal"):
             raise ValueError("orientation must be 'vertical' or 'horizontal'")
 
@@ -82,7 +77,7 @@ class RadioGroup(QWidget):
         self._theme = Radio._resolve_theme(theme)
         self._default_value = default_value
 
-        self._radios: List[RadioBase] = []
+        self._radios: list[RadioBase] = []
         self._suppress = False  # 互斥时防止 toggled 风暴
 
         self._setup_ui()
@@ -170,9 +165,7 @@ class RadioGroup(QWidget):
 
         # 互斥语义：HeroUI 的 radio 已选中再点忽略 —— 注入 toggle_guard
         radio._toggle_guard = self._guard_toggle  # type: ignore[attr-defined]
-        radio.toggled.connect(
-            lambda checked, r=radio: self._on_radio_toggled(r, checked)
-        )
+        radio.toggled.connect(lambda checked, r=radio: self._on_radio_toggled(r, checked))
 
         self._radios.append(radio)
         self._wrapper_layout.addWidget(radio)
@@ -180,7 +173,7 @@ class RadioGroup(QWidget):
     def create_radio(
         self,
         text: str,
-        value: Optional[str] = None,
+        value: str | None = None,
         description: str = "",
     ) -> Radio:
         """便利方法：创建 Radio 并加入 group"""
@@ -219,13 +212,13 @@ class RadioGroup(QWidget):
     # ============================================================
     # value API
     # ============================================================
-    def value(self) -> Optional[str]:
+    def value(self) -> str | None:
         for r in self._radios:
             if r.isChecked():
                 return r.value()
         return None
 
-    def set_value(self, value: Optional[str]):
+    def set_value(self, value: str | None):
         self._suppress = True
         try:
             for r in self._radios:

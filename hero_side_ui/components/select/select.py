@@ -9,19 +9,17 @@
     - ``_EndContentWidget`` → ``_end_content.py``
 """
 
-from typing import Iterable, Optional, Union
+from collections.abc import Iterable
 
 from PySide6.QtCore import QEvent, QPoint, Qt, Signal
 from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS, SELECT_SIZES
-
 from ..input import Input
 from ..listbox import Listbox, ListboxItem, ListboxSection
 from ..popover import Popover, PopoverContent
 from ..scroll_shadow import ScrollShadow
-
 from ._callbacks import _SelectCallbacksMixin
 from ._end_content import _EndContentWidget
 from ._styling import _SelectStylingMixin
@@ -54,21 +52,19 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 直接读 themes 全局 token，避免硬编码漂移
     VALID_COLORS = tuple(HEROUI_COLORS.keys())
     VALID_SIZES = ("sm", "md", "lg")
-    VALID_RADII = tuple(k for k in RADIUS.keys() if k in ("none", "sm", "md", "lg")) + (
-        "full",
-    )
+    VALID_RADII = (*tuple(k for k in RADIUS if k in ("none", "sm", "md", "lg")), "full")
     VALID_LABEL_PLACEMENTS = ("inside", "outside", "outside-left", "outside-top")
     VALID_SELECTION_MODES = ("single", "multiple")
 
     def __init__(
         self,
-        items: Optional[Iterable[Union[dict, tuple, ListboxItem]]] = None,
+        items: Iterable[dict | tuple | ListboxItem] | None = None,
         *,
         # ---- 选中 ----
         selection_mode: str = "single",
-        selected_keys: Optional[Iterable[str]] = None,
-        default_selected_keys: Optional[Iterable[str]] = None,
-        disabled_keys: Optional[Iterable[str]] = None,
+        selected_keys: Iterable[str] | None = None,
+        default_selected_keys: Iterable[str] | None = None,
+        disabled_keys: Iterable[str] | None = None,
         disallow_empty_selection: bool = False,
         # ---- 行为 ----
         is_clearable: bool = False,
@@ -76,7 +72,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         selector_icon: str = "heroicons--chevron-down",
         clear_icon: str = "heroicons--x-mark-16-solid",
         disable_selector_icon_rotation: bool = False,
-        empty_content: Optional[str] = None,
+        empty_content: str | None = None,
         placeholder: str = "Select an option",
         # ---- Input 透传 ----
         label: str = "",
@@ -84,20 +80,20 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
-        start_content: Optional[Union[str, QWidget]] = None,
+        start_content: str | QWidget | None = None,
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
         is_readonly: bool = False,
         # ---- Listbox 透传 ----
         listbox_variant: str = "flat",
-        listbox_color: Optional[str] = None,
+        listbox_color: str | None = None,
         # ---- 其他 ----
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -133,9 +129,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._color = color
         self._size = size
         self._variant = variant
-        self._listbox_color = (
-            listbox_color if listbox_color in self.VALID_COLORS else color
-        )
+        self._listbox_color = listbox_color if listbox_color in self.VALID_COLORS else color
         self._listbox_variant = listbox_variant
         self._disable_animation = bool(disable_animation)
         self._theme_mode = theme
@@ -149,9 +143,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
 
         # ---------- 内部状态 ----------
         initial = (
-            set(selected_keys)
-            if selected_keys is not None
-            else set(default_selected_keys or [])
+            set(selected_keys) if selected_keys is not None else set(default_selected_keys or [])
         )
         if selection_mode == "single" and len(initial) > 1:
             initial = {next(iter(initial))}
@@ -311,7 +303,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # ============================================================
     # Items 装配
     # ============================================================
-    def set_items(self, items: Iterable[Union[dict, tuple, ListboxItem]]):
+    def set_items(self, items: Iterable[dict | tuple | ListboxItem]):
         """重置 items 列表。同 Autocomplete.set_items。"""
         self._listbox.clear()
         self._items_data.clear()
@@ -348,7 +340,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     def items(self) -> list[ListboxItem]:
         return self._listbox.items()
 
-    def item_by_key(self, key: str) -> Optional[ListboxItem]:
+    def item_by_key(self, key: str) -> ListboxItem | None:
         return self._listbox.item_by_key(key)
 
     # ============================================================
@@ -357,7 +349,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     def selected_keys(self) -> set[str]:
         return set(self._selected_keys)
 
-    def selected_key(self) -> Optional[str]:
+    def selected_key(self) -> str | None:
         """single 模式专用：返回当前选中 key 或 None。"""
         if not self._selected_keys:
             return None
@@ -378,7 +370,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._refresh_clear_visibility()
         self.selection_changed.emit(self._emit_selection_payload())
 
-    def set_selected_key(self, key: Optional[str]):
+    def set_selected_key(self, key: str | None):
         """single 模式便捷 setter。"""
         self.set_selected_keys(set() if key is None else {key})
 
@@ -403,9 +395,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         pos = self._input.mapToGlobal(QPoint(0, 0))
         gap = 6
         _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(
-            rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin
-        )
+        return int(rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin)
 
     def _visible_listbox_content_height(self) -> int:
         """同 Autocomplete.同名方法。"""
@@ -416,9 +406,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
                 self._listbox._list_v.itemAt(i).widget()
                 for i in range(self._listbox._list_v.count())
             ]
-            visible_widgets = [
-                w for w in visible_widgets if w is not None and not w.isHidden()
-            ]
+            visible_widgets = [w for w in visible_widgets if w is not None and not w.isHidden()]
             if not visible_widgets:
                 visible_widgets = [self._listbox._empty_widget]
             h = sum(w.sizeHint().height() for w in visible_widgets)
@@ -547,7 +535,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._refresh_end_icons()
         self._sync_trigger_text()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         if radius is not None and radius not in self.VALID_RADII:
             return
         self._input.set_radius(radius)
@@ -607,7 +595,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
                 it._cur_indicator_alpha = 1.0
                 it.update()
 
-    def set_empty_content(self, text: Optional[str]):
+    def set_empty_content(self, text: str | None):
         self._empty_content = text
         self._listbox.set_empty_content(text)
 
@@ -615,15 +603,15 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 宽度透传 —— Select 外壳是垂直 layout 套 Input，外壳设宽不会
     # 压过 Input 的 min_width 守卫（默认 260），导致 Input 撑出 Select
     # 边界、chevron 被裁。统一把宽度调用转发给 Input
-    def setFixedWidth(self, w: int):  # noqa: N802
+    def setFixedWidth(self, w: int):
         self._input.setFixedWidth(int(w))
         super().setFixedWidth(int(w))
 
-    def setMinimumWidth(self, w: int):  # noqa: N802
+    def setMinimumWidth(self, w: int):
         self._input.setMinimumWidth(int(w))
         super().setMinimumWidth(int(w))
 
-    def setMaximumWidth(self, w: int):  # noqa: N802
+    def setMaximumWidth(self, w: int):
         self._input.setMaximumWidth(int(w))
         super().setMaximumWidth(int(w))
 

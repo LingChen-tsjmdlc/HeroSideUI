@@ -23,9 +23,7 @@ class LoopDriver(QObject):
         phase: 0 到 1 的当前循环进度。
     """
 
-    def __init__(
-        self, owner, duration=1200, easing=QEasingCurve.Type.Linear, parent=None
-    ):
+    def __init__(self, owner, duration=1200, easing=QEasingCurve.Type.Linear, parent=None):
         """初始化循环驱动。
 
         Args:
@@ -44,7 +42,6 @@ class LoopDriver(QObject):
         self._anim.setDuration(duration)
         self._anim.setEasingCurve(easing)
         self._anim.setLoopCount(-1)
-
 
         drivers = getattr(owner, "_hs_loop_drivers", None)
         if drivers is None:
@@ -104,12 +101,7 @@ class LoopDriver(QObject):
 
     def _sync(self):
         owner = self._owner_ref()
-        if (
-            self._requested
-            and owner is not None
-            and isValid(owner)
-            and owner.isVisible()
-        ):
+        if self._requested and owner is not None and isValid(owner) and owner.isVisible():
             if not self.is_running():
                 self._set_phase(0.0)
                 self._anim.start()

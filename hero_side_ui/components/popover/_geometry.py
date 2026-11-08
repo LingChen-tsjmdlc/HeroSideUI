@@ -7,14 +7,11 @@
 - frame margins（阴影 + 边距）
 """
 
-from ...themes import POPOVER_SHADOWS
-
-from typing import Optional, Tuple
-
-from PySide6.QtCore import QPoint, QRect, QSize, Qt
+from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication, QWidget
 
-from ._constants import ARROW_INSET, ARROW_SIZE
+from ...themes import POPOVER_SHADOWS
+from ._constants import ARROW_SIZE
 
 
 class _PopoverGeometryMixin:
@@ -102,9 +99,7 @@ class _PopoverGeometryMixin:
         self._outer.setContentsMargins(*self._frame_margins())
         return pos
 
-    def _compute_pos_for(
-        self, place: str, tr_pos: QPoint, tr_w: int, tr_h: int
-    ) -> QPoint:
+    def _compute_pos_for(self, place: str, tr_pos: QPoint, tr_w: int, tr_h: int) -> QPoint:
         """根据 placement 计算 popover 左上角（已扣掉 shadow 方向的 margin
         以保证 arrow 紧贴 trigger）。"""
         my_w = self.sizeHint().width()

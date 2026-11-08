@@ -6,8 +6,6 @@
 - per-item 颜色覆盖（如"删除"项染 danger）
 """
 
-from typing import Optional
-
 from PySide6.QtCore import QPoint
 from PySide6.QtWidgets import QApplication
 
@@ -48,7 +46,7 @@ class _DropdownStylingMixin:
             return int(self._min_width)
         return int(self._size_cfg()["menu_min_width"])
 
-    def _menu_max_height(self) -> Optional[int]:
+    def _menu_max_height(self) -> int | None:
         """用户显式指定才限制；None = 完全由内容撑开。"""
         if self._max_height is not None:
             return max(1, int(self._max_height))
@@ -65,9 +63,7 @@ class _DropdownStylingMixin:
             return int(self._size_cfg()["popover_max_height"])
         pos = self._trigger.mapToGlobal(QPoint(0, 0))
         _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(
-            rect.bottom() - (pos.y() + self._trigger.height()) - 6 - bottom_margin
-        )
+        return int(rect.bottom() - (pos.y() + self._trigger.height()) - 6 - bottom_margin)
 
     def _available_height_above(self) -> int:
         """trigger 上方到屏幕顶还剩多少可用高度。"""

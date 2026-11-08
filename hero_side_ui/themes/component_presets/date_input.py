@@ -24,9 +24,7 @@ _SEGMENT_TOKENS = {
     "lg": {"segment_padding_x": 2, "segment_radius": 8},
 }
 
-DATE_INPUT_SIZES = {
-    key: {**INPUT_SIZES[key], **_SEGMENT_TOKENS[key]} for key in ("sm", "md", "lg")
-}
+DATE_INPUT_SIZES = {key: {**INPUT_SIZES[key], **_SEGMENT_TOKENS[key]} for key in ("sm", "md", "lg")}
 
 DATE_INPUT_SIZES["small"] = DATE_INPUT_SIZES["sm"]
 DATE_INPUT_SIZES["medium"] = DATE_INPUT_SIZES["md"]

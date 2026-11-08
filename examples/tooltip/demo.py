@@ -2,13 +2,15 @@
 Tooltip 组件示例 — 12 placement / 6 colors / offset / delay / arrow / size / radius / 自定义 widget
 """
 
-import os, sys
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QWidget
-
-from hero_side_ui import Tooltip, Button, Title, Body, Caption
 from _base import DemoBase
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+
+from hero_side_ui import Body, Button, Caption, Title, Tooltip
 
 
 class TooltipDemo(DemoBase):
@@ -31,10 +33,18 @@ class TooltipDemo(DemoBase):
         grid.setContentsMargins(0, 0, 0, 0)
         grid.setSpacing(12)
         placements = [
-            "top-start", "top", "top-end",
-            "bottom-start", "bottom", "bottom-end",
-            "right-start", "right", "right-end",
-            "left-start", "left", "left-end",
+            "top-start",
+            "top",
+            "top-end",
+            "bottom-start",
+            "bottom",
+            "bottom-end",
+            "right-start",
+            "right",
+            "right-end",
+            "left-start",
+            "left",
+            "left-end",
         ]
         for i, place in enumerate(placements):
             btn = Button(place, color="primary", variant="flat")
@@ -55,8 +65,10 @@ class TooltipDemo(DemoBase):
         offset_btns = []
         for off in [0, 3, 7, 14, 24]:
             btn = Button(f"offset={off}", color="primary", variant="flat")
-            self._attach(btn, Tooltip(content=f"Offset: {off}px", offset=off,
-                                       color="primary", show_arrow=True))
+            self._attach(
+                btn,
+                Tooltip(content=f"Offset: {off}px", offset=off, color="primary", show_arrow=True),
+            )
             offset_btns.append(btn)
         self.add_section(layout, "offset (距离控制)", offset_btns, labels_bag, spacing=12)
 
@@ -65,8 +77,12 @@ class TooltipDemo(DemoBase):
             ("默认 (0/150ms)", "success", {}, "open_delay=0, close_delay=150"),
             ("慢开 (500/150ms)", "warning", {"open_delay": 500}, "open_delay=500"),
             ("快关 (0/0ms)", "danger", {"close_delay": 0}, "open_delay=0, close_delay=0"),
-            ("慢速 (300/500ms)", "secondary", {"open_delay": 300, "close_delay": 500},
-             "open_delay=300, close_delay=500"),
+            (
+                "慢速 (300/500ms)",
+                "secondary",
+                {"open_delay": 300, "close_delay": 500},
+                "open_delay=300, close_delay=500",
+            ),
         ]
         delay_btns = []
         for label, color, kwargs, content in delay_specs:
@@ -81,7 +97,9 @@ class TooltipDemo(DemoBase):
             Button("有箭头", color="primary", variant="flat"),
         ]
         self._attach(arrow_btns[0], Tooltip(content="没有箭头", color="primary", show_arrow=False))
-        self._attach(arrow_btns[1], Tooltip(content="带箭头指向 trigger", color="primary", show_arrow=True))
+        self._attach(
+            arrow_btns[1], Tooltip(content="带箭头指向 trigger", color="primary", show_arrow=True)
+        )
         self.add_section(layout, "show_arrow", arrow_btns, labels_bag, spacing=12)
 
         # size
@@ -98,8 +116,9 @@ class TooltipDemo(DemoBase):
             btn = Button(f"radius={r}", color="primary", variant="flat", radius=r)
             self._attach(btn, Tooltip(content=f"Radius: {r}", radius=r, color="primary"))
             radius_btns.append(btn)
-        self.add_section(layout, "radius (none / sm / md / lg / full)",
-                         radius_btns, labels_bag, spacing=12)
+        self.add_section(
+            layout, "radius (none / sm / md / lg / full)", radius_btns, labels_bag, spacing=12
+        )
 
         # 自定义 widget 内容
         custom_btns = []
@@ -145,15 +164,18 @@ class TooltipDemo(DemoBase):
         t_dyn = Tooltip(content="当前计数: 0", color="warning", placement="bottom", show_arrow=True)
         self._attach(btn_dyn, t_dyn)
         counter = {"v": 0}
+
         def inc():
             counter["v"] += 1
             btn_dyn.setText(f"点击 +1 (count={counter['v']})")
             t_dyn.set_content(f"当前计数: {counter['v']}")
+
         btn_dyn.clicked.connect(inc)
         custom_btns.append(btn_dyn)
 
-        self.add_section(layout, "自定义 widget 内容 (set_content)",
-                         custom_btns, labels_bag, spacing=12)
+        self.add_section(
+            layout, "自定义 widget 内容 (set_content)", custom_btns, labels_bag, spacing=12
+        )
 
 
 if __name__ == "__main__":

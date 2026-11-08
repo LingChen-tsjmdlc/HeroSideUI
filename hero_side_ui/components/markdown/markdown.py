@@ -13,18 +13,16 @@ widget 纵向堆叠。块级复用 Title/Body/Table/Image/Divider；行内格式
 
 from __future__ import annotations
 
-from typing import Callable, Dict, Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import MARKDOWN_SPACING
 from ...utils import clear_layout
-from ._parser import parse
-from ._renderer import BlockRenderer, MarkdownRenderer
 from ._inline import InlineOverride
 from ._inline_flow import InlineWidget
+from ._parser import parse
+from ._renderer import BlockRenderer, MarkdownRenderer
 
 
 class Markdown(QWidget):
@@ -75,11 +73,11 @@ class Markdown(QWidget):
         text: str = "",
         *,
         theme: str = "auto",
-        inline_styles: Optional[Dict[str, dict]] = None,
-        inline_overrides: Optional[Dict[str, InlineOverride]] = None,
-        block_renderers: Optional[Dict[str, BlockRenderer]] = None,
-        inline_widgets: Optional[Dict[str, InlineWidget]] = None,
-        parent: Optional[QWidget] = None,
+        inline_styles: dict[str, dict] | None = None,
+        inline_overrides: dict[str, InlineOverride] | None = None,
+        block_renderers: dict[str, BlockRenderer] | None = None,
+        inline_widgets: dict[str, InlineWidget] | None = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._text = str(text or "")
@@ -138,19 +136,19 @@ class Markdown(QWidget):
     def markdown(self) -> str:
         return self._text
 
-    def set_inline_overrides(self, overrides: Dict[str, InlineOverride]) -> None:
+    def set_inline_overrides(self, overrides: dict[str, InlineOverride]) -> None:
         self._inline_overrides = dict(overrides) if overrides else {}
         self._rebuild()
 
-    def set_inline_styles(self, styles: Dict[str, dict]) -> None:
+    def set_inline_styles(self, styles: dict[str, dict]) -> None:
         self._inline_styles = dict(styles) if styles else {}
         self._rebuild()
 
-    def set_block_renderers(self, renderers: Dict[str, BlockRenderer]) -> None:
+    def set_block_renderers(self, renderers: dict[str, BlockRenderer]) -> None:
         self._block_renderers = dict(renderers) if renderers else {}
         self._rebuild()
 
-    def set_inline_widgets(self, widgets: Dict[str, InlineWidget]) -> None:
+    def set_inline_widgets(self, widgets: dict[str, InlineWidget]) -> None:
         self._inline_widgets = dict(widgets) if widgets else {}
         self._rebuild()
 

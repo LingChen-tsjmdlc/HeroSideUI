@@ -9,10 +9,6 @@ isDot（content 为空）与 isOneChar（content 单字符）均由 content 自�
 
 from __future__ import annotations
 
-from ...animation import tween_property, stop_tween
-
-from typing import Optional
-
 from PySide6.QtCore import QPropertyAnimation, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import (
@@ -23,13 +19,13 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ...animation import stop_tween, tween_property
 from ...core import ThemeProvider
 from ...themes import (
     BADGE_PLACEMENT_OFFSETS,
     BADGE_SIZES,
     VALID_BADGE_PLACEMENTS,
     VALID_BADGE_SHAPES,
-    VALID_BADGE_SIZES,
     VALID_BADGE_VARIANTS,
 )
 from ..text import Text
@@ -63,15 +59,15 @@ class _BadgeMark(QWidget):
     set_mark_style(bg, border_color, border_width, radius) 四参全量下发。
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
-        self._bg: Optional[QColor] = None
-        self._border_color: Optional[QColor] = None
+        self._bg: QColor | None = None
+        self._border_color: QColor | None = None
         self._border_width = 0
         self._radius = 0
 
     def set_mark_style(
-        self, bg: QColor, border_color: Optional[QColor], border_width: int, radius: int
+        self, bg: QColor, border_color: QColor | None, border_width: int, radius: int
     ):
         # 形参：bg 底色；border_color 描边色（None 无边框）；border_width 描边宽；radius 圆角
         self._bg = bg
@@ -108,7 +104,7 @@ class Badge(QWidget):
 
     def __init__(
         self,
-        widget: Optional[QWidget] = None,
+        widget: QWidget | None = None,
         content: str = "",
         color: str = "default",
         variant: str = "solid",
@@ -119,28 +115,24 @@ class Badge(QWidget):
         is_invisible: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroBadge")
 
-        self._widget: Optional[QWidget] = None
+        self._widget: QWidget | None = None
         self._content = str(content)
         self._color = color
         self._variant = variant if variant in VALID_BADGE_VARIANTS else "solid"
         self._size = size if size in BADGE_SIZES else "md"
         self._shape = shape if shape in VALID_BADGE_SHAPES else "rectangle"
-        self._placement = (
-            placement if placement in VALID_BADGE_PLACEMENTS else "top-right"
-        )
+        self._placement = placement if placement in VALID_BADGE_PLACEMENTS else "top-right"
         self._show_outline = bool(show_outline)
         self._is_invisible = bool(is_invisible)
         self._disable_animation = bool(disable_animation)
         self._theme_mode = theme
-        self._theme = (
-            ThemeProvider.instance().current_theme if theme == "auto" else theme
-        )
-        self._anim: Optional[QPropertyAnimation] = None
+        self._theme = ThemeProvider.instance().current_theme if theme == "auto" else theme
+        self._anim: QPropertyAnimation | None = None
         self._styles: dict = {}
 
         self._build_ui()
@@ -246,13 +238,9 @@ class Badge(QWidget):
             cx = cx0 + (dx if "right" in self._placement else -dx)
             cy = cy0 + (-dx if self._placement.startswith("top") else dx)
         else:
-            p = BADGE_PLACEMENT_OFFSETS.get(
-                self._shape, BADGE_PLACEMENT_OFFSETS["rectangle"]
-            )
+            p = BADGE_PLACEMENT_OFFSETS.get(self._shape, BADGE_PLACEMENT_OFFSETS["rectangle"])
             cx = rect.x() + (w * (1 - p) if "right" in self._placement else w * p)
-            cy = rect.y() + (
-                h * p if self._placement.startswith("top") else h * (1 - p)
-            )
+            cy = rect.y() + (h * p if self._placement.startswith("top") else h * (1 - p))
         # 防裁剪：钳制到容器内（预留边距只保证 hint 尺寸，父布局拉伸后锚点外移）
         x = min(max(round(cx - bw / 2), 0), self.width() - bw)
         y = min(max(round(cy - bh / 2), 0), self.height() - bh)
@@ -278,9 +266,7 @@ class Badge(QWidget):
         # showOutline（官方默认 true）：2px 宿主背景色描边；False 时连 faded
         # 的边框也被官方 border-0 覆盖 → 无边框
         if self._show_outline:
-            border_color = QColor(
-                _OUTLINE_COLOR.get(self._theme, _OUTLINE_COLOR["light"])
-            )
+            border_color = QColor(_OUTLINE_COLOR.get(self._theme, _OUTLINE_COLOR["light"]))
             border_width = 2
         else:
             border_color = None
@@ -322,9 +308,15 @@ class Badge(QWidget):
         self._badge.setGraphicsEffect(effect)
         effect.setOpacity(0.0 if show else 1.0)
         self._badge.setVisible(True)
-        tween_property(effect, "_anim", b"opacity", 1.0 if show else 0.0,
-                       owner=self, duration=ANIM_DURATION,
-                       on_finished=lambda: self._on_anim_finished(show))
+        tween_property(
+            effect,
+            "_anim",
+            b"opacity",
+            1.0 if show else 0.0,
+            owner=self,
+            duration=ANIM_DURATION,
+            on_finished=lambda: self._on_anim_finished(show),
+        )
 
     def _on_anim_finished(self, show: bool):
         self._anim = None
@@ -333,7 +325,7 @@ class Badge(QWidget):
 
     # ---- wrapped widget ----
 
-    def set_widget(self, widget: Optional[QWidget]):
+    def set_widget(self, widget: QWidget | None):
         """替换被包裹的内容；旧 widget 从布局移除并脱离父级（不销毁）。"""
         old = self._widget
         if old is widget:
@@ -349,7 +341,7 @@ class Badge(QWidget):
             widget.show()
         self._update_badge_geometry()
 
-    def widget(self) -> Optional[QWidget]:
+    def widget(self) -> QWidget | None:
         return self._widget
 
     # ---- setters ----

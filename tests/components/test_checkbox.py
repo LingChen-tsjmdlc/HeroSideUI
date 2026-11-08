@@ -42,7 +42,9 @@ class TestCheckboxInit:
 
 
 class TestCheckboxColors:
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     def test_all_colors(self, qtbot, color):
         cb = Checkbox("x", color=color)
         qtbot.addWidget(cb)
@@ -256,8 +258,7 @@ class TestCheckboxGroupBasic:
         assert g._checkboxes[0]._theme == "dark"
 
     def test_invalid_and_required(self, qtbot):
-        g = CheckboxGroup(is_invalid=True, is_required=True,
-                          label="L", error_message="Oops")
+        g = CheckboxGroup(is_invalid=True, is_required=True, label="L", error_message="Oops")
         qtbot.addWidget(g)
         assert g._is_invalid is True
         assert g._is_required is True
@@ -272,7 +273,9 @@ class TestCheckboxGroupBasic:
 
 
 class TestCheckboxGroupCombinations:
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     @pytest.mark.parametrize("size", ["sm", "md", "lg"])
     @pytest.mark.parametrize("theme", ["light", "dark"])
     def test_matrix(self, qtbot, color, size, theme):

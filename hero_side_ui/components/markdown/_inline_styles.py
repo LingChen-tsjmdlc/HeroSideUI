@@ -10,8 +10,6 @@
 
 from __future__ import annotations
 
-from typing import Dict
-
 from ...core import resolve_text_color, resolve_text_weight
 from ...themes import HEROUI_COLORS, MARKDOWN_INLINE_CODE
 
@@ -29,7 +27,7 @@ def _css_weight(weight) -> str:
     return str(w)
 
 
-def _default_styles(theme: str) -> Dict[str, dict]:
+def _default_styles(theme: str) -> dict[str, dict]:
     """内置默认样式（不传 inline_styles 时使用）。
 
     code 对齐 Chip(variant="flat", default)，link 对齐 Link(color="primary")。
@@ -71,7 +69,7 @@ class InlineStyleSheet:
     构造时把用户配置并入默认配置并解析成 CSS 串，渲染期只做字符串拼接。
     """
 
-    def __init__(self, theme: str, user_styles: Dict[str, dict] | None = None):
+    def __init__(self, theme: str, user_styles: dict[str, dict] | None = None):
         self._theme = theme
         merged = _default_styles(theme)
         if user_styles:
@@ -127,11 +125,7 @@ class InlineStyleSheet:
         color = spec.get("color", HEROUI_COLORS["primary"][500])
         css = [f"color:{_css_color(color, self._theme)}"]
         underline = spec.get("underline", "none")
-        css.append(
-            "text-decoration:underline"
-            if underline == "always"
-            else "text-decoration:none"
-        )
+        css.append("text-decoration:underline" if underline == "always" else "text-decoration:none")
         return f'<a href="{href}" style="{"; ".join(css)};">{inner}</a>'
 
     def wrap(self, inner: str, fmt) -> str:
@@ -154,9 +148,7 @@ class InlineStyleSheet:
         # 斜体靠几何切变合成会视觉削细，故带斜体时字重整体升一档补偿：
         # 纯斜体 regular→medium；粗+斜 bold→black，使视觉粗细≈对应正体。
         if "strong" in fmt and strong_spec.get("weight", "bold") != "normal":
-            css.append(
-                f"font-weight:{_css_weight('black')}" if italic else "font-weight:bold"
-            )
+            css.append(f"font-weight:{_css_weight('black')}" if italic else "font-weight:bold")
         elif "em" in fmt:
             css.append(f"font-weight:{_css_weight(em_spec.get('weight', 'medium'))}")
         if "s" in fmt and s_spec.get("strike", True):
@@ -176,4 +168,4 @@ class InlineStyleSheet:
         return f'<span style="{"; ".join(css)};">{inner}</span>'
 
 
-__all__ = ["InlineStyleSheet", "INLINE_STYLE_KEYS"]
+__all__ = ["INLINE_STYLE_KEYS", "InlineStyleSheet"]

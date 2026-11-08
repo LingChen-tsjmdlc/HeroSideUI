@@ -14,13 +14,13 @@ from __future__ import annotations
 import logging
 import random
 from collections import deque
-from typing import Callable, Deque, Optional, Tuple, Union
+from collections.abc import Callable
 
 from PySide6.QtCore import QObject, QTimer, QUrl, Signal
 from PySide6.QtGui import QImage, QPixmap
 from PySide6.QtNetwork import QNetworkAccessManager, QNetworkReply, QNetworkRequest
 
-ImageSrc = Union[str, QPixmap, QImage, None]
+ImageSrc = str | QPixmap | QImage | None
 
 _logger = logging.getLogger("hero_side_ui.image")
 
@@ -36,10 +36,10 @@ class _UrlRequestQueue(QObject):
     实际发起请求的时间间隔随机 1000–1500ms。
     """
 
-    _instance: Optional["_UrlRequestQueue"] = None
+    _instance: _UrlRequestQueue | None = None
 
     @classmethod
-    def instance(cls) -> "_UrlRequestQueue":
+    def instance(cls) -> _UrlRequestQueue:
         if cls._instance is None:
             cls._instance = _UrlRequestQueue()
         return cls._instance
@@ -47,7 +47,7 @@ class _UrlRequestQueue(QObject):
     def __init__(self):
         super().__init__()
         # 队列条目: (token, callable) —— callable 真正发起 NAM.get
-        self._queue: Deque[Tuple[object, Callable[[], None]]] = deque()
+        self._queue: deque[tuple[object, Callable[[], None]]] = deque()
         self._timer = QTimer(self)
         self._timer.setSingleShot(True)
         self._timer.timeout.connect(self._on_tick)
@@ -94,15 +94,15 @@ class ImageLoader(QObject):
     failed = Signal()
 
     # 共享一个 QNetworkAccessManager（避免每次新建）
-    _shared_nam: Optional[QNetworkAccessManager] = None
+    _shared_nam: QNetworkAccessManager | None = None
 
-    def __init__(self, parent: Optional[QObject] = None):
+    def __init__(self, parent: QObject | None = None):
         super().__init__(parent)
         self._status: str = "pending"
-        self._reply: Optional[QNetworkReply] = None
+        self._reply: QNetworkReply | None = None
         self._current_src: ImageSrc = None
         # 在 URL 排队期间、reply 还没建立时的占位 token
-        self._pending_token: Optional[object] = None
+        self._pending_token: object | None = None
 
     @classmethod
     def _nam(cls) -> QNetworkAccessManager:
@@ -155,9 +155,7 @@ class ImageLoader(QObject):
         pm = QPixmap(path)
         if pm.isNull():
             self._status = "failed"
-            _logger.warning(
-                "Image load failed: %s (本地路径不存在或不是有效图像)", path
-            )
+            _logger.warning("Image load failed: %s (本地路径不存在或不是有效图像)", path)
             QTimer.singleShot(0, self, self.failed.emit)
             return
         self._status = "loaded"

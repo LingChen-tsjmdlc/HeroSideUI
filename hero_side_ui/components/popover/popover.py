@@ -14,52 +14,35 @@
     - ``_PopoverApiMixin``      → ``_api.py``    （动态 setter/theme/状态查询）
 """
 
-from PySide6.QtCore import QElapsedTimer
-
-from PySide6.QtCore import QEasingCurve, QRectF
-from PySide6.QtGui import QPainter, QPainterPath
-
-from typing import Callable, Optional
-
 from PySide6.QtCore import (
-    QEvent,
+    QEasingCurve,
+    QElapsedTimer,
     QPoint,
-    QRect,
-    QSize,
     Qt,
-    Signal,
     QTimer,
+    Signal,
 )
-from PySide6.QtGui import QColor, QFont
 from PySide6.QtWidgets import (
     QApplication,
-    QGraphicsDropShadowEffect,
-    QHBoxLayout,
-    QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...animation import (
-    BackdropFade,
     FadeScaleAnimation,
     PaddingSqueezeAnimation,
     PixmapScaleProxy,
 )
 from ...core import ThemeProvider
-from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
-
 from ._api import _PopoverApiMixin
 from ._backdrop import _Backdrop
 from ._click_catcher import _GlobalClickCatcher
-from ._host_resize_watcher import _HostGeometryWatcher
-from ._constants import ARROW_INSET, ARROW_SIZE, DEFAULT_PADDING, VALID_PLACEMENTS
+from ._constants import DEFAULT_PADDING, VALID_PLACEMENTS
 from ._geometry import _PopoverGeometryMixin
+from ._host_resize_watcher import _HostGeometryWatcher
 from ._paint import _PopoverPaintMixin
 from ._scroll import _PopoverScrollMixin
 from ._trigger import _PopoverTriggerMixin
-from .content import PopoverContent
 
 
 # ============================================================
@@ -106,7 +89,7 @@ class Popover(
         close_on_scroll: bool = True,
         blur_quality: str = "fast",
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -135,10 +118,10 @@ class Popover(
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
-        self._trigger: Optional[QWidget] = None
-        self._near: Optional[QWidget] = None  # open() 时实际使用的锚点（manual attach 时 != trigger）
-        self._backdrop: Optional[_Backdrop] = None
-        self._content: Optional[QWidget] = None
+        self._trigger: QWidget | None = None
+        self._near: QWidget | None = None  # open() 时实际使用的锚点（manual attach 时 != trigger）
+        self._backdrop: _Backdrop | None = None
+        self._content: QWidget | None = None
         self._is_open = False
 
         # 顶层窗口设置 —— 用 Tool 而不是 Popup：
@@ -183,11 +166,11 @@ class Popover(
         # popover 相对 trigger 全局坐标的固定偏移（open() 时记录）。
         # 滚动跟随只做"trigger_global + offset"平移，不再调用 _calc_position
         # 避免 fade-out 期间 sizeHint() 缩水导致的右下大幅偏移 / auto-flip 突变。
-        self._scroll_anchor_offset: Optional[QPoint] = None
+        self._scroll_anchor_offset: QPoint | None = None
         # host 窗口 resize 监听器：与 scroll watchers 同生命周期，
         # 拖拽窗口缩放时复用 _on_scroll_detected 节流路径重定位 popover。
         self._host_resize_watcher = _HostGeometryWatcher(self)
-        self._watched_host: Optional[QWidget] = None
+        self._watched_host: QWidget | None = None
 
         # 内层 layout: 留出 arrow + shadow 边距
         self._outer = QVBoxLayout(self)
@@ -273,12 +256,13 @@ class Popover(
         if self._content is not None:
             self._outer.removeWidget(self._content)
             from ...utils import safe_delete
+
             safe_delete(self._content)
         self._content = widget
         self._outer.addWidget(widget)
         self._apply_content_text_color()
 
-    def content(self) -> Optional[QWidget]:
+    def content(self) -> QWidget | None:
         return self._content
 
     def _apply_content_text_color(self):
@@ -315,7 +299,7 @@ class Popover(
     # ============================================================
     # open / close API （is_open / toggle → _api.py，开关核心仍在主类）
     # ============================================================
-    def open(self, near: Optional[QWidget] = None):
+    def open(self, near: QWidget | None = None):
         # disabled 忽略
         if self._is_disabled:
             return

@@ -7,12 +7,9 @@
 - enter/leave 事件下的 hover 状态切换
 """
 
-from ...themes import AUTOCOMPLETE_SIZES
-
-from PySide6.QtCore import QEvent, QSize, Qt
 from PySide6.QtGui import QColor
 
-from ...themes import HEROUI_COLORS, INPUT_SIZES
+from ...themes import AUTOCOMPLETE_SIZES, HEROUI_COLORS
 from ...utils import load_svg_icon
 
 
@@ -87,4 +84,3 @@ class _AutocompleteStylingMixin:
         self._is_hovered = False
         self._refresh_clear_visibility()
         super().leaveEvent(event)
-

@@ -7,17 +7,18 @@ Radio 组件示例 — 对齐 HeroUI v2 文档 (https://v2.heroui.com/docs/compo
     Custom Styles / Custom Implementation
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QVBoxLayout
 
 from hero_side_ui import Body, Radio, RadioBase, RadioGroup
 from hero_side_ui.themes import HEROUI_COLORS
-from _base import DemoBase
 
 
 class RadioDemo(DemoBase):
@@ -140,9 +141,7 @@ class RadioDemo(DemoBase):
             variant="card",
         )
         g_card.create_radio("Free", value="free", description="Up to 20 items")
-        g_card.create_radio(
-            "Pro", value="pro", description="Unlimited items. $10 per month."
-        )
+        g_card.create_radio("Pro", value="pro", description="Unlimited items. $10 per month.")
         g_card.create_radio(
             "Enterprise",
             value="enterprise",

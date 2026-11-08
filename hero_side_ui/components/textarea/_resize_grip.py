@@ -4,15 +4,9 @@
 horizontal / both / vertical 三种 mode；vertical 是默认（HTML 标准）。
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QPoint, Qt, Signal
+from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QWidget
-
-from ...core import ThemeProvider
-
-
 
 
 # ============================================================
@@ -26,10 +20,10 @@ class _ResizeGrip(QWidget):
     """
 
     drag_started = Signal()
-    drag_delta = Signal(int, int)   # (dx, dy)
+    drag_delta = Signal(int, int)  # (dx, dy)
     drag_ended = Signal()
 
-    def __init__(self, mode: str = "vertical", parent: Optional[QWidget] = None):
+    def __init__(self, mode: str = "vertical", parent: QWidget | None = None):
         super().__init__(parent)
         self._mode = mode
         self._press_pos = None
@@ -83,7 +77,6 @@ class _ResizeGrip(QWidget):
 
     # ---- 自绘两条斜线 ----
     def paintEvent(self, event):
-        from PySide6.QtGui import QPainter, QPen
         p = QPainter(self)
         p.setRenderHint(QPainter.RenderHint.Antialiasing)
         pen = QPen(self._line_color)

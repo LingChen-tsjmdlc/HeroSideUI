@@ -3,34 +3,25 @@
 支持纯文本 / 文本+icon / 完全自定义 widget 三档模式。
 """
 
-from typing import Optional, Union
-
-from PySide6.QtCore import QEvent, QPoint, QRect, QSize, Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import (
     QColor,
     QFontMetrics,
-    QFontMetricsF,
     QPainter,
-    QPainterPath,
     QPalette,
     QPen,
     QPixmap,
 )
 from PySide6.QtWidgets import (
     QAbstractButton,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
-    QVBoxLayout,
     QWidget,
 )
 
-from ...animation import tween_value, stop_tween
-from ...core import ThemeProvider
-from ...themes import HEROUI_COLORS, RADIUS, TABS_SIZES
+from ...animation import stop_tween, tween_value
+from ...themes import HEROUI_COLORS, TABS_SIZES
 from ...utils import load_svg_icon
-
 from ._helpers import _resolve_selected_text, _resolve_unselected_text
 
 # ============================================================
@@ -66,10 +57,10 @@ class TabItem(QAbstractButton):
         self,
         title: str = "",
         *,
-        key: Optional[str] = None,
+        key: str | None = None,
         start_icon=None,
         end_icon=None,
-        custom: Optional[QWidget] = None,
+        custom: QWidget | None = None,
         parent=None,
     ):
         super().__init__(parent)
@@ -89,11 +80,11 @@ class TabItem(QAbstractButton):
         # 档2：icon
         self._start_icon_src = start_icon
         self._end_icon_src = end_icon
-        self._start_icon_pixmap: Optional[QPixmap] = None
-        self._end_icon_pixmap: Optional[QPixmap] = None
+        self._start_icon_pixmap: QPixmap | None = None
+        self._end_icon_pixmap: QPixmap | None = None
         # 档3：custom widget
-        self._custom: Optional[QWidget] = None
-        self._custom_layout: Optional[QHBoxLayout] = None
+        self._custom: QWidget | None = None
+        self._custom_layout: QHBoxLayout | None = None
         self._custom_opacity_effect = None
 
         # 由父 Tabs 注入
@@ -183,7 +174,7 @@ class TabItem(QAbstractButton):
 
     # ----- 档3：custom widget 插槽 -----
 
-    def set_custom(self, widget: Optional[QWidget]):
+    def set_custom(self, widget: QWidget | None):
         """把自定义 widget 装进 TabItem，作为标签内容（档3）。
 
         传 ``None`` 取消 custom，回退到 text/icon 模式。
@@ -191,6 +182,7 @@ class TabItem(QAbstractButton):
         # 清掉旧的
         if self._custom is not None:
             from ...utils import safe_delete
+
             safe_delete(self._custom)
             self._custom = None
         if self._custom_layout is not None:
@@ -222,7 +214,8 @@ class TabItem(QAbstractButton):
         #    必须给 widget 自身和无显式 background 的子 widget 设 WA_TranslucentBackground，
         #    让 native 渲染穿透到父级，cursor 才能透出（关键修复，否则暗色模式 cursor
         #    被 emoji/QLabel 等子 widget 区域整片盖住）。
-        from PySide6.QtWidgets import QApplication, QLabel as _QLabel
+        from PySide6.QtWidgets import QApplication
+        from PySide6.QtWidgets import QLabel as _QLabel
 
         app_palette = QApplication.palette()
         widget.setPalette(app_palette)
@@ -253,14 +246,12 @@ class TabItem(QAbstractButton):
         self._update_geometry()
         self.update()
 
-    def custom(self) -> Optional[QWidget]:
+    def custom(self) -> QWidget | None:
         return self._custom
 
     # -------------------- 由 Tabs 调用 --------------------
 
-    def apply_style(
-        self, *, variant, color, size, theme, disable_animation, full_width
-    ):
+    def apply_style(self, *, variant, color, size, theme, disable_animation, full_width):
         self._variant = variant
         self._color = color
         self._size = size
@@ -308,9 +299,15 @@ class TabItem(QAbstractButton):
 
     def _on_toggled(self, checked: bool):
         target = self._selected_color if checked else self._unselected_color
-        tween_value(self, "_color_anim_runner", QColor(self._current_text_color),
-                    QColor(target), self._on_color_step,
-                    duration=self.SELECT_ANIM_DURATION, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_color_anim_runner",
+            QColor(self._current_text_color),
+            QColor(target),
+            self._on_color_step,
+            duration=self.SELECT_ANIM_DURATION,
+            animated=not self._disable_animation,
+        )
 
     def _on_color_step(self, value):
         if isinstance(value, QColor):
@@ -320,9 +317,15 @@ class TabItem(QAbstractButton):
             self.update()
 
     def _animate_opacity(self, target: float):
-        tween_value(self, "_opacity_anim_runner", float(self._current_opacity),
-                    float(target), self._on_opacity_step,
-                    duration=self.HOVER_ANIM_DURATION, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_opacity_anim_runner",
+            float(self._current_opacity),
+            float(target),
+            self._on_opacity_step,
+            duration=self.HOVER_ANIM_DURATION,
+            animated=not self._disable_animation,
+        )
 
     def _on_opacity_step(self, value):
         try:
@@ -372,7 +375,7 @@ class TabItem(QAbstractButton):
         color = self._current_text_color
         size = self._icon_size_px()
 
-        def _to_pixmap(src) -> Optional[QPixmap]:
+        def _to_pixmap(src) -> QPixmap | None:
             if src is None:
                 return None
             if isinstance(src, QPixmap):
@@ -411,9 +414,7 @@ class TabItem(QAbstractButton):
         if self._start_icon_pixmap is not None:
             icon_w += icon_size + (gap if self._title else 0)
         if self._end_icon_pixmap is not None:
-            icon_w += icon_size + (
-                gap if (self._title or self._start_icon_pixmap) else 0
-            )
+            icon_w += icon_size + (gap if (self._title or self._start_icon_pixmap) else 0)
         w = max(text_w + icon_w + 2 * cfg["tab_padding_x"], cfg["tab_min_width"])
         self.setMinimumWidth(w)
 
@@ -436,9 +437,7 @@ class TabItem(QAbstractButton):
         if self._start_icon_pixmap is not None:
             icon_w += icon_size + (gap if self._title else 0)
         if self._end_icon_pixmap is not None:
-            icon_w += icon_size + (
-                gap if (self._title or self._start_icon_pixmap) else 0
-            )
+            icon_w += icon_size + (gap if (self._title or self._start_icon_pixmap) else 0)
         return QSize(
             max(text_w + icon_w + 2 * cfg["tab_padding_x"], cfg["tab_min_width"]),
             cfg["tab_height"],
@@ -476,9 +475,7 @@ class TabItem(QAbstractButton):
         if self._start_icon_pixmap is not None:
             total_w += icon_size + (gap if self._title else 0)
         if self._end_icon_pixmap is not None:
-            total_w += icon_size + (
-                gap if (self._title or self._start_icon_pixmap) else 0
-            )
+            total_w += icon_size + (gap if (self._title or self._start_icon_pixmap) else 0)
 
         # 严格垂直居中：所有元素都画在同一个高度为 rect.height() 的"行盒子"里，
         # 文字用 AlignVCenter，icon 用 (rect.height - icon_size)/2 的偏移。
@@ -491,8 +488,8 @@ class TabItem(QAbstractButton):
         if self._start_icon_pixmap is not None:
             iy = (h - icon_size) / 2
             p.drawPixmap(
-                int(round(x)),
-                int(round(iy)),
+                round(x),
+                round(iy),
                 icon_size,
                 icon_size,
                 self._start_icon_pixmap,
@@ -509,15 +506,15 @@ class TabItem(QAbstractButton):
             p.setPen(QPen(self._current_text_color))
             cap = fm.capHeight() or fm.ascent() - fm.descent()
             baseline = (h + cap) / 2.0
-            p.drawText(int(round(x)), int(round(baseline)), self._title)
+            p.drawText(round(x), round(baseline), self._title)
             x += text_w + (gap if self._end_icon_pixmap is not None else 0)
 
         # end icon
         if self._end_icon_pixmap is not None:
             iy = (h - icon_size) / 2
             p.drawPixmap(
-                int(round(x)),
-                int(round(iy)),
+                round(x),
+                round(iy),
                 icon_size,
                 icon_size,
                 self._end_icon_pixmap,

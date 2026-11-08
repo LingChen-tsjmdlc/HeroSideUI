@@ -63,9 +63,17 @@ class TestButtonInit:
 class TestButtonColors:
     """颜色系统测试"""
 
-    @pytest.mark.parametrize("color", [
-        "default", "primary", "secondary", "success", "warning", "danger",
-    ])
+    @pytest.mark.parametrize(
+        "color",
+        [
+            "default",
+            "primary",
+            "secondary",
+            "success",
+            "warning",
+            "danger",
+        ],
+    )
     def test_all_colors(self, qtbot, color):
         """所有颜色都不应该报错"""
         btn = Button("Test", color=color)
@@ -94,9 +102,17 @@ class TestButtonColors:
 class TestButtonVariants:
     """变体测试"""
 
-    @pytest.mark.parametrize("variant", [
-        "solid", "bordered", "flat", "light", "faded", "ghost",
-    ])
+    @pytest.mark.parametrize(
+        "variant",
+        [
+            "solid",
+            "bordered",
+            "flat",
+            "light",
+            "faded",
+            "ghost",
+        ],
+    )
     def test_all_variants(self, qtbot, variant):
         """所有变体都不应该报错"""
         btn = Button("Test", variant=variant)

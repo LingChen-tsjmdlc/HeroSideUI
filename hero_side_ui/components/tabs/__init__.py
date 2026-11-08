@@ -1,4 +1,4 @@
-from .tabs import Tabs
 from .item import TabItem
+from .tabs import Tabs
 
-__all__ = ["Tabs", "TabItem"]
+__all__ = ["TabItem", "Tabs"]

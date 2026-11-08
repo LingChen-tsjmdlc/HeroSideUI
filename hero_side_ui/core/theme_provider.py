@@ -12,10 +12,9 @@ HeroSideUI 全局主题管理器 (ThemeProvider)
 from __future__ import annotations
 
 import weakref
-from typing import Optional
 
-from PySide6.QtCore import QObject, Signal, Qt
-from PySide6.QtGui import QPalette, QGuiApplication
+from PySide6.QtCore import QObject, Qt, Signal
+from PySide6.QtGui import QGuiApplication, QPalette
 from PySide6.QtWidgets import QApplication
 
 VALID_MODES = ("auto", "light", "dark")
@@ -56,7 +55,7 @@ class ThemeProvider(QObject):
     # 当模式（用户设定）变化时发射 ("auto" / "light" / "dark")
     mode_changed = Signal(str)
 
-    _instance: Optional["ThemeProvider"] = None
+    _instance: ThemeProvider | None = None
 
     def __init__(self):
         super().__init__()
@@ -65,7 +64,7 @@ class ThemeProvider(QObject):
         self._current_theme: str = self._detect_system_theme()
 
         # 用 WeakSet 存储已注册组件，组件销毁后自动剔除
-        self._widgets: "weakref.WeakSet" = weakref.WeakSet()
+        self._widgets: weakref.WeakSet = weakref.WeakSet()
 
         # 是否在主题变化时自动同步 QApplication 全局 palette
         # 默认开启 → 用户写普通 QWidget/QMainWindow 也能开箱即用
@@ -82,7 +81,7 @@ class ThemeProvider(QObject):
     # ============================================================
 
     @classmethod
-    def instance(cls) -> "ThemeProvider":
+    def instance(cls) -> ThemeProvider:
         """获取全局单例。第一次调用时懒初始化。
 
         单例首次创建后会触发 core 全局基础设施启动钩子（``_boot.ensure_core_ready``），
@@ -165,8 +164,7 @@ class ThemeProvider(QObject):
         """
         if not hasattr(widget, "set_theme"):
             raise TypeError(
-                f"Widget {widget!r} has no set_theme() method, "
-                "cannot register to ThemeProvider"
+                f"Widget {widget!r} has no set_theme() method, cannot register to ThemeProvider"
             )
         self._widgets.add(widget)
         # 注册时立即同步一次主题

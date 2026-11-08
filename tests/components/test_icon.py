@@ -13,7 +13,9 @@ from hero_side_ui.core import resolve_text_color
 from hero_side_ui.icons import resolve_icon
 
 
-@pytest.mark.parametrize("size,expected", [("sm", 16), ("md", 24), ("lg", 32), (20, 20), ("1em", None)])
+@pytest.mark.parametrize(
+    "size,expected", [("sm", 16), ("md", 24), ("lg", 32), (20, 20), ("1em", None)]
+)
 def test_native_widget_and_size_tokens(qtbot, size, expected):
     icon = Icon("heroicons--eye-solid", size=size, theme="light")
     qtbot.addWidget(icon)
@@ -34,12 +36,18 @@ def test_theme_auto_and_local_override(qtbot):
     qtbot.addWidget(automatic)
     qtbot.addWidget(fixed)
     provider.set_mode("dark")
-    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(None, "dark")
+    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(
+        None, "dark"
+    )
     assert fixed.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(None, "light")
     provider.set_mode("light")
-    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(None, "light")
+    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(
+        None, "light"
+    )
     provider.set_mode("dark")
-    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(None, "dark")
+    assert automatic.palette().color(QPalette.ColorRole.WindowText) == resolve_text_color(
+        None, "dark"
+    )
     fixed.set_theme("auto")
     assert provider.is_registered(fixed)
     fixed.set_theme("light")
@@ -47,7 +55,9 @@ def test_theme_auto_and_local_override(qtbot):
 
 
 def test_explicit_theme_selects_native_theme_colors(qtbot):
-    icon = Icon("heroicons--check-solid", color_light_theme="red", color_dark_theme="blue", theme="dark")
+    icon = Icon(
+        "heroicons--check-solid", color_light_theme="red", color_dark_theme="blue", theme="dark"
+    )
     qtbot.addWidget(icon)
     icon.show()
     image = icon.grab().toImage()
@@ -56,7 +66,9 @@ def test_explicit_theme_selects_native_theme_colors(qtbot):
 
 
 def test_native_options_and_strict_keywords(qtbot):
-    icon = Icon("heroicons--eye-solid", color="primary", hover_color="danger", spin=True, is_disabled=True)
+    icon = Icon(
+        "heroicons--eye-solid", color="primary", hover_color="danger", spin=True, is_disabled=True
+    )
     qtbot.addWidget(icon)
     assert not icon.isEnabled()
     icon.set_color("success")
@@ -73,7 +85,9 @@ def test_bundled_widget_survives_registry_eviction_without_network(qtbot, monkey
     icon = Icon("heroicons--eye-solid", theme="light")
     qtbot.addWidget(icon)
     registry.clear()  # Test-only simulation of the shared data cache being evicted.
-    monkeypatch.setattr(network, "default_client", lambda: pytest.fail("local icon attempted network"))
+    monkeypatch.setattr(
+        network, "default_client", lambda: pytest.fail("local icon attempted network")
+    )
     icon.show()
     icon.grab()
     assert get_icon_data(icon.iconName()).body
@@ -81,7 +95,9 @@ def test_bundled_widget_survives_registry_eviction_without_network(qtbot, monkey
 
 def test_bundled_widgets_with_fallback_survive_single_entry_cache(qtbot, monkeypatch):
     monkeypatch.setattr(registry, "_limit", 1)
-    monkeypatch.setattr(network, "default_client", lambda: pytest.fail("local icon attempted network"))
+    monkeypatch.setattr(
+        network, "default_client", lambda: pytest.fail("local icon attempted network")
+    )
     first = Icon("heroicons--check-solid", fallback="heroicons--eye-solid", theme="light")
     second = Icon("heroicons--clock", theme="light")
     qtbot.addWidget(first)
@@ -96,12 +112,17 @@ def test_bundled_widgets_with_fallback_survive_single_entry_cache(qtbot, monkeyp
 def test_explicit_local_fallback_with_offline_missing_remote(qtbot, monkeypatch, tmp_path):
     client = network.IconifyClient(offline=True, cache=DiskCache(directory=tmp_path))
     monkeypatch.setattr(network, "default_client", lambda: client)
-    icon = Icon("hsui-missing:unknown", fallback="heroicons--check-solid", color="red", theme="light")
+    icon = Icon(
+        "hsui-missing:unknown", fallback="heroicons--check-solid", color="red", theme="light"
+    )
     qtbot.addWidget(icon)
     icon.show()
     image = icon.grab().toImage()
-    assert any(image.pixelColor(x, y).red() > 200 and image.pixelColor(x, y).green() < 50
-               for x in range(image.width()) for y in range(image.height()))
+    assert any(
+        image.pixelColor(x, y).red() > 200 and image.pixelColor(x, y).green() < 50
+        for x in range(image.width())
+        for y in range(image.height())
+    )
 
 
 def test_local_and_online_icons_coexist_with_native_api(qtbot, monkeypatch, tmp_path):
@@ -112,10 +133,18 @@ def test_local_and_online_icons_coexist_with_native_api(qtbot, monkeypatch, tmp_
 
     def respond(prefix, names):
         calls.append((prefix, frozenset(names)))
-        client._downloader.resultReady.emit(DownloadResult(
-            prefix=prefix, names=frozenset(names), width=24, height=24,
-            icons={name: {"body": '<path fill="currentColor" d="M0 0h24v24H0z"/>'} for name in names},
-        ))
+        client._downloader.resultReady.emit(
+            DownloadResult(
+                prefix=prefix,
+                names=frozenset(names),
+                width=24,
+                height=24,
+                icons={
+                    name: {"body": '<path fill="currentColor" d="M0 0h24v24H0z"/>'}
+                    for name in names
+                },
+            )
+        )
 
     monkeypatch.setattr(client._downloader, "fetch", respond)
     local = Icon("heroicons--eye-solid")
@@ -131,14 +160,21 @@ def test_local_and_online_icons_coexist_with_native_api(qtbot, monkeypatch, tmp_
     qtbot.addWidget(native)
     online.show()
     native.show()
-    qtbot.waitUntil(lambda: {name for _, names in calls for name in names} == {"online-wrapper", "online-native"}, timeout=2000)
+    qtbot.waitUntil(
+        lambda: (
+            {name for _, names in calls for name in names} == {"online-wrapper", "online-native"}
+        ),
+        timeout=2000,
+    )
     assert {name for _, names in calls for name in names} == {"online-wrapper", "online-native"}
     assert get_icon_data(prefix + ":online-wrapper").body
     assert not client.is_offline()
 
 
 def test_existing_button_and_switcher_use_the_same_offline_data(qtbot, monkeypatch):
-    monkeypatch.setattr(network, "default_client", lambda: pytest.fail("built-in consumer attempted network"))
+    monkeypatch.setattr(
+        network, "default_client", lambda: pytest.fail("built-in consumer attempted network")
+    )
     button = Button("Save", icon="heroicons--check-solid", theme="light")
     switcher = ThemeSwitcher()
     qtbot.addWidget(button)

@@ -11,11 +11,11 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QRectF, QSize
-from PySide6.QtGui import QPainter, QColor, QPainterPath
+from PySide6.QtCore import QRectF, QSize, Qt
+from PySide6.QtGui import QColor, QPainter, QPainterPath
 
 from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
-from ._constants import ARROW_SIZE, ARROW_INSET
+from ._constants import ARROW_INSET, ARROW_SIZE
 
 __all__ = ["_TooltipPaintMixin"]
 
@@ -86,7 +86,10 @@ class _TooltipPaintMixin:
         radius = self._resolve_radius()
 
         content_rect = QRectF(
-            m[0], m[1], self.width() - m[0] - m[2], self.height() - m[1] - m[3]  # type: ignore[attr-defined]
+            m[0],
+            m[1],
+            self.width() - m[0] - m[2],
+            self.height() - m[1] - m[3],  # type: ignore[attr-defined]
         )
 
         # 阴影

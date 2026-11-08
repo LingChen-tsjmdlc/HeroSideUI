@@ -54,9 +54,9 @@ VALID_CHIP_VARIANTS = ("solid", "bordered", "light", "flat", "faded", "shadow", 
 VALID_CHIP_RADII = ("none", "sm", "md", "lg", "full")
 
 __all__ = [
-    "CHIP_SIZES",
     "CHIP_DOT_SIZE",
+    "CHIP_SIZES",
+    "VALID_CHIP_RADII",
     "VALID_CHIP_SIZES",
     "VALID_CHIP_VARIANTS",
-    "VALID_CHIP_RADII",
 ]

@@ -13,9 +13,9 @@ import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import (
     Body,
     DatePicker,
@@ -67,15 +67,15 @@ class DatePickerDemo(DemoBase):
     def build_content(self, layout: QVBoxLayout, _labels):
         # ---------- Usage ----------
         layout.addWidget(self._section_title("Usage 基础用法"))
-        layout.addWidget(
-            self._row(DatePicker(label="Birth date", value=BIRTH_VALUE))
-        )
+        layout.addWidget(self._row(DatePicker(label="Birth date", value=BIRTH_VALUE)))
 
         # ---------- Range ----------
         layout.addWidget(self._section_title("Range 范围选择（RangeCalendar 两次点击选起止）"))
         layout.addWidget(
-            Body("DateRangePicker 内部使用 RangeCalendar：第一次点击选起点，第二次点击选终点，"
-                 "两次点击之间 hover 实时预览高亮范围。")
+            Body(
+                "DateRangePicker 内部使用 RangeCalendar：第一次点击选起点，第二次点击选终点，"
+                "两次点击之间 hover 实时预览高亮范围。"
+            )
         )
         layout.addWidget(
             self._row(
@@ -95,25 +95,19 @@ class DatePickerDemo(DemoBase):
         # ---------- Disabled ----------
         layout.addWidget(self._section_title("Disabled 禁用"))
         layout.addWidget(
-            self._row(
-                DatePicker(label="Birth date", value=BIRTH_VALUE, is_disabled=True)
-            )
+            self._row(DatePicker(label="Birth date", value=BIRTH_VALUE, is_disabled=True))
         )
 
         # ---------- Read Only ----------
         layout.addWidget(self._section_title("Read Only 只读"))
         layout.addWidget(
-            self._row(
-                DatePicker(label="Birth date", value=BIRTH_VALUE, is_readonly=True)
-            )
+            self._row(DatePicker(label="Birth date", value=BIRTH_VALUE, is_readonly=True))
         )
 
         # ---------- Required ----------
         layout.addWidget(self._section_title("Required 必填"))
         layout.addWidget(
-            self._row(
-                DatePicker(label="Birth date", value=BIRTH_VALUE, is_required=True)
-            )
+            self._row(DatePicker(label="Birth date", value=BIRTH_VALUE, is_required=True))
         )
 
         # ---------- Variants ----------
@@ -202,9 +196,7 @@ class DatePickerDemo(DemoBase):
         )
 
         # ---------- Selector Placement ----------
-        layout.addWidget(
-            self._section_title("Selector Placement 日历按钮位置")
-        )
+        layout.addWidget(self._section_title("Selector Placement 日历按钮位置"))
         layout.addWidget(
             self._row(
                 DatePicker(

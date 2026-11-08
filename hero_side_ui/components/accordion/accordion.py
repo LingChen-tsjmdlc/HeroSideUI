@@ -15,15 +15,11 @@
             └── content (折叠内容区)
 """
 
-from typing import Optional
-
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QColor, QFont
-from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
-from ...themes import ACCORDION_SIZES, HEROUI_COLORS, RADIUS
-
+from ...themes import HEROUI_COLORS, RADIUS
 from .item import AccordionItem
 
 
@@ -47,7 +43,7 @@ class Accordion(QWidget):
         radius: str = "md",
         theme: str = "auto",
         show_divider: bool = True,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._variant = variant
@@ -86,14 +82,18 @@ class Accordion(QWidget):
 
         if self._variant == "light":
             # light 无圆角
-            self.setStyleSheet("#heroAccordion { background: transparent; border: none; border-radius: 0px; }")
+            self.setStyleSheet(
+                "#heroAccordion { background: transparent; border: none; border-radius: 0px; }"
+            )
             self._layout.setContentsMargins(8, 0, 8, 0)
             self._layout.setSpacing(0)
 
         elif self._variant == "shadow":
             bg = dc[900] if is_dark else "#ffffff"
             # Qt QSS 不支持 box-shadow，用浅色边框 + 背景模拟卡片感
-            border_hint = f"border: 1px solid {dc[800]};" if is_dark else "border: 1px solid #f0f0f0;"
+            border_hint = (
+                f"border: 1px solid {dc[800]};" if is_dark else "border: 1px solid #f0f0f0;"
+            )
             self.setStyleSheet(f"""
                 #heroAccordion {{
                     background-color: {bg};
@@ -127,9 +127,7 @@ class Accordion(QWidget):
         item._apply_styles(self._theme, self._variant, self._size, self._show_divider, self._radius)
 
         # 监听展开事件，实现单项展开逻辑
-        item.expanded_changed.connect(
-            lambda expanded, i=item: self._on_item_expanded(i, expanded)
-        )
+        item.expanded_changed.connect(lambda expanded, i=item: self._on_item_expanded(i, expanded))
 
         self._layout.addWidget(item)
 
@@ -139,7 +137,7 @@ class Accordion(QWidget):
     def _update_dividers(self):
         """更新所有子项的分割线：最后一个隐藏"""
         for i, item in enumerate(self._items):
-            is_last = (i == len(self._items) - 1)
+            is_last = i == len(self._items) - 1
             if is_last or self._variant == "splitted":
                 item._divider.hide()
             elif self._show_divider:
@@ -168,7 +166,9 @@ class Accordion(QWidget):
             self._theme = theme
         self._apply_container_styles()
         for item in self._items:
-            item._apply_styles(self._theme, self._variant, self._size, self._show_divider, self._radius)
+            item._apply_styles(
+                self._theme, self._variant, self._size, self._show_divider, self._radius
+            )
 
     def _apply_provider_theme(self, theme: str):
         """ThemeProvider 广播专用"""

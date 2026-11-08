@@ -4,15 +4,15 @@
 内存里始终只有几十个行槽。配合 sticky 表头。
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget
 
-from hero_side_ui import HeroSideUIProvider, ThemeSwitcher, Title, Table, Text
-
+from hero_side_ui import HeroSideUIProvider, Table, Text, ThemeSwitcher, Title
 
 COLUMNS = [
     {"key": "id", "label": "ID"},
@@ -46,6 +46,7 @@ class VirtualDemo(QMainWindow):
         root.setSpacing(12)
 
         from PySide6.QtWidgets import QHBoxLayout
+
         head = QHBoxLayout()
         title = Title(f"虚拟化：{N_ROWS:,} 行流畅滚动", level=1)
         title.set_color("#006FEE")
@@ -54,10 +55,13 @@ class VirtualDemo(QMainWindow):
         head.addWidget(ThemeSwitcher(size="md"))
         root.addLayout(head)
 
-        root.addWidget(Text(
-            "只渲染可视区行，滚动时复用行槽。试着拖动滚动条——始终丝滑。",
-            size="sm", color="default-400",
-        ))
+        root.addWidget(
+            Text(
+                "只渲染可视区行，滚动时复用行槽。试着拖动滚动条——始终丝滑。",
+                size="sm",
+                color="default-400",
+            )
+        )
 
         table = Table(
             color="primary",

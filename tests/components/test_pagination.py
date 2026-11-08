@@ -4,11 +4,11 @@ import pytest
 
 from hero_side_ui import Pagination
 from hero_side_ui.components.pagination._constants import PaginationItemType
-from hero_side_ui.components.pagination._range import compute_pagination_range
 from hero_side_ui.components.pagination._palette import (
     resolve_compact_corners,
     resolve_radius_px,
 )
+from hero_side_ui.components.pagination._range import compute_pagination_range
 
 # ============================================================
 # range 计算 (纯函数,不依赖 qtbot)
@@ -59,9 +59,7 @@ class TestPaginationRange:
         rng = compute_pagination_range(total=20, active_page=10, siblings=0)
         # 0 siblings 时中间区只有 active 自己
         assert 10 in rng
-        assert (
-            9 not in rng or 11 not in rng or sum(isinstance(x, int) for x in rng) <= 6
-        )
+        assert 9 not in rng or 11 not in rng or sum(isinstance(x, int) for x in rng) <= 6
 
 
 # ============================================================
@@ -243,9 +241,7 @@ class TestPaginationFlags:
         p = Pagination(total=10, initial_page=10, loop=True, show_controls=True)
         qtbot.addWidget(p)
         # loop 时 next 即使在末页也仍可用
-        next_items = [
-            it for it in p._items if it.item_type() == PaginationItemType.NEXT
-        ]
+        next_items = [it for it in p._items if it.item_type() == PaginationItemType.NEXT]
         assert next_items[0].isEnabled() is True
 
 
@@ -406,9 +402,7 @@ class TestPaginationDotsJump:
         qtbot.addWidget(p)
         # 找到左侧 dots 按钮(is_before=True)并点击
         left_dots = [
-            it
-            for it in p._items
-            if it.item_type() == PaginationItemType.DOTS and it.is_before()
+            it for it in p._items if it.item_type() == PaginationItemType.DOTS and it.is_before()
         ]
         assert left_dots, "应该存在左侧 dots"
         left_dots[0].click()

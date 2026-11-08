@@ -12,9 +12,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtCore import Qt, QRectF, Signal
+from PySide6.QtCore import QRectF, Qt, Signal
 from PySide6.QtGui import QColor, QPainter, QTransform
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
@@ -53,7 +51,9 @@ class _SortIcon(QLabel):
         )
         # ascending 时朝上（旋转 180）
         if not self._descending:
-            pm = pm.transformed(QTransform().rotate(180), Qt.TransformationMode.SmoothTransformation)
+            pm = pm.transformed(
+                QTransform().rotate(180), Qt.TransformationMode.SmoothTransformation
+            )
         self.setPixmap(pm)
         self.setFixedSize(self._size, self._size)
 
@@ -63,8 +63,15 @@ class _TableColumnHeader(QWidget):
 
     sort_clicked = Signal(str)  # 发出列 key
 
-    def __init__(self, key: str, label: str = "", *, align: str = "start",
-                 allows_sorting: bool = False, parent=None):
+    def __init__(
+        self,
+        key: str,
+        label: str = "",
+        *,
+        align: str = "start",
+        allows_sorting: bool = False,
+        parent=None,
+    ):
         super().__init__(parent)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
@@ -115,8 +122,15 @@ class _TableColumnHeader(QWidget):
 
     # ------------------------------------------------------------
     def apply_style(
-        self, *, color: str, size: str, theme: str, radius: str,
-        is_first_col: bool, is_last_col: bool, hide_header: bool,
+        self,
+        *,
+        color: str,
+        size: str,
+        theme: str,
+        radius: str,
+        is_first_col: bool,
+        is_last_col: bool,
+        hide_header: bool,
     ):
         self._color = color
         self._size = size
@@ -196,7 +210,11 @@ class _TableColumnHeader(QWidget):
         super().leaveEvent(e)
 
     def mouseReleaseEvent(self, e):
-        if self._allows_sorting and e.button() == Qt.MouseButton.LeftButton and self.rect().contains(e.pos()):
+        if (
+            self._allows_sorting
+            and e.button() == Qt.MouseButton.LeftButton
+            and self.rect().contains(e.pos())
+        ):
             self.sort_clicked.emit(self._key)
         super().mouseReleaseEvent(e)
 

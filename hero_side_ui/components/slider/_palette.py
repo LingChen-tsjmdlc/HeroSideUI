@@ -14,14 +14,14 @@ from PySide6.QtGui import QColor
 from ...themes import HEROUI_COLORS
 
 __all__ = [
-    "resolve_color",
-    "track_bg_color",
     "filler_color",
-    "thumb_color",
     "inner_dot_color",
+    "resolve_color",
     "ring_color",
     "step_dot_in_range",
     "step_dot_out_of_range",
+    "thumb_color",
+    "track_bg_color",
 ]
 
 

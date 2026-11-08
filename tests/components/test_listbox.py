@@ -94,7 +94,9 @@ class TestListboxStyleMatrix:
         assert lb._variant == variant
         assert lb._items[0]._variant == variant
 
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     def test_all_colors(self, qtbot, color):
         lb = Listbox(color=color)
         qtbot.addWidget(lb)

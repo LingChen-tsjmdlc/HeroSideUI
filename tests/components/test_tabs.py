@@ -13,8 +13,7 @@
 import pytest
 from PySide6.QtWidgets import QLabel, QWidget
 
-from hero_side_ui import Tabs, TabItem
-
+from hero_side_ui import TabItem, Tabs
 
 # ============================================================
 # 构造与默认值
@@ -50,10 +49,12 @@ class TestTabsInit:
         assert t.tab_at(1).key() == "music_key"
 
     def test_init_with_dict_items(self, qtbot):
-        t = Tabs([
-            {"title": "A", "content": QLabel("a")},
-            {"title": "B", "content": QLabel("b"), "disabled": True},
-        ])
+        t = Tabs(
+            [
+                {"title": "A", "content": QLabel("a")},
+                {"title": "B", "content": QLabel("b"), "disabled": True},
+            ]
+        )
         qtbot.addWidget(t)
         assert t.count() == 2
         assert t.tab_at(1).is_disabled() is True
@@ -64,7 +65,9 @@ class TestTabsInit:
         qtbot.addWidget(t)
         assert t._variant == v
 
-    @pytest.mark.parametrize("c", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "c", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     def test_all_colors(self, qtbot, c):
         t = Tabs(color=c)
         qtbot.addWidget(t)
@@ -389,6 +392,7 @@ class TestTabItemSlots:
     def test_level3_custom_widget(self, qtbot):
         """档 3: custom widget"""
         from PySide6.QtWidgets import QLabel
+
         t = Tabs()
         qtbot.addWidget(t)
         custom_w = QLabel("Custom!")
@@ -402,6 +406,7 @@ class TestTabItemSlots:
     def test_level3_set_custom_runtime(self, qtbot):
         """运行时切换 custom widget 与回退"""
         from PySide6.QtWidgets import QLabel
+
         t = Tabs()
         qtbot.addWidget(t)
         item = t.add_tab("regular")
@@ -417,6 +422,7 @@ class TestTabItemSlots:
     def test_level3_selected_changed_signal(self, qtbot):
         """custom widget 可以监听 selected_changed 信号"""
         from PySide6.QtWidgets import QLabel
+
         t = Tabs()
         qtbot.addWidget(t)
         t.add_tab("first")
@@ -429,10 +435,12 @@ class TestTabItemSlots:
 
     def test_init_dict_with_icons(self, qtbot):
         """构造时 dict 形式支持 icons 字段"""
-        t = Tabs([
-            {"title": "Photos", "start_icon": "heroicons--eye-solid"},
-            {"title": "Next", "end_icon": "heroicons--chevron-right-solid"},
-        ])
+        t = Tabs(
+            [
+                {"title": "Photos", "start_icon": "heroicons--eye-solid"},
+                {"title": "Next", "end_icon": "heroicons--chevron-right-solid"},
+            ]
+        )
         qtbot.addWidget(t)
         assert t.tab_at(0)._start_icon_pixmap is not None
         assert t.tab_at(1)._end_icon_pixmap is not None

@@ -24,8 +24,9 @@ class TestBreadcrumbsInit:
         assert bc._is_disabled is False
 
     def test_invalid_fall_back(self, qtbot):
-        bc = Breadcrumbs(variant="ghost", color="pink", size="xxl",
-                         radius="hex", underline="sometimes")
+        bc = Breadcrumbs(
+            variant="ghost", color="pink", size="xxl", radius="hex", underline="sometimes"
+        )
         qtbot.addWidget(bc)
         assert bc._variant == "light"
         assert bc._color == "foreground"
@@ -34,9 +35,13 @@ class TestBreadcrumbsInit:
         assert bc._underline == "hover"
 
     def test_items_rendered_with_separators(self, qtbot):
-        bc = Breadcrumbs(items=[
-            BreadcrumbItem("Home"), BreadcrumbItem("Music"), BreadcrumbItem("Files"),
-        ])
+        bc = Breadcrumbs(
+            items=[
+                BreadcrumbItem("Home"),
+                BreadcrumbItem("Music"),
+                BreadcrumbItem("Files"),
+            ]
+        )
         qtbot.addWidget(bc)
         bc.resize(bc.sizeHint())
         bc.show()
@@ -50,9 +55,12 @@ class TestBreadcrumbsInit:
         assert bc._items[1].is_current
 
     def test_explicit_current_wins(self, qtbot):
-        bc = Breadcrumbs(items=[
-            BreadcrumbItem("A", is_current=True), BreadcrumbItem("B"),
-        ])
+        bc = Breadcrumbs(
+            items=[
+                BreadcrumbItem("A", is_current=True),
+                BreadcrumbItem("B"),
+            ]
+        )
         qtbot.addWidget(bc)
         # 官方 isCurrent = isLast || child.props.isCurrent——非 last 也可 current
         assert bc._items[0].is_current
@@ -64,7 +72,8 @@ class TestBreadcrumbsCollapse:
     def _collapsed(self, qtbot, count=5, max_items=3, before=1, after=2):
         bc = Breadcrumbs(
             items=[BreadcrumbItem(f"L{i}", key=f"k{i}") for i in range(count)],
-            max_items=max_items, items_before_collapse=before,
+            max_items=max_items,
+            items_before_collapse=before,
             items_after_collapse=after,
         )
         qtbot.addWidget(bc)
@@ -78,8 +87,7 @@ class TestBreadcrumbsCollapse:
         assert bc._list_lay.count() == 7
 
     def test_no_collapse_below_max(self, qtbot):
-        bc = Breadcrumbs(items=[BreadcrumbItem(f"L{i}") for i in range(3)],
-                         max_items=8)
+        bc = Breadcrumbs(items=[BreadcrumbItem(f"L{i}") for i in range(3)], max_items=8)
         qtbot.addWidget(bc)
         bc.resize(bc.sizeHint())
         bc.show()
@@ -87,9 +95,12 @@ class TestBreadcrumbsCollapse:
 
     def test_invalid_combination_no_collapse(self, qtbot):
         # before+after >= count 时官方 warn 并跳过折叠
-        bc = Breadcrumbs(items=[BreadcrumbItem(f"L{i}") for i in range(4)],
-                         max_items=3, items_before_collapse=2,
-                         items_after_collapse=2)
+        bc = Breadcrumbs(
+            items=[BreadcrumbItem(f"L{i}") for i in range(4)],
+            max_items=3,
+            items_before_collapse=2,
+            items_after_collapse=2,
+        )
         qtbot.addWidget(bc)
         bc.resize(bc.sizeHint())
         bc.show()
@@ -128,8 +139,7 @@ class TestBreadcrumbsDisabled:
     """isDisabled 全局：非 last 禁用，last 保持可用"""
 
     def test_global_disabled(self, qtbot):
-        bc = Breadcrumbs(items=[BreadcrumbItem("A"), BreadcrumbItem("B")],
-                         is_disabled=True)
+        bc = Breadcrumbs(items=[BreadcrumbItem("A"), BreadcrumbItem("B")], is_disabled=True)
         qtbot.addWidget(bc)
         assert bc._items[0].is_disabled
         assert not bc._items[1].is_disabled
@@ -148,16 +158,19 @@ class TestBreadcrumbsVariants:
         bc = Breadcrumbs(items=[BreadcrumbItem("A")], variant="solid", theme="light")
         qtbot.addWidget(bc)
         from hero_side_ui.components.breadcrumbs._styling import build_list_styles
+
         assert build_list_styles("solid", "light")["bg"] == "#f4f4f5"
 
     def test_bordered_has_border(self, qtbot):
         from hero_side_ui.components.breadcrumbs._styling import build_list_styles
+
         s = build_list_styles("bordered", "light")
         assert s["border"] == "#e4e4e7"
         assert s["border_w"] == 2
 
     def test_light_empty(self, qtbot):
         from hero_side_ui.components.breadcrumbs._styling import build_list_styles
+
         assert build_list_styles("light", "light")["bg"] == "none"
 
 

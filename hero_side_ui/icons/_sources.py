@@ -1,15 +1,15 @@
 """Local icon resources and names. No Provider, network policy or Qt startup."""
 
+import math
+import re
+import xml.etree.ElementTree as ET
 from dataclasses import replace
 from functools import lru_cache
 from hashlib import sha256
 from importlib.resources import files
-import math
 from os import PathLike
 from pathlib import Path
-import re
 from typing import TypeAlias
-import xml.etree.ElementTree as ET
 from xml.sax.saxutils import quoteattr
 
 from pyside_iconify import IconData, IconNotFoundError, add_icon, get_icon_data
@@ -51,9 +51,7 @@ def _svg_data(source: str) -> IconData:
     if root.tag.rsplit("}", 1)[-1] != "svg":
         raise ValueError("icon source must be an SVG document")
     if root.get("viewBox"):
-        left, top, width, height = map(
-            float, re.split(r"[\s,]+", root.attrib["viewBox"].strip())
-        )
+        left, top, width, height = map(float, re.split(r"[\s,]+", root.attrib["viewBox"].strip()))
     else:
         left = top = 0.0
         width = float(root.get("width", "24").removesuffix("px"))
@@ -119,7 +117,12 @@ def resolve_icon(source: IconSource, *, stroke_width: float | None = None) -> st
         if legacy is not None:
             data = _builtin_data(legacy)
             name = _PREFIX + legacy.replace("--", "-")
-        elif isinstance(source, PathLike) or value.lower().endswith(".svg") or "/" in value or "\\" in value:
+        elif (
+            isinstance(source, PathLike)
+            or value.lower().endswith(".svg")
+            or "/" in value
+            or "\\" in value
+        ):
             path = Path(value).resolve()
             stat = path.stat()
             data = _file_data(str(path), stat.st_mtime_ns, stat.st_size)

@@ -32,22 +32,21 @@ HeroSideUI ThemeSwitcher Component
     )
 """
 
-from typing import Optional
+from typing import ClassVar
 
-from PySide6.QtCore import QSize, QObject
-from PySide6.QtGui import QIcon, QColor
+from PySide6.QtCore import QObject, QSize
+from PySide6.QtGui import QColor, QIcon
 
-from ..button import Button
 from ...core import ThemeProvider
 from ...utils import load_svg_icon
-
+from ..button import Button
 
 # 默认 icon（内置）
 DEFAULT_SUN_ICON = "flowbite--sun-solid"
 DEFAULT_MOON_ICON = "ri--moon-clear-fill"
 
 # 默认颜色
-DEFAULT_SUN_COLOR = "#F5A524"   # 金黄色（warning-500）
+DEFAULT_SUN_COLOR = "#F5A524"  # 金黄色（warning-500）
 DEFAULT_MOON_COLOR = "#7DD3FC"  # 蓝色（sky-300，柔和的月光蓝）
 
 
@@ -75,7 +74,7 @@ class ThemeSwitcher(Button):
     """
 
     # 不同 size 的默认 icon 像素尺寸（约占按钮 50%）
-    _ICON_SIZE_MAP = {"sm": 16, "md": 24, "lg": 32}
+    _ICON_SIZE_MAP: ClassVar[dict[str, int]] = {"sm": 16, "md": 24, "lg": 32}
 
     def __init__(
         self,
@@ -83,12 +82,12 @@ class ThemeSwitcher(Button):
         moon_icon: str = DEFAULT_MOON_ICON,
         sun_color: "str | QColor" = DEFAULT_SUN_COLOR,
         moon_color: "str | QColor" = DEFAULT_MOON_COLOR,
-        icon_size: Optional[int] = None,
+        icon_size: int | None = None,
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = "full",
-        parent: Optional[QObject] = None,
+        radius: str | None = "full",
+        parent: QObject | None = None,
     ):
         super().__init__(
             text="",

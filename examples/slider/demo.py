@@ -8,11 +8,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from hero_side_ui import Slider, Input, Caption
-from _base import DemoBase
+from hero_side_ui import Caption, Input, Slider
 
 
 class SliderDemo(DemoBase):
@@ -138,9 +138,7 @@ class SliderDemo(DemoBase):
         self.add_full_width(
             layout,
             "show_outline (thumb 多一圈 ring)",
-            Slider(
-                value=40, color="primary", show_outline=True, label="With ring outline"
-            ),
+            Slider(value=40, color="primary", show_outline=True, label="With ring outline"),
             labels_bag,
         )
 
@@ -150,9 +148,7 @@ class SliderDemo(DemoBase):
             "hide_value / hide_thumb",
             [
                 Slider(value=40, color="primary", hide_value=True, label="hide_value"),
-                Slider(
-                    value=40, color="secondary", hide_thumb=True, label="hide_thumb"
-                ),
+                Slider(value=40, color="secondary", hide_thumb=True, label="hide_thumb"),
             ],
             labels_bag,
         )

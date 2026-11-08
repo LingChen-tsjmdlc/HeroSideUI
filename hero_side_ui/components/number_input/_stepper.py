@@ -5,8 +5,6 @@ hover 降透明度到 0.7、按下 0.5；图标随语义色着色。单击单步
 不做按住连发（官方原生按钮同样无连发）。
 """
 
-from typing import Callable, Optional
-
 from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -26,15 +24,13 @@ DOWN_ICON = "teenyicons--down-solid"
 class _StepperButton(QPushButton):
     """单个步进按钮：透明背景 + opacity hover/pressed 反馈。"""
 
-    def __init__(self, icon_name: str, icon_size: int, parent: Optional[QWidget] = None):
+    def __init__(self, icon_name: str, icon_size: int, parent: QWidget | None = None):
         super().__init__(parent)
         self._icon_name = icon_name
         self._icon_size = icon_size
         self.setCursor(Qt.CursorShape.PointingHandCursor)
         self.setFlat(True)
-        self.setStyleSheet(
-            "QPushButton { background: transparent; border: none; padding: 0; }"
-        )
+        self.setStyleSheet("QPushButton { background: transparent; border: none; padding: 0; }")
         self.setFixedSize(icon_size + 8, icon_size + 8)
         self.setIconSize(QSize(icon_size, icon_size))
 
@@ -46,21 +42,21 @@ class _StepperButton(QPushButton):
         """重新渲染 SVG 图标（语义色 / 主题变化时调用）。"""
         self.setIcon(load_svg_icon(self._icon_name, size=self._icon_size, color=color))
 
-    def enterEvent(self, event):  # noqa: N802
+    def enterEvent(self, event):
         if self.isEnabled():
             self._opacity_effect.setOpacity(0.7)
         super().enterEvent(event)
 
-    def leaveEvent(self, event):  # noqa: N802
+    def leaveEvent(self, event):
         self._opacity_effect.setOpacity(1.0)
         super().leaveEvent(event)
 
-    def mousePressEvent(self, event):  # noqa: N802
+    def mousePressEvent(self, event):
         if self.isEnabled():
             self._opacity_effect.setOpacity(0.5)
         super().mousePressEvent(event)
 
-    def mouseReleaseEvent(self, event):  # noqa: N802
+    def mouseReleaseEvent(self, event):
         self._opacity_effect.setOpacity(0.7 if self.underMouse() else 1.0)
         super().mouseReleaseEvent(event)
 
@@ -73,7 +69,7 @@ class _NumberStepper(QWidget):
 
     stepped = Signal(int)
 
-    def __init__(self, button_size: int = 18, parent: Optional[QWidget] = None):
+    def __init__(self, button_size: int = 18, parent: QWidget | None = None):
         super().__init__(parent)
         self._button_size = button_size
 

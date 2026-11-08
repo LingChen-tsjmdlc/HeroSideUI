@@ -8,13 +8,12 @@ DateTimeValue。段序完全交给 ``_pattern`` 决定，本文件只管值的�
 from __future__ import annotations
 
 from functools import lru_cache
-from typing import Dict, List, Optional
 
 import icu
 
-from ..calendar._date import CalendarDate, _fresh_calendar, _locale_for
+from ..calendar._date import CalendarDate, _fresh_calendar
 from ._pattern import SegmentSpec, build_segments
-from ._value import DateTimeValue, _locale_for_locale, clamp_value
+from ._value import DateTimeValue, _locale_for_locale
 
 # 各段的取值范围上界（year 上界由 max_value 决定，month/day 依赖具体年月）
 _HOUR12_MIN = 1
@@ -66,14 +65,14 @@ class DateFieldState:
     def __init__(
         self,
         *,
-        value: Optional[DateTimeValue] = None,
-        placeholder_value: Optional[DateTimeValue] = None,
+        value: DateTimeValue | None = None,
+        placeholder_value: DateTimeValue | None = None,
         granularity: str = "day",
-        hour_cycle: Optional[int] = None,
+        hour_cycle: int | None = None,
         locale: str = "en_US",
         identifier: str = "gregorian",
-        min_value: Optional[DateTimeValue] = None,
-        max_value: Optional[DateTimeValue] = None,
+        min_value: DateTimeValue | None = None,
+        max_value: DateTimeValue | None = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
         include_date: bool = True,
@@ -89,9 +88,7 @@ class DateFieldState:
         self._include_date = include_date
 
         # 占位起点：优先 placeholder_value，其次今天
-        base = placeholder_value or DateTimeValue.from_date(
-            CalendarDate.today(identifier)
-        )
+        base = placeholder_value or DateTimeValue.from_date(CalendarDate.today(identifier))
         self._placeholder = base.to_calendar(identifier)
 
         # 时区取自值或占位值（决定是否出现 timeZone 段）
@@ -101,7 +98,7 @@ class DateFieldState:
         elif placeholder_value is not None and placeholder_value.timezone:
             self._timezone = placeholder_value.timezone
 
-        self._specs: List[SegmentSpec] = build_segments(
+        self._specs: list[SegmentSpec] = build_segments(
             locale=locale,
             identifier=identifier,
             granularity=granularity,
@@ -112,7 +109,7 @@ class DateFieldState:
         )
 
         # 段值表：type → int；缺席即占位态
-        self._values: Dict[str, int] = {}
+        self._values: dict[str, int] = {}
         if value is not None:
             self.set_value(value)
 
@@ -120,7 +117,7 @@ class DateFieldState:
     # 结构查询
     # ============================================================
     @property
-    def specs(self) -> List[SegmentSpec]:
+    def specs(self) -> list[SegmentSpec]:
         return self._specs
 
     @property
@@ -133,11 +130,11 @@ class DateFieldState:
         return self._include_date
 
     @property
-    def timezone(self) -> Optional[str]:
+    def timezone(self) -> str | None:
         return self._timezone
 
     @property
-    def editable_types(self) -> List[str]:
+    def editable_types(self) -> list[str]:
         return [s.type for s in self._specs if s.is_editable]
 
     def is_placeholder(self, seg_type: str) -> bool:
@@ -170,13 +167,13 @@ class DateFieldState:
     # ============================================================
     # 值读写
     # ============================================================
-    def value(self) -> Optional[DateTimeValue]:
+    def value(self) -> DateTimeValue | None:
         """段全填好时返回值对象，否则 None（对齐 HeroUI 的 null 语义）。"""
         if not self.is_complete():
             return None
         return self._compose()
 
-    def set_value(self, value: Optional[DateTimeValue]) -> None:
+    def set_value(self, value: DateTimeValue | None) -> None:
         """外部受控赋值：拆解成各段值。"""
         if value is None:
             self._values.clear()
@@ -214,9 +211,7 @@ class DateFieldState:
             minute=self._values.get("minute", 0)
             if self._granularity in ("minute", "second")
             else 0,
-            second=self._values.get("second", 0)
-            if self._granularity == "second"
-            else 0,
+            second=self._values.get("second", 0) if self._granularity == "second" else 0,
             identifier=self._identifier,
             timezone=self._timezone,
             has_time=self._granularity != "day",
@@ -286,7 +281,10 @@ class DateFieldState:
         pm = self._values.get("dayPeriod")
         if pm is None:
             pm = 1 if self._values.get("hour", self._placeholder.hour) >= 12 else 0
-        return str(ampm[1] if pm else ampm[0])    # ============================================================
+        return str(
+            ampm[1] if pm else ampm[0]
+        )  # ============================================================
+
     # 编辑动作
     # ============================================================
     def _is_hour12(self) -> bool:
@@ -306,9 +304,7 @@ class DateFieldState:
             return 1, 12
         if seg_type == "day":
             cur = self._compose()
-            return 1, CalendarDate(
-                cur.year, cur.month, 1, self._identifier
-            ).days_in_month
+            return 1, CalendarDate(cur.year, cur.month, 1, self._identifier).days_in_month
         if seg_type == "hour":
             if self._is_hour12():
                 return _HOUR12_MIN, _HOUR12_MAX
@@ -370,18 +366,14 @@ class DateFieldState:
             # 切换半天时直接把已有 hour 搬到另一半天，避免二者不一致
             self._values[seg_type] = raw
             if "hour" in self._values:
-                self._values["hour"] = (self._values["hour"] % 12) + (
-                    12 if raw else 0
-                )
+                self._values["hour"] = (self._values["hour"] % 12) + (12 if raw else 0)
             return
         self._values[seg_type] = raw
 
         # 改年/月后，日可能超过当月天数 → 截断
         if seg_type in ("year", "month") and "day" in self._values:
             cur = self._compose()
-            max_day = CalendarDate(
-                cur.year, cur.month, 1, self._identifier
-            ).days_in_month
+            max_day = CalendarDate(cur.year, cur.month, 1, self._identifier).days_in_month
             if self._values["day"] > max_day:
                 self._values["day"] = max_day
 
@@ -394,7 +386,7 @@ class DateFieldState:
         """
         if seg_type in ("timeZone", "era", "dayPeriod"):
             return False
-        lo, hi = self.segment_range(seg_type)
+        _lo, hi = self.segment_range(seg_type)
         width = 4 if seg_type == "year" else len(str(hi))
 
         typed = getattr(self, "_typing", {}).get(seg_type, "")

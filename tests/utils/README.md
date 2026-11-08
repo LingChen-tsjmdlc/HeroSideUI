@@ -27,11 +27,14 @@ from PySide6.QtGui import QColor
 from hero_side_ui.utils import hex_to_rgba, aligned_color_pair
 
 
-@pytest.mark.parametrize("hex_in, alpha, expected", [
-    ("#006FEE", 0.5, "rgba(0, 111, 238, 0.5)"),
-    ("006FEE",  1.0, "rgba(0, 111, 238, 1.0)"),
-    ("#FFFFFF", 0.0, "rgba(255, 255, 255, 0.0)"),
-])
+@pytest.mark.parametrize(
+    "hex_in, alpha, expected",
+    [
+        ("#006FEE", 0.5, "rgba(0, 111, 238, 0.5)"),
+        ("006FEE", 1.0, "rgba(0, 111, 238, 1.0)"),
+        ("#FFFFFF", 0.0, "rgba(255, 255, 255, 0.0)"),
+    ],
+)
 def test_hex_to_rgba(hex_in, alpha, expected):
     assert hex_to_rgba(hex_in, alpha) == expected
 ```
@@ -41,7 +44,7 @@ def test_hex_to_rgba(hex_in, alpha, expected):
 ```python
 def test_aligned_color_pair_start_transparent():
     start = QColor(0, 0, 0, 0)
-    end   = QColor("#006FEE")
+    end = QColor("#006FEE")
     s, e = aligned_color_pair(start, end)
     # 透明端 RGB 应被改写成 end 的 RGB
     assert (s.red(), s.green(), s.blue()) == (end.red(), end.green(), end.blue())
@@ -58,6 +61,7 @@ def test_aligned_color_pair_start_transparent():
 from PySide6.QtGui import QImage
 from hero_side_ui.utils import load_svg_icon
 
+
 def test_load_builtin_icon_color(qtbot):
     icon = load_svg_icon("heroicons--chevron-right-solid", size=24, color="#FF0000")
     pix = icon.pixmap(24, 24)
@@ -65,7 +69,8 @@ def test_load_builtin_icon_color(qtbot):
     # 中心区域应该有红色像素（被着色成功）
     found_red = any(
         img.pixelColor(x, y).red() > 200 and img.pixelColor(x, y).green() < 50
-        for x in range(8, 16) for y in range(8, 16)
+        for x in range(8, 16)
+        for y in range(8, 16)
     )
     assert found_red
 ```

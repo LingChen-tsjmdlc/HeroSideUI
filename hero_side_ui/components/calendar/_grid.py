@@ -13,9 +13,9 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional, Protocol
+from typing import Protocol
 
-from ._date import SAT, SUN, CalendarDate, weeks_in_month
+from ._date import CalendarDate, weeks_in_month
 
 
 class _GridState(Protocol):
@@ -27,7 +27,7 @@ class _GridState(Protocol):
     def is_disabled_date(self, date: CalendarDate) -> bool: ...
     def is_unavailable(self, date: CalendarDate) -> bool: ...
     def is_readonly(self) -> bool: ...
-    def selected_range(self) -> Optional[tuple]: ...  # (start, end) 或 None
+    def selected_range(self) -> tuple | None: ...  # (start, end) 或 None
     def is_range(self) -> bool: ...
 
 
@@ -35,7 +35,7 @@ class _GridState(Protocol):
 class CellState:
     """单个日期格子的完整视觉状态。date 为 None 表示空占位格。"""
 
-    date: Optional[CalendarDate]
+    date: CalendarDate | None
     is_selected: bool = False
     is_disabled: bool = False
     is_unavailable: bool = False
@@ -58,8 +58,9 @@ class CellState:
         return "" if self.date is None else str(self.date.day)
 
 
-def get_dates_in_week(start_date: CalendarDate, week_index: int,
-                      first_day_of_week: int) -> List[Optional[CalendarDate]]:
+def get_dates_in_week(
+    start_date: CalendarDate, week_index: int, first_day_of_week: int
+) -> list[CalendarDate | None]:
     """返回该月第 week_index 周的 7 个日期。
 
     首尾行的本月外空档用相邻月的实际日期补齐（上月末尾 / 下月开头），
@@ -69,21 +70,22 @@ def get_dates_in_week(start_date: CalendarDate, week_index: int,
     first = start_date.first_of_month()
     lead = (first.weekday - first_day_of_week) % 7
 
-    result: List[Optional[CalendarDate]] = []
+    result: list[CalendarDate | None] = []
     for col in range(7):
         offset = week_index * 7 + col - lead  # 相对本月首日的天数偏移（可负 / 可超月末）
         result.append(first.add(days=offset))
     return result
 
 
-def get_weeks(start_date: CalendarDate, first_day_of_week: int) -> List[List[Optional[CalendarDate]]]:
+def get_weeks(start_date: CalendarDate, first_day_of_week: int) -> list[list[CalendarDate | None]]:
     """把整月切成 [周][7] 的日期矩阵。"""
     n = weeks_in_month(start_date, first_day_of_week)
     return [get_dates_in_week(start_date, w, first_day_of_week) for w in range(n)]
 
 
-def compute_cell_state(date: Optional[CalendarDate], current_month: CalendarDate,
-                       state: _GridState, today: CalendarDate) -> CellState:
+def compute_cell_state(
+    date: CalendarDate | None, current_month: CalendarDate, state: _GridState, today: CalendarDate
+) -> CellState:
     """算出单个 cell 的全部状态位。"""
     if date is None:
         return CellState(date=None)
@@ -116,20 +118,26 @@ def compute_cell_state(date: Optional[CalendarDate], current_month: CalendarDate
 
     prev_day = date.add(days=-1)
     next_day = date.add(days=1)
-    prev_blocked = (not date.is_same_month(prev_day) or
-                    state.is_unavailable(prev_day) or start.is_same_day(date))
-    next_blocked = (not date.is_same_month(next_day) or
-                    state.is_unavailable(next_day) or end.is_same_day(date))
+    prev_blocked = (
+        not date.is_same_month(prev_day)
+        or state.is_unavailable(prev_day)
+        or start.is_same_day(date)
+    )
+    next_blocked = (
+        not date.is_same_month(next_day) or state.is_unavailable(next_day) or end.is_same_day(date)
+    )
 
     return CellState(
         **common,
         is_range_selection=True,
         is_selection_start=date.is_same_day(start),
         is_selection_end=date.is_same_day(end),
-        is_range_start=(dow == first_col(state.first_day_of_week) or
-                        date.day == 1 or prev_blocked),
-        is_range_end=(dow == last_col(state.first_day_of_week) or
-                      date.day == date.days_in_month or next_blocked),
+        is_range_start=(dow == first_col(state.first_day_of_week) or date.day == 1 or prev_blocked),
+        is_range_end=(
+            dow == last_col(state.first_day_of_week)
+            or date.day == date.days_in_month
+            or next_blocked
+        ),
     )
 
 

@@ -9,6 +9,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
@@ -24,7 +25,6 @@ from hero_side_ui import Body, Caption, Kbd
 from hero_side_ui.core import ThemeProvider
 from hero_side_ui.themes import HEROUI_COLORS
 from hero_side_ui.utils.icon_utils import load_svg_icon
-from _base import DemoBase
 
 
 # ============================================================
@@ -279,8 +279,7 @@ class _IconCell(QWidget):
 
     def _apply_styles(self) -> None:
         self.setStyleSheet(
-            f"#kbdIconCell {{ background-color: {self._bg()}; "
-            f"border-radius: 8px; }}"
+            f"#kbdIconCell {{ background-color: {self._bg()}; border-radius: 8px; }}"
         )
         pm = load_svg_icon(self._icon_name, size=22, color=self._fg())
         self._icon.setPixmap(pm)

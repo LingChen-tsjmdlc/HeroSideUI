@@ -9,7 +9,7 @@
     - ``_DropdownTriggerMixin`` → ``_trigger.py``
 """
 
-from typing import Iterable, Optional, Union
+from collections.abc import Iterable
 
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
@@ -17,13 +17,11 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS
-
+from ...utils import safe_delete
 from ..button import Button
 from ..listbox import Listbox, ListboxItem, ListboxSection
 from ..popover import Popover, PopoverContent
 from ..scroll_shadow import ScrollShadow
-from ...utils import safe_delete
-
 from ._styling import _DropdownStylingMixin
 from ._trigger import _DropdownTriggerMixin
 
@@ -52,9 +50,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
     VALID_VARIANTS = ("solid", "shadow", "bordered", "flat", "faded", "light")
     VALID_COLORS = tuple(HEROUI_COLORS.keys())
     VALID_SIZES = ("sm", "md", "lg")
-    VALID_RADII = tuple(k for k in RADIUS.keys() if k in ("none", "sm", "md", "lg")) + (
-        "full",
-    )
+    VALID_RADII = (*tuple(k for k in RADIUS if k in ("none", "sm", "md", "lg")), "full")
     VALID_SELECTION_MODES = ("none", "single", "multiple")
 
     @staticmethod
@@ -79,16 +75,16 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
 
     def __init__(
         self,
-        trigger: Optional[QWidget] = None,
-        items: Optional[Iterable[Union[dict, tuple, str, ListboxItem]]] = None,
+        trigger: QWidget | None = None,
+        items: Iterable[dict | tuple | str | ListboxItem] | None = None,
         *,
         placement: str = "bottom",
         close_on_select: bool = True,
         # ---- 选中 ----
         selection_mode: str = "none",
-        selected_keys: Optional[Iterable[str]] = None,
-        default_selected_keys: Optional[Iterable[str]] = None,
-        disabled_keys: Optional[Iterable[str]] = None,
+        selected_keys: Iterable[str] | None = None,
+        default_selected_keys: Iterable[str] | None = None,
+        disabled_keys: Iterable[str] | None = None,
         disallow_empty_selection: bool = False,
         # ---- 视觉 ----
         variant: str = "solid",
@@ -97,17 +93,17 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
         radius: str = "md",
         shadow: str = "md",
         backdrop: str = "transparent",
-        min_width: Optional[int] = None,
-        max_height: Optional[int] = None,
-        empty_content: Optional[str] = None,
+        min_width: int | None = None,
+        max_height: int | None = None,
+        empty_content: str | None = None,
         hide_selected_icon: bool = False,
-        top_content: Optional[QWidget] = None,
-        bottom_content: Optional[QWidget] = None,
+        top_content: QWidget | None = None,
+        bottom_content: QWidget | None = None,
         # ---- 其他 ----
         is_disabled: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -143,9 +139,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
 
         # ---------- 内部状态 ----------
         initial = (
-            set(selected_keys)
-            if selected_keys is not None
-            else set(default_selected_keys or [])
+            set(selected_keys) if selected_keys is not None else set(default_selected_keys or [])
         )
         if selection_mode == "single" and len(initial) > 1:
             initial = {next(iter(initial))}
@@ -156,7 +150,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
         self._is_open: bool = False
         self._owns_trigger: bool = False
         self._trigger_click_connected: bool = False
-        self._focus_before_open: Optional[QWidget] = None
+        self._focus_before_open: QWidget | None = None
 
         # ---------- 外层 layout ----------
         self._outer = QVBoxLayout(self)
@@ -273,7 +267,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
     def trigger_widget(self) -> QWidget:
         return self._trigger
 
-    def set_trigger(self, widget: Optional[QWidget]):
+    def set_trigger(self, widget: QWidget | None):
         """换触发器；旧的若为组件自建则销毁，否则仅从布局摘除。"""
         if widget is None or widget is self._trigger:
             return
@@ -294,7 +288,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
     # ============================================================
     # Items 装配
     # ============================================================
-    def set_items(self, items: Iterable[Union[dict, tuple, str, ListboxItem]]):
+    def set_items(self, items: Iterable[dict | tuple | str | ListboxItem]):
         """重置菜单项。dict 支持 label/description/shortcut/color 等字段。"""
         self._listbox.clear()
         self._item_colors.clear()
@@ -357,7 +351,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
     def items(self) -> list[ListboxItem]:
         return self._listbox.items()
 
-    def item_by_key(self, key: str) -> Optional[ListboxItem]:
+    def item_by_key(self, key: str) -> ListboxItem | None:
         return self._listbox.item_by_key(key)
 
     def menu(self) -> Listbox:
@@ -449,7 +443,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
         """以 Listbox 为唯一数据源，避免两侧缓存不同步。"""
         return self._listbox.selected_keys()
 
-    def selected_key(self) -> Optional[str]:
+    def selected_key(self) -> str | None:
         keys = self.selected_keys()
         return next(iter(keys)) if keys else None
 
@@ -459,7 +453,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
         self._selected_keys = set(keys)
         self._listbox.set_selected_keys(self._selected_keys)
 
-    def set_selected_key(self, key: Optional[str]):
+    def set_selected_key(self, key: str | None):
         self.set_selected_keys(set() if key is None else {key})
 
     def set_disabled_keys(self, keys: Iterable[str]):
@@ -544,12 +538,12 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
     def set_close_on_select(self, v: bool):
         self._close_on_select = bool(v)
 
-    def set_min_width(self, w: Optional[int]):
+    def set_min_width(self, w: int | None):
         self._min_width = w
         if self._is_open:
             self._refresh_menu_width()
 
-    def set_max_height(self, h: Optional[int]):
+    def set_max_height(self, h: int | None):
         self._max_height = h
         self._refresh_menu_height(prefer_below=self._is_open)
 
@@ -563,13 +557,13 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
         self._hide_selected_icon = bool(v)
         self._listbox.set_hide_selected_icon(v)
 
-    def set_empty_content(self, text: Optional[str]):
+    def set_empty_content(self, text: str | None):
         self._listbox.set_empty_content(text)
 
-    def set_top_content(self, w: Optional[QWidget]):
+    def set_top_content(self, w: QWidget | None):
         self._listbox.set_top_content(w)
 
-    def set_bottom_content(self, w: Optional[QWidget]):
+    def set_bottom_content(self, w: QWidget | None):
         self._listbox.set_bottom_content(w)
 
     def set_disable_animation(self, v: bool):

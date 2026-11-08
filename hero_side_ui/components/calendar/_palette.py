@@ -6,8 +6,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
@@ -92,6 +90,7 @@ def today_ring(color: str, theme: str) -> QColor:
 # base(日期区底) = bg-default-50（暗一档）。两区靠色差分隔（不画阴影带，
 # 浅色主题下阴影带会显成突兀灰杠）。
 
+
 def surface_content1(theme: str) -> QColor:
     """月/年标题栏背景（content1）。"""
     if theme == "dark":
@@ -113,6 +112,7 @@ def picker_highlight_bg(theme: str) -> QColor:
 
 # ---- 范围选择（RangeCalendar，对齐 calendar.ts isRange compoundVariants）----
 # 中间格：浅底连接背景 + 语义色文字；端点：语义色实底 + 前景色文字。
+
 
 def range_middle_bg(color: str, theme: str) -> QColor:
     """范围中间格的连接背景（before 伪元素）。"""

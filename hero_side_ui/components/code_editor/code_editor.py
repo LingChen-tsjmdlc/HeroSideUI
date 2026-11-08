@@ -13,8 +13,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QTextCursor
 from PySide6.QtWidgets import (
@@ -114,10 +112,10 @@ class _EditArea(QPlainTextEdit):
             blk = blk.next()
         cursor.endEditBlock()
 
-    def _insert_block_indent(self, blk: "object", text: str) -> None:
+    def _insert_block_indent(self, blk: object, text: str) -> None:
         QTextCursor(blk).insertText(text)
 
-    def _remove_block_indent(self, blk: "object") -> None:
+    def _remove_block_indent(self, blk: object) -> None:
         """删掉行首最多 tab_width 个空格（或 1 个 tab）。"""
         line = blk.text()
         strip = 0
@@ -172,13 +170,13 @@ class CodeEditor(QWidget):
         value: str = "",
         *,
         language: str = "python",
-        font: Optional[str] = None,
-        font_size: Optional[int] = None,
-        tab_width: Optional[int] = None,
+        font: str | None = None,
+        font_size: int | None = None,
+        tab_width: int | None = None,
         min_lines: int = 8,
-        max_lines: Optional[int] = None,
+        max_lines: int | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._theme_mode = theme
@@ -188,7 +186,7 @@ class CodeEditor(QWidget):
         self._font_size = int(font_size) if font_size else CODE_EDITOR_SPEC["font_size"]
         self._tab_width = int(tab_width) if tab_width else CODE_EDITOR_SPEC["tab_width"]
         self._max_lines = int(max_lines) if max_lines else CODE_EDITOR_SPEC["max_lines"]
-        self._lh_cache: int = 0   # 行高缓存（0 = 待算）
+        self._lh_cache: int = 0  # 行高缓存（0 = 待算）
 
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -226,9 +224,7 @@ class CodeEditor(QWidget):
 
         self._edit.cursorPositionChanged.connect(self._on_cursor)
         self._edit.textChanged.connect(self._on_text_changed)
-        self._edit.verticalScrollBar().valueChanged.connect(
-            lambda _v: self._sync_gutter()
-        )
+        self._edit.verticalScrollBar().valueChanged.connect(lambda _v: self._sync_gutter())
 
         self._clamp_lines(initial=True)
         self._rescan_highlight()
@@ -251,9 +247,7 @@ class CodeEditor(QWidget):
         old = getattr(self, "_highlighter", None)
         if old is not None:
             old.setDocument(None)  # 解绑旧高亮器
-        self._highlighter = PygmentsHighlighter(
-            self._edit.document(), language, self._theme
-        )
+        self._highlighter = PygmentsHighlighter(self._edit.document(), language, self._theme)
 
     def _rescan_highlight(self) -> None:
         """防抖重扫入口（文本变化/切语言/切主题后调用）。"""
@@ -414,9 +408,7 @@ class CodeEditor(QWidget):
         digits = max(2, len(str(total)))
         char_w = self._edit.fontMetrics().horizontalAdvance("0")
         width = (
-            CODE_EDITOR_LINE["dark" if self._theme == "dark" else "light"][
-                "gutter_pad_x"
-            ]
+            CODE_EDITOR_LINE["dark" if self._theme == "dark" else "light"]["gutter_pad_x"]
             + digits * char_w
             + 6
         )

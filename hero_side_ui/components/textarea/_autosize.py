@@ -93,4 +93,3 @@ class _TextareaAutosizeMixin:
         """返回当前 wrapper layout 的上下 padding"""
         pad_y = size_config["inside_padding_y"] if is_inside else size_config["padding_y"]
         return pad_y, pad_y
-

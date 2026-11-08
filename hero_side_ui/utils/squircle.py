@@ -47,7 +47,8 @@
 """
 
 import math
-from PySide6.QtCore import QRectF, QPointF
+
+from PySide6.QtCore import QPointF, QRectF
 from PySide6.QtGui import QPainterPath
 
 
@@ -189,7 +190,7 @@ def _hybrid_squircle_path(
 
     适用于长条形组件 (aspect ratio > 3)，防止边缘过度弯曲。
     """
-    x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
+    _x, _y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
 
     # 找超椭圆与「距离边缘一定距离」的水平/垂直线的交点
     # 用这个距离决定直线段和曲段的分界
@@ -203,7 +204,6 @@ def _hybrid_squircle_path(
 
     # 从上边中点开始，顺时针
     # 上边 (从左到右): θ ≈ π → 0
-    start_theta = math.pi
     # 右上角区域
     rt_start = math.pi - corner_angle
     rt_end = -corner_angle  # 即 2π - corner_angle
@@ -221,14 +221,12 @@ def _hybrid_squircle_path(
 
     # ── 右边直线段 ──
     right_x = cx + a * _signed_pow(math.cos(math.pi / 2 - corner_angle), 2.0 / n)
-    right_y_top = cy + b * _signed_pow(math.sin(math.pi / 2 - corner_angle), 2.0 / n)
+    cy + b * _signed_pow(math.sin(math.pi / 2 - corner_angle), 2.0 / n)
     right_y_bot = cy + b * _signed_pow(math.sin(corner_angle - math.pi / 2), 2.0 / n)
     path.lineTo(right_x, right_y_bot)
 
     # ── 右下角 ──
-    _append_arc(
-        path, cx, cy, a, b, n, math.pi / 2 - corner_angle, corner_angle - math.pi / 2
-    )
+    _append_arc(path, cx, cy, a, b, n, math.pi / 2 - corner_angle, corner_angle - math.pi / 2)
 
     # ── 下边直线段 ──
     bot_y = cy + b * _signed_pow(math.sin(corner_angle), 2.0 / n)
@@ -243,9 +241,7 @@ def _hybrid_squircle_path(
     path.lineTo(left_x, top_y)
 
     # ── 左上角 ──
-    _append_arc(
-        path, cx, cy, a, b, n, -math.pi / 2 + corner_angle, -corner_angle - math.pi / 2
-    )
+    _append_arc(path, cx, cy, a, b, n, -math.pi / 2 + corner_angle, -corner_angle - math.pi / 2)
 
     path.closeSubpath()
     return path

@@ -15,7 +15,7 @@ from PySide6.QtWidgets import QWidget
 
 from . import _palette as pal
 
-__all__ = ["_GridHost", "_CheckboxCell"]
+__all__ = ["_CheckboxCell", "_GridHost"]
 
 
 class _GridHost(QWidget):

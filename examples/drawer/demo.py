@@ -17,6 +17,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from hero_side_ui import (
@@ -26,7 +27,6 @@ from hero_side_ui import (
     Input,
     Subtitle,
 )
-from _base import DemoBase
 
 SIZES = ("xs", "sm", "md", "lg", "xl", "2xl", "3xl", "4xl", "5xl", "full")
 NUMERIC_SIZES = (240, 360, 520, 720)
@@ -84,11 +84,13 @@ class DrawerDemo(DemoBase):
             layout,
             "4 placement（左/右 = bordered 标准贴边，上/下 = flat 弱化）",
             [
-                self._btn(p, lambda p=p: self._open_with(placement=p),
-                          color="default", variant="bordered")
-                if p in ("left", "right") else
-                self._btn(p, lambda p=p: self._open_with(placement=p),
-                          color="default", variant="flat")
+                self._btn(
+                    p, lambda p=p: self._open_with(placement=p), color="default", variant="bordered"
+                )
+                if p in ("left", "right")
+                else self._btn(
+                    p, lambda p=p: self._open_with(placement=p), color="default", variant="flat"
+                )
                 for p in PLACEMENTS
             ],
             labels_bag,
@@ -97,8 +99,15 @@ class DrawerDemo(DemoBase):
         self.add_section_grid(
             layout,
             "10 size（视觉权重按尺寸递增：flat→bordered→solid）",
-            [self._btn(s, lambda s=s: self._open_with(size=s),
-                       color=_SIZE_BTN[s][0], variant=_SIZE_BTN[s][1]) for s in SIZES],
+            [
+                self._btn(
+                    s,
+                    lambda s=s: self._open_with(size=s),
+                    color=_SIZE_BTN[s][0],
+                    variant=_SIZE_BTN[s][1],
+                )
+                for s in SIZES
+            ],
             labels_bag,
             cols=5,
         )
@@ -106,24 +115,40 @@ class DrawerDemo(DemoBase):
         self.add_section(
             layout,
             "4 radius（圆角越强按钮越重）",
-            [self._btn(r, lambda r=r: self._open_with(radius=r),
-                       color=_RADIUS_BTN[r][0], variant=_RADIUS_BTN[r][1]) for r in RADII],
+            [
+                self._btn(
+                    r,
+                    lambda r=r: self._open_with(radius=r),
+                    color=_RADIUS_BTN[r][0],
+                    variant=_RADIUS_BTN[r][1],
+                )
+                for r in RADII
+            ],
             labels_bag,
         )
 
         self.add_section(
             layout,
             "3 backdrop（transparent = flat 不可见，opaque = bordered，blur = solid）",
-            [self._btn(b, lambda b=b: self._open_with(backdrop=b),
-                       color=_BACKDROP_BTN[b][0], variant=_BACKDROP_BTN[b][1]) for b in BACKDROPS],
+            [
+                self._btn(
+                    b,
+                    lambda b=b: self._open_with(backdrop=b),
+                    color=_BACKDROP_BTN[b][0],
+                    variant=_BACKDROP_BTN[b][1],
+                )
+                for b in BACKDROPS
+            ],
             labels_bag,
         )
 
         self.add_section(
             layout,
             "数字 size（px，作用在滑出轴上）",
-            [self._btn(f"{n}px", lambda n=n: self._open_with(size=n),
-                       color=c, variant=v) for n, c, v in _NUM_BTN],
+            [
+                self._btn(f"{n}px", lambda n=n: self._open_with(size=n), color=c, variant=v)
+                for n, c, v in _NUM_BTN
+            ],
             labels_bag,
         )
 
@@ -131,13 +156,12 @@ class DrawerDemo(DemoBase):
             layout,
             "关闭行为",
             [
-                self._btn("点遮罩关不掉", self._open_locked,
-                          color="warning", variant="bordered"),
-                self._btn("Esc 关不掉", self._open_no_esc,
-                          color="warning", variant="bordered"),
+                self._btn("点遮罩关不掉", self._open_locked, color="warning", variant="bordered"),
+                self._btn("Esc 关不掉", self._open_no_esc, color="warning", variant="bordered"),
                 self._btn("隐藏关闭按钮", self._open_no_close, variant="flat"),
-                self._btn("自定义关闭按钮", self._open_custom_close,
-                          color="danger", variant="flat"),
+                self._btn(
+                    "自定义关闭按钮", self._open_custom_close, color="danger", variant="flat"
+                ),
                 self._btn("禁用动画", self._open_no_animation, variant="flat"),
             ],
             labels_bag,
@@ -146,8 +170,10 @@ class DrawerDemo(DemoBase):
         self.add_full_width(
             layout,
             "说明",
-            Body("内容区就是一个普通 QWidget：drawer.content_widget() 拿到后随便塞；"
-                 "内容超出面板时把 ScrollShadow 作为 content 传进去即可滚动。"),
+            Body(
+                "内容区就是一个普通 QWidget：drawer.content_widget() 拿到后随便塞；"
+                "内容超出面板时把 ScrollShadow 作为 content 传进去即可滚动。"
+            ),
             labels_bag,
         )
 
@@ -162,9 +188,7 @@ class DrawerDemo(DemoBase):
     def _fill_content(self, drawer: Drawer):
         """主抽屉内容 —— 面板本身就是表面，组件直接摆，不再包 Card。"""
         drawer.add_widget(Subtitle("通知设置"))
-        drawer.add_widget(
-            Body("内容区可以直接 add_widget 任意组件，也可以 set_content 整体替换。")
-        )
+        drawer.add_widget(Body("内容区可以直接 add_widget 任意组件，也可以 set_content 整体替换。"))
         drawer.add_widget(Input(placeholder="随便输入点什么"))
         row = QWidget(drawer.content_widget())
         btns = QHBoxLayout(row)
@@ -179,10 +203,10 @@ class DrawerDemo(DemoBase):
 
     def _open_with(
         self,
-        placement: str = None,
+        placement: str | None = None,
         size=None,
-        radius: str = None,
-        backdrop: str = None,
+        radius: str | None = None,
+        backdrop: str | None = None,
     ):
         if placement:
             self._drawer.set_placement(placement)

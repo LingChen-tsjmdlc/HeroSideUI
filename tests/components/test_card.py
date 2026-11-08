@@ -4,7 +4,7 @@ import pytest
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QSizePolicy
 
-from hero_side_ui import Card, CardHeader, CardBody, CardFooter, Divider
+from hero_side_ui import Card, CardBody, CardFooter, CardHeader, Divider
 
 
 # ============================================================

@@ -11,9 +11,8 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import QPoint, QEvent
+from PySide6.QtCore import QEvent, QPoint, QSize
 from PySide6.QtGui import QColor, QResizeEvent
-from PySide6.QtCore import QSize
 from PySide6.QtWidgets import QPushButton
 
 from hero_side_ui.animation import RippleOverlay

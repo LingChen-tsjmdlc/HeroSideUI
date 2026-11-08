@@ -11,13 +11,13 @@ box_radius_ratio 会在运行时 * RADIUS["md"] 计算像素值；显式传入 r
 
 CHECKBOX_SIZES = {
     "sm": {
-        "box": 16,               # wrapper 尺寸
-        "icon_w": 12,            # check icon 宽
-        "icon_h": 8,             # check icon 高
-        "label_font_size": 13,   # text-small
-        "gap": 8,                # wrapper 与 label 的间距 (me-2 = 8px)
+        "box": 16,  # wrapper 尺寸
+        "icon_w": 12,  # check icon 宽
+        "icon_h": 8,  # check icon 高
+        "label_font_size": 13,  # text-small
+        "gap": 8,  # wrapper 与 label 的间距 (me-2 = 8px)
         "border_width": 2,
-        "box_radius_ratio": 0.5, # box 圆角 = RADIUS.md * 0.5
+        "box_radius_ratio": 0.5,  # box 圆角 = RADIUS.md * 0.5
     },
     "md": {
         "box": 20,

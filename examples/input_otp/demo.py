@@ -5,14 +5,14 @@
   ErrorMessage / ReadOnly / Disabled / Password / TextAlign / Invalid
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Body, Button, InputOtp
 from hero_side_ui.themes import (
     VALID_INPUT_OTP_RADII,
@@ -67,12 +67,7 @@ class InputOtpDemo(DemoBase):
         # ---------- Colors ----------
         layout.addWidget(self._section_title("Colors 颜色"))
         layout.addWidget(
-            self._row(
-                *[
-                    self._captioned(c, InputOtp(length=4, color=c))
-                    for c in DEMO_COLORS
-                ]
-            )
+            self._row(*[self._captioned(c, InputOtp(length=4, color=c)) for c in DEMO_COLORS])
         )
 
         # ---------- Sizes ----------

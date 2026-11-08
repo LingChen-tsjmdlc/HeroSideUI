@@ -62,64 +62,93 @@ def build_toast_styles(variant: str, color: str, theme: str) -> dict:
 
 # ---- flat（默认）：浅色底 + 细边框 ----
 
+
 def _flat(c: dict, d: dict, is_dark: bool, color: str) -> dict:
     if color == "default":
         bg = _CONTENT1["dark" if is_dark else "light"]
         fg = _FOREGROUND["dark" if is_dark else "light"]
         return _pack(
-            bg=bg, border=_shade(d, 100, is_dark), border_w=1,
-            title=fg, desc=_shade(d, 500, is_dark), icon=fg,
-            close=_shade(d, 400, is_dark), close_hover=_shade(d, 600, is_dark),
+            bg=bg,
+            border=_shade(d, 100, is_dark),
+            border_w=1,
+            title=fg,
+            desc=_shade(d, 500, is_dark),
+            icon=fg,
+            close=_shade(d, 400, is_dark),
+            close_hover=_shade(d, 600, is_dark),
             progress=_shade(d, 400, is_dark),
         )
     if color == "foreground":
         fg = _BACKGROUND["dark" if is_dark else "light"]
         return _pack(
             bg=_FOREGROUND["dark" if is_dark else "light"],
-            border=_shade(d, 100, is_dark), border_w=1,
-            title=fg, desc=fg, icon=fg,
-            close=_shade(d, 400, is_dark), close_hover=_shade(d, 600, is_dark),
+            border=_shade(d, 100, is_dark),
+            border_w=1,
+            title=fg,
+            desc=fg,
+            icon=fg,
+            close=_shade(d, 400, is_dark),
+            close_hover=_shade(d, 600, is_dark),
             progress=_shade(d, 400, is_dark),
         )
     return _pack(
-        bg=_shade(c, 50, is_dark), border=_shade(c, 100, is_dark), border_w=1,
-        title=_shade(c, 600, is_dark), desc=_shade(c, 500, is_dark),
+        bg=_shade(c, 50, is_dark),
+        border=_shade(c, 100, is_dark),
+        border_w=1,
+        title=_shade(c, 600, is_dark),
+        desc=_shade(c, 500, is_dark),
         icon=_shade(c, 600, is_dark),
-        close=_shade(c, 400, is_dark), close_hover=_shade(c, 600, is_dark),
+        close=_shade(c, 400, is_dark),
+        close_hover=_shade(c, 600, is_dark),
         progress=_shade(c, 400, is_dark),
     )
 
 
 # ---- bordered：背景色底 + 主色边框 ----
 
+
 def _bordered(c: dict, d: dict, is_dark: bool, color: str) -> dict:
     bg_key = "dark" if is_dark else "light"
     if color == "default":
         return _pack(
-            bg=_BACKGROUND[bg_key], border=_shade(d, 200, is_dark), border_w=1,
-            title=_FOREGROUND[bg_key], desc=_shade(d, 500, is_dark),
+            bg=_BACKGROUND[bg_key],
+            border=_shade(d, 200, is_dark),
+            border_w=1,
+            title=_FOREGROUND[bg_key],
+            desc=_shade(d, 500, is_dark),
             icon=_FOREGROUND[bg_key],
-            close=_shade(d, 400, is_dark), close_hover=_shade(d, 600, is_dark),
+            close=_shade(d, 400, is_dark),
+            close_hover=_shade(d, 600, is_dark),
             progress=_shade(d, 400, is_dark),
         )
     if color == "foreground":
         fg = _BACKGROUND[bg_key]
         return _pack(
-            bg=_FOREGROUND[bg_key], border=_shade(d, 400, is_dark), border_w=1,
-            title=fg, desc=fg, icon=fg,
-            close=_shade(d, 400, is_dark), close_hover=_shade(d, 600, is_dark),
+            bg=_FOREGROUND[bg_key],
+            border=_shade(d, 400, is_dark),
+            border_w=1,
+            title=fg,
+            desc=fg,
+            icon=fg,
+            close=_shade(d, 400, is_dark),
+            close_hover=_shade(d, 600, is_dark),
             progress=_shade(d, 400, is_dark),
         )
     return _pack(
-        bg=_BACKGROUND[bg_key], border=_shade(c, 400, is_dark), border_w=1,
-        title=_shade(c, 600, is_dark), desc=_shade(c, 500, is_dark),
+        bg=_BACKGROUND[bg_key],
+        border=_shade(c, 400, is_dark),
+        border_w=1,
+        title=_shade(c, 600, is_dark),
+        desc=_shade(c, 500, is_dark),
         icon=_shade(c, 600, is_dark),
-        close=_shade(c, 400, is_dark), close_hover=_shade(c, 600, is_dark),
+        close=_shade(c, 400, is_dark),
+        close_hover=_shade(c, 600, is_dark),
         progress=_shade(c, 400, is_dark),
     )
 
 
 # ---- solid：纯色底 + 反色文字 ----
+
 
 def _solid(c: dict, d: dict, is_dark: bool, color: str) -> dict:
     bg_key = "dark" if is_dark else "light"
@@ -134,9 +163,15 @@ def _solid(c: dict, d: dict, is_dark: bool, color: str) -> dict:
         bg = c[400 if is_dark and color == "secondary" else 500]
         fg = _SOLID_FG.get(color, "#ffffff")
     return _pack(
-        bg=bg, border=None, border_w=0,
-        title=fg, desc=fg, icon=fg,
-        close=fg, close_hover=fg, progress=fg,
+        bg=bg,
+        border=None,
+        border_w=0,
+        title=fg,
+        desc=fg,
+        icon=fg,
+        close=fg,
+        close_hover=fg,
+        progress=fg,
     )
 
 

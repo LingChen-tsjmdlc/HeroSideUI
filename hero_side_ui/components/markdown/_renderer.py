@@ -15,15 +15,14 @@
 
 from __future__ import annotations
 
-from typing import Callable, Dict, List, Optional
+from collections.abc import Callable
 
+from markdown_it.tree import SyntaxTreeNode
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QWidget
 
-from markdown_it.tree import SyntaxTreeNode
-
-from ...themes import HEROUI_COLORS, HEADING_SPEC
+from ...themes import HEADING_SPEC, HEROUI_COLORS
 from ..divider import Divider
 from ..image import Image
 from ..table import Table
@@ -41,7 +40,7 @@ def _plain_text(node: SyntaxTreeNode) -> str:
     return "".join(parts)
 
 
-def _first_inline(node: SyntaxTreeNode) -> Optional[SyntaxTreeNode]:
+def _first_inline(node: SyntaxTreeNode) -> SyntaxTreeNode | None:
     for c in node.children:
         if c.type == "inline":
             return c
@@ -68,15 +67,15 @@ class BlockContext:
         self,
         node: SyntaxTreeNode,
         parent: QWidget,
-        renderer: "MarkdownRenderer",
+        renderer: MarkdownRenderer,
     ):
         self.node = node
         self.parent = parent
         self.theme = renderer.theme
         self._renderer = renderer
 
-    def render_children(self, parent: QWidget) -> List[QWidget]:
-        out: List[QWidget] = []
+    def render_children(self, parent: QWidget) -> list[QWidget]:
+        out: list[QWidget] = []
         for child in self.node.children:
             w = self._renderer.render_node(child, parent)
             if w is not None:
@@ -91,7 +90,7 @@ class BlockContext:
             inline, self.theme, self._renderer.inline_overrides, self._renderer.sheet
         )
 
-    def default(self, parent: QWidget) -> Optional[QWidget]:
+    def default(self, parent: QWidget) -> QWidget | None:
         return self._renderer.render_node(self.node, parent, _skip_override=True)
 
 
@@ -115,10 +114,10 @@ class MarkdownRenderer:
     def __init__(
         self,
         theme: str,
-        inline_overrides: Optional[Dict[str, InlineOverride]] = None,
-        block_renderers: Optional[Dict[str, BlockRenderer]] = None,
-        inline_widgets: Optional[Dict[str, InlineWidget]] = None,
-        inline_styles: Optional[Dict[str, dict]] = None,
+        inline_overrides: dict[str, InlineOverride] | None = None,
+        block_renderers: dict[str, BlockRenderer] | None = None,
+        inline_widgets: dict[str, InlineWidget] | None = None,
+        inline_styles: dict[str, dict] | None = None,
     ):
         self.theme = theme
         self.inline_overrides = inline_overrides or {}
@@ -126,17 +125,13 @@ class MarkdownRenderer:
         self.inline_widgets = inline_widgets or {}
         self.sheet = InlineStyleSheet(theme, inline_styles)
         # {显示序号: 脚注正文}，render() 时按整树收集，供行内角标 Tooltip 使用
-        self.footnote_texts: Dict[str, str] = {}
+        self.footnote_texts: dict[str, str] = {}
 
     # ------------------------------------------------------------
     # 富文本 label 构造
     # ------------------------------------------------------------
-    def _rich_label(
-        self, html: str, parent: QWidget, *, size="md", weight="normal"
-    ) -> Text:
-        label = Text(
-            size=size, weight=weight, theme=self.theme, rich_text=True, parent=parent
-        )
+    def _rich_label(self, html: str, parent: QWidget, *, size="md", weight="normal") -> Text:
+        label = Text(size=size, weight=weight, theme=self.theme, rich_text=True, parent=parent)
         label.setTextFormat(Qt.TextFormat.RichText)
         label.setWordWrap(True)
         label.setOpenExternalLinks(True)
@@ -150,11 +145,11 @@ class MarkdownRenderer:
     # ------------------------------------------------------------
     # 顶层入口
     # ------------------------------------------------------------
-    def render(self, root: SyntaxTreeNode, parent: QWidget) -> List[QWidget]:
+    def render(self, root: SyntaxTreeNode, parent: QWidget) -> list[QWidget]:
         from ._footnote import collect_footnote_texts
 
         self.footnote_texts = collect_footnote_texts(root)
-        widgets: List[QWidget] = []
+        widgets: list[QWidget] = []
         for node in root.children:
             w = self.render_node(node, parent)
             if w is not None:
@@ -167,7 +162,7 @@ class MarkdownRenderer:
         parent: QWidget,
         *,
         _skip_override: bool = False,
-    ) -> Optional[QWidget]:
+    ) -> QWidget | None:
         # 用户块级 override 优先（_skip_override=True 时跳过，供 ctx.default 取默认）
         if not _skip_override:
             factory = self.block_renderers.get(node.type)
@@ -194,15 +189,11 @@ class MarkdownRenderer:
         size, weight = HEADING_SPEC.get(level, HEADING_SPEC[6])
         inline = _first_inline(node)
         html = (
-            inline_to_html(inline, self.theme, self.inline_overrides, self.sheet)
-            if inline
-            else ""
+            inline_to_html(inline, self.theme, self.inline_overrides, self.sheet) if inline else ""
         )
         return self._rich_label(html, parent, size=size, weight=weight)
 
-    def _render_paragraph(
-        self, node: SyntaxTreeNode, parent: QWidget
-    ) -> Optional[QWidget]:
+    def _render_paragraph(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget | None:
         inline = _first_inline(node)
         if inline is None:
             return None
@@ -246,9 +237,9 @@ class MarkdownRenderer:
 
     def _render_table(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget:
         table = Table(theme=self.theme, parent=parent)
-        headers: List[str] = []
-        aligns: List[str] = []
-        rows: List[dict] = []
+        headers: list[str] = []
+        aligns: list[str] = []
+        rows: list[dict] = []
         for section in node.children:
             if section.type == "thead":
                 for tr in section.children:
@@ -296,9 +287,7 @@ class MarkdownRenderer:
 
     _render_code_block = _render_fence
 
-    def _render_fallback(
-        self, node: SyntaxTreeNode, parent: QWidget
-    ) -> Optional[QWidget]:
+    def _render_fallback(self, node: SyntaxTreeNode, parent: QWidget) -> QWidget | None:
         # 未识别块：有 inline 子节点就当段落渲染，否则丢弃
         inline = _first_inline(node)
         if inline is not None:
@@ -312,7 +301,7 @@ class MarkdownRenderer:
     # 工具
     # ------------------------------------------------------------
     @staticmethod
-    def _sole_image(inline: SyntaxTreeNode) -> Optional[SyntaxTreeNode]:
+    def _sole_image(inline: SyntaxTreeNode) -> SyntaxTreeNode | None:
         """inline 仅含单张图片（忽略纯空白文本）时返回该 image 节点。"""
         image = None
         for c in inline.children:
@@ -320,13 +309,14 @@ class MarkdownRenderer:
                 if image is not None:
                     return None
                 image = c
-            elif c.type == "text" and c.content.strip() == "":
-                continue
-            elif c.type in ("softbreak", "hardbreak"):
+            elif (c.type == "text" and c.content.strip() == "") or c.type in (
+                "softbreak",
+                "hardbreak",
+            ):
                 continue
             else:
                 return None
         return image
 
 
-__all__ = ["MarkdownRenderer", "BlockContext", "BlockRenderer"]
+__all__ = ["BlockContext", "BlockRenderer", "MarkdownRenderer"]

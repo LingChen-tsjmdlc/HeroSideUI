@@ -26,29 +26,27 @@ HeroSideUI Switch (Toggle) Component
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import (
-    Qt,
-    Signal,
     QByteArray,
     QRectF,
     QSize,
+    Qt,
+    Signal,
 )
 from PySide6.QtGui import (
-    QPainter,
     QColor,
     QFontMetrics,
+    QPainter,
 )
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QAbstractButton, QWidget
 
-from ...themes import HEROUI_COLORS, SWITCH_SIZES
-from ...core import ThemeProvider
 from ...animation.tween import tween_value
+from ...core import ThemeProvider
+from ...themes import HEROUI_COLORS, SWITCH_SIZES
 
 
-def _render_svg(svg_str: str, color: Optional[QColor] = None) -> QSvgRenderer:
+def _render_svg(svg_str: str, color: QColor | None = None) -> QSvgRenderer:
     """把 currentColor 占位符替换为指定色后生成 QSvgRenderer"""
     data = svg_str
     if color is not None:
@@ -89,10 +87,10 @@ class Switch(QAbstractButton):
         is_read_only: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        start_content: Optional[str] = None,
-        end_content: Optional[str] = None,
-        thumb_icon: Optional[str] = None,
-        parent: Optional[QWidget] = None,
+        start_content: str | None = None,
+        end_content: str | None = None,
+        thumb_icon: str | None = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -230,10 +228,24 @@ class Switch(QAbstractButton):
     def _on_toggled(self, checked: bool):
         self.selected_changed.emit(checked)
         self._target_bg = self._checked_bg() if checked else self._unchecked_bg()
-        tween_value(self, "_thumb_anim_runner", self._thumb_t, 1.0 if checked else 0.0,
-                    self._on_thumb_step, duration=250, animated=not self._disable_animation)
-        tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(self._target_bg),
-                    self._on_bg_step, duration=250, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_thumb_anim_runner",
+            self._thumb_t,
+            1.0 if checked else 0.0,
+            self._on_thumb_step,
+            duration=250,
+            animated=not self._disable_animation,
+        )
+        tween_value(
+            self,
+            "_bg_anim_runner",
+            QColor(self._bg_color),
+            QColor(self._target_bg),
+            self._on_bg_step,
+            duration=250,
+            animated=not self._disable_animation,
+        )
 
     def _on_thumb_step(self, v):
         self._thumb_t = float(v)
@@ -248,8 +260,15 @@ class Switch(QAbstractButton):
         self.update()
 
     def _animate_press_to(self, target: float):
-        tween_value(self, "_press_anim_runner", self._press_t, target,
-                    self._on_press_step, duration=100, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_press_anim_runner",
+            self._press_t,
+            target,
+            self._on_press_step,
+            duration=100,
+            animated=not self._disable_animation,
+        )
 
     # ============================================================
     # 事件
@@ -370,7 +389,7 @@ class Switch(QAbstractButton):
 
         # 位置: 未选中时 thumb 靠左(pad 后紧贴);选中时向右移 selected_shift
         # 按压且选中时位移收敛到 pressed_shift (更靠左一点,让拉长不超出右边界)
-        checked = self.isChecked()
+        self.isChecked()
         selected_shift = cfg["selected_shift"]
         pressed_shift = cfg["pressed_shift"]
         # 选中时的位移:在 selected_shift 和 pressed_shift 之间按 effective_press 插值
@@ -389,13 +408,9 @@ class Switch(QAbstractButton):
         # 轻微阴影:在 thumb 下画一层半透明黑色椭圆偏移
         shadow = QColor(0, 0, 0, 35)
         painter.setBrush(shadow)
-        painter.drawRoundedRect(
-            QRectF(thumb_x, thumb_y + 1, thumb_w, thumb_h), thumb_r, thumb_r
-        )
+        painter.drawRoundedRect(QRectF(thumb_x, thumb_y + 1, thumb_w, thumb_h), thumb_r, thumb_r)
         painter.setBrush(self._thumb_bg())
-        painter.drawRoundedRect(
-            QRectF(thumb_x, thumb_y, thumb_w, thumb_h), thumb_r, thumb_r
-        )
+        painter.drawRoundedRect(QRectF(thumb_x, thumb_y, thumb_w, thumb_h), thumb_r, thumb_r)
         painter.restore()
 
         # thumbIcon: 居中于 thumb
@@ -415,7 +430,7 @@ class Switch(QAbstractButton):
             painter.setOpacity(1.0 if not self._is_disabled else 0.5)
             painter.setPen(self._label_color())
             painter.setFont(self.font())
-            fm = QFontMetrics(self.font())
+            QFontMetrics(self.font())
             text_x = wrap_x + wrap_w + cfg["label_gap"]
             text_w = self.width() - text_x
             painter.drawText(
@@ -442,8 +457,15 @@ class Switch(QAbstractButton):
             return
         self._color = color
         self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
-        tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(self._target_bg),
-                    self._on_bg_step, duration=200, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_bg_anim_runner",
+            QColor(self._bg_color),
+            QColor(self._target_bg),
+            self._on_bg_step,
+            duration=200,
+            animated=not self._disable_animation,
+        )
         self.update()
 
     def set_size(self, size: str):
@@ -466,22 +488,34 @@ class Switch(QAbstractButton):
     def set_disable_animation(self, disable: bool):
         self._disable_animation = disable
         if disable:
-            tween_value(self, "_thumb_anim_runner", self._thumb_t,
-                        1.0 if self.isChecked() else 0.0, self._on_thumb_step, duration=0)
+            tween_value(
+                self,
+                "_thumb_anim_runner",
+                self._thumb_t,
+                1.0 if self.isChecked() else 0.0,
+                self._on_thumb_step,
+                duration=0,
+            )
             target = self._checked_bg() if self.isChecked() else self._unchecked_bg()
-            tween_value(self, "_bg_anim_runner", QColor(self._bg_color), QColor(target),
-                        self._on_bg_step, duration=0)
+            tween_value(
+                self,
+                "_bg_anim_runner",
+                QColor(self._bg_color),
+                QColor(target),
+                self._on_bg_step,
+                duration=0,
+            )
             self._animate_press_to(0.0)
 
-    def set_start_content(self, svg: Optional[str]):
+    def set_start_content(self, svg: str | None):
         self._start_content = svg
         self.update()
 
-    def set_end_content(self, svg: Optional[str]):
+    def set_end_content(self, svg: str | None):
         self._end_content = svg
         self.update()
 
-    def set_thumb_icon(self, svg: Optional[str]):
+    def set_thumb_icon(self, svg: str | None):
         self._thumb_icon = svg
         self.update()
 
@@ -496,18 +530,14 @@ class Switch(QAbstractButton):
             self._theme_mode = theme
             self._theme = theme
         # 立即更新当前 bg 色(不动画)
-        self._target_bg = (
-            self._checked_bg() if self.isChecked() else self._unchecked_bg()
-        )
+        self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
         self._bg_color = QColor(self._target_bg)
         self.update()
 
     def _apply_provider_theme(self, theme: str):
         """ThemeProvider 广播专用:只在 auto 模式下调用"""
         self._theme = theme
-        self._target_bg = (
-            self._checked_bg() if self.isChecked() else self._unchecked_bg()
-        )
+        self._target_bg = self._checked_bg() if self.isChecked() else self._unchecked_bg()
         self._bg_color = QColor(self._target_bg)
         self.update()
 

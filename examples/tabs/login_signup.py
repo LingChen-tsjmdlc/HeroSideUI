@@ -9,29 +9,29 @@ Tabs 组件示例 - 登录 / 注册
 """
 
 import sys
+
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
     QLineEdit,
+    QMainWindow,
+    QVBoxLayout,
+    QWidget,
 )
 
 from hero_side_ui import (
-    Tabs,
-    Input,
     Button,
-    Checkbox,
-    Card,
-    CardHeader,
-    CardBody,
-    Title,
     Caption,
+    Card,
+    CardBody,
+    CardHeader,
+    Checkbox,
+    Input,
+    Tabs,
     ThemeSwitcher,
+    Title,
 )
-
 
 # ----------------- 内容面板（plain QWidget） ------------------
 
@@ -123,9 +123,7 @@ def make_login_card() -> Card:
     # 联动切换
     to_signup_btn.clicked.connect(lambda: tabs.set_selected("signup"))
     to_login_btn.clicked.connect(lambda: tabs.set_selected("login"))
-    tabs.selection_changed.connect(
-        lambda i, k: print(f"switched to {k} (#{i})")
-    )
+    tabs.selection_changed.connect(lambda i, k: print(f"switched to {k} (#{i})"))
 
     card = Card(shadow="md", radius="lg", full_width=False)
     card.setFixedWidth(420)

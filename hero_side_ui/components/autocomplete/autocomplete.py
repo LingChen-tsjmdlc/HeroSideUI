@@ -7,15 +7,11 @@
     - ``_EndContentWidget`` → ``_end_content.py``
 """
 
-from typing import Callable, Iterable, List, Optional, Union
+from collections.abc import Callable, Iterable
 
-from PySide6.QtCore import QEvent, QObject, QPoint, QSize, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QIcon
+from PySide6.QtCore import QPoint, Signal
 from PySide6.QtWidgets import (
     QApplication,
-    QHBoxLayout,
-    QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -23,22 +19,14 @@ from PySide6.QtWidgets import (
 from ...core import ThemeProvider
 from ...themes import (
     AUTOCOMPLETE_SIZES,
-    HEROUI_COLORS,
-    INPUT_SIZES,
-    RADIUS,
 )
-from ...utils import load_svg_icon
-
-from ..button import Button
 from ..input import Input
 from ..listbox import Listbox, ListboxItem, ListboxSection
 from ..popover import Popover, PopoverContent
 from ..scroll_shadow import ScrollShadow
-
 from ._callbacks import _AutocompleteCallbacksMixin
 from ._end_content import _EndContentWidget
 from ._keyboard import _AutocompleteKeyboardMixin
-from ..._shared.selection import SelectorButton as _SelectorButton
 from ._styling import _AutocompleteStylingMixin
 
 
@@ -90,16 +78,16 @@ class Autocomplete(
     def __init__(
         self,
         # ---- core ----
-        items: Optional[Iterable[Union[dict, tuple, ListboxItem]]] = None,
+        items: Iterable[dict | tuple | ListboxItem] | None = None,
         *,
         # ---- text / selection state ----
-        input_value: Optional[str] = None,
-        default_input_value: Optional[str] = None,
-        selected_key: Optional[str] = None,
-        default_selected_key: Optional[str] = None,
-        disabled_keys: Optional[Iterable[str]] = None,
+        input_value: str | None = None,
+        default_input_value: str | None = None,
+        selected_key: str | None = None,
+        default_selected_key: str | None = None,
+        disabled_keys: Iterable[str] | None = None,
         # ---- 行为 ----
-        default_filter: Optional[Callable[[str, str], bool]] = None,
+        default_filter: Callable[[str, str], bool] | None = None,
         allows_custom_value: bool = False,
         is_clearable: bool = True,
         menu_trigger: str = "focus",
@@ -107,7 +95,7 @@ class Autocomplete(
         selector_icon: str = "heroicons--chevron-down",
         clear_icon: str = "heroicons--x-mark-16-solid",
         disable_selector_icon_rotation: bool = False,
-        empty_content: Optional[str] = None,
+        empty_content: str | None = None,
         # ---- Input 透传 ----
         label: str = "",
         placeholder: str = "",
@@ -115,20 +103,20 @@ class Autocomplete(
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
-        start_content: Optional[Union[str, QWidget]] = None,
+        start_content: str | QWidget | None = None,
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
         is_readonly: bool = False,
         # ---- Listbox 透传（可选 override） ----
         listbox_variant: str = "flat",
-        listbox_color: Optional[str] = None,  # None → 跟随 color
+        listbox_color: str | None = None,  # None → 跟随 color
         # ---- 其他 ----
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -164,9 +152,7 @@ class Autocomplete(
         self._color = color
         self._size = size
         self._variant = variant
-        self._listbox_color = (
-            listbox_color if listbox_color in self.VALID_COLORS else color
-        )
+        self._listbox_color = listbox_color if listbox_color in self.VALID_COLORS else color
         self._listbox_variant = listbox_variant
         self._disable_animation = bool(disable_animation)
         self._theme_mode = theme
@@ -176,12 +162,10 @@ class Autocomplete(
         # ---------- 内部状态 ----------
         # selected_key / input_value 受控 vs 非受控：HeroUI 同时支持，
         # 这里以 default_xxx 初始化内部状态；选中变化时同时发信号给用户。
-        self._selected_key: Optional[str] = (
+        self._selected_key: str | None = (
             selected_key if selected_key is not None else default_selected_key
         )
-        initial_text = (
-            input_value if input_value is not None else (default_input_value or "")
-        )
+        initial_text = input_value if input_value is not None else (default_input_value or "")
         self._input_value: str = initial_text
         self._is_open: bool = False
         self._disabled_keys: set[str] = set(disabled_keys or [])
@@ -294,13 +278,9 @@ class Autocomplete(
 
         self._popover.set_content(pop_content)
         self._popover.opened.connect(
-            lambda: self._on_popover_open_changed(
-                True, getattr(self, "_pending_trigger", "manual")
-            )
+            lambda: self._on_popover_open_changed(True, getattr(self, "_pending_trigger", "manual"))
         )
-        self._popover.closed.connect(
-            lambda: self._on_popover_open_changed(False, "close")
-        )
+        self._popover.closed.connect(lambda: self._on_popover_open_changed(False, "close"))
 
         # ---------- Items ----------
         if items:
@@ -321,9 +301,7 @@ class Autocomplete(
         self._input.text_changed.connect(self._on_input_changed)
         self._input.line_edit.installEventFilter(self)
         # focus 监听（菜单 trigger = focus）
-        self._input.line_edit.installEventFilter(
-            self
-        )  # 同一 filter 既处理键盘又处理焦点
+        self._input.line_edit.installEventFilter(self)  # 同一 filter 既处理键盘又处理焦点
 
         # ---------- disabled keys ----------
         # 走统一入口:同时考虑用户传入的 disabled_keys + readonly 状态(readonly
@@ -370,7 +348,7 @@ class Autocomplete(
     # ============================================================
     # Items 装配
     # ============================================================
-    def set_items(self, items: Iterable[Union[dict, tuple, ListboxItem]]):
+    def set_items(self, items: Iterable[dict | tuple | ListboxItem]):
         """重置 items 列表。
 
         item 可以是:
@@ -416,16 +394,16 @@ class Autocomplete(
     def items(self) -> list[ListboxItem]:
         return self._listbox.items()
 
-    def item_by_key(self, key: str) -> Optional[ListboxItem]:
+    def item_by_key(self, key: str) -> ListboxItem | None:
         return self._listbox.item_by_key(key)
 
     # ============================================================
     # 公共 getter / setter
     # ============================================================
-    def selected_key(self) -> Optional[str]:
+    def selected_key(self) -> str | None:
         return self._selected_key
 
-    def set_selected_key(self, key: Optional[str]):
+    def set_selected_key(self, key: str | None):
         if key == self._selected_key:
             return
         self._selected_key = key
@@ -476,9 +454,7 @@ class Autocomplete(
         # 因此 scroll_height 不能超过 screen_bottom - input_bottom - gap - bottom_margin。
         gap = 6
         _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(
-            rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin
-        )
+        return int(rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin)
 
     def _visible_listbox_content_height(self) -> int:
         """计算 Listbox 当前可见内容高度。
@@ -495,9 +471,7 @@ class Autocomplete(
                 self._listbox._list_v.itemAt(i).widget()
                 for i in range(self._listbox._list_v.count())
             ]
-            visible_widgets = [
-                w for w in visible_widgets if w is not None and not w.isHidden()
-            ]
+            visible_widgets = [w for w in visible_widgets if w is not None and not w.isHidden()]
             if not visible_widgets:
                 visible_widgets = [self._listbox._empty_widget]
             h = sum(w.sizeHint().height() for w in visible_widgets)
@@ -598,7 +572,7 @@ class Autocomplete(
         self._refresh_end_btn_sizes()
         self._refresh_end_icons()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._input.set_radius(radius)
 
     def set_label_placement(self, p: str):
@@ -629,7 +603,7 @@ class Autocomplete(
     def set_allows_custom_value(self, v: bool):
         self._allows_custom_value = bool(v)
 
-    def set_default_filter(self, fn: Optional[Callable[[str, str], bool]]):
+    def set_default_filter(self, fn: Callable[[str, str], bool] | None):
         self._filter = fn or _default_contains_filter
         self._apply_filter()
 
@@ -657,7 +631,7 @@ class Autocomplete(
             effective = set(self._disabled_keys)
         self._listbox.set_disabled_keys(effective)
 
-    def set_empty_content(self, text: Optional[str]):
+    def set_empty_content(self, text: str | None):
         self._empty_content = text
         self._listbox.set_empty_content(text)
 

@@ -6,7 +6,7 @@ PaddingSqueezeAnimation: 通过 QLayout.contentsMargins 实现"内容挤压扩�
 from __future__ import annotations
 
 import pytest
-from PySide6.QtWidgets import QWidget, QHBoxLayout
+from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from hero_side_ui.animation import PaddingSqueezeAnimation
 
@@ -34,8 +34,7 @@ class TestInit:
 
 class TestExpandCollapse:
     def test_expand_drives_progress_to_one(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8),
-                                       delta=10, duration=80)
+        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8), delta=10, duration=80)
         anim.set_immediate(False)  # 起点 progress=0
         assert anim.progress() == 0.0
         with qtbot.waitSignal(anim.finished, timeout=500) as blocker:
@@ -44,8 +43,7 @@ class TestExpandCollapse:
         assert anim.progress() == pytest.approx(1.0, abs=0.01)
 
     def test_collapse_drives_progress_to_zero(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8),
-                                       delta=10, duration=80)
+        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8), delta=10, duration=80)
         # 起点是 1.0
         with qtbot.waitSignal(anim.finished, timeout=500) as blocker:
             anim.collapse()
@@ -68,39 +66,34 @@ class TestSqueezeExtraGeometry:
     """squeeze_extra() 应该与 _apply_progress 中加到 margins 的逻辑保持一致。"""
 
     def test_center_origin_uniform(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0),
-                                       delta=10, origin="center")
+        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0), delta=10, origin="center")
         anim.set_immediate(False)
         # extra=10, half=5，四边各加 5
         assert anim.squeeze_extra() == (5, 5, 5, 5)
 
     def test_top_origin_keeps_top_zero(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0),
-                                       delta=10, origin="top")
+        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0), delta=10, origin="top")
         anim.set_immediate(False)
         l, t, r, b = anim.squeeze_extra()
         assert t == 0  # top 锚定
         assert l == r == b == 5
 
     def test_bottom_origin_keeps_bottom_zero(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0),
-                                       delta=10, origin="bottom")
+        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0), delta=10, origin="bottom")
         anim.set_immediate(False)
         l, t, r, b = anim.squeeze_extra()
         assert b == 0  # bottom 锚定
         assert l == t == r == 5
 
     def test_fully_expanded_zero_extra(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0),
-                                       delta=10, origin="center")
+        anim = PaddingSqueezeAnimation(layout, base_margins=(0, 0, 0, 0), delta=10, origin="center")
         anim.set_immediate(True)
         assert anim.squeeze_extra() == (0, 0, 0, 0)
 
 
 class TestProgressChangedSignal:
     def test_progress_changed_emitted_during_animation(self, qtbot, layout):
-        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8),
-                                       delta=10, duration=80)
+        anim = PaddingSqueezeAnimation(layout, base_margins=(8, 8, 8, 8), delta=10, duration=80)
         received: list[float] = []
         anim.progress_changed.connect(received.append)
         anim.set_immediate(False)

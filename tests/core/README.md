@@ -29,11 +29,13 @@ core 是组件库的"地基"，是所有组件共享的全局服务和静态规�
 import pytest
 from hero_side_ui import ThemeProvider
 
+
 @pytest.fixture(autouse=True)
 def reset_provider():
     ThemeProvider._reset_for_test()
     yield
     ThemeProvider._reset_for_test()
+
 
 class TestSetMode:
     def test_set_mode_dark(self, qtbot):
@@ -54,6 +56,7 @@ from PySide6.QtGui import QColor
 from hero_side_ui import StatePalette
 from hero_side_ui.themes import HEROUI_COLORS
 
+
 class TestSpecificBgValues:
     def test_solid_primary(self):
         c = StatePalette.bg("solid", "primary", "light", "hover")
@@ -72,6 +75,7 @@ class TestSpecificBgValues:
 def test_apply_to_scrollarea(qtbot):
     from PySide6.QtWidgets import QScrollArea
     from hero_side_ui import ScrollStyle
+
     area = QScrollArea()
     qtbot.addWidget(area)
     ScrollStyle.apply(area, variant="default", theme="light")

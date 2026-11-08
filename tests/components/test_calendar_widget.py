@@ -81,8 +81,7 @@ def test_first_day_of_week(qtbot):
 
 def test_min_max_disables_paging(qtbot):
     v = CalendarDate(2026, 7, 15)
-    c = _make(qtbot, value=v, min_value=v.first_of_month(),
-              max_value=v.last_of_month())
+    c = _make(qtbot, value=v, min_value=v.first_of_month(), max_value=v.last_of_month())
     assert not c._header._prev_btn.isEnabled()
     assert not c._header._next_btn.isEnabled()
 
@@ -113,6 +112,7 @@ def test_disable_animation_pages(qtbot):
 
 # ---- P4 月/年选择器 ----
 
+
 def test_pickers_off_by_default(qtbot):
     c = _make(qtbot)
     assert c._show_pickers is False
@@ -131,8 +131,7 @@ def test_pickers_disabled_when_multi_month(qtbot):
 
 
 def test_header_expand_toggle_and_signal(qtbot):
-    c = _make(qtbot, show_month_and_year_pickers=True,
-              value=CalendarDate(2026, 7, 15))
+    c = _make(qtbot, show_month_and_year_pickers=True, value=CalendarDate(2026, 7, 15))
     received = []
     c.header_expanded_change.connect(received.append)
     assert c.is_header_expanded() is False
@@ -145,30 +144,27 @@ def test_header_expand_toggle_and_signal(qtbot):
 
 
 def test_default_expanded(qtbot):
-    c = _make(qtbot, show_month_and_year_pickers=True,
-              is_header_default_expanded=True)
+    c = _make(qtbot, show_month_and_year_pickers=True, is_header_default_expanded=True)
     assert c.is_header_expanded() is True
 
 
 def test_picker_month_change_updates_focus(qtbot):
-    c = _make(qtbot, show_month_and_year_pickers=True,
-              value=CalendarDate(2026, 7, 15))
+    c = _make(qtbot, show_month_and_year_pickers=True, value=CalendarDate(2026, 7, 15))
     c._on_picker_month(10)
     assert c._state.focused_date.month == 10
 
 
 def test_picker_year_change_updates_focus(qtbot):
-    c = _make(qtbot, show_month_and_year_pickers=True,
-              value=CalendarDate(2026, 7, 15))
+    c = _make(qtbot, show_month_and_year_pickers=True, value=CalendarDate(2026, 7, 15))
     c._on_picker_year(2030)
     assert c._state.focused_date.year == 2030
 
 
 # ---- P6 invalid / error / focus ----
 
+
 def test_invalid_shows_error_message(qtbot):
-    c = _make(qtbot, value=CalendarDate(2026, 7, 15), is_invalid=True,
-              error_message="bad date")
+    c = _make(qtbot, value=CalendarDate(2026, 7, 15), is_invalid=True, error_message="bad date")
     assert c._error_label.text() == "bad date"
     assert c.is_invalid() is True
 
@@ -195,6 +191,3 @@ def test_focus_change_signal_on_paging(qtbot):
     c.focus_change.connect(received.append)
     c._on_next()
     assert len(received) >= 1
-
-
-

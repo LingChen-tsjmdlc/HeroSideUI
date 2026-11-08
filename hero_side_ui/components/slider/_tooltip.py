@@ -7,8 +7,6 @@ embedded 模式 reparent 链也不可靠。改用 _SliderThumbTip：永远是 ca
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import QPointF
 from PySide6.QtWidgets import QWidget
 
@@ -63,7 +61,7 @@ class _SliderTooltipMixin:
         tip.set_text(self._tooltip_text_for(idx))
         tip.show_at(self._thumb_top_center(idx))
 
-    def _tooltip_hide(self, idx: Optional[int] = None) -> None:
+    def _tooltip_hide(self, idx: int | None = None) -> None:
         if not self._tooltips:
             return
         if idx is None:

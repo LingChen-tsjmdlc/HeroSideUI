@@ -9,16 +9,13 @@
 
 from __future__ import annotations
 
-from ...animation import tween_property, tween_value, stop_tween
+from PySide6.QtCore import Property, QPropertyAnimation, Qt
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPen
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
-from typing import Optional
-
-from PySide6.QtCore import Qt, QPropertyAnimation, Property
-from PySide6.QtGui import QPainter, QColor, QLinearGradient, QPen
-from PySide6.QtWidgets import QWidget, QVBoxLayout
-
-from ...core import ThemeProvider
+from ...animation import stop_tween, tween_property, tween_value
 from ...animation.skeleton_shimmer import SkeletonShimmerAnimation
+from ...core import ThemeProvider
 from ._styling import build_skeleton_styles
 
 
@@ -37,12 +34,12 @@ class Skeleton(QWidget):
 
     def __init__(
         self,
-        child: Optional[QWidget] = None,
+        child: QWidget | None = None,
         is_loaded: bool = False,
         disable_animation: bool = False,
         radius: str = "lg",
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroSkeleton")
@@ -52,9 +49,7 @@ class Skeleton(QWidget):
         self._disable_animation = disable_animation
         self._radius = radius
         self._theme_mode = theme
-        self._theme = (
-            ThemeProvider.instance().current_theme if theme == "auto" else theme
-        )
+        self._theme = ThemeProvider.instance().current_theme if theme == "auto" else theme
         self._custom_styled = False
 
         # 官方: animate-shimmer 2s infinite
@@ -62,11 +57,11 @@ class Skeleton(QWidget):
 
         # 骨架层 opacity（paintEvent 绘制时使用）
         self._skeleton_opacity = 0.0 if is_loaded else 1.0
-        self._skeleton_fade_anim: Optional[QPropertyAnimation] = None
+        self._skeleton_fade_anim: QPropertyAnimation | None = None
 
         # 内容层 opacity
         self._content_opacity = 1.0 if is_loaded else 0.0
-        self._content_fade_anim: Optional[QPropertyAnimation] = None
+        self._content_fade_anim: QPropertyAnimation | None = None
 
         self._styles: dict = {}
 
@@ -76,9 +71,7 @@ class Skeleton(QWidget):
 
         self._content = QWidget(self)
         self._content.setObjectName("HeroSkeletonContent")
-        self._content.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._content.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._layout.addWidget(self._content)
 
         self._content_layout = QVBoxLayout(self._content)
@@ -133,11 +126,7 @@ class Skeleton(QWidget):
 
         # 2. Top border (before:border-content4/30)
         t = s["top_border"]
-        t_color = (
-            QColor(t[0], t[1], t[2], int(t[3] * 255))
-            if isinstance(t, tuple)
-            else QColor(t)
-        )
+        t_color = QColor(t[0], t[1], t[2], int(t[3] * 255)) if isinstance(t, tuple) else QColor(t)
         pen = QPen(t_color)
         pen.setWidthF(1.0)
         painter.setPen(pen)
@@ -207,6 +196,7 @@ class Skeleton(QWidget):
 
     def set_child(self, child: QWidget):
         from ...utils import clear_layout
+
         clear_layout(self._content_layout)
         self._content_layout.addWidget(child)
 
@@ -258,7 +248,11 @@ class Skeleton(QWidget):
 
     def _animate_skeleton_to(self, target: float, on_done=None):
         tween_property(
-            self, "_skeleton_fade_anim", b"skeletonOpacity", target, duration=300,
+            self,
+            "_skeleton_fade_anim",
+            b"skeletonOpacity",
+            target,
+            duration=300,
             animated=not self._disable_animation and abs(self._skeleton_opacity - target) >= 0.01,
             on_finished=on_done,
         )
@@ -279,8 +273,15 @@ class Skeleton(QWidget):
             self._content_opacity = float(value)
             self._update_content_opacity()
 
-        tween_value(self, "_content_fade_anim", self._content_opacity, target, apply,
-                    duration=300, animated=not self._disable_animation)
+        tween_value(
+            self,
+            "_content_fade_anim",
+            self._content_opacity,
+            target,
+            apply,
+            duration=300,
+            animated=not self._disable_animation,
+        )
 
     def _cancel_fade_anims(self):
         stop_tween(self, "_skeleton_fade_anim")

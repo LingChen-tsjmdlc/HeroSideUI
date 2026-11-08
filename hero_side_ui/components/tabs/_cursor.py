@@ -3,15 +3,11 @@
 走 paintEvent 自绘 + tween_geometry 驱动位移；圆角根据 variant 自适应。
 """
 
-from PySide6.QtCore import QRectF
-
-from PySide6.QtCore import Qt
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
+
 from ._helpers import _resolve_cursor_fill
-
-
-
 
 # ============================================================
 # CursorWidget: 选中指示器（矩形填充 / 下划线）
@@ -37,16 +33,31 @@ class _CursorWidget(QWidget):
         self._underline_h = 2
         self._underline_ratio = 0.8
 
-    def configure(self, *, variant=None, color=None, theme=None,
-                  radius_px=None, placement=None,
-                  underline_h=None, underline_ratio=None):
-        if variant is not None: self._variant = variant
-        if color is not None: self._color = color
-        if theme is not None: self._theme = theme
-        if radius_px is not None: self._radius_px = radius_px
-        if placement is not None: self._placement = placement
-        if underline_h is not None: self._underline_h = underline_h
-        if underline_ratio is not None: self._underline_ratio = underline_ratio
+    def configure(
+        self,
+        *,
+        variant=None,
+        color=None,
+        theme=None,
+        radius_px=None,
+        placement=None,
+        underline_h=None,
+        underline_ratio=None,
+    ):
+        if variant is not None:
+            self._variant = variant
+        if color is not None:
+            self._color = color
+        if theme is not None:
+            self._theme = theme
+        if radius_px is not None:
+            self._radius_px = radius_px
+        if placement is not None:
+            self._placement = placement
+        if underline_h is not None:
+            self._underline_h = underline_h
+        if underline_ratio is not None:
+            self._underline_ratio = underline_ratio
         self.update()
 
     def paintEvent(self, ev):

@@ -47,7 +47,6 @@ class BackdropFade(QObject):
         self._anim.setEasingCurve(self._easing)
         self._anim.finished.connect(self._on_finished)
 
-
     def _get_progress(self) -> float:
         return self._progress
 
@@ -60,7 +59,6 @@ class BackdropFade(QObject):
     def progress_value(self) -> float:
         """返回当前遮罩进度。"""
         return self._progress
-
 
     def play_in(self):
         """从当前进度淡入。"""

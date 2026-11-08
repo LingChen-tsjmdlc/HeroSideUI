@@ -7,17 +7,17 @@ DemoBase 就是普通 QMainWindow —— 因为 HeroSideUI 的 ThemeProvider 已
 """
 
 import sys
-from typing import Iterable
+from collections.abc import Iterable
 
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QApplication,
-    QMainWindow,
-    QWidget,
-    QVBoxLayout,
     QHBoxLayout,
+    QMainWindow,
     QScrollArea,
+    QVBoxLayout,
+    QWidget,
 )
-from PySide6.QtCore import Qt
 
 from hero_side_ui import HeroSideUIProvider, ThemeSwitcher, Title
 
@@ -112,9 +112,7 @@ class DemoBase(QMainWindow):
         layout.addWidget(row_widget)
 
     @classmethod
-    def add_section_grid(
-        cls, layout, title, widgets, labels_bag=None, cols=4, spacing=10
-    ):
+    def add_section_grid(cls, layout, title, widgets, labels_bag=None, cols=4, spacing=10):
         layout.addWidget(cls._section_title(title))
         widgets_list = list(widgets)
         for i in range(0, len(widgets_list), cols):
@@ -127,9 +125,7 @@ class DemoBase(QMainWindow):
             # 行容器宽度由内部按钮决定，绝不允许被父 layout 拉伸压缩
             from PySide6.QtWidgets import QSizePolicy
 
-            row_widget.setSizePolicy(
-                QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed
-            )
+            row_widget.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
             layout.addWidget(row_widget)
 
     @classmethod

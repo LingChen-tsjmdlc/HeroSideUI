@@ -17,8 +17,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtWidgets import QWidget
 
 from ..date_input._pattern import TIME_GRANULARITIES
@@ -53,19 +51,19 @@ class TimeInput(DateInput):
     def __init__(
         self,
         label: str = "",
-        value: Optional[DateTimeValue] = None,
-        placeholder_value: Optional[DateTimeValue] = None,
+        value: DateTimeValue | None = None,
+        placeholder_value: DateTimeValue | None = None,
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
-        granularity: Optional[str] = None,
-        hour_cycle: Optional[int] = None,
+        granularity: str | None = None,
+        hour_cycle: int | None = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
-        min_value: Optional[DateTimeValue] = None,
-        max_value: Optional[DateTimeValue] = None,
+        min_value: DateTimeValue | None = None,
+        max_value: DateTimeValue | None = None,
         locale: str = "en_US",
         calendar: str = "gregorian",
         is_disabled: bool = False,
@@ -80,7 +78,7 @@ class TimeInput(DateInput):
         on_start_content_click=None,
         on_end_content_click=None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         if placeholder_value is None:
             # 对齐 react-aria useTimeFieldState：占位起点是当前时刻。

@@ -7,6 +7,7 @@ from .loop import LoopDriver
 
 class StripeFlowAnimation(LoopDriver):
     """按图案周期换算斜纹流动偏移。"""
+
     def __init__(self, owner, period=32.0, duration=1000, parent=None):
         """初始化条纹循环。
 

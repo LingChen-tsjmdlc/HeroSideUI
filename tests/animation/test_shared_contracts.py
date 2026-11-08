@@ -8,13 +8,28 @@ from PySide6.QtWidgets import QWidget
 from shiboken6 import delete, isValid
 
 from hero_side_ui import (
-    Autocomplete, Checkbox, CircularProgress, Progress, Radio, Select, Skeleton, Spinner,
+    Autocomplete,
+    Checkbox,
+    CircularProgress,
+    Progress,
+    Radio,
+    Select,
+    Skeleton,
+    Spinner,
 )
 from hero_side_ui._shared.selection import SelectorButton
 from hero_side_ui.animation import (
-    CheckDrawAnimation, IndeterminateBarAnimation, LoopDriver, PhaseDriver,
-    SkeletonShimmerAnimation, SpinAnimation, StripeFlowAnimation,
-    stop_tween, tween_geometry, tween_property, tween_value,
+    CheckDrawAnimation,
+    IndeterminateBarAnimation,
+    LoopDriver,
+    PhaseDriver,
+    SkeletonShimmerAnimation,
+    SpinAnimation,
+    StripeFlowAnimation,
+    stop_tween,
+    tween_geometry,
+    tween_property,
+    tween_value,
 )
 
 
@@ -37,12 +52,29 @@ def test_completed_and_cancelled_transitions_release_qt_children(qtbot):
 def test_equal_request_preempts_a_running_transition(qtbot):
     owner = QObject()
     steps, completed = [], []
-    tween_value(owner, "motion", 0.0, 1.0, steps.append, duration=1000,
-                on_finished=lambda: completed.append("old"))
+    tween_value(
+        owner,
+        "motion",
+        0.0,
+        1.0,
+        steps.append,
+        duration=1000,
+        on_finished=lambda: completed.append("old"),
+    )
     qtbot.wait(30)
     current = steps[-1]
-    assert tween_value(owner, "motion", current, current, steps.append, duration=100,
-                       on_finished=lambda: completed.append("new")) is None
+    assert (
+        tween_value(
+            owner,
+            "motion",
+            current,
+            current,
+            steps.append,
+            duration=100,
+            on_finished=lambda: completed.append("new"),
+        )
+        is None
+    )
     count = len(steps)
     qtbot.wait(40)
     assert len(steps) == count
@@ -55,8 +87,16 @@ def test_immediate_request_applies_endpoint_before_completion(qtbot):
     observed = []
     tween_value(owner, "motion", 0, 100, observed.append, duration=1000)
     observed.clear()
-    tween_value(owner, "motion", 0, 7, observed.append, duration=1000,
-                animated=False, on_finished=lambda: observed.append("done"))
+    tween_value(
+        owner,
+        "motion",
+        0,
+        7,
+        observed.append,
+        duration=1000,
+        animated=False,
+        on_finished=lambda: observed.append("done"),
+    )
     qtbot.wait(30)
     assert observed == [7, "done"]
     assert owner.motion is None
@@ -67,11 +107,25 @@ def test_reentrant_step_does_not_complete_superseded_request(qtbot):
     completed = []
 
     def replace(value):
-        tween_value(owner, "motion", value, 10, lambda _: None, duration=20,
-                    on_finished=lambda: completed.append("replacement"))
+        tween_value(
+            owner,
+            "motion",
+            value,
+            10,
+            lambda _: None,
+            duration=20,
+            on_finished=lambda: completed.append("replacement"),
+        )
 
-    tween_value(owner, "motion", 0, 1, replace, duration=0,
-                on_finished=lambda: completed.append("superseded"))
+    tween_value(
+        owner,
+        "motion",
+        0,
+        1,
+        replace,
+        duration=0,
+        on_finished=lambda: completed.append("superseded"),
+    )
     qtbot.waitUntil(lambda: completed == ["replacement"])
 
 
@@ -83,8 +137,15 @@ def test_property_target_destruction_clears_separate_holder(qtbot):
     holder = Holder()
     target = QWidget()
     completed = []
-    tween_property(target, "motion", b"pos", QPoint(50, 50), owner=holder,
-                   duration=1000, on_finished=lambda: completed.append(True))
+    tween_property(
+        target,
+        "motion",
+        b"pos",
+        QPoint(50, 50),
+        owner=holder,
+        duration=1000,
+        on_finished=lambda: completed.append(True),
+    )
     delete(target)
     flush_deletes()
     assert holder.motion is None
@@ -106,8 +167,15 @@ def test_geometry_immediate_request_stops_previous_motion(qtbot):
 def test_destroyed_owner_does_not_receive_completion(qtbot):
     owner = QObject()
     completed = []
-    anim = tween_value(owner, "motion", 0, 1, lambda _: None, duration=100,
-                       on_finished=lambda: completed.append(True))
+    anim = tween_value(
+        owner,
+        "motion",
+        0,
+        1,
+        lambda _: None,
+        duration=100,
+        on_finished=lambda: completed.append(True),
+    )
     delete(owner)
     qtbot.wait(120)
     assert not isValid(anim)
@@ -115,13 +183,16 @@ def test_destroyed_owner_does_not_receive_completion(qtbot):
     assert tween_value(owner, "motion", 0, 1, lambda _: None, duration=100) is None
 
 
-@pytest.mark.parametrize("factory,read,half", [
-    (PhaseDriver, lambda d: d.value(), 0.5),
-    (SpinAnimation, lambda d: d.angle_value(), 180.0),
-    (SkeletonShimmerAnimation, lambda d: d.progress_value(), 0.5),
-    (StripeFlowAnimation, lambda d: d.offset_value(), 16.0),
-    (IndeterminateBarAnimation, lambda d: d.position, 0.3),
-])
+@pytest.mark.parametrize(
+    "factory,read,half",
+    [
+        (PhaseDriver, lambda d: d.value(), 0.5),
+        (SpinAnimation, lambda d: d.angle_value(), 180.0),
+        (SkeletonShimmerAnimation, lambda d: d.progress_value(), 0.5),
+        (StripeFlowAnimation, lambda d: d.offset_value(), 16.0),
+        (IndeterminateBarAnimation, lambda d: d.position, 0.3),
+    ],
+)
 def test_all_loop_effects_share_visibility_and_keep_ranges(qtbot, factory, read, half):
     owner = QWidget()
     qtbot.addWidget(owner)
@@ -169,12 +240,17 @@ def test_spinner_variant_changes_while_hidden_preserve_requested_motion(qtbot):
     assert spinner._driver_a.is_running() and not spinner._driver_b.is_running()
 
 
-@pytest.mark.parametrize("factory,drivers", [
-    (lambda: Skeleton(), lambda w: [w._shimmer]),
-    (lambda: Progress(is_indeterminate=True, is_striped=True),
-     lambda w: [w._track._indet_loop, w._track._stripe_flow]),
-    (lambda: CircularProgress(is_indeterminate=True), lambda w: [w._spin]),
-])
+@pytest.mark.parametrize(
+    "factory,drivers",
+    [
+        (lambda: Skeleton(), lambda w: [w._shimmer]),
+        (
+            lambda: Progress(is_indeterminate=True, is_striped=True),
+            lambda w: [w._track._indet_loop, w._track._stripe_flow],
+        ),
+        (lambda: CircularProgress(is_indeterminate=True), lambda w: [w._spin]),
+    ],
+)
 def test_real_loop_consumers_stop_hidden_and_restart_visible(qtbot, factory, drivers):
     widget = factory()
     qtbot.addWidget(widget)
@@ -233,9 +309,13 @@ def test_skeleton_disabling_motion_settles_both_fade_layers(qtbot):
     assert not skeleton._shimmer.is_running()
 
 
-@pytest.mark.parametrize("factory,property_name", [
-    (Checkbox, "fill_progress"), (Radio, "control_progress"),
-])
+@pytest.mark.parametrize(
+    "factory,property_name",
+    [
+        (Checkbox, "fill_progress"),
+        (Radio, "control_progress"),
+    ],
+)
 def test_initial_selected_state_is_visible_with_animation_disabled(qtbot, factory, property_name):
     widget = factory(is_selected=True, disable_animation=True)
     qtbot.addWidget(widget)
@@ -249,8 +329,15 @@ def test_property_target_destruction_cancels_separate_qobject_channel(qtbot):
     owner = QObject()
     target = QWidget()
     finished = []
-    anim = tween_property(target, "motion", b"pos", QPoint(50, 50), owner=owner,
-                          duration=1000, on_finished=lambda: finished.append(True))
+    anim = tween_property(
+        target,
+        "motion",
+        b"pos",
+        QPoint(50, 50),
+        owner=owner,
+        duration=1000,
+        on_finished=lambda: finished.append(True),
+    )
     delete(target)
     flush_deletes()
     assert owner.motion is None

@@ -5,9 +5,7 @@ hover/focus 时显示 ``heroicons--chevron-double-left`` (isBefore) 或
 ``heroicons--chevron-double-right`` (after) 暗示"快速跳转"。
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QEvent, Qt
+from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QLabel, QWidget
 
@@ -17,13 +15,11 @@ from ...utils import load_svg_icon
 class _DotsIcon(QLabel):
     """DOTS 图标载体: hover 切换 ellipsis ↔ double-chevron。"""
 
-    def __init__(
-        self, *, is_before: bool, size: int = 16, parent: Optional[QWidget] = None
-    ):
+    def __init__(self, *, is_before: bool, size: int = 16, parent: QWidget | None = None):
         super().__init__(parent)
         self._is_before = bool(is_before)
         self._icon_size = int(size)
-        self._color: Optional[QColor] = None
+        self._color: QColor | None = None
         self._hover = False
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)

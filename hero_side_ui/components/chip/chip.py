@@ -5,7 +5,7 @@
 
 from __future__ import annotations
 
-from typing import Callable, Optional
+from collections.abc import Callable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor
@@ -27,9 +27,9 @@ from ._styling import build_chip_styles
 class Chip(QWidget):
     """HeroUI 风格 Chip 标签。用法::
 
-        Chip("标签", color="primary")
-        Chip("可关闭", color="success", is_closable=True, on_close=fn)
-        Chip("New", color="danger", variant="dot")
+    Chip("标签", color="primary")
+    Chip("可关闭", color="success", is_closable=True, on_close=fn)
+    Chip("New", color="danger", variant="dot")
     """
 
     closed = Signal()
@@ -41,15 +41,15 @@ class Chip(QWidget):
         variant: str = "solid",
         size: str = "md",
         radius: str = "full",
-        avatar: Optional[QWidget] = None,
-        start_content: Optional[QWidget] = None,
-        end_content: Optional[QWidget] = None,
+        avatar: QWidget | None = None,
+        start_content: QWidget | None = None,
+        end_content: QWidget | None = None,
         is_disabled: bool = False,
         is_closable: bool = False,
-        on_close: Optional[Callable[[], None]] = None,
+        on_close: Callable[[], None] | None = None,
         is_text_selectable: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroChip")

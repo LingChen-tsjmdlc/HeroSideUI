@@ -34,14 +34,11 @@ SmoothScroll 通过：
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import (
-    QObject,
-    QEvent,
-    QPropertyAnimation,
     QEasingCurve,
-    Qt,
+    QEvent,
+    QObject,
+    QPropertyAnimation,
 )
 from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QScrollBar
 
@@ -71,10 +68,10 @@ class _SmoothScrollFilter(QObject):
         self._duration = duration
         self._easing = easing
 
-        self._v_anim: Optional[QPropertyAnimation] = None
-        self._h_anim: Optional[QPropertyAnimation] = None
-        self._v_target: Optional[int] = None
-        self._h_target: Optional[int] = None
+        self._v_anim: QPropertyAnimation | None = None
+        self._h_anim: QPropertyAnimation | None = None
+        self._v_target: int | None = None
+        self._h_target: int | None = None
 
         # 装到 viewport 上（QAbstractScrollArea 的 wheel 走 viewport）
         # 同时也装到 area 自己，覆盖一些直接给 area 发 wheel 的情况
@@ -141,7 +138,7 @@ class _SmoothScrollFilter(QObject):
         anim_attr = "_v_anim" if axis == "v" else "_h_anim"
 
         cur_target = getattr(self, target_attr)
-        cur_anim: Optional[QPropertyAnimation] = getattr(self, anim_attr)
+        cur_anim: QPropertyAnimation | None = getattr(self, anim_attr)
 
         # 动画进行中，新 target 在它的目标值上累加（连续滚动顺畅）
         if (
@@ -221,17 +218,17 @@ class SmoothScroll:
     _default_enabled: bool = True
 
     # 全局自动挂载相关
-    _global_filter: Optional[_GlobalAutoAttachFilter] = None
+    _global_filter: _GlobalAutoAttachFilter | None = None
 
     @classmethod
     def attach(
         cls,
         area: QAbstractScrollArea,
         *,
-        lines_per_step: Optional[int] = None,
-        duration: Optional[int] = None,
-        easing: Optional[QEasingCurve.Type] = None,
-    ) -> Optional[_SmoothScrollFilter]:
+        lines_per_step: int | None = None,
+        duration: int | None = None,
+        easing: QEasingCurve.Type | None = None,
+    ) -> _SmoothScrollFilter | None:
         """给一个 QAbstractScrollArea 挂上平滑滚动
 
         Args:
@@ -248,7 +245,7 @@ class SmoothScroll:
         if not isinstance(area, QAbstractScrollArea):
             return None
         if area.property(_OPT_OUT_FLAG) is True:
-            return None   # 永久退出过，尊重之
+            return None  # 永久退出过，尊重之
 
         existing = area.property(_ATTACHED_FLAG)
         if existing is not None:
@@ -257,9 +254,7 @@ class SmoothScroll:
         filt = _SmoothScrollFilter(
             area,
             lines_per_step=(
-                lines_per_step
-                if lines_per_step is not None
-                else cls._default_lines_per_step
+                lines_per_step if lines_per_step is not None else cls._default_lines_per_step
             ),
             duration=duration if duration is not None else cls._default_duration,
             easing=easing if easing is not None else cls._default_easing,
@@ -307,9 +302,9 @@ class SmoothScroll:
     def apply_global(
         cls,
         *,
-        lines_per_step: Optional[int] = None,
-        duration: Optional[int] = None,
-        easing: Optional[QEasingCurve.Type] = None,
+        lines_per_step: int | None = None,
+        duration: int | None = None,
+        easing: QEasingCurve.Type | None = None,
     ):
         """全局自动给所有 QAbstractScrollArea 挂上平滑滚动（含运行时新建的）
 
@@ -338,10 +333,7 @@ class SmoothScroll:
 
         # 立即扫一遍现有的 area
         for w in app.allWidgets():
-            if (
-                isinstance(w, QAbstractScrollArea)
-                and w.property(_ATTACHED_FLAG) is None
-            ):
+            if isinstance(w, QAbstractScrollArea) and w.property(_ATTACHED_FLAG) is None:
                 cls.attach(w)
 
     @classmethod
@@ -358,10 +350,10 @@ class SmoothScroll:
     def set_global_default(
         cls,
         *,
-        lines_per_step: Optional[int] = None,
-        duration: Optional[int] = None,
-        easing: Optional[QEasingCurve.Type] = None,
-        enabled: Optional[bool] = None,
+        lines_per_step: int | None = None,
+        duration: int | None = None,
+        easing: QEasingCurve.Type | None = None,
+        enabled: bool | None = None,
     ):
         """设置全局默认参数（影响后续 attach 调用，不影响已挂载 area）"""
         if lines_per_step is not None:

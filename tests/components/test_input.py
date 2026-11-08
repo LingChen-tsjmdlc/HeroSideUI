@@ -86,9 +86,7 @@ class TestInputSizes:
 
 
 class TestInputLabelPlacement:
-    @pytest.mark.parametrize(
-        "placement", ["inside", "outside", "outside-top", "outside-left"]
-    )
+    @pytest.mark.parametrize("placement", ["inside", "outside", "outside-top", "outside-left"])
     def test_all_placements(self, qtbot, placement):
         inp = Input(label="L", label_placement=placement)
         qtbot.addWidget(inp)

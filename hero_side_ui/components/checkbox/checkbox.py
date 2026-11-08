@@ -28,37 +28,29 @@ CheckboxGroup:
     - value / default_value (选中的 checkbox value 列表)
 """
 
+from PySide6.QtCore import (
+    Property,
+    QByteArray,
+    QEasingCurve,
+    QRectF,
+    QSize,
+    Qt,
+)
+from PySide6.QtGui import (
+    QColor,
+    QFontMetrics,
+    QPainter,
+    QPen,
+)
+from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QCheckBox,
     QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QLabel,
-    QSizePolicy,
-    QGraphicsOpacityEffect,
 )
-from PySide6.QtCore import (
-    Qt,
-    Signal,
-    QEasingCurve,
-    Property,
-    QRectF,
-    QByteArray,
-    QSize,
-)
-from PySide6.QtGui import (
-    QPainter,
-    QColor,
-    QPen,
-    QFontMetrics,
-)
-from PySide6.QtSvg import QSvgRenderer
-from typing import Optional, List
 
-from ...themes import HEROUI_COLORS, RADIUS, CHECKBOX_SIZES
-from ...utils import hex_to_rgba
 from ...animation import CheckDrawAnimation, paint_animated_check, tween_property
 from ...core import ThemeProvider
+from ...themes import CHECKBOX_SIZES, HEROUI_COLORS, RADIUS
 
 # ============================================================
 # 内部资源：check / minus (indeterminate) svg
@@ -113,15 +105,15 @@ class Checkbox(QCheckBox):
         is_selected: bool = False,
         color: str = "primary",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         line_through: bool = False,
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_indeterminate: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        value: Optional[str] = None,
-        parent: Optional[QWidget] = None,
+        value: str | None = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(text, parent)
 
@@ -142,7 +134,10 @@ class Checkbox(QCheckBox):
         self._line_progress = 0.0  # lineThrough 下划线宽度: 0 → 1
         self._press_progress = 0.0  # 按压缩放: 0 = 1.0, 1 = 0.95
         self._check_anim = CheckDrawAnimation(
-            self, on_step=lambda _: self.update(), duration_in=500, delay_in=100,
+            self,
+            on_step=lambda _: self.update(),
+            duration_in=500,
+            delay_in=100,
         )
         self._hover = False
 
@@ -221,8 +216,12 @@ class Checkbox(QCheckBox):
     def _on_state_changed(self, state):
         checked = self.isChecked()
         tween_property(
-            self, "_fill_anim", b"fill_progress", 1.0 if checked else 0.0,
-            duration=200, easing=QEasingCurve.Type.Linear,
+            self,
+            "_fill_anim",
+            b"fill_progress",
+            1.0 if checked else 0.0,
+            duration=200,
+            easing=QEasingCurve.Type.Linear,
             animated=not self._disable_animation,
         )
         if self._is_indeterminate or self._disable_animation:
@@ -230,11 +229,13 @@ class Checkbox(QCheckBox):
         else:
             self._check_anim.play(checked)
         tween_property(
-            self, "_line_anim", b"line_progress",
-            1.0 if checked and self._line_through else 0.0, duration=200,
+            self,
+            "_line_anim",
+            b"line_progress",
+            1.0 if checked and self._line_through else 0.0,
+            duration=200,
             animated=not self._disable_animation,
         )
-
 
     # ============================================================
     # 按压缩放
@@ -419,12 +420,8 @@ class Checkbox(QCheckBox):
         painter.restore()
 
         # ---- 3) after: 选中填充（scale 0.5 → 1 + opacity 0 → 1）----
-        checked = self.isChecked() or self._is_indeterminate
-        p = (
-            1.0
-            if (self._is_indeterminate and not self.isChecked())
-            else self._fill_progress
-        )
+        self.isChecked() or self._is_indeterminate
+        p = 1.0 if (self._is_indeterminate and not self.isChecked()) else self._fill_progress
         if self._is_indeterminate:
             # indeterminate: 不管 checked，总是画满
             p = 1.0
@@ -543,7 +540,7 @@ class Checkbox(QCheckBox):
         self._refresh_geometry()
         self.update()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._radius = radius
         self.update()
 
@@ -573,8 +570,11 @@ class Checkbox(QCheckBox):
     def set_line_through(self, enabled: bool):
         self._line_through = enabled
         tween_property(
-            self, "_line_anim", b"line_progress",
-            1.0 if enabled and self.isChecked() else 0.0, duration=0,
+            self,
+            "_line_anim",
+            b"line_progress",
+            1.0 if enabled and self.isChecked() else 0.0,
+            duration=0,
         )
 
     def set_is_disabled(self, disabled: bool):

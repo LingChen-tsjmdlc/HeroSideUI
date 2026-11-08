@@ -2,15 +2,12 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QPainter, QPen
-from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import StatePalette
 from ...themes import LISTBOX_SIZES
-
 from ..text import Text
 from .item import ListboxItem
 
@@ -152,8 +149,6 @@ class ListboxSection(QWidget):
     def paintEvent(self, e):
         if not self._show_divider:
             return
-        from PySide6.QtGui import QPen
-
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing, True)
         pen = QPen(StatePalette.divider(self._theme))

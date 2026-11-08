@@ -6,10 +6,8 @@ import pytest
 
 from hero_side_ui import Spinner, ThemeProvider
 
-
 VARIANTS = ["default", "simple", "gradient", "spinner", "wave", "dots"]
-COLORS = ["default", "primary", "secondary",
-          "success", "warning", "danger"]
+COLORS = ["default", "primary", "secondary", "success", "warning", "danger"]
 SIZES = ["sm", "md", "lg"]
 
 

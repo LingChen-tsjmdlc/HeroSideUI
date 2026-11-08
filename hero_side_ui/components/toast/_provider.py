@@ -14,7 +14,6 @@
 from __future__ import annotations
 
 import weakref
-from typing import Optional
 
 from PySide6.QtCore import QObject
 from PySide6.QtWidgets import QApplication, QWidget
@@ -31,7 +30,7 @@ _DEFAULTS = {
 }
 
 # 每个宿主窗口一个 provider，随窗口销毁自动回收
-_providers: "weakref.WeakKeyDictionary" = weakref.WeakKeyDictionary()
+_providers: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 # key → 拥有它的 provider（close_toast 需要按 key 反查）
 _key_owners: dict = {}
 
@@ -46,7 +45,7 @@ class ToastProvider(QObject):
         max_visible_toasts: int = _DEFAULTS["max_visible_toasts"],
         toast_offset: int = 0,
         disable_animation: bool = False,
-        toast_props: Optional[dict] = None,
+        toast_props: dict | None = None,
     ):
         super().__init__(window)
         self._window = window
@@ -113,11 +112,12 @@ class ToastProvider(QObject):
 # 全局快捷函数
 # ============================================================
 
+
 def configure_toasts(
-    placement: Optional[str] = None,
-    max_visible_toasts: Optional[int] = None,
-    toast_offset: Optional[int] = None,
-    disable_animation: Optional[bool] = None,
+    placement: str | None = None,
+    max_visible_toasts: int | None = None,
+    toast_offset: int | None = None,
+    disable_animation: bool | None = None,
 ):
     """修改后续新建 provider 的默认配置（不影响已存在的 provider）。"""
     if placement is not None:
@@ -130,7 +130,7 @@ def configure_toasts(
         _DEFAULTS["disable_animation"] = bool(disable_animation)
 
 
-def _resolve_window(window: Optional[QWidget] = None) -> Optional[QWidget]:
+def _resolve_window(window: QWidget | None = None) -> QWidget | None:
     if window is not None:
         return window
     app = QApplication.instance()
@@ -145,7 +145,7 @@ def _resolve_window(window: Optional[QWidget] = None) -> Optional[QWidget]:
     return None
 
 
-def get_toast_provider(window: Optional[QWidget] = None) -> ToastProvider:
+def get_toast_provider(window: QWidget | None = None) -> ToastProvider:
     """取（必要时创建）指定窗口的 ToastProvider。"""
     host = _resolve_window(window)
     if host is None:
@@ -172,18 +172,18 @@ def add_toast(
     variant: str = "flat",
     radius: str = "md",
     shadow: str = "sm",
-    severity: Optional[str] = None,
-    icon: Optional[str] = None,
+    severity: str | None = None,
+    icon: str | None = None,
     hide_icon: bool = False,
     hide_close_button: bool = False,
-    end_content: Optional[QWidget] = None,
-    timeout: Optional[int] = None,
+    end_content: QWidget | None = None,
+    timeout: int | None = None,
     should_show_timeout_progress: bool = False,
     is_loading: bool = False,
-    on_close: Optional[object] = None,
+    on_close: object | None = None,
     disable_animation: bool = False,
-    placement: Optional[str] = None,
-    parent: Optional[QWidget] = None,
+    placement: str | None = None,
+    parent: QWidget | None = None,
 ) -> str:
     """弹一条 toast，返回 key（可交给 close_toast 提前关闭）。"""
     return get_toast_provider(parent).add(
@@ -215,7 +215,7 @@ def close_toast(key: str):
     provider.close(key)
 
 
-def clear_toasts(window: Optional[QWidget] = None):
+def clear_toasts(window: QWidget | None = None):
     """关闭指定窗口（默认当前活动窗口）上的全部 toast。"""
     if window is None:
         host = _resolve_window(None)

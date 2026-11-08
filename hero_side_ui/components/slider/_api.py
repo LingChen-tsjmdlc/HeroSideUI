@@ -18,7 +18,7 @@ UI 装配 / 事件协调三件事。Mixin 不持有任何状态——所有 `sel
 
 from __future__ import annotations
 
-from typing import Callable, Optional, Sequence, Union
+from collections.abc import Callable, Sequence
 
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
@@ -133,8 +133,7 @@ class _SliderAPIMixin:
 
     def set_orientation(self, orientation: str):
         if (
-            orientation not in ("horizontal", "vertical")
-            or orientation == self._orientation  # type: ignore[attr-defined]
+            orientation not in ("horizontal", "vertical") or orientation == self._orientation  # type: ignore[attr-defined]
         ):
             return
         self._orientation = orientation  # type: ignore[attr-defined]
@@ -195,11 +194,11 @@ class _SliderAPIMixin:
         self._update_canvas_min_size()  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
-    def set_value_formatter(self, fn: Optional[Callable]):
+    def set_value_formatter(self, fn: Callable | None):
         self._value_formatter = fn  # type: ignore[attr-defined]
         self._refresh_text_labels()  # type: ignore[attr-defined]
 
-    def set_fill_offset(self, offset: Optional[float]):
+    def set_fill_offset(self, offset: float | None):
         self._fill_offset = offset  # type: ignore[attr-defined]
         self._canvas.update()  # type: ignore[attr-defined]
 
@@ -226,7 +225,7 @@ class _SliderAPIMixin:
     # ============================================================
     # 插槽 widget
     # ============================================================
-    def set_start_content(self, w: Optional[Union[QWidget, str]]):
+    def set_start_content(self, w: QWidget | str | None):
         """track 起始侧（水平=左 / 垂直=下，靠近 min）的 icon/widget。
 
         传 str → 自动包为 _SliderIconLabel，跟主题着色。
@@ -246,9 +245,7 @@ class _SliderAPIMixin:
             w.setParent(self._canvas_band)  # type: ignore[attr-defined]
             is_v = self._orientation == "vertical"  # type: ignore[attr-defined]
             # 水平：start 在 layout index 0；垂直："下=min" → start 在末尾
-            align = (
-                Qt.AlignmentFlag.AlignHCenter if is_v else Qt.AlignmentFlag.AlignVCenter
-            )
+            align = Qt.AlignmentFlag.AlignHCenter if is_v else Qt.AlignmentFlag.AlignVCenter
             if is_v:
                 band_layout.addWidget(w, 0, align)
             else:
@@ -256,7 +253,7 @@ class _SliderAPIMixin:
             w.show()
         self._canvas.update()  # type: ignore[attr-defined]
 
-    def set_end_content(self, w: Optional[Union[QWidget, str]]):
+    def set_end_content(self, w: QWidget | str | None):
         """track 结束侧（水平=右 / 垂直=上，靠近 max）的 icon/widget。
 
         传 str → 自动包为 _SliderIconLabel，跟主题着色。
@@ -275,9 +272,7 @@ class _SliderAPIMixin:
         if w is not None and band_layout is not None:
             w.setParent(self._canvas_band)  # type: ignore[attr-defined]
             is_v = self._orientation == "vertical"  # type: ignore[attr-defined]
-            align = (
-                Qt.AlignmentFlag.AlignHCenter if is_v else Qt.AlignmentFlag.AlignVCenter
-            )
+            align = Qt.AlignmentFlag.AlignHCenter if is_v else Qt.AlignmentFlag.AlignVCenter
             # 水平：end 在末尾；垂直："上=max" → end 在 index 0
             if is_v:
                 band_layout.insertWidget(0, w, 0, align)
@@ -286,7 +281,7 @@ class _SliderAPIMixin:
             w.show()
         self._canvas.update()  # type: ignore[attr-defined]
 
-    def set_top_end_content(self, w: Optional[QWidget]):
+    def set_top_end_content(self, w: QWidget | None):
         """右上角插槽（label 行末尾，例如放 Input 直接输入数值）。
 
         增量更新 _label_row_widget 的内部 layout —— 不重建整个 UI，
@@ -309,7 +304,7 @@ class _SliderAPIMixin:
             w.show()
         self._canvas.update()  # type: ignore[attr-defined]
 
-    def set_bottom_start_content(self, w: Optional[QWidget]):
+    def set_bottom_start_content(self, w: QWidget | None):
         """左下角插槽（轨道下方，例如放 Caption 帮助提示）。
 
         增量更新 self._root —— 同样不重建整个 UI。

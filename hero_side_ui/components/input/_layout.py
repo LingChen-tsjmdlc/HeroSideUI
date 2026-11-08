@@ -7,9 +7,8 @@
 - resize 事件下的重排
 """
 
-from PySide6.QtCore import QEvent, QPoint, Qt
-from PySide6.QtWidgets import QSizePolicy
 import shiboken6
+from PySide6.QtCore import QPoint, Qt
 
 from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS, INPUT_SIZES
@@ -90,19 +89,17 @@ class _InputLayoutMixin:
         # 字体应用：走 Text/FontProvider 同源，保证全局换字体时跟随。
         # 按 progress 阔作中间跳阶 weight：<=0.5 normal，>0.5 medium。
         weight = "medium" if progress > 0.5 else "normal"
-        font = make_text_qfont(int(round(font_size)), weight)
+        font = make_text_qfont(round(font_size), weight)
         self._inside_label.setFont(font)
         self._inside_label.adjustSize()
 
         # ---- 定位 ----
         # wrapper 在 Input 根坐标系中的位置
         # （wrapper 的 parent 可能是 outside_left_row，不一定是 self，所以需要 mapTo）
-        from PySide6.QtCore import QPoint
-
         wrapper_pos_in_self = self._wrapper.mapTo(self, QPoint(0, 0))
         wrapper_x = wrapper_pos_in_self.x()
         wrapper_y = wrapper_pos_in_self.y()
-        wrapper_w = self._wrapper.width()
+        self._wrapper.width()
         wrapper_h = self._wrapper.height()
 
         # wrapper 内部 padding（用于决定 label 在 wrapper 内部的对齐基点）

@@ -9,12 +9,15 @@
 
 from __future__ import annotations
 
-from ...themes import HEROUI_COLORS, RADIUS
+from ...themes import HEROUI_COLORS
 from ...utils import hex_to_rgba
 
 
 def build_alert_styles(
-    variant: str, color: str, theme: str, radius: str,
+    variant: str,
+    color: str,
+    theme: str,
+    radius: str,
 ) -> dict:
     """Return color tokens for all sub-elements.
 
@@ -44,6 +47,7 @@ def _fg_on_solid(color_name: str, is_dark: bool) -> str:
 
 # ---- solid ----
 
+
 def _solid(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
     if color_name == "default":
         bg = d[700] if is_dark else d[500]
@@ -51,14 +55,19 @@ def _solid(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
         bg = c[500]
     fg = _fg_on_solid(color_name, is_dark)
     return {
-        "base_bg": bg, "base_fg": fg, "base_border": "none",
-        "icon_wrapper_bg": "transparent", "icon_color": fg,
-        "title_color": fg, "desc_color": hex_to_rgba(fg, 0.85),
+        "base_bg": bg,
+        "base_fg": fg,
+        "base_border": "none",
+        "icon_wrapper_bg": "transparent",
+        "icon_color": fg,
+        "title_color": fg,
+        "desc_color": hex_to_rgba(fg, 0.85),
         "close_btn_color": fg,
     }
 
 
 # ---- flat ----
+
 
 def _flat(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
     if color_name == "default":
@@ -76,15 +85,20 @@ def _flat(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
         dc = c[500] if not is_dark else c[300]
         cb = c[500] if not is_dark else c[400]
     return {
-        "base_bg": bg, "base_fg": fg, "base_border": "none",
-        "icon_wrapper_bg": iwr, "icon_color": ic,
-        "title_color": fg, "desc_color": dc,
+        "base_bg": bg,
+        "base_fg": fg,
+        "base_border": "none",
+        "icon_wrapper_bg": iwr,
+        "icon_color": ic,
+        "title_color": fg,
+        "desc_color": dc,
         "close_btn_color": cb,
     }
 
 
 # ---- bordered ----
 # 边框较粗(2px)、颜色较深，与 faded 的浅细边框形成对比
+
 
 def _bordered(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
     if color_name == "default":
@@ -102,16 +116,20 @@ def _bordered(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
         dc = c[500] if not is_dark else c[300]
         cb = c[500] if not is_dark else c[400]
     return {
-        "base_bg": "transparent", "base_fg": fg,
+        "base_bg": "transparent",
+        "base_fg": fg,
         "base_border": f"2px solid {bd}",
-        "icon_wrapper_bg": iwr, "icon_color": ic,
-        "title_color": fg, "desc_color": dc,
+        "icon_wrapper_bg": iwr,
+        "icon_color": ic,
+        "title_color": fg,
+        "desc_color": dc,
         "close_btn_color": cb,
     }
 
 
 # ---- faded = flat 背景 + 浅色细边框 ----
 # 边框较细(1px)、颜色较浅，与 bordered 形成对比
+
 
 def _faded(c: dict, d: dict, is_dark: bool, color_name: str) -> dict:
     flat_tokens = _flat(c, d, is_dark, color_name)

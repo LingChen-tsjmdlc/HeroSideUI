@@ -10,7 +10,7 @@
 
 from __future__ import annotations
 
-from typing import Optional
+from typing import ClassVar
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFocusEvent, QMouseEvent, QPalette
@@ -53,7 +53,7 @@ class Text(QLabel):
         rich_text: bool = False,
         word_wrap: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(text, parent)
 
@@ -119,14 +119,11 @@ class Text(QLabel):
         # 幂等守卫：size/weight/rich_text/全局 family 均未变时跳过 QFont 重建——
         # 表格虚拟滚动会高频复用同一 Text 且字号不变，重建 QFont（含 QFontDatabase
         # 查询）是主要掉帧源；family 纳入签名保证全局字体切换仍能刷新。
-        sig = (self._size, self._weight, self._rich_text,
-               FontProvider.instance().family)
+        sig = (self._size, self._weight, self._rich_text, FontProvider.instance().family)
         if sig == getattr(self, "_font_sig", None):
             return
         self._font_sig = sig
-        font = make_text_qfont(
-            self._size, self._weight, style_name=not self._rich_text
-        )
+        font = make_text_qfont(self._size, self._weight, style_name=not self._rich_text)
         self.setFont(font)
 
     # ============================================================
@@ -147,8 +144,10 @@ class Text(QLabel):
         # 二者都会触发样式重算，表格滚动时高频复用同一 Text 且色值不变，跳过省开销。
         c = self._current_color()
         sig = (
-            c.rgba(), self._theme,
-            self._force_selection_text_color, self._selection_adapts_color,
+            c.rgba(),
+            self._theme,
+            self._force_selection_text_color,
+            self._selection_adapts_color,
         )
         if sig == getattr(self, "_color_sig", None):
             return
@@ -286,7 +285,7 @@ class Text(QLabel):
 class Title(Text):
     """主标题 — level=1/2/3 → 2xl/xl/lg Bold。"""
 
-    _LEVEL_SIZE = {1: "2xl", 2: "xl", 3: "lg"}
+    _LEVEL_SIZE: ClassVar[dict[int, str]] = {1: "2xl", 2: "xl", 3: "lg"}
 
     def __init__(
         self,
@@ -296,7 +295,7 @@ class Title(Text):
         color: ColorInput = None,
         theme: str = "auto",
         selectable: bool = True,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         **kwargs,
     ):
         size = self._LEVEL_SIZE.get(level, "2xl")
@@ -322,7 +321,7 @@ class Subtitle(Text):
         color: ColorInput = None,
         theme: str = "auto",
         selectable: bool = True,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         **kwargs,
     ):
         if color is None:
@@ -350,7 +349,7 @@ class Caption(Text):
         color: ColorInput = None,
         theme: str = "auto",
         selectable: bool = True,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         **kwargs,
     ):
         if color is None:
@@ -379,7 +378,7 @@ class Body(Text):
         theme: str = "auto",
         selectable: bool = True,
         word_wrap: bool = True,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         **kwargs,
     ):
         super().__init__(
@@ -396,11 +395,11 @@ class Body(Text):
 
 
 __all__ = [
-    "Text",
-    "Title",
-    "Subtitle",
-    "Caption",
-    "Body",
     "SIZE_MAP",
     "WEIGHT_MAP",
+    "Body",
+    "Caption",
+    "Subtitle",
+    "Text",
+    "Title",
 ]

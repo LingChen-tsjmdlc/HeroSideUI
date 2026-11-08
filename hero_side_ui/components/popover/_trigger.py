@@ -7,10 +7,8 @@
 - 触发器视觉响应（_apply_trigger_open_state）：popover 打开时给 trigger 加视觉反馈
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QEvent, QObject, QPoint, Qt, QTimer
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QEvent, QPoint
+from PySide6.QtWidgets import QWidget
 
 
 class _PopoverTriggerMixin:
@@ -89,7 +87,7 @@ class _PopoverTriggerMixin:
             return
         self.close()
 
-    def _cursor_global_pos(self) -> Optional[QPoint]:
+    def _cursor_global_pos(self) -> QPoint | None:
         try:
             from PySide6.QtGui import QCursor
 
@@ -140,4 +138,3 @@ class _PopoverTriggerMixin:
         if style is not None:
             style.unpolish(self._trigger)
             style.polish(self._trigger)
-

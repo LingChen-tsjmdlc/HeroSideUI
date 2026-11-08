@@ -59,9 +59,11 @@ def build_list_styles(variant: str, theme: str) -> dict:
     def shade(shade: int) -> str:
         if not is_dark:
             return d[shade]
-        return d[(50, 100, 200, 300, 400, 500, 600, 700, 800, 900)[
-            9 - (50, 100, 200, 300, 400, 500, 600, 700, 800, 900).index(shade)
-        ]]
+        return d[
+            (50, 100, 200, 300, 400, 500, 600, 700, 800, 900)[
+                9 - (50, 100, 200, 300, 400, 500, 600, 700, 800, 900).index(shade)
+            ]
+        ]
 
     if variant == "solid":
         return {"bg": _qcolor(shade(100)), "border": "none", "border_w": 0}

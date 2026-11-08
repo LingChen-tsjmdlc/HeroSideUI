@@ -14,7 +14,6 @@ from PySide6.QtGui import QColor
 from hero_side_ui import StatePalette
 from hero_side_ui.themes import HEROUI_COLORS
 
-
 VARIANTS = ("solid", "shadow", "flat", "faded", "bordered", "light")
 COLORS = ("default", "primary", "danger")  # 代表：中性 / 主语义 / 另一语义
 THEMES = ("light", "dark")
@@ -266,24 +265,14 @@ class TestNeutralHelpers:
 
     def test_text_description_dark_uses_400_for_contrast(self):
         # dark 模式故意用 400 而非 500，保证在 #0B0D12 上可见
+        assert StatePalette.text_description("dark").name() == HEROUI_COLORS["default"][400].lower()
         assert (
-            StatePalette.text_description("dark").name()
-            == HEROUI_COLORS["default"][400].lower()
-        )
-        assert (
-            StatePalette.text_description("light").name()
-            == HEROUI_COLORS["default"][500].lower()
+            StatePalette.text_description("light").name() == HEROUI_COLORS["default"][500].lower()
         )
 
     def test_shortcut_border(self):
-        assert (
-            StatePalette.shortcut_border("light").name()
-            == HEROUI_COLORS["default"][300].lower()
-        )
-        assert (
-            StatePalette.shortcut_border("dark").name()
-            == HEROUI_COLORS["default"][700].lower()
-        )
+        assert StatePalette.shortcut_border("light").name() == HEROUI_COLORS["default"][300].lower()
+        assert StatePalette.shortcut_border("dark").name() == HEROUI_COLORS["default"][700].lower()
 
     def test_divider(self):
         assert StatePalette.divider("light").name() == HEROUI_COLORS["default"][200].lower()

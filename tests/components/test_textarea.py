@@ -3,8 +3,7 @@
 import pytest
 from PySide6.QtCore import Qt
 
-from hero_side_ui import Textarea, Button
-
+from hero_side_ui import Button, Textarea
 
 VARIANTS = ["flat", "faded", "bordered"]  # textarea 不支持 underlined
 COLORS = ["default", "primary", "secondary", "success", "warning", "danger"]
@@ -110,7 +109,7 @@ class TestTextareaColors:
 
 
 class TestTextareaSizes:
-    @pytest.mark.parametrize("size", SIZES + ["small", "medium", "large"])
+    @pytest.mark.parametrize("size", [*SIZES, "small", "medium", "large"])
     def test_all_sizes(self, qtbot, size):
         ta = Textarea(label="L", size=size)
         qtbot.addWidget(ta)

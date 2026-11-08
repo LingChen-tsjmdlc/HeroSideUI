@@ -1,13 +1,13 @@
 """Spacer 组件演示。"""
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Body, Button, Spacer
 
 
@@ -58,8 +58,7 @@ class SpacerDemo(DemoBase):
         layout.addWidget(col)
 
         # ---------- X + Y 同时传入 ----------
-        layout.addWidget(self._section_title(
-            "X + Y 同时传入（一个 Spacer 双轴）"))
+        layout.addWidget(self._section_title("X + Y 同时传入（一个 Spacer 双轴）"))
         # 对照：单轴 x=4，行高 = 按钮高
         layout.addWidget(Body("对照：仅 x（行高 = 按钮高）"))
         ref = QWidget()
@@ -87,7 +86,11 @@ class SpacerDemo(DemoBase):
         layout.addWidget(diag)
 
         # ---------- 综合案例 ----------
-        layout.addWidget(self._section_title("综合案例：工具条（标题左 + x=8 撑开 + 操作按钮右）与分区（y=3 分隔上下两块）"))
+        layout.addWidget(
+            self._section_title(
+                "综合案例：工具条（标题左 + x=8 撑开 + 操作按钮右）与分区（y=3 分隔上下两块）"
+            )
+        )
         card = QWidget()
         cv = QVBoxLayout(card)
         cv.setContentsMargins(16, 12, 16, 12)

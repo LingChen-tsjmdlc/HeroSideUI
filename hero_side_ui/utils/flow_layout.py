@@ -9,10 +9,8 @@ Qt FlowLayout 实现：``hasHeightForWidth`` 返回 True，高度由宽度反推
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from PySide6.QtCore import QMargins, QPoint, QRect, QSize, Qt
-from PySide6.QtWidgets import QLayout, QLayoutItem, QSizePolicy, QWidget
+from PySide6.QtWidgets import QLayout, QLayoutItem, QWidget
 
 
 class FlowLayout(QLayout):
@@ -26,12 +24,12 @@ class FlowLayout(QLayout):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         h_spacing: int = 0,
         v_spacing: int = 4,
     ):
         super().__init__(parent)
-        self._items: List[QLayoutItem] = []
+        self._items: list[QLayoutItem] = []
         self._h_space = h_spacing
         self._v_space = v_spacing
         self.setContentsMargins(QMargins(0, 0, 0, 0))
@@ -47,12 +45,12 @@ class FlowLayout(QLayout):
     def count(self) -> int:  # type: ignore[override]
         return len(self._items)
 
-    def itemAt(self, index: int) -> Optional[QLayoutItem]:  # type: ignore[override]
+    def itemAt(self, index: int) -> QLayoutItem | None:  # type: ignore[override]
         if 0 <= index < len(self._items):
             return self._items[index]
         return None
 
-    def takeAt(self, index: int) -> Optional[QLayoutItem]:  # type: ignore[override]
+    def takeAt(self, index: int) -> QLayoutItem | None:  # type: ignore[override]
         if 0 <= index < len(self._items):
             return self._items.pop(index)
         return None
@@ -89,11 +87,11 @@ class FlowLayout(QLayout):
         y = eff.y()
         line_height = 0
         # 逐行收集，行满时统一按行高垂直居中放置
-        line_items: List[tuple] = []
+        line_items: list[tuple] = []
 
         def flush_line() -> None:
             nonlocal line_items, line_height
-            for it, ix, iw, ih in line_items:
+            for it, ix, _iw, ih in line_items:
                 if not test_only:
                     off = (line_height - ih) // 2  # 垂直居中
                     it.setGeometry(QRect(QPoint(ix, y + off), it.sizeHint()))

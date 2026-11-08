@@ -30,8 +30,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
@@ -42,14 +40,14 @@ from ._cell import _TableCell
 class _RowSlot:
     """一个可复用的数据行：可选 checkbox + 各列 cell。"""
 
-    __slots__ = ("checkbox", "checkbox_holder", "cells", "row_key", "grid_row")
+    __slots__ = ("cells", "checkbox", "checkbox_holder", "grid_row", "row_key")
 
     def __init__(self):
-        self.checkbox: Optional[Checkbox] = None
-        self.checkbox_holder: Optional[QWidget] = None
+        self.checkbox: Checkbox | None = None
+        self.checkbox_holder: QWidget | None = None
         self.cells: dict[str, _TableCell] = {}
-        self.row_key: Optional[str] = None
-        self.grid_row: Optional[int] = None
+        self.row_key: str | None = None
+        self.grid_row: int | None = None
 
 
 class _RowRenderer:
@@ -58,13 +56,13 @@ class _RowRenderer:
     def __init__(self, owner):
         self.owner = owner
         self._pool: list[_RowSlot] = []
-        self._structure_sig = None          # 列 + 是否多选 的结构签名
-        self._has_cb = False                # 当前结构是否含 checkbox 列
+        self._structure_sig = None  # 列 + 是否多选 的结构签名
+        self._has_cb = False  # 当前结构是否含 checkbox 列
         self._col_offset = 0
         # 虚拟化 spacer（懒建）
-        self._top_spacer: Optional[QWidget] = None
-        self._bottom_spacer: Optional[QWidget] = None
-        self._first_visible = 0             # 虚拟化：当前窗口首行在全量数据中的下标
+        self._top_spacer: QWidget | None = None
+        self._bottom_spacer: QWidget | None = None
+        self._first_visible = 0  # 虚拟化：当前窗口首行在全量数据中的下标
 
     # ------------------------------------------------------------
     # 结构管理
@@ -120,11 +118,10 @@ class _RowRenderer:
         if self._has_cb:
             # 必须带 parent=grid_host：无父 widget 会瞬间变顶层窗口，
             # Windows 上批量创建行槽时闪出一堆原生空白窗口。
-            cb = Checkbox(color=owner._color, size=owner._size, theme="auto",
-                          parent=owner._grid_host)
-            cb.clicked.connect(
-                lambda *_a, s=slot: owner._on_checkbox_clicked(s.row_key)
+            cb = Checkbox(
+                color=owner._color, size=owner._size, theme="auto", parent=owner._grid_host
             )
+            cb.clicked.connect(lambda *_a, s=slot: owner._on_checkbox_clicked(s.row_key))
             holder = owner._checkbox_holder(
                 cb, (lambda s=slot: owner._on_checkbox_clicked(s.row_key))
             )
@@ -158,8 +155,7 @@ class _RowRenderer:
         self._ensure_slot_count(len(keys))
         for i, slot in enumerate(self._pool):
             if i < len(keys):
-                self._fill_slot(slot, keys[i], abs_index=i,
-                                total=len(keys))
+                self._fill_slot(slot, keys[i], abs_index=i, total=len(keys))
                 self._show_slot(slot, True)
             else:
                 self._show_slot(slot, False)
@@ -175,8 +171,7 @@ class _RowRenderer:
         for i, slot in enumerate(self._pool):
             abs_index = first_visible + i
             if i < visible_count and abs_index < total:
-                self._fill_slot(slot, keys[abs_index], abs_index=abs_index,
-                                total=total)
+                self._fill_slot(slot, keys[abs_index], abs_index=abs_index, total=total)
                 self._show_slot(slot, True)
                 rendered_indices.append(abs_index)
             else:
@@ -200,14 +195,21 @@ class _RowRenderer:
             cell.rebind_row(row_key)
             cell.update_content(owner._make_cell_content(row_key, col["key"]))
             cell.apply_style(
-                color=owner._color, size=owner._size, theme=owner._theme,
-                radius=owner._radius, is_striped=owner._is_striped,
-                is_compact=owner._is_compact, is_multi=is_multi,
-                align=col["align"], disable_animation=owner._disable_animation,
+                color=owner._color,
+                size=owner._size,
+                theme=owner._theme,
+                radius=owner._radius,
+                is_striped=owner._is_striped,
+                is_compact=owner._is_compact,
+                is_multi=is_multi,
+                align=col["align"],
+                disable_animation=owner._disable_animation,
             )
             cell.set_position(
-                is_first_row=(abs_index == 0), is_last_row=(abs_index == total - 1),
-                is_first_col=(ci == 0), is_last_col=(ci == n_cols - 1),
+                is_first_row=(abs_index == 0),
+                is_last_row=(abs_index == total - 1),
+                is_first_col=(ci == 0),
+                is_last_col=(ci == n_cols - 1),
             )
         if slot.checkbox is not None:
             slot.checkbox.set_color(owner._color)

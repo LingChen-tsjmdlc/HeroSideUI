@@ -11,28 +11,28 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
+from PySide6.QtCore import Qt
 from PySide6.QtWidgets import (
     QHBoxLayout,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
-    QSizePolicy,
 )
-from PySide6.QtCore import Qt
 
 from hero_side_ui import (
-    Skeleton,
+    Body,
     Button,
     Card,
     CardBody,
+    Skeleton,
     Title,
-    Body,
 )
-from _base import DemoBase
-
 
 # ============================================================
 # 1. Default — 卡片布局骨架
 # ============================================================
+
 
 def _make_default_skeleton_example() -> QWidget:
     """复刻 HeroUI Default 示例。
@@ -102,6 +102,7 @@ def _make_default_skeleton_example() -> QWidget:
 # 2. Standalone — 独立使用
 # ============================================================
 
+
 def _make_standalone_skeleton_example() -> QWidget:
     """复刻 HeroUI Standalone 示例。
 
@@ -149,6 +150,7 @@ def _make_standalone_skeleton_example() -> QWidget:
 # ============================================================
 # 3. LoadedState — 按钮切换 isLoaded
 # ============================================================
+
 
 def _make_loaded_state_example() -> QWidget:
     """复刻 HeroUI LoadedState 示例。
@@ -258,6 +260,7 @@ def _make_loaded_state_example() -> QWidget:
 # ============================================================
 # Demo 主类
 # ============================================================
+
 
 class SkeletonDemo(DemoBase):
     component_name = "Skeleton"

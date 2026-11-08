@@ -79,10 +79,13 @@ jobs:
           fi
 
   # ============================================================
-  # 语法检查（与 test 并行）
+  # 代码规范：Ruff lint + format（与 test 并行）
+  # 本地由 pre-commit 拦第一道（.pre-commit-config.yaml），
+  # 这里是 CI 兜底，外部贡献者的 PR 也被同一套规则约束。
+  # ruff 版本与 .pre-commit-config.yaml 的 rev 保持一致。
   # ============================================================
   lint:
-    name: Lint | 语法检查
+    name: Lint | Ruff 规范检查
     runs-on: ubuntu-latest
     steps:
       - name: Checkout | 检出代码
@@ -91,15 +94,15 @@ jobs:
       - name: Install uv | 安装 uv
         uses: astral-sh/setup-uv@v4
 
-      - name: Setup Python | 安装 Python
-        run: uv python install 3.11
+      - name: Ruff Lint | 规范检查
+        run: uvx ruff@0.17.4 check hero_side_ui/ examples/ tests/
 
-      - name: Install deps | 安装依赖
-        run: uv sync
+      - name: Ruff Format | 格式检查
+        run: uvx ruff@0.17.4 format --check hero_side_ui/ examples/ tests/
 
       - name: Compile check | 编译检查
         run: |
-          find hero_side_ui -name "*.py" -exec uv run python -m py_compile {} \;
+          find hero_side_ui -name "*.py" -exec uvx python@3.11 -m py_compile {} \;
           echo "所有文件编译通过 ✅"
 
   # ============================================================

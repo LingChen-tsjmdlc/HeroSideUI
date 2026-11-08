@@ -8,16 +8,17 @@ Tabs 组件本身不渲染卡片底，由用户在 content 里自己组合 Card 
 完整自定义性，跟原版语义一致。
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QFont
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QLabel, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
-from hero_side_ui import Tabs, Card, CardBody, Body
-from _base import DemoBase
+from hero_side_ui import Body, Card, CardBody, Tabs
 
 
 def panel(text: str) -> Card:
@@ -62,9 +63,7 @@ class TabsDemo(DemoBase):
         grid_w = QWidget()
         grid = QGridLayout(grid_w)
         grid.setContentsMargins(0, 0, 0, 0)
-        for i, c in enumerate(
-            ["default", "primary", "secondary", "success", "warning", "danger"]
-        ):
+        for i, c in enumerate(["default", "primary", "secondary", "success", "warning", "danger"]):
             t = Tabs(["A", "B", "C"], variant="solid", color=c)
             grid.addWidget(Body(c), i // 3, (i % 3) * 2)
             grid.addWidget(t, i // 3, (i % 3) * 2 + 1)
@@ -74,9 +73,7 @@ class TabsDemo(DemoBase):
         grid_w2 = QWidget()
         grid2 = QGridLayout(grid_w2)
         grid2.setContentsMargins(0, 0, 0, 0)
-        for i, c in enumerate(
-            ["default", "primary", "secondary", "success", "warning", "danger"]
-        ):
+        for i, c in enumerate(["default", "primary", "secondary", "success", "warning", "danger"]):
             t = Tabs(["A", "B", "C"], variant="underlined", color=c)
             grid2.addWidget(Body(c), i // 3, (i % 3) * 2)
             grid2.addWidget(t, i // 3, (i % 3) * 2 + 1)
@@ -91,21 +88,15 @@ class TabsDemo(DemoBase):
                     Tabs(["Photos", "Music", "Videos"], size=s, color="primary"),
                 )
             )
-        self.add_full_width_group(
-            layout, "3 sizes (sm / md / lg)", size_rows, labels_bag
-        )
+        self.add_full_width_group(layout, "3 sizes (sm / md / lg)", size_rows, labels_bag)
 
         # 5 radius
         radius_rows = []
         for r in ["none", "sm", "md", "lg", "full"]:
             radius_rows.append(
-                labeled_row(
-                    f"radius={r}:", Tabs(["A", "B", "C"], color="secondary", radius=r)
-                )
+                labeled_row(f"radius={r}:", Tabs(["A", "B", "C"], color="secondary", radius=r))
             )
-        self.add_full_width_group(
-            layout, "5 radius (none/sm/md/lg/full)", radius_rows, labels_bag
-        )
+        self.add_full_width_group(layout, "5 radius (none/sm/md/lg/full)", radius_rows, labels_bag)
 
         # 4 placements
         place_w = QWidget()
@@ -163,9 +154,7 @@ class TabsDemo(DemoBase):
 
         # TabItem 档 2: icon + 文本
         t_icon = Tabs(color="primary", variant="bordered")
-        t_icon.add_tab(
-            "Next", panel("Next panel"), start_icon="heroicons--chevron-right-solid"
-        )
+        t_icon.add_tab("Next", panel("Next panel"), start_icon="heroicons--chevron-right-solid")
         t_icon.add_tab("Show", panel("Show panel"), end_icon="heroicons--eye-solid")
         t_icon.add_tab(
             "Hide",
@@ -176,9 +165,7 @@ class TabsDemo(DemoBase):
 
         t_icon2 = Tabs(color="success", variant="underlined")
         t_icon2.add_tab("Done", panel("Done"), start_icon="heroicons--check-solid")
-        t_icon2.add_tab(
-            "Next", panel("Next"), end_icon="heroicons--chevron-right-solid"
-        )
+        t_icon2.add_tab("Next", panel("Next"), end_icon="heroicons--chevron-right-solid")
         t_icon2.add_tab("Hide", panel("Hide"), start_icon="heroicons--eye-slash-solid")
 
         self.add_full_width_group(
@@ -202,9 +189,7 @@ class TabsDemo(DemoBase):
             key="msg",
         )
         t_custom.add_tab("Trash", panel("Trash"))
-        self.add_full_width(
-            layout, "TabItem 档 3 — custom widget", t_custom, labels_bag
-        )
+        self.add_full_width(layout, "TabItem 档 3 — custom widget", t_custom, labels_bag)
 
     def _tabs_with_disabled(self) -> Tabs:
         t = Tabs(color="primary")
@@ -213,9 +198,7 @@ class TabsDemo(DemoBase):
         t.add_tab("Active 2", panel("Active 2"))
         return t
 
-    def _dot_widget(
-        self, emoji: str, label: str, dot_color: str = "#f31260"
-    ) -> QWidget:
+    def _dot_widget(self, emoji: str, label: str, dot_color: str = "#f31260") -> QWidget:
         w = QWidget()
         lay = QHBoxLayout(w)
         lay.setContentsMargins(6, 0, 6, 0)

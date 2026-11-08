@@ -19,8 +19,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget
@@ -36,26 +34,26 @@ __all__ = ["NumberInput"]
 # 未收录的货币回退为「代码 + 空格」前缀
 _CURRENCY_SYMBOLS = {
     # SWIFT 支付占比前 20
-    "USD": "$",       # 48.95%
-    "EUR": "€",       # 22.25%
-    "GBP": "£",       # 6.89%
-    "CNY": "¥",       # 4.33%
-    "JPY": "¥",       # 3.68%
-    "CAD": "C$",      # 2.44%
-    "HKD": "HK$",     # 1.88%
-    "AUD": "A$",      # 1.51%
-    "SGD": "S$",      # 1.38%
-    "CHF": "CHF ",    # 0.95%（Intl 同款带空格前缀）
-    "SEK": "kr",      # 0.82%
-    "PLN": "zł",      # 0.80%
-    "NOK": "kr",      # 0.61%
-    "DKK": "kr",      # 0.38%
-    "NZD": "NZ$",     # 0.35%
-    "ZAR": "R",       # 0.28%
-    "THB": "฿",       # 0.27%
-    "MXN": "MX$",     # 0.26%
-    "HUF": "Ft",      # 0.22%
-    "MYR": "RM",      # 0.20%
+    "USD": "$",  # 48.95%
+    "EUR": "€",  # 22.25%
+    "GBP": "£",  # 6.89%
+    "CNY": "¥",  # 4.33%
+    "JPY": "¥",  # 3.68%
+    "CAD": "C$",  # 2.44%
+    "HKD": "HK$",  # 1.88%
+    "AUD": "A$",  # 1.51%
+    "SGD": "S$",  # 1.38%
+    "CHF": "CHF ",  # 0.95%（Intl 同款带空格前缀）
+    "SEK": "kr",  # 0.82%
+    "PLN": "zł",  # 0.80%
+    "NOK": "kr",  # 0.61%
+    "DKK": "kr",  # 0.38%
+    "NZD": "NZ$",  # 0.35%
+    "ZAR": "R",  # 0.28%
+    "THB": "฿",  # 0.27%
+    "MXN": "MX$",  # 0.26%
+    "HUF": "Ft",  # 0.22%
+    "MYR": "RM",  # 0.20%
     "KRW": "₩",
     # SWIFT 榜外但经济体量/使用人数靠前
     "INR": "₹",
@@ -100,19 +98,19 @@ class NumberInput(Input):
     def __init__(
         self,
         label: str = "",
-        value: Optional[float] = None,
+        value: float | None = None,
         placeholder: str = "",
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
-        min_value: Optional[float] = None,
-        max_value: Optional[float] = None,
+        min_value: float | None = None,
+        max_value: float | None = None,
         step: float = 1.0,
         hide_stepper: bool = False,
         is_wheel_disabled: bool = False,
-        format_options: Optional[dict] = None,
+        format_options: dict | None = None,
         is_disabled: bool = False,
         is_invalid: bool = False,
         is_required: bool = False,
@@ -126,7 +124,7 @@ class NumberInput(Input):
         on_start_content_click=None,
         on_end_content_click=None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         if step == 0:
             raise ValueError("step must not be 0")
@@ -137,7 +135,7 @@ class NumberInput(Input):
         self._hide_stepper = hide_stepper
         self._is_wheel_disabled = is_wheel_disabled
         self._format_options = dict(format_options) if format_options else {}
-        self._numeric_value: Optional[float] = None
+        self._numeric_value: float | None = None
         self._last_emitted = "unset"
         self._auto_invalid = False
         self._user_invalid = is_invalid
@@ -169,9 +167,7 @@ class NumberInput(Input):
 
         # ---- stepper：插到 wrapper 布局末尾（clear 按钮之后，对齐官方位置）----
         self._stepper = _NumberStepper(button_size=18, parent=self._wrapper)
-        self._wrapper.layout().addWidget(
-            self._stepper, 0, Qt.AlignmentFlag.AlignVCenter
-        )
+        self._wrapper.layout().addWidget(self._stepper, 0, Qt.AlignmentFlag.AlignVCenter)
         self._stepper.stepped.connect(self._step_by)
 
         # ---- 数值层事件 ----
@@ -221,7 +217,7 @@ class NumberInput(Input):
             return self._currency_symbol(fo.get("currency", "USD")) + body
         return body
 
-    def _parse_number(self, text: str) -> Optional[float]:
+    def _parse_number(self, text: str) -> float | None:
         """显示文本 → 数值；空或解析失败返回 None。"""
         fo = self._format_options
         strip_chars = {",", " "}
@@ -247,18 +243,18 @@ class NumberInput(Input):
             v = min(v, self._max_value)
         return v
 
-    def value(self) -> Optional[float]:
+    def value(self) -> float | None:
         """当前数值；文本为空或不可解析时返回 None。"""
         return self._numeric_value
 
-    def set_value(self, value: Optional[float]):
+    def set_value(self, value: float | None):
         """设置数值（会夹取并格式化）；None 等价清空。"""
         if value is None:
             self.line_edit.clear()
             return
         self.line_edit.setText(self._format_number(self._clamp(float(value))))
 
-    def _emit_value(self, v: Optional[float]):
+    def _emit_value(self, v: float | None):
         """值有变化才发信号（None 与 float 的比较语义天然正确）。"""
         if v != self._last_emitted:
             self._last_emitted = v
@@ -322,11 +318,11 @@ class NumberInput(Input):
             raise ValueError("step must not be 0")
         self._step = float(step)
 
-    def set_min_value(self, min_value: Optional[float]):
+    def set_min_value(self, min_value: float | None):
         self._min_value = min_value
         self._resync_to_bounds()
 
-    def set_max_value(self, max_value: Optional[float]):
+    def set_max_value(self, max_value: float | None):
         self._max_value = max_value
         self._resync_to_bounds()
 
@@ -410,9 +406,7 @@ class NumberInput(Input):
 
         outside = self._label_placement in ("outside", "outside-left", "outside-top")
         self._stepper.set_button_size(14 if outside else 18)
-        self._stepper.set_buttons_enabled(
-            not self._is_disabled and not self._is_readonly
-        )
+        self._stepper.set_buttons_enabled(not self._is_disabled and not self._is_readonly)
         self._stepper.setVisible(not self._hide_stepper)
 
     def _size_config(self) -> dict:
@@ -422,7 +416,5 @@ class NumberInput(Input):
         Input 样式层从构造第一刻起就使用数字档最小宽度，不产生旧值缓存。
         """
         cfg = dict(super()._size_config())
-        cfg["min_width"] = NUMBER_INPUT_MIN_WIDTHS.get(
-            self._size, NUMBER_INPUT_MIN_WIDTHS["md"]
-        )
+        cfg["min_width"] = NUMBER_INPUT_MIN_WIDTHS.get(self._size, NUMBER_INPUT_MIN_WIDTHS["md"])
         return cfg

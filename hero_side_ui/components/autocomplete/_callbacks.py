@@ -5,11 +5,9 @@
 集中到一处，避免主组件文件被它们撑大。
 """
 
-from ...themes import AUTOCOMPLETE_SIZES
-
-from typing import Optional
-
 from PySide6.QtCore import QTimer
+
+from ...themes import AUTOCOMPLETE_SIZES
 
 
 class _AutocompleteCallbacksMixin:
@@ -146,4 +144,3 @@ class _AutocompleteCallbacksMixin:
                 self._refresh_clear_visibility()
 
         self.open_changed.emit(is_open, trigger)
-

@@ -56,4 +56,4 @@ for d in (PROGRESS_SIZES, CIRCULAR_PROGRESS_SIZES):
     d["medium"] = d["md"]
     d["large"] = d["lg"]
 
-__all__ = ["PROGRESS_SIZES", "CIRCULAR_PROGRESS_SIZES"]
+__all__ = ["CIRCULAR_PROGRESS_SIZES", "PROGRESS_SIZES"]

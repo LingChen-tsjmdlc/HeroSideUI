@@ -15,11 +15,8 @@ HeroUI 原版 CSS:
 
 from __future__ import annotations
 
-import math
-
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter
-
 
 N_BARS = 12
 DELAY = 1.0 / N_BARS  # 每根之间的相位差
@@ -71,4 +68,4 @@ def paint_spinner(
     painter.restore()
 
 
-__all__ = ["paint_spinner", "N_BARS"]
+__all__ = ["N_BARS", "paint_spinner"]

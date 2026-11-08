@@ -1,6 +1,5 @@
 """DateInput 组件包。"""
 
-from .date_input import DateInput
 from ._value import (
     DateTimeValue,
     now,
@@ -10,6 +9,7 @@ from ._value import (
     parse_zoned_datetime,
     today,
 )
+from .date_input import DateInput
 
 __all__ = [
     "DateInput",

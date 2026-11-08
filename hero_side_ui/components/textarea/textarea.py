@@ -5,36 +5,24 @@
     - ``_ResizeGrip`` → ``_resize_grip.py``
 """
 
-from PySide6.QtWidgets import QPushButton
-
-from typing import Callable, Optional
-
 from PySide6.QtCore import (
     QEvent,
-    QPoint,
-    QSize,
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPalette
+from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
-    QGraphicsOpacityEffect,
     QHBoxLayout,
-    QLabel,
     QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...animation import LabelFloatAnimation
-from ...core import ScrollStyle, SmoothScroll, ThemeProvider
-from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
-from ...utils import hex_to_rgba, load_svg_icon
-
+from ...core import ThemeProvider
 from ..input._clear_button import _ClearButton
 from ..input._wrapper import _InputWrapper
 from ..text import Text
-
 from ._autosize import _TextareaAutosizeMixin
 from ._layout import _TextareaLayoutMixin
 from ._resize_grip import _ResizeGrip
@@ -89,7 +77,7 @@ class Textarea(
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
         min_rows: int = 3,
         max_rows: int = 8,
@@ -119,7 +107,7 @@ class Textarea(
         ),  # (right_px, bottom_px) —— 类似 Tailwind absolute right-X bottom-X
         center_right_offset=8,  # 距 wrapper 右边的像素
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -148,9 +136,7 @@ class Textarea(
         # ---- 手动 resize ----
         # resizable: True/False/"vertical"/"horizontal"/"both"
         self._resize_mode = self._normalize_resize(resizable)
-        self._manual_height: Optional[int] = (
-            None  # 用户拖动设置的目标高度（None = 走 auto-resize）
-        )
+        self._manual_height: int | None = None  # 用户拖动设置的目标高度（None = 走 auto-resize）
         self._description = description
         self._error_message = error_message
         self._top_right_content = top_right_content
@@ -196,7 +182,7 @@ class Textarea(
             pass
 
     @staticmethod
-    def _normalize_resize(value) -> Optional[str]:
+    def _normalize_resize(value) -> str | None:
         """把 resizable 参数转成内部字符串 mode
 
         True / "vertical" / "v" → "vertical"
@@ -233,13 +219,9 @@ class Textarea(
 
         # --- outside-top label ---
         self._outside_label = Text(self._label_text, weight="medium", selectable=False)
-        self._outside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_label.setContentsMargins(0, 0, 0, 0)
-        self._outside_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._outside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self._outside_label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._outside_label, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -249,12 +231,8 @@ class Textarea(
         _row.setContentsMargins(0, 0, 0, 0)
         _row.setSpacing(8)
 
-        self._outside_left_label = Text(
-            self._label_text, weight="medium", selectable=False
-        )
-        self._outside_left_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_left_label = Text(self._label_text, weight="medium", selectable=False)
+        self._outside_left_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_left_label.setContentsMargins(0, 0, 0, 0)
         self._outside_left_label.setTextFormat(Qt.TextFormat.RichText)
         # outside-left 时，label 与 textarea 顶部对齐（多行场景）
@@ -266,9 +244,7 @@ class Textarea(
 
         # --- inputWrapper ---
         self._wrapper = _InputWrapper()
-        self._wrapper.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed
-        )
+        self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         wrap_layout = QHBoxLayout(self._wrapper)
         wrap_layout.setContentsMargins(12, 8, 12, 8)
@@ -283,13 +259,9 @@ class Textarea(
         # 浮动 label —— parent 是 self（Input 根），手动定位
         # 颜色由动画插值后用 RichText <span> 覆写，同 input/_layout 策略。
         self._inside_label = Text(self._label_text, parent=self, selectable=False)
-        self._inside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._inside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._inside_label.setContentsMargins(0, 0, 0, 0)
-        self._inside_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
+        self._inside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self._inside_label.raise_()
 
         # 真正的多行输入控件
@@ -307,9 +279,7 @@ class Textarea(
         # 宽度由 _apply_styles → _refresh_abs_spacer_width() 动态计算
         # ============================================================
         self._abs_spacer = QWidget()
-        self._abs_spacer.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._abs_spacer.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._abs_spacer.setFixedWidth(0)  # 默认 0，无内容时不占位
         wrap_layout.addWidget(self._abs_spacer, 0)
 
@@ -376,9 +346,7 @@ class Textarea(
         # --- helper ---
         self._helper_label = Text("", weight="normal", selectable=False)
         self._helper_label.setWordWrap(True)
-        self._helper_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._helper_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._helper_label.hide()
         self._root.addWidget(self._helper_label)
 
@@ -546,7 +514,7 @@ class Textarea(
         self._size = size
         self._apply_styles()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._radius = radius
         self._apply_styles()
 
@@ -558,8 +526,7 @@ class Textarea(
 
     def set_min_rows(self, rows: int):
         self._min_rows = max(1, int(rows))
-        if self._max_rows < self._min_rows:
-            self._max_rows = self._min_rows
+        self._max_rows = max(self._max_rows, self._min_rows)
         self._update_textarea_height()
 
     def set_max_rows(self, rows: int):

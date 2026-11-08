@@ -11,9 +11,7 @@ cell 平滑过渡 before 背景色。
 
 from __future__ import annotations
 
-from typing import Optional, Tuple
-
-from PySide6.QtCore import Qt, QRectF
+from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
@@ -42,7 +40,7 @@ def _corner_radii(
     is_first_col: bool,
     is_last_col: bool,
     r: int,
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """计算 before 行条四角圆角 (tl, tr, br, bl)，对齐 table.ts。
 
     - 单选 / 无选择：每行独立药丸 —— 首列左两角圆、尾列右两角圆（first:before:rounded-s-lg）。
@@ -132,7 +130,7 @@ class _TableCell(QWidget):
         self._cur_before = QColor(_TRANSPARENT)
 
         # 行交互回调（由 Table 注入）：上报 hover / click 给所属行
-        self._row_key: Optional[str] = None
+        self._row_key: str | None = None
         self._hover_report = None  # callable(row_key, entered: bool)
         self._click_report = None  # callable(row_key)
 
@@ -140,7 +138,7 @@ class _TableCell(QWidget):
         self._layout.setContentsMargins(0, 0, 0, 0)
         self._layout.setAlignment(_ALIGN_FLAGS[self._align])
 
-        self._content: Optional[QWidget] = None
+        self._content: QWidget | None = None
         self.set_content(content)
 
     # ------------------------------------------------------------
@@ -169,16 +167,13 @@ class _TableCell(QWidget):
         - 其余情况（QWidget 内容、类型不匹配）→ 回退到 set_content 重建。
         复用能显著降低翻页 / 滚动时的重建开销。
         """
-        if (
-            isinstance(self._content, Text)
-            and not isinstance(content, QWidget)
-        ):
+        if isinstance(self._content, Text) and not isinstance(content, QWidget):
             self._content.setText(str(content) if content is not None else "")
             self._refresh_content_style()
             return
         self.set_content(content)
 
-    def content(self) -> Optional[QWidget]:
+    def content(self) -> QWidget | None:
         return self._content
 
     # ------------------------------------------------------------
@@ -234,8 +229,17 @@ class _TableCell(QWidget):
         # 幂等守卫：样式维度全未变时跳过整段重设——虚拟滚动每帧每格都调本方法，
         # 但滚动只换内容不换样式（内容走 update_content、行状态走 set_row_state，
         # 均独立于此）。跳过可省下 margins/sizeHint/height/字体/颜色的高频重算。
-        sig = (color, size, theme, radius, is_striped, is_compact,
-               is_multi, align, disable_animation)
+        sig = (
+            color,
+            size,
+            theme,
+            radius,
+            is_striped,
+            is_compact,
+            is_multi,
+            align,
+            disable_animation,
+        )
         if sig == getattr(self, "_style_sig", None):
             return
         self._style_sig = sig
@@ -288,9 +292,7 @@ class _TableCell(QWidget):
         )
         # 字色只受 selected / disabled 影响（hover 不改字色）；仅这两者变化时才重算，
         # 避免单纯 hover 触发整行字体/颜色重建 → 大表掉帧。
-        text_changed = (
-            selected != self._row_selected or disabled != self._row_disabled
-        )
+        text_changed = selected != self._row_selected or disabled != self._row_disabled
         self._row_hover = hover
         self._row_selected = selected
         self._row_odd = odd
@@ -346,8 +348,15 @@ class _TableCell(QWidget):
 
     def _refresh_before(self, *, animated: bool):
         start, end = aligned_color_pair(self._cur_before, self._target_before())
-        tween_value(self, "_before_anim_runner", start, end, self._on_before_step,
-                    duration=_HOVER_ANIM_MS, animated=animated)
+        tween_value(
+            self,
+            "_before_anim_runner",
+            start,
+            end,
+            self._on_before_step,
+            duration=_HOVER_ANIM_MS,
+            animated=animated,
+        )
 
     def _on_before_step(self, c):
         self._cur_before = QColor(c)

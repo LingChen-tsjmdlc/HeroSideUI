@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Dict, Optional
 
 from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication
 
@@ -23,10 +22,10 @@ _FALLBACK_MONO_CSS = "Consolas, 'Courier New', monospace"
 _FALLBACK_MONO_FAMILY = "Consolas"
 
 # 路径 → 已注册 family 名（避免重复 addApplicationFont）
-_LOADED: Dict[str, str] = {}
+_LOADED: dict[str, str] = {}
 
 
-def _load_font_family(path: Path) -> Optional[str]:
+def _load_font_family(path: Path) -> str | None:
     """注册 ttf 并返回主 family 名；失败或无 app 返回 None。"""
     if QGuiApplication.instance() is None:
         return None
@@ -45,13 +44,13 @@ def _load_font_family(path: Path) -> Optional[str]:
     return families[0]
 
 
-def mono_family(font_path: Optional[str] = None) -> str:
+def mono_family(font_path: str | None = None) -> str:
     """返回代码区等宽字体的主 family 名（加载失败回退 Consolas）。"""
     path = Path(font_path) if font_path else _FONTS_DIR / _DEFAULT_MONO_FILE
     return _load_font_family(path) or _FALLBACK_MONO_FAMILY
 
 
-def mono_qfont(size_px: int, font_path: Optional[str] = None) -> QFont:
+def mono_qfont(size_px: int, font_path: str | None = None) -> QFont:
     """构造代码区用的 QFont（真正让等宽字体落地的入口）。
 
     显式锁 Normal 字重：不设的话 QFont 在有多个 weight 变体的 family 上可能

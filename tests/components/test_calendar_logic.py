@@ -7,24 +7,24 @@
 import pytest
 
 from hero_side_ui.components.calendar._date import (
+    MON,
+    SUN,
     CalendarDate,
+    months_in_year,
     normalize_first_day_of_week,
     weeks_in_month,
-    months_in_year,
     year_range,
-    SUN,
-    MON,
 )
 from hero_side_ui.components.calendar._grid import (
+    compute_cell_state,
     get_dates_in_week,
     get_weeks,
-    compute_cell_state,
 )
-from hero_side_ui.components.calendar._state import CalendarState
 from hero_side_ui.components.calendar._range_state import RangeCalendarState
-
+from hero_side_ui.components.calendar._state import CalendarState
 
 # ---------------------------------------------------------------- _date
+
 
 def test_days_in_month():
     assert CalendarDate(2026, 2, 1).days_in_month == 28
@@ -86,14 +86,15 @@ def test_weeks_in_month_range():
 
 # ---------------------------------------------------------------- _grid
 
+
 def test_get_dates_in_week_lead_padding():
     # 2026-07：7/1 是周三，周日起 → 第一周前 3 格用上月末尾补齐（6/28~6/30）
     week0 = get_dates_in_week(CalendarDate(2026, 7, 1), 0, SUN)
     assert week0[0].month == 6 and week0[0].day == 28  # 上月周日
     assert week0[1].month == 6 and week0[1].day == 29
     assert week0[2].month == 6 and week0[2].day == 30
-    assert week0[3].month == 7 and week0[3].day == 1   # 周三放本月 1 号
-    assert all(d is not None for d in week0)            # 无空洞
+    assert week0[3].month == 7 and week0[3].day == 1  # 周三放本月 1 号
+    assert all(d is not None for d in week0)  # 无空洞
 
 
 def test_get_weeks_shape():
@@ -125,6 +126,7 @@ def test_cell_state_empty():
 
 # ---------------------------------------------------------------- _state 单选
 
+
 def test_select_and_change_signal():
     st = CalendarState(value=None)
     fired = []
@@ -148,8 +150,7 @@ def test_disabled_blocks_select():
 
 
 def test_min_max_disable():
-    st = CalendarState(min_value=CalendarDate(2026, 7, 10),
-                       max_value=CalendarDate(2026, 7, 20))
+    st = CalendarState(min_value=CalendarDate(2026, 7, 10), max_value=CalendarDate(2026, 7, 20))
     assert st.is_disabled_date(CalendarDate(2026, 7, 5))
     assert st.is_disabled_date(CalendarDate(2026, 7, 25))
     assert not st.is_disabled_date(CalendarDate(2026, 7, 15))
@@ -176,13 +177,11 @@ def test_focus_change_signal():
 
 
 def test_paging_visible_vs_single():
-    st_v = CalendarState(value=CalendarDate(2026, 7, 1), visible_months=2,
-                         page_behavior="visible")
+    st_v = CalendarState(value=CalendarDate(2026, 7, 1), visible_months=2, page_behavior="visible")
     st_v.focus_next_page()
     assert st_v.visible_range_start.month == 9  # 翻 2 个月
 
-    st_s = CalendarState(value=CalendarDate(2026, 7, 1), visible_months=2,
-                         page_behavior="single")
+    st_s = CalendarState(value=CalendarDate(2026, 7, 1), visible_months=2, page_behavior="single")
     st_s.focus_next_page()
     assert st_s.visible_range_start.month == 8  # 翻 1 个月
 
@@ -193,12 +192,12 @@ def test_visible_months_clamp():
 
 
 def test_value_invalid():
-    st = CalendarState(value=CalendarDate(2026, 7, 5),
-                       min_value=CalendarDate(2026, 7, 10))
+    st = CalendarState(value=CalendarDate(2026, 7, 5), min_value=CalendarDate(2026, 7, 10))
     assert st.is_value_invalid
 
 
 # ---------------------------------------------------------------- _range
+
 
 def test_range_two_click_select():
     st = RangeCalendarState()
@@ -234,8 +233,7 @@ def test_range_hover_preview():
 
 
 def test_range_cell_state_endpoints():
-    st = RangeCalendarState(value=(CalendarDate(2026, 7, 10),
-                                   CalendarDate(2026, 7, 20)))
+    st = RangeCalendarState(value=(CalendarDate(2026, 7, 10), CalendarDate(2026, 7, 20)))
     today = CalendarDate.today()
     month = CalendarDate(2026, 7, 1)
 
@@ -255,6 +253,7 @@ def test_range_is_range_flag():
 
 
 # ---------------------------------------------------------------- picker 数据
+
 
 def test_months_in_year():
     months = months_in_year()

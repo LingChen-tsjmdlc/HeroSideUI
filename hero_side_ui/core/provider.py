@@ -16,7 +16,7 @@ HeroSideUIProvider —— 显式初始化门面（可选）
 
 from __future__ import annotations
 
-from typing import Literal, Optional
+from typing import Literal
 
 from PySide6.QtWidgets import QApplication
 
@@ -52,11 +52,11 @@ class HeroSideUIProvider:
     @classmethod
     def setup(
         cls,
-        app: Optional[QApplication] = None,
+        app: QApplication | None = None,
         *,
-        theme: Optional[Literal["auto", "light", "dark"]] = None,
-        font_family: Optional[str] = None,
-        font_base_size: Optional[int] = None,
+        theme: Literal["auto", "light", "dark"] | None = None,
+        font_family: str | None = None,
+        font_base_size: int | None = None,
         smooth_scroll: bool = True,
         scroll_style: bool = True,
         filter_libpng_warnings: bool = True,

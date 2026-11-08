@@ -14,7 +14,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Optional
 
 import icu
 
@@ -23,8 +22,13 @@ SUN, MON, TUE, WED, THU, FRI, SAT = 1, 2, 3, 4, 5, 6, 7
 
 # firstDayOfWeek 字符串 → ICU weekday 常量
 _FIRST_DAY_MAP = {
-    "sun": SUN, "mon": MON, "tue": TUE, "wed": WED,
-    "thu": THU, "fri": FRI, "sat": SAT,
+    "sun": SUN,
+    "mon": MON,
+    "tue": TUE,
+    "wed": WED,
+    "thu": THU,
+    "fri": FRI,
+    "sat": SAT,
 }
 
 
@@ -61,14 +65,14 @@ class CalendarDate:
     # ---- 构造 / 转换 ---------------------------------------------------
 
     @staticmethod
-    def today(identifier: str = "gregorian") -> "CalendarDate":
+    def today(identifier: str = "gregorian") -> CalendarDate:
         """返回该历法下的今天。"""
         cal = _fresh_calendar(identifier)
         cal.setTime(icu.Calendar.getNow())
         return CalendarDate._from_icu(cal, identifier)
 
     @staticmethod
-    def _from_icu(cal: icu.Calendar, identifier: str) -> "CalendarDate":
+    def _from_icu(cal: icu.Calendar, identifier: str) -> CalendarDate:
         return CalendarDate(
             year=cal.get(icu.Calendar.YEAR),
             month=cal.get(icu.Calendar.MONTH) + 1,
@@ -97,7 +101,9 @@ class CalendarDate:
 
     # ---- 算术 ---------------------------------------------------------
 
-    def add(self, *, years: int = 0, months: int = 0, weeks: int = 0, days: int = 0) -> "CalendarDate":
+    def add(
+        self, *, years: int = 0, months: int = 0, weeks: int = 0, days: int = 0
+    ) -> CalendarDate:
         """按 ICU add 规则做日期加减（月末进位安全，如 1/31 + 1 月 = 2/28）。"""
         cal = self._to_icu()
         if years:
@@ -110,8 +116,9 @@ class CalendarDate:
             cal.add(icu.Calendar.DATE, days)
         return CalendarDate._from_icu(cal, self.identifier)
 
-    def with_fields(self, *, year: Optional[int] = None, month: Optional[int] = None,
-                    day: Optional[int] = None) -> "CalendarDate":
+    def with_fields(
+        self, *, year: int | None = None, month: int | None = None, day: int | None = None
+    ) -> CalendarDate:
         """返回替换了指定字段的新日期（用于 picker 直接设年/月）。"""
         cal = _fresh_calendar(self.identifier)
         cal.clear()
@@ -122,10 +129,10 @@ class CalendarDate:
         )
         return CalendarDate._from_icu(cal, self.identifier)
 
-    def first_of_month(self) -> "CalendarDate":
+    def first_of_month(self) -> CalendarDate:
         return CalendarDate(self.year, self.month, 1, self.identifier)
 
-    def last_of_month(self) -> "CalendarDate":
+    def last_of_month(self) -> CalendarDate:
         return CalendarDate(self.year, self.month, self.days_in_month, self.identifier)
 
     # ---- 比较（同历法按时间轴，跨历法按绝对时刻）-----------------------
@@ -134,30 +141,30 @@ class CalendarDate:
         """归一到 ICU 毫秒时刻，用于跨历法比较。"""
         return self._to_icu().getTime()
 
-    def __lt__(self, other: "CalendarDate") -> bool:
+    def __lt__(self, other: CalendarDate) -> bool:
         return self._ordinal() < other._ordinal()
 
-    def __le__(self, other: "CalendarDate") -> bool:
+    def __le__(self, other: CalendarDate) -> bool:
         return self._ordinal() <= other._ordinal()
 
-    def __gt__(self, other: "CalendarDate") -> bool:
+    def __gt__(self, other: CalendarDate) -> bool:
         return self._ordinal() > other._ordinal()
 
-    def __ge__(self, other: "CalendarDate") -> bool:
+    def __ge__(self, other: CalendarDate) -> bool:
         return self._ordinal() >= other._ordinal()
 
-    def is_same_day(self, other: Optional["CalendarDate"]) -> bool:
+    def is_same_day(self, other: CalendarDate | None) -> bool:
         if other is None:
             return False
         return (self.year, self.month, self.day) == (other.year, other.month, other.day)
 
-    def is_same_month(self, other: Optional["CalendarDate"]) -> bool:
+    def is_same_month(self, other: CalendarDate | None) -> bool:
         if other is None:
             return False
         return (self.year, self.month) == (other.year, other.month)
 
 
-def normalize_first_day_of_week(value: Optional[str]) -> int:
+def normalize_first_day_of_week(value: str | None) -> int:
     """把 'sun'/'mon'/... 归一为 ICU weekday 常量；None → 周日(SUN)。"""
     if value is None:
         return SUN
@@ -175,8 +182,9 @@ def weeks_in_month(date: CalendarDate, first_day_of_week: int) -> int:
     return -(-total // 7)  # 向上取整
 
 
-def clamp_date(date: CalendarDate, min_value: Optional[CalendarDate],
-               max_value: Optional[CalendarDate]) -> CalendarDate:
+def clamp_date(
+    date: CalendarDate, min_value: CalendarDate | None, max_value: CalendarDate | None
+) -> CalendarDate:
     """把日期夹到 [min, max] 区间内。"""
     if min_value is not None and date < min_value:
         return min_value
@@ -199,8 +207,9 @@ def _symbols(identifier: str) -> icu.DateFormatSymbols:
     return icu.DateFormatSymbols(_locale_for(identifier))
 
 
-def weekday_names(first_day_of_week: int, style: str = "narrow",
-                  identifier: str = "gregorian") -> list:
+def weekday_names(
+    first_day_of_week: int, style: str = "narrow", identifier: str = "gregorian"
+) -> list:
     """按周起点排好序的 7 个星期名（style: narrow/short/long）。"""
     sym = _symbols(identifier)
     width = _WEEKDAY_WIDTH.get(style, icu.DateFormatSymbols.NARROW)
@@ -231,7 +240,6 @@ def months_in_year(identifier: str = "gregorian") -> list:
     return list(_symbols(identifier).getMonths())[:12]
 
 
-def year_range(min_value: "CalendarDate", max_value: "CalendarDate") -> list:
+def year_range(min_value: CalendarDate, max_value: CalendarDate) -> list:
     """min~max 之间的年份列表（含端点，用于年份选择器列）。"""
     return list(range(min_value.year, max_value.year + 1))
-

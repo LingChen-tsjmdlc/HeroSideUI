@@ -30,28 +30,27 @@ HeroSideUI Tooltip Component
     - 打开/关闭动画: opacity 0 ↔ 1 + pixmap scale 0.9 ↔ 1 时长 in=200ms / out=150ms（顶层模式用 windowOpacity；embedded 模式用 QGraphicsOpacityEffect）
 """
 
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QLabel,
-)
 from PySide6.QtCore import (
-    Qt,
-    Signal,
     QPoint,
+    Qt,
     QTimer,
+    Signal,
 )
-from typing import Optional, Union
+from PySide6.QtWidgets import (
+    QLabel,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ...themes import TOOLTIP_SIZES
 from ...animation import FadeScaleAnimation, PixmapScaleProxy
 from ...core import ThemeProvider
+from ...themes import TOOLTIP_SIZES
 from ..text import Text
+from . import _position as _pos
 from ._constants import VALID_PLACEMENTS
+from ._paint import _TooltipPaintMixin
 from ._scroll_follow import _TooltipScrollFollowMixin
 from ._trigger import _TooltipTriggerMixin
-from ._paint import _TooltipPaintMixin
-from . import _position as _pos
 
 
 class Tooltip(
@@ -81,7 +80,7 @@ class Tooltip(
 
     def __init__(
         self,
-        content: Union[str, QWidget, None] = None,
+        content: str | QWidget | None = None,
         color: str = "default",
         size: str = "md",
         radius: str = "md",
@@ -96,7 +95,7 @@ class Tooltip(
         disable_animation: bool = False,
         embedded: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -120,11 +119,11 @@ class Tooltip(
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
-        self._trigger: Optional[QWidget] = None
+        self._trigger: QWidget | None = None
         # embedded 模式下的共享坐标系父（通常是 trigger.window()）；
         # 顶层模式下始终为 None。在 attach() 里赋值。
-        self._anchor_ancestor: Optional[QWidget] = None
-        self._content: Optional[QWidget] = None
+        self._anchor_ancestor: QWidget | None = None
+        self._content: QWidget | None = None
         self._is_open = False
         # 关闭中（fade-out 进行中，_finalize_close 未触发）。
         # fade-out 期间用户再次 hover/click 能正确"取消关闭并重新打开"。
@@ -248,11 +247,12 @@ class Tooltip(
         self._outer.addWidget(widget)
         self._apply_content_text_color()
 
-    def set_content(self, content: Union[str, QWidget]):
+    def set_content(self, content: str | QWidget):
         """替换内容。如果 tooltip 正在显示，自动刷新尺寸和位置。"""
         if self._content is not None:
             self._outer.removeWidget(self._content)
             from ...utils import safe_delete
+
             safe_delete(self._content)
         if isinstance(content, str):
             self._set_text_content(content)
@@ -431,9 +431,7 @@ class Tooltip(
     # 几何（thin wrapper：纯几何计算在 _position.py）
     # ============================================================
     def _frame_margins(self) -> tuple:
-        return _pos.frame_margins(
-            self._shadow, self._show_arrow, self._actual_placement
-        )
+        return _pos.frame_margins(self._shadow, self._show_arrow, self._actual_placement)
 
     def _calc_position(self, trigger: QWidget) -> QPoint:
         """计算 tooltip 坐标（含 auto-flip）。

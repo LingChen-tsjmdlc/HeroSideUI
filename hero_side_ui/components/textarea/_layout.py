@@ -9,8 +9,6 @@
 
 from ...themes import TEXTAREA_SIZES
 
-from PySide6.QtCore import QPoint, Qt
-
 
 class _TextareaLayoutMixin:
     """Textarea 几何/绝对槽 mixin。"""
@@ -54,13 +52,14 @@ class _TextareaLayoutMixin:
         abs_need = 0
         if self._center_right_content is not None:
             self._center_right_holder.adjustSize()
-            abs_need = max(abs_need, self._center_right_holder.width()
-                           + int(self._center_right_offset))
+            abs_need = max(
+                abs_need,
+                self._center_right_holder.width() + int(self._center_right_offset),
+            )
         if self._bottom_right_content is not None:
             self._bottom_right_holder.adjustSize()
             right_off, _ = self._bottom_right_offset
-            abs_need = max(abs_need, self._bottom_right_holder.width()
-                           + int(right_off))
+            abs_need = max(abs_need, self._bottom_right_holder.width() + int(right_off))
 
         # layout 里已经让出的右侧宽度（top_right_slot + clear_btn + 它们各自的 spacing）
         layout_already_reserved = 0
@@ -120,8 +119,7 @@ class _TextareaLayoutMixin:
 
         # resize grip：贴 wrapper 右下角，距右/底 2px
         # 注意：bottom_right_content 存在时 grip 自动隐藏，避免和按钮重叠
-        if (self._resize_mode is not None
-                and self._bottom_right_content is None):
+        if self._resize_mode is not None and self._bottom_right_content is None:
             self._resize_grip.show()
             gw = self._resize_grip.width()
             gh = self._resize_grip.height()
@@ -167,4 +165,3 @@ class _TextareaLayoutMixin:
         """清除手动拖动设置的高度，恢复 auto-resize 行为"""
         self._manual_height = None
         self._update_textarea_height()
-

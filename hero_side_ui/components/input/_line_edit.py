@@ -5,15 +5,9 @@
 - 焦点事件与 readonly 状态共享
 """
 
-from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QWidget
-from typing import Optional
-
-from PySide6.QtCore import Qt, Signal
-from PySide6.QtGui import QPalette
-from PySide6.QtWidgets import QLineEdit
-
-
+from PySide6.QtCore import Qt
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QLineEdit, QWidget
 
 
 # ============================================================
@@ -28,7 +22,7 @@ class _LineEdit(QLineEdit):
     - _apply_styles 里每次 setPalette 时必须同步保持 Base = transparent
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setFrame(False)
         self.setAttribute(Qt.WidgetAttribute.WA_MacShowFocusRect, False)

@@ -19,7 +19,6 @@ from __future__ import annotations
 import gc
 
 import pytest
-
 from PySide6.QtCore import QTimer
 from PySide6.QtWidgets import QApplication
 
@@ -61,7 +60,7 @@ def _stop_all_timers_and_animations() -> None:
 
 
 @pytest.fixture(autouse=True)
-def _cleanup_qt_state(qtbot):  # noqa: ARG001  qtbot 注入确保 QApplication 已就绪
+def _cleanup_qt_state(qtbot):
     """每个测试前后彻底清理 Qt 状态，防止跨测试访问违规。"""
     _drain_events()
     yield

@@ -11,8 +11,6 @@ _top_content/_bottom_content/_top_placement/_bottom_placement/_outer/_inside_v
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtWidgets import QWidget
 
 from ...utils import safe_delete
@@ -81,7 +79,7 @@ class _PropsMixin:
     # ------------------------------------------------------------
     # top / bottom content
     # ------------------------------------------------------------
-    def set_top_content(self, w: Optional[QWidget]):
+    def set_top_content(self, w: QWidget | None):
         if self._top_content is not None:
             safe_delete(self._top_content)
             self._top_content = None
@@ -92,7 +90,7 @@ class _PropsMixin:
             else:
                 self._inside_v.insertWidget(0, w)
 
-    def set_bottom_content(self, w: Optional[QWidget]):
+    def set_bottom_content(self, w: QWidget | None):
         if self._bottom_content is not None:
             safe_delete(self._bottom_content)
             self._bottom_content = None

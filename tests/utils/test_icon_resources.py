@@ -8,7 +8,7 @@ import pytest
 from PySide6.QtCore import QByteArray, QSize
 from PySide6.QtGui import QImage, QPainter, QPixmap
 from PySide6.QtSvg import QSvgRenderer
-from pyside_iconify import IconData, get_icon_data, get_default_config, set_default_config
+from pyside_iconify import IconData, get_default_config, get_icon_data, set_default_config
 from pyside_iconify.network import client as network
 
 from hero_side_ui.icons import builtin_icon_names, get_icon, get_pixmap, resolve_icon
@@ -46,7 +46,9 @@ def test_names_are_aliases_in_owned_namespace(qtbot):
 
 def test_local_svg_preserves_viewport_and_inherited_paint(qtbot, tmp_path):
     path = tmp_path / "custom.svg"
-    path.write_text('<svg viewBox="10 20 16 8" fill="red"><rect x="10" y="20" width="16" height="8"/></svg>')
+    path.write_text(
+        '<svg viewBox="10 20 16 8" fill="red"><rect x="10" y="20" width="16" height="8"/></svg>'
+    )
     data = get_icon_data(resolve_icon(path))
     assert (data.left, data.top, data.width, data.height) == (10, 20, 16, 8)
     assert 'fill="red"' in data.body
@@ -79,8 +81,12 @@ def test_inline_data_and_explicit_dpr(qtbot):
 
 def test_zero_stroke_remains_pixel_compatible(qtbot):
     pix = load_svg_icon("heroicons--chevron-down", color="red", stroke_width=0).toImage()
-    source = (ROOT / "hero_side_ui/resources/icons/heroicons--chevron-down.svg").read_text(encoding="utf-8")
-    expected = _legacy_image(source.replace('stroke-width="1.5"', 'stroke-width="0"').replace("currentColor", "red"))
+    source = (ROOT / "hero_side_ui/resources/icons/heroicons--chevron-down.svg").read_text(
+        encoding="utf-8"
+    )
+    expected = _legacy_image(
+        source.replace('stroke-width="1.5"', 'stroke-width="0"').replace("currentColor", "red")
+    )
     assert pix == expected
 
 
@@ -104,12 +110,22 @@ def test_legacy_colors_do_not_inherit_user_global_tint_or_opacity(qtbot, tmp_pat
     path = tmp_path / "red.svg"
     path.write_text('<svg viewBox="0 0 24 24"><path fill="red" d="M0 0h24v24H0z"/></svg>')
     try:
-        set_default_config(color="blue", color_light_theme="green", color_dark_theme="yellow", opacity=0.2)
+        set_default_config(
+            color="blue", color_light_theme="green", color_dark_theme="yellow", opacity=0.2
+        )
         original = load_svg_icon(str(path), color="original").toImage().pixelColor(12, 12)
-        assert (original.red(), original.green(), original.blue(), original.alpha()) == (255, 0, 0, 255)
+        assert (original.red(), original.green(), original.blue(), original.alpha()) == (
+            255,
+            0,
+            0,
+            255,
+        )
         tinted = load_svg_icon("heroicons--check-solid", color="red").toImage()
-        assert any(tinted.pixelColor(x, y).red() == 255 and tinted.pixelColor(x, y).alpha() == 255
-                   for x in range(24) for y in range(24))
+        assert any(
+            tinted.pixelColor(x, y).red() == 255 and tinted.pixelColor(x, y).alpha() == 255
+            for x in range(24)
+            for y in range(24)
+        )
     finally:
         set_default_config(**asdict(defaults))
 
@@ -117,8 +133,13 @@ def test_legacy_colors_do_not_inherit_user_global_tint_or_opacity(qtbot, tmp_pat
 def test_only_icon_boundary_imports_iconify_public_api():
     for path in (ROOT / "hero_side_ui").rglob("*.py"):
         for node in ast.walk(ast.parse(path.read_text(encoding="utf-8-sig"))):
-            modules = ([node.module or ""] if isinstance(node, ast.ImportFrom)
-                       else [alias.name for alias in node.names] if isinstance(node, ast.Import) else [])
+            modules = (
+                [node.module or ""]
+                if isinstance(node, ast.ImportFrom)
+                else [alias.name for alias in node.names]
+                if isinstance(node, ast.Import)
+                else []
+            )
             for module in modules:
                 if not module.startswith("pyside_iconify"):
                     continue

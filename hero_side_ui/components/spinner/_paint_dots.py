@@ -18,7 +18,6 @@ import math
 from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import QColor, QPainter
 
-
 N_DOTS = 3
 
 
@@ -99,4 +98,4 @@ def paint_dots(
     painter.restore()
 
 
-__all__ = ["paint_wave", "paint_dots", "N_DOTS"]
+__all__ = ["N_DOTS", "paint_dots", "paint_wave"]

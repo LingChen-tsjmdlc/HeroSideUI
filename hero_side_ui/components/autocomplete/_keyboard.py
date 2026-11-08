@@ -4,10 +4,7 @@ eventFilter 拦截 Input 上的键盘事件（Up/Down/Home/End/Enter/Escape）�
 _handle_arrow / _visible_items / _activate_focused_item 实现导航语义。
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QEvent, QObject, Qt
-from PySide6.QtGui import QKeyEvent
+from PySide6.QtCore import QEvent, Qt
 
 from ..listbox import ListboxItem
 
@@ -31,11 +28,7 @@ class _AutocompleteKeyboardMixin:
                 if self._just_committed:
                     self._just_committed = False
                     return super().eventFilter(obj, event)
-                if (
-                    self._menu_trigger == "focus"
-                    and not self._is_open
-                    and not self._is_disabled
-                ):
+                if self._menu_trigger == "focus" and not self._is_open and not self._is_disabled:
                     self.open(trigger="focus")
             elif etype == QEvent.FocusOut:
                 # 失焦后:如果鼠标也不在自己上面,clear 应该收起来
@@ -61,16 +54,12 @@ class _AutocompleteKeyboardMixin:
                 if key == Qt.Key_Home and self._is_open:
                     vis = self._visible_items()
                     if vis:
-                        self._listbox._set_focus_index(
-                            self._listbox.items().index(vis[0])
-                        )
+                        self._listbox._set_focus_index(self._listbox.items().index(vis[0]))
                     return True
                 if key == Qt.Key_End and self._is_open:
                     vis = self._visible_items()
                     if vis:
-                        self._listbox._set_focus_index(
-                            self._listbox.items().index(vis[-1])
-                        )
+                        self._listbox._set_focus_index(self._listbox.items().index(vis[-1]))
                     return True
                 if key == Qt.Key_Escape:
                     if self._is_open:
@@ -96,11 +85,7 @@ class _AutocompleteKeyboardMixin:
     def _visible_items(self) -> list[ListboxItem]:
         # 用 not isHidden() 而非 isVisible() —— popover 关闭时 isVisible 会因祖先 hide
         # 返回 False，但 hide_state（即被 _apply_filter setVisible(False)）才是我们关心的
-        return [
-            it
-            for it in self._listbox.items()
-            if not it.isHidden() and not it.is_disabled()
-        ]
+        return [it for it in self._listbox.items() if not it.isHidden() and not it.is_disabled()]
 
     def _handle_arrow(self, down: bool):
         if not self._is_open:
@@ -138,8 +123,3 @@ class _AutocompleteKeyboardMixin:
         if focused is None:
             focused = vis[0]
         self._on_listbox_action(focused.key())
-
-
-__all__ = ["Autocomplete", "AutocompleteItem", "AutocompleteSection"]
-
-

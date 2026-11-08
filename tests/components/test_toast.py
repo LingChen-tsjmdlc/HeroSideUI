@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import itertools
+
 import pytest
 from PySide6.QtCore import QPoint, Qt
 from PySide6.QtTest import QTest
@@ -240,8 +242,15 @@ class TestToastContent:
         """回归：render 默认 DrawWindowBackground 会把窗口底色（亮=白/暗=黑）
         整矩形不透明地画进快照，四周阴影留白变成一圈实色边——半透明绘制时
         就是用户看到的「主题色矩形块（像边距一样）」。外圈必须保持透明。"""
-        t = Toast(title="t", description="d", color="danger", variant="solid",
-                  timeout=0, theme="light", parent=host)
+        t = Toast(
+            title="t",
+            description="d",
+            color="danger",
+            variant="solid",
+            timeout=0,
+            theme="light",
+            parent=host,
+        )
         qtbot.addWidget(t)
         t.resize(400, 80)
         t.set_opacity(0.5)
@@ -322,7 +331,10 @@ class TestToastStyling:
         """HeroUI swapColorValues 是首尾反转：50 ↔ 900。"""
         s = build_toast_styles("flat", "warning", "dark")
         assert s["base_bg"] == HEROUI_COLORS["warning"][900]
-        assert build_toast_styles("flat", "warning", "dark")["icon_color"] == HEROUI_COLORS["warning"][300]
+        assert (
+            build_toast_styles("flat", "warning", "dark")["icon_color"]
+            == HEROUI_COLORS["warning"][300]
+        )
 
     def test_bordered_uses_400_border(self):
         s = build_toast_styles("bordered", "danger", "light")
@@ -457,8 +469,7 @@ class TestToastRegion:
         before = set(QApplication.topLevelWidgets())
         card = Toast(title="t", description="带描述的卡片", parent=host)
         qtbot.addWidget(card)
-        strangers = [w for w in QApplication.topLevelWidgets()
-                     if w not in before and w.isWindow()]
+        strangers = [w for w in QApplication.topLevelWidgets() if w not in before and w.isWindow()]
         assert strangers == []
 
     def test_clear_removes_all(self, qtbot, host):
@@ -478,7 +489,7 @@ class TestToastRegion:
         region._expanded = True
         region._relayout(False)
         gap_spec = TOAST_SPEC["stack_gap"]
-        for older, newer in zip(cards, cards[1:]):
+        for older, newer in itertools.pairwise(cards):
             # body 底 = top + height - pad（Qt 的 bottom() 自带 -1，须补偿）
             body_bot_old = older.geometry().top() + older.height() - older.pad_bottom
             body_top_new = newer.geometry().top() + newer.pad_top
@@ -585,7 +596,8 @@ class TestToastRegion:
             QTest.mouseMove(card, QPoint(card.width() // 2 + 30 * i, 30))
             QTest.qWait(20)
         QTest.mouseRelease(
-            card, Qt.MouseButton.LeftButton,
+            card,
+            Qt.MouseButton.LeftButton,
             Qt.KeyboardModifier.NoModifier,
             QPoint(card.width() // 2 + 150, 30),
         )
@@ -670,12 +682,12 @@ class TestToastProvider:
     def test_add_close_clear(self, qtbot, host):
         key = add_toast(title="t", timeout=0, parent=host)
         provider = get_toast_provider(host)
-        assert key in provider.region.keys()
+        assert key in provider.region.keys()  # noqa: SIM118  # keys() 是普通方法非 dict
         assert provider.card(key) is not None
 
         close_toast(key)
         QTest.qWait(_EXIT_WAIT)
-        assert key not in provider.region.keys()
+        assert key not in provider.region.keys()  # noqa: SIM118  # keys() 是普通方法非 dict
 
         add_toast(title="a", timeout=0, parent=host)
         clear_toasts(host)

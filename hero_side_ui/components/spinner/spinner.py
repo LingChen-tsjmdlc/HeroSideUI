@@ -19,8 +19,6 @@
 
 from __future__ import annotations
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import (
@@ -51,7 +49,7 @@ from ._paint_spinner_bars import paint_spinner
 class _SpinnerCanvas(QWidget):
     """承担 paintEvent 的"画布"子部件。"""
 
-    def __init__(self, owner: "Spinner", parent: Optional[QWidget] = None):
+    def __init__(self, owner: Spinner, parent: QWidget | None = None):
         super().__init__(parent)
         self._owner = owner
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
@@ -142,7 +140,7 @@ class Spinner(QWidget):
         size: str = "md",
         label: str = "",
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -222,9 +220,7 @@ class Spinner(QWidget):
         if self._variant == "default":
             self._driver_a.set_duration(800)
             self._driver_b.set_duration(800)
-        elif self._variant == "simple":
-            self._driver_a.set_duration(1000)
-        elif self._variant == "gradient":
+        elif self._variant == "simple" or self._variant == "gradient":
             self._driver_a.set_duration(1000)
         elif self._variant == "spinner":
             self._driver_a.set_duration(1200)

@@ -3,14 +3,15 @@ Dropdown 组件示例 — 6 colors × 6 variants 全排列 × 3 sizes × 5 radiu
 × 阴影 × 遮罩 × 12 方位 × 分组 × 选中模式 × 禁用 × 单项配色 × 非按钮触发器
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from hero_side_ui import Body, Button, Caption, Dropdown, Subtitle
-from _base import DemoBase
 
 COLORS = ("default", "primary", "secondary", "success", "warning", "danger")
 VARIANTS = ("solid", "shadow", "bordered", "flat", "faded", "light")
@@ -124,9 +125,7 @@ class DropdownDemo(DemoBase):
                 )
                 for c in COLORS
             ]
-            self.add_section_grid(
-                layout, f"variant = {v}", row, labels_bag, cols=6, spacing=10
-            )
+            self.add_section_grid(layout, f"variant = {v}", row, labels_bag, cols=6, spacing=10)
 
         # ============================================================
         # 3) 3 种尺寸
@@ -147,17 +146,13 @@ class DropdownDemo(DemoBase):
             )
             for r in RADII
         ]
-        self.add_section(
-            layout, "5 radius（none / sm / md / lg / full）", radius_row, labels_bag
-        )
+        self.add_section(layout, "5 radius（none / sm / md / lg / full）", radius_row, labels_bag)
 
         # ============================================================
         # 5) 浮层阴影
         # ============================================================
         shadow_row = [_dd(f"shadow {s}", shadow=s) for s in SHADOWS]
-        self.add_section(
-            layout, "4 shadow（none / sm / md / lg）", shadow_row, labels_bag
-        )
+        self.add_section(layout, "4 shadow（none / sm / md / lg）", shadow_row, labels_bag)
 
         # ============================================================
         # 6) 浮层遮罩
@@ -202,17 +197,13 @@ class DropdownDemo(DemoBase):
             selection_mode="multiple",
             default_selected_keys={"all", "image"},
         )
-        dd_stay.selection_changed.connect(
-            lambda keys: print(f"[stay] selection: {sorted(keys)}")
-        )
+        dd_stay.selection_changed.connect(lambda keys: print(f"[stay] selection: {sorted(keys)}"))
         self.add_section(layout, "点击不关闭 + 多选勾选态", [dd_stay], labels_bag)
 
         # ============================================================
         # 9) 分组菜单
         # ============================================================
-        dd_group = Dropdown(
-            trigger=Button("分组菜单", variant="bordered"), variant="bordered"
-        )
+        dd_group = Dropdown(trigger=Button("分组菜单", variant="bordered"), variant="bordered")
         sec_style = dd_group.add_section("Styles", show_divider=True)
         sec_style.add_item("Bold", key="bold", shortcut="Ctrl+B")
         sec_style.add_item("Italic", key="italic", shortcut="Ctrl+I")
@@ -221,9 +212,7 @@ class DropdownDemo(DemoBase):
         sec_align.add_item("Center", key="center")
         dd_group.add_item("Reset", key="reset", color="danger")
         dd_group.action.connect(lambda key: print(f"[group] action: {key}"))
-        self.add_section(
-            layout, "分组菜单（add_section / add_item）", [dd_group], labels_bag
-        )
+        self.add_section(layout, "分组菜单（add_section / add_item）", [dd_group], labels_bag)
 
         # ============================================================
         # 10) 选中模式
@@ -235,9 +224,7 @@ class DropdownDemo(DemoBase):
             selection_mode="single",
             default_selected_keys={"md"},
         )
-        dd_single.selection_changed.connect(
-            lambda key: print(f"[single] selection: {key}")
-        )
+        dd_single.selection_changed.connect(lambda key: print(f"[single] selection: {key}"))
         dd_multi = Dropdown(
             trigger=Button("多选", variant="bordered"),
             items=[("red", "Red"), ("green", "Green"), ("blue", "Blue")],
@@ -245,9 +232,7 @@ class DropdownDemo(DemoBase):
             selection_mode="multiple",
             default_selected_keys={"red", "blue"},
         )
-        dd_multi.selection_changed.connect(
-            lambda keys: print(f"[multi] selection: {sorted(keys)}")
-        )
+        dd_multi.selection_changed.connect(lambda keys: print(f"[multi] selection: {sorted(keys)}"))
         dd_no_icon = Dropdown(
             trigger=Button("隐藏对勾", variant="bordered"),
             items=[("red", "Red"), ("green", "Green")],
@@ -281,9 +266,7 @@ class DropdownDemo(DemoBase):
             variant="bordered",
             is_disabled=True,
         )
-        self.add_section(
-            layout, "禁用（单项 / 整体）", [dd_disabled, dd_off], labels_bag
-        )
+        self.add_section(layout, "禁用（单项 / 整体）", [dd_disabled, dd_off], labels_bag)
 
         # ============================================================
         # 12) 12 种浮层方位
@@ -314,9 +297,7 @@ class DropdownDemo(DemoBase):
             ],
         )
         dd_custom.action.connect(lambda key: print(f"[custom] action: {key}"))
-        self.add_section(
-            layout, "非按钮触发器（任意 QWidget）", [dd_custom], labels_bag
-        )
+        self.add_section(layout, "非按钮触发器（任意 QWidget）", [dd_custom], labels_bag)
 
         # ============================================================
         # 14) 菜单附加内容 / 空菜单

@@ -7,8 +7,6 @@ cell 复用（同结构换月不销毁重建），行数按 weeks_in_month 动�
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
@@ -25,16 +23,17 @@ class _MonthGrid(QWidget):
     date_clicked = Signal(object)
     date_hovered = Signal(object)  # 参数 CalendarDate 或 None（供范围预览）
 
-    def __init__(self, state, sizes: dict, *, color: str, theme: str,
-                 col_width: int, parent=None) -> None:
+    def __init__(
+        self, state, sizes: dict, *, color: str, theme: str, col_width: int, parent=None
+    ) -> None:
         super().__init__(parent)
         self._state = state
         self._sizes = sizes
         self._color = color
         self._theme = theme
         self._col_width = col_width
-        self._month_start: Optional[CalendarDate] = None
-        self._cells: List[List[_CalendarCell]] = []
+        self._month_start: CalendarDate | None = None
+        self._cells: list[list[_CalendarCell]] = []
 
         self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Fixed)
         self._build_ui()
@@ -52,7 +51,7 @@ class _MonthGrid(QWidget):
         self._grid = grid
 
         for r in range(_MAX_WEEKS):
-            row: List[_CalendarCell] = []
+            row: list[_CalendarCell] = []
             for c in range(7):
                 cb = _CalendarCell(cell, parent=self)
                 cb.setFixedWidth(self._col_width)  # 列宽与星期名条一致；cell 内容居中

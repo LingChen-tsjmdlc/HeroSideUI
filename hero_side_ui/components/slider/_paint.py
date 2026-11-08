@@ -75,9 +75,7 @@ class _SliderCanvas(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         painter.setRenderHint(QPainter.RenderHint.SmoothPixmapTransform, True)
 
-        track = track_geom(
-            cfg, owner._orientation, self.width(), self.height(), bool(owner._marks)
-        )
+        track = track_geom(cfg, owner._orientation, self.width(), self.height(), bool(owner._marks))
         track_vis = track_visual_geom(
             cfg, owner._orientation, self.width(), self.height(), bool(owner._marks)
         )
@@ -95,9 +93,7 @@ class _SliderCanvas(QWidget):
             lo, hi = owner._value
             filler_lo, filler_hi = lo, hi
         else:
-            offset = (
-                owner._fill_offset if owner._fill_offset is not None else owner._min
-            )
+            offset = owner._fill_offset if owner._fill_offset is not None else owner._min
             cur = owner._value
             filler_lo = min(offset, cur)
             filler_hi = max(offset, cur)
@@ -146,9 +142,7 @@ class _SliderCanvas(QWidget):
                     y_top = track_vis.top()
                 if extend_lo:
                     y_bot = track_vis.bottom()
-                filler_rect = QRectF(
-                    track_vis.left(), y_top, track_vis.width(), y_bot - y_top
-                )
+                filler_rect = QRectF(track_vis.left(), y_top, track_vis.width(), y_bot - y_top)
             else:
                 # 水平：start = 左端，end = 右端
                 x_left = track.left() + r_lo * track.width()
@@ -157,13 +151,9 @@ class _SliderCanvas(QWidget):
                     x_left = track_vis.left()
                 if extend_hi:
                     x_right = track_vis.right()
-                filler_rect = QRectF(
-                    x_left, track_vis.top(), x_right - x_left, track_vis.height()
-                )
+                filler_rect = QRectF(x_left, track_vis.top(), x_right - x_left, track_vis.height())
             painter.setBrush(palette.filler_color(owner._color, theme))
-            path = self._make_track_path(
-                filler_rect, track_radius, round_start, round_end, is_v
-            )
+            path = self._make_track_path(filler_rect, track_radius, round_start, round_end, is_v)
             painter.drawPath(path)
 
         # ---- 3) step 标记 (showSteps) ----
@@ -202,7 +192,7 @@ class _SliderCanvas(QWidget):
     def _paint_step_dots(painter, owner, track, is_v, filler_lo, filler_hi):
         # 沿 track 等距画小点 (HeroUI: w-1.5 h-1.5；lg 用 w-2 h-2)
         dot_r = 3.0 if owner._size != "lg" else 4.0
-        n = int(round((owner._max - owner._min) / owner._step))
+        n = round((owner._max - owner._min) / owner._step)
         theme = owner._theme
         size = owner._size
         in_color = palette.step_dot_in_range(theme)

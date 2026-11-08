@@ -10,7 +10,7 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Optional
+from typing import TYPE_CHECKING
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter
@@ -22,10 +22,11 @@ from ..text import Body, Text
 
 if TYPE_CHECKING:
     from markdown_it.tree import SyntaxTreeNode
+
     from ._renderer import MarkdownRenderer
 
 
-def _task_state(item: "SyntaxTreeNode") -> Optional[bool]:
+def _task_state(item: SyntaxTreeNode) -> bool | None:
     """列表项是否为任务项：是则返回勾选状态(True/False)，否则 None。
 
     tasklists 插件把 task 项标 class=task-list-item，并在其 inline 首个
@@ -44,7 +45,7 @@ def _task_state(item: "SyntaxTreeNode") -> Optional[bool]:
     return None
 
 
-def _safe_has_attrs(node: "SyntaxTreeNode") -> bool:
+def _safe_has_attrs(node: SyntaxTreeNode) -> bool:
     try:
         _ = node.attrs
         return True
@@ -89,8 +90,8 @@ class _ListBlock(QWidget):
 
     def __init__(
         self,
-        node: "SyntaxTreeNode",
-        renderer: "MarkdownRenderer",
+        node: SyntaxTreeNode,
+        renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
         super().__init__(parent)
@@ -115,17 +116,13 @@ class _ListBlock(QWidget):
             marker = f"{start + i}." if self._ordered else MARKDOWN_LIST["bullet"]
             lay.addWidget(self._build_item(marker, item, task))
 
-    def _build_item(
-        self, marker: str, item: "SyntaxTreeNode", task: Optional[bool]
-    ) -> QWidget:
+    def _build_item(self, marker: str, item: SyntaxTreeNode, task: bool | None) -> QWidget:
         row = QWidget(self)
         row_lay = QHBoxLayout(row)
         row_lay.setContentsMargins(MARKDOWN_LIST["indent"], 0, 0, 0)
         # 任务项：勾选框与文字贴近些（普通列表沿用默认 marker_gap）
         row_lay.setSpacing(
-            MARKDOWN_LIST["task_marker_gap"]
-            if task is not None
-            else MARKDOWN_LIST["marker_gap"]
+            MARKDOWN_LIST["task_marker_gap"] if task is not None else MARKDOWN_LIST["marker_gap"]
         )
         row_lay.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
 
@@ -133,9 +130,7 @@ class _ListBlock(QWidget):
             marker_widget = _ReadonlyCheckbox(task, self._renderer.theme, parent=row)
         else:
             marker_widget = Body(marker, parent=row)
-            marker_widget.setSizePolicy(
-                QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred
-            )
+            marker_widget.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Preferred)
         row_lay.addWidget(marker_widget, 0, Qt.AlignmentFlag.AlignTop)
 
         content = QWidget(row)
@@ -162,8 +157,8 @@ class _QuoteBlock(QWidget):
 
     def __init__(
         self,
-        node: "SyntaxTreeNode",
-        renderer: "MarkdownRenderer",
+        node: SyntaxTreeNode,
+        renderer: MarkdownRenderer,
         parent: QWidget = None,
     ):
         super().__init__(parent)

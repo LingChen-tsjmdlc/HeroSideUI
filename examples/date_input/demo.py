@@ -7,14 +7,14 @@
   Hide Time Zone / Hourly Cycle。
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import (
     Body,
     DateInput,
@@ -74,9 +74,7 @@ class DateInputDemo(DemoBase):
         # ---------- Usage ----------
         layout.addWidget(self._section_title("Usage 基础用法"))
         layout.addWidget(
-            self._row(
-                DateInput(label="Birth date", placeholder_value=BIRTH_PLACEHOLDER)
-            )
+            self._row(DateInput(label="Birth date", placeholder_value=BIRTH_PLACEHOLDER))
         )
 
         # ---------- Disabled ----------
@@ -280,9 +278,7 @@ class DateInputDemo(DemoBase):
                     label="Event date",
                     label_placement="outside",
                     granularity="minute",
-                    value=parse_zoned_datetime(
-                        "2022-11-07T00:45[America/Los_Angeles]"
-                    ),
+                    value=parse_zoned_datetime("2022-11-07T00:45[America/Los_Angeles]"),
                 ),
                 DateInput(
                     label="Event date",
@@ -359,9 +355,7 @@ class DateInputDemo(DemoBase):
                     label="Appointment time",
                     granularity="minute",
                     hide_time_zone=True,
-                    value=parse_zoned_datetime(
-                        "2022-11-07T00:45[America/Los_Angeles]"
-                    ),
+                    value=parse_zoned_datetime("2022-11-07T00:45[America/Los_Angeles]"),
                 )
             )
         )
@@ -374,9 +368,7 @@ class DateInputDemo(DemoBase):
                     label="Appointment time",
                     granularity="minute",
                     hour_cycle=24,
-                    value=parse_zoned_datetime(
-                        "2022-11-07T00:45[America/Los_Angeles]"
-                    ),
+                    value=parse_zoned_datetime("2022-11-07T00:45[America/Los_Angeles]"),
                 )
             )
         )

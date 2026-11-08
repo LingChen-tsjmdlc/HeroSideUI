@@ -13,8 +13,8 @@ widget**，而是拼成一段 Qt rich-text HTML，由承载段落的 ``Text`` �
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from html import escape
-from typing import Callable, Dict, Optional
 
 from markdown_it.tree import SyntaxTreeNode
 
@@ -62,7 +62,7 @@ def _render_children(
     node: SyntaxTreeNode,
     theme: str,
     sheet: InlineStyleSheet,
-    overrides: Optional[Dict[str, InlineOverride]],
+    overrides: dict[str, InlineOverride] | None,
     fmt: frozenset = frozenset(),
 ) -> str:
     """递归把一个行内容器节点的 children 拼成 HTML，并应用用户 override。
@@ -144,8 +144,8 @@ def _make_default_fn(
 def inline_to_html(
     inline_node: SyntaxTreeNode,
     theme: str,
-    overrides: Optional[Dict[str, InlineOverride]] = None,
-    sheet: Optional[InlineStyleSheet] = None,
+    overrides: dict[str, InlineOverride] | None = None,
+    sheet: InlineStyleSheet | None = None,
 ) -> str:
     """把一个 ``inline`` 节点（或含 children 的节点）渲染成 HTML 字符串。
 
@@ -156,4 +156,4 @@ def inline_to_html(
     return _render_children(inline_node, theme, sheet, overrides)
 
 
-__all__ = ["inline_to_html", "InlineContext", "InlineOverride"]
+__all__ = ["InlineContext", "InlineOverride", "inline_to_html"]

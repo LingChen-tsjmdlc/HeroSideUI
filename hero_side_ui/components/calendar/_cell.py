@@ -7,18 +7,15 @@ hover 背景做 150ms 平滑补间（对齐 calendar.ts transition duration-150�
 
 from __future__ import annotations
 
-from ...animation import tween_value
-
-from typing import Optional
-
 from PySide6.QtCore import QEasingCurve, QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPen
 from PySide6.QtWidgets import QAbstractButton
 
+from ...animation import tween_value
 from ...core import make_text_qfont
 from ...utils import aligned_color_pair
-from ._grid import CellState
 from . import _palette as pal
+from ._grid import CellState
 
 _HOVER_ANIM_MS = 150
 
@@ -33,7 +30,7 @@ class _CalendarCell(QAbstractButton):
         self.setAttribute(Qt.WidgetAttribute.WA_Hover, True)
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
-        self._cs: Optional[CellState] = None
+        self._cs: CellState | None = None
         self._color = "primary"
         self._theme = "light"
         self._font_size = 14
@@ -61,8 +58,13 @@ class _CalendarCell(QAbstractButton):
 
     def _can_hover(self) -> bool:
         cs = self._cs
-        return bool(cs and not cs.is_empty and not cs.is_disabled
-                    and not cs.is_unavailable and not cs.is_readonly)
+        return bool(
+            cs
+            and not cs.is_empty
+            and not cs.is_disabled
+            and not cs.is_unavailable
+            and not cs.is_readonly
+        )
 
     def enterEvent(self, ev) -> None:
         if self._can_hover():
@@ -76,8 +78,15 @@ class _CalendarCell(QAbstractButton):
         super().leaveEvent(ev)
 
     def _start_hover_anim(self, target: float) -> None:
-        tween_value(self, "_hover_anim", self._hover_t, target, self._on_hover_tick,
-                    duration=_HOVER_ANIM_MS, easing=QEasingCurve.Type.Linear)
+        tween_value(
+            self,
+            "_hover_anim",
+            self._hover_t,
+            target,
+            self._on_hover_tick,
+            duration=_HOVER_ANIM_MS,
+            easing=QEasingCurve.Type.Linear,
+        )
 
     def _on_hover_tick(self, v) -> None:
         self._hover_t = float(v)
@@ -120,8 +129,7 @@ class _CalendarCell(QAbstractButton):
         if cs.is_unavailable:
             mid_y = crect.center().y()
             p.setPen(QPen(self._resolve_text_color(), 1))
-            p.drawLine(int(crect.left() + 8), int(mid_y),
-                       int(crect.right() - 8), int(mid_y))
+            p.drawLine(int(crect.left() + 8), int(mid_y), int(crect.right() - 8), int(mid_y))
 
         # today 圆点（未选中时，底部小圆点）
         if cs.is_today and not cs.is_selected:
@@ -134,8 +142,9 @@ class _CalendarCell(QAbstractButton):
 
         p.end()
 
-    def _paint_range_bg(self, p: QPainter, w: float, h: float,
-                        crect: QRectF, radius: float) -> None:
+    def _paint_range_bg(
+        self, p: QPainter, w: float, h: float, crect: QRectF, radius: float
+    ) -> None:
         """范围连接背景：整格宽的浅底矩形，行首/行尾端收成半圆。"""
         cs = self._cs
         p.save()
@@ -150,6 +159,7 @@ class _CalendarCell(QAbstractButton):
         right_round = cs.is_range_end or cs.is_selection_end
         # 端点：连接背景只画半边（起点画右半、终点画左半），另半边留给实底圆
         from PySide6.QtGui import QPainterPath
+
         path = QPainterPath()
         r = radius
         rect = QRectF(left, top, right - left, bh)
@@ -172,7 +182,7 @@ class _CalendarCell(QAbstractButton):
         p.drawPath(path)
         p.restore()
 
-    def _resolve_bg(self) -> Optional[QColor]:
+    def _resolve_bg(self) -> QColor | None:
         cs = self._cs
         # range 端点：语义色实底圆
         if cs.is_range_selection:

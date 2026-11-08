@@ -9,24 +9,24 @@ marks 三种输入格式：
 from __future__ import annotations
 
 import math
-from typing import Callable, List, Optional, Sequence, Tuple, Union
+from collections.abc import Callable, Sequence
 
 from ._geometry import clamp_value
 
-NumPair = Tuple[float, float]
-ValueT = Union[float, NumPair]
-MarkT = Union[float, Tuple[float, str], dict]
+NumPair = tuple[float, float]
+ValueT = float | NumPair
+MarkT = float | tuple[float, str] | dict
 
-__all__ = ["parse_marks", "format_value", "fmt_num"]
+__all__ = ["fmt_num", "format_value", "parse_marks"]
 
 
 def parse_marks(
     marks: Sequence[MarkT],
     vmin: float,
     vmax: float,
-) -> List[Tuple[float, str]]:
+) -> list[tuple[float, str]]:
     """统一三种输入格式 → [(value, label), ...]，并 clamp 到 [vmin, vmax]。"""
-    out: List[Tuple[float, str]] = []
+    out: list[tuple[float, str]] = []
     for m in marks:
         if isinstance(m, dict):
             v = float(m.get("value", 0))
@@ -47,8 +47,8 @@ def fmt_num(v: float, step: float) -> str:
     step >= 1 且 v 接近整数 → 整数显示；否则取 step 的小数位数。
     """
     if step >= 1 and abs(v - round(v)) < 1e-9:
-        return str(int(round(v)))
-    digits = max(0, -int(math.floor(math.log10(step)))) if step < 1 else 0
+        return str(round(v))
+    digits = max(0, -math.floor(math.log10(step))) if step < 1 else 0
     return f"{v:.{digits}f}"
 
 
@@ -56,7 +56,7 @@ def format_value(
     value: ValueT,
     is_range: bool,
     step: float,
-    formatter: Optional[Callable[[ValueT], str]] = None,
+    formatter: Callable[[ValueT], str] | None = None,
 ) -> str:
     """格式化顶部 value 文字：
     1) 优先使用用户自定义 formatter

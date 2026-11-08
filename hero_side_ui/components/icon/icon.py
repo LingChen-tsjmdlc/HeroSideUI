@@ -113,7 +113,9 @@ class Icon(IconWidget):
     def _remember_source(self, icon):
         resolved = resolve_icon(icon)
         self._hero_resolved = resolved
-        self._hero_local_data = get_icon_data(resolved) if resolved.startswith("herosideui:") else None
+        self._hero_local_data = (
+            get_icon_data(resolved) if resolved.startswith("herosideui:") else None
+        )
 
     def setIcon(self, icon):
         self._remember_source(icon)

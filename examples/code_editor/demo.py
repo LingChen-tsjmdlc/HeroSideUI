@@ -5,6 +5,7 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import (
@@ -17,8 +18,6 @@ from hero_side_ui import (
     Text,
     Title,
 )
-from _base import DemoBase
-
 
 # ============================================================
 # 示例代码
@@ -43,17 +42,17 @@ PY_INDENT = (
     "def greet(name):\n"
     "    # 回车会自动保持缩进；行尾冒号再进一级\n"
     "    if name:\n"
-    "        return f\"hello {name}\"\n"
-    "    return \"hello\"\n"
+    '        return f"hello {name}"\n'
+    '    return "hello"\n'
 )
 
 JSON_SAMPLE = (
-    '{\n'
+    "{\n"
     '  "name": "HeroSideUI",\n'
     '  "version": "0.8.0",\n'
     '  "components": ["input", "table", "code_editor"],\n'
     '  "tags": {"language": "python", "gui": "pyside6"}\n'
-    '}\n'
+    "}\n"
 )
 
 SQL_SAMPLE = (
@@ -73,7 +72,7 @@ SHELL_SAMPLE = (
     "# 任意 pygments 支持的语言都能高亮\n"
     "uv run python examples/code_editor/demo.py\n"
     "git switch -c feat/new-component\n"
-    "echo \"done\" && exit 0\n"
+    'echo "done" && exit 0\n'
 )
 
 
@@ -95,7 +94,9 @@ class CodeEditorDemo(DemoBase):
         # ============================================================
         layout.addWidget(Title("智能缩进", level=3))
         layout.addWidget(
-            Caption("回车继承当前行缩进；冒号结尾的行自动多缩进一级；Tab / Shift+Tab 对选中行整体增删缩进")
+            Caption(
+                "回车继承当前行缩进；冒号结尾的行自动多缩进一级；Tab / Shift+Tab 对选中行整体增删缩进"
+            )
         )
         layout.addWidget(CodeEditor(PY_INDENT, min_lines=6))
 
@@ -104,7 +105,9 @@ class CodeEditorDemo(DemoBase):
         # ============================================================
         layout.addWidget(Title("值 API（value / set_value / text_changed）", level=3))
         layout.addWidget(
-            Caption("构造传 value；value() 取全文；text_changed(str) 在每次变更时发出；下方输入框与编辑器双向联动")
+            Caption(
+                "构造传 value；value() 取全文；text_changed(str) 在每次变更时发出；下方输入框与编辑器双向联动"
+            )
         )
         api_ed = CodeEditor("x = 1\n", min_lines=5)
 
@@ -126,9 +129,11 @@ class CodeEditorDemo(DemoBase):
         api_ed.text_changed.connect(_on_input_text)
         api_input.text_changed.connect(lambda t: api_ed.set_value(t + "\n"))
         get_btn.clicked.connect(
-            lambda: api_out.setText(f"value() = {api_ed.value()[:40]!r}...")
-            if len(api_ed.value()) > 40
-            else api_out.setText(f"value() = {api_ed.value()!r}")
+            lambda: (
+                api_out.setText(f"value() = {api_ed.value()[:40]!r}...")
+                if len(api_ed.value()) > 40
+                else api_out.setText(f"value() = {api_ed.value()!r}")
+            )
         )
         clear_btn.clicked.connect(api_ed.clear)
 
@@ -165,13 +170,15 @@ class CodeEditorDemo(DemoBase):
         # 5) 行数上限
         # ============================================================
         layout.addWidget(Title("行数上限（max_lines）", level=3))
-        layout.addWidget(Caption("默认 10000 行；超出上限的输入（含粘贴）自动截断尾行，max_lines_exceeded(int) 报告被截行数"))
+        layout.addWidget(
+            Caption(
+                "默认 10000 行；超出上限的输入（含粘贴）自动截断尾行，max_lines_exceeded(int) 报告被截行数"
+            )
+        )
         capped = CodeEditor("a\nb\nc\n", min_lines=4, max_lines=5)
         cap_chip = Chip("max_lines = 5", size="sm")
         cap_note = Text("（往里粘贴超过 5 行的内容试试）", size="sm")
-        capped.max_lines_exceeded.connect(
-            lambda n: cap_note.setText(f"超出上限，截断了 {n} 行")
-        )
+        capped.max_lines_exceeded.connect(lambda n: cap_note.setText(f"超出上限，截断了 {n} 行"))
         cap_row = QWidget()
         cr = QHBoxLayout(cap_row)
         cr.setContentsMargins(0, 0, 0, 0)
@@ -185,9 +192,19 @@ class CodeEditorDemo(DemoBase):
         # 6) 外观参数（字号 / tab_width / min_lines）
         # ============================================================
         layout.addWidget(Title("外观参数", level=3))
-        layout.addWidget(Caption("font_size 自定义字号；tab_width 控制 Tab 宽度（下例为 8）；min_lines 决定最小高度；行号栏随字号自动对齐"))
-        layout.addWidget(CodeEditor(font_size=16, tab_width=8, min_lines=5,
-                                    value="# tab_width=8：按一下 Tab 试试\nif ok:\n        pass\n"))
+        layout.addWidget(
+            Caption(
+                "font_size 自定义字号；tab_width 控制 Tab 宽度（下例为 8）；min_lines 决定最小高度；行号栏随字号自动对齐"
+            )
+        )
+        layout.addWidget(
+            CodeEditor(
+                font_size=16,
+                tab_width=8,
+                min_lines=5,
+                value="# tab_width=8：按一下 Tab 试试\nif ok:\n        pass\n",
+            )
+        )
 
         # ============================================================
         # 7) 多语言（pygments 短名）
@@ -212,7 +229,9 @@ class CodeEditorDemo(DemoBase):
         # 8) 运行时 API（set_language / set_font_size / insert_at_cursor）
         # ============================================================
         layout.addWidget(Title("运行时 API", level=3))
-        layout.addWidget(Caption("set_language 切换高亮、set_font_size 调字号、insert_at_cursor 在光标处插入"))
+        layout.addWidget(
+            Caption("set_language 切换高亮、set_font_size 调字号、insert_at_cursor 在光标处插入")
+        )
         live = CodeEditor(JSON_SAMPLE, language="json", min_lines=6)
         live_row = QWidget()
         lr2 = QHBoxLayout(live_row)
@@ -245,7 +264,9 @@ class CodeEditorDemo(DemoBase):
         # ============================================================
         layout.addWidget(Title("主题自适应", level=3))
         layout.addWidget(
-            Caption("light / dark / auto：切换右上角 ThemeSwitcher，编辑区即时换配色，文本/光标/撤销栈保留")
+            Caption(
+                "light / dark / auto：切换右上角 ThemeSwitcher，编辑区即时换配色，文本/光标/撤销栈保留"
+            )
         )
         layout.addWidget(CodeEditor(PY_SAMPLE, min_lines=6))
 

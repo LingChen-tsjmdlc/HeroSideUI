@@ -5,14 +5,9 @@
 位置浮动）也归到此 mixin，因为它们是 styling 的延伸。
 """
 
-from PySide6.QtCore import QSize
-from PySide6.QtWidgets import QPushButton
-
-from typing import Optional
-
-from PySide6.QtCore import QPoint, Qt
-from PySide6.QtGui import QColor, QFont, QFontMetrics, QPalette
-from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QSizePolicy, QWidget
+from PySide6.QtCore import QPoint, QSize, Qt
+from PySide6.QtGui import QColor, QPalette
+from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QPushButton, QSizePolicy, QWidget
 
 from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
 from ...utils import hex_to_rgba, load_svg_icon
@@ -63,11 +58,7 @@ class _TextareaStylingMixin:
 
         # ---- inputWrapper padding ----
         pad_x = size_config["padding_x"]
-        pad_y = (
-            size_config["padding_y"]
-            if not is_inside
-            else size_config["inside_padding_y"]
-        )
+        pad_y = size_config["padding_y"] if not is_inside else size_config["inside_padding_y"]
         if self._radius == "full":
             pad_x += 4
         self._wrapper.layout().setContentsMargins(pad_x, pad_y, pad_x, pad_y)
@@ -91,13 +82,13 @@ class _TextareaStylingMixin:
         # ---- inputWrapper 颜色（复用 Input 的颜色决策逻辑）----
         (
             bg,
-            border,
+            _border,
             border_color,
             bg_hover,
             bg_focus,
             border_hover,
             border_focus,
-            main_color,
+            _main_color,
         ) = self._resolve_wrapper_colors(is_dark, colors, dc)
 
         if self._is_focused:
@@ -120,40 +111,30 @@ class _TextareaStylingMixin:
         animate = getattr(self, "_styles_applied_once", False)
 
         if self._variant == "flat":
-            self._wrapper.set_static(
-                border_width=0, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         elif self._variant == "faded":
-            self._wrapper.set_static(
-                border_width=bw, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         elif self._variant == "bordered":
-            self._wrapper.set_static(
-                border_width=bw, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=bw, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(QColor(0, 0, 0, 0), animate=False)
             self._wrapper.set_border_color(self._qcolor(cur_border), animate=animate)
             self._wrapper.set_bottom_line_color(QColor(0, 0, 0, 0), animate=False)
         else:
             # fallback to flat
-            self._wrapper.set_static(
-                border_width=0, radius_px=radius_px, show_bottom_line=False
-            )
+            self._wrapper.set_static(border_width=0, radius_px=radius_px, show_bottom_line=False)
             self._wrapper.set_bg_color(self._qcolor(cur_bg), animate=animate)
             self._wrapper.set_border_color(QColor(0, 0, 0, 0), animate=False)
 
         self._styles_applied_once = True
 
         # ---- text_edit 样式 ----
-        fg_color, placeholder_color = self._resolve_input_text_color(
-            is_dark, colors, dc
-        )
+        fg_color, placeholder_color = self._resolve_input_text_color(is_dark, colors, dc)
         # 选区调色板走 core.selection_palette——与 Text 组件同源。
         # bordered/underlined（无底色）：走 adapt，跟 colors[500] 同色相
         # （彩色出 pastel，default 出浅灰，与边框/下划线同源）。
@@ -170,14 +151,16 @@ class _TextareaStylingMixin:
             )
         else:
             sel_bg, sel_fg = selection_palette(theme_str)
-        sel_bg_css = f"rgba({sel_bg.red()}, {sel_bg.green()}, {sel_bg.blue()}, {sel_bg.alphaF():.4f})"
+        sel_bg_css = (
+            f"rgba({sel_bg.red()}, {sel_bg.green()}, {sel_bg.blue()}, {sel_bg.alphaF():.4f})"
+        )
         sel_fg_css = sel_fg.name()
         self.text_edit.setStyleSheet(f"""
             QTextEdit {{
                 background: transparent;
                 border: none;
                 color: {fg_color};
-                font-size: {size_config['input_font_size']}px;
+                font-size: {size_config["input_font_size"]}px;
                 selection-background-color: {sel_bg_css};
                 selection-color: {sel_fg_css};
                 padding: 0;
@@ -186,9 +169,7 @@ class _TextareaStylingMixin:
         # 字体不走 QSS，走 Text/FontProvider 同源：
         from ...core import make_text_qfont
 
-        self.text_edit.setFont(
-            make_text_qfont(size_config["input_font_size"], "normal")
-        )
+        self.text_edit.setFont(make_text_qfont(size_config["input_font_size"], "normal"))
         # 注：QScrollBar 样式由 ScrollStyle 单例统一管理（apply_global），
         # 这里不再写局部 QSS。如果需要某个 textarea 用不同色滚动条，
         # 可以自己 text_edit.setStyleSheet 追加 QScrollBar 段。
@@ -215,12 +196,8 @@ class _TextareaStylingMixin:
             self.setGraphicsEffect(None)
 
         # ---- Label 颜色 ----
-        self._label_color_resting = QColor(
-            self._resolve_label_resting_color(is_dark, colors, dc)
-        )
-        self._label_color_floated = QColor(
-            self._resolve_label_floated_color(is_dark, colors, dc)
-        )
+        self._label_color_resting = QColor(self._resolve_label_resting_color(is_dark, colors, dc))
+        self._label_color_floated = QColor(self._resolve_label_floated_color(is_dark, colors, dc))
 
         # ---- outside label ----
         outside_label_font = size_config["outside_label_font_size"]
@@ -244,9 +221,7 @@ class _TextareaStylingMixin:
         if self._is_clearable:
             ic_size = size_config["clear_icon_size"]
             ic_color = QColor(dc[400] if is_dark else dc[500])
-            pix = load_svg_icon(
-                "heroicons--x-circle-solid", size=ic_size, color=ic_color
-            )
+            pix = load_svg_icon("heroicons--x-circle-solid", size=ic_size, color=ic_color)
             self._clear_btn.setIcon(pix)
             self._clear_btn.setIconSize(QSize(ic_size, ic_size))
             self._clear_btn.setFixedSize(ic_size + 4, ic_size + 4)
@@ -291,11 +266,7 @@ class _TextareaStylingMixin:
 
         # ---- grip 颜色跟随主题（亮色 neutral-400，暗色 neutral-500）----
         if hasattr(self, "_resize_grip"):
-            grip_color = (
-                HEROUI_COLORS["neutral"][500]
-                if is_dark
-                else HEROUI_COLORS["neutral"][400]
-            )
+            grip_color = HEROUI_COLORS["neutral"][500] if is_dark else HEROUI_COLORS["neutral"][400]
             self._resize_grip.set_line_color(QColor(grip_color))
 
     # ------------------------------------------------------------
@@ -383,12 +354,7 @@ class _TextareaStylingMixin:
                 bg = hex_to_rgba(d[500], 0.15) if is_dark else d[50]
                 bg_hover = hex_to_rgba(d[500], 0.25) if is_dark else d[100]
                 bg_focus = hex_to_rgba(d[500], 0.15) if is_dark else d[50]
-            elif self._variant == "bordered":
-                border = d[500]
-                border_color = d[500]
-                border_hover = d[500]
-                border_focus = d[500]
-            elif self._variant == "faded":
+            elif self._variant == "bordered" or self._variant == "faded":
                 border = d[500]
                 border_color = d[500]
                 border_hover = d[500]
@@ -521,9 +487,7 @@ class _TextareaStylingMixin:
             btn.setIcon(pix)
             btn.setIconSize(QSize(icon_size, icon_size))
             btn.setFixedSize(icon_size + 4, icon_size + 4)
-            btn.setStyleSheet(
-                "QPushButton { background: transparent; border: none; padding: 0; }"
-            )
+            btn.setStyleSheet("QPushButton { background: transparent; border: none; padding: 0; }")
             btn.clicked.connect(on_click)
             slot_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
         else:
@@ -568,16 +532,14 @@ class _TextareaStylingMixin:
         from ...core import make_text_qfont
 
         weight = "medium" if progress > 0.5 else "normal"
-        font = make_text_qfont(int(round(font_size)), weight)
+        font = make_text_qfont(round(font_size), weight)
         self._inside_label.setFont(font)
         self._inside_label.adjustSize()
-
-        from PySide6.QtCore import QPoint
 
         wrapper_pos_in_self = self._wrapper.mapTo(self, QPoint(0, 0))
         wrapper_x = wrapper_pos_in_self.x()
         wrapper_y = wrapper_pos_in_self.y()
-        wrapper_h = self._wrapper.height()
+        self._wrapper.height()
 
         pad_x = size_config["padding_x"]
         label_h = self._inside_label.height()

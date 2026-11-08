@@ -7,7 +7,6 @@ from PySide6.QtWidgets import QLayout
 
 from .tween import stop_tween, tween_value
 
-
 _ORIGIN_CENTER = "center"
 _ORIGIN_TOP = "top"
 _ORIGIN_BOTTOM = "bottom"
@@ -23,7 +22,6 @@ class PaddingSqueezeAnimation(QObject):
     """
 
     finished = Signal(bool)
-
 
     progress_changed = Signal(float)
 
@@ -62,12 +60,10 @@ class PaddingSqueezeAnimation(QObject):
         self._easing_out = easing_out if easing_out is not None else easing
         self._origin = origin
 
-
         self._progress: float = 1.0
 
         self._anim: QVariantAnimation | None = None
         self._forward: bool = True
-
 
     def expand(self, *, animated: bool = True) -> None:
         """从当前进度展开内容。
@@ -103,7 +99,6 @@ class PaddingSqueezeAnimation(QObject):
         """停止过渡，保留当前边距。"""
         self._stop_anim()
 
-
     def _play(self, target: float, forward: bool, animated: bool) -> None:
         self._forward = forward
         tween_value(
@@ -138,21 +133,16 @@ class PaddingSqueezeAnimation(QObject):
 
         l, t, r, b = self._base
         if self._origin == _ORIGIN_CENTER:
-
             l_, t_, r_, b_ = l + half, t + half, r + half, b + half
         elif self._origin == _ORIGIN_TOP:
-
             l_, t_, r_, b_ = l + half, t, r + half, b + half
         else:
-
             l_, t_, r_, b_ = l + half, t + half, r + half, b
 
         try:
             self._layout.setContentsMargins(int(l_), int(t_), int(r_), int(b_))
         except RuntimeError:
-
             pass
-
 
         self.progress_changed.emit(float(self._progress))
 
@@ -167,7 +157,6 @@ class PaddingSqueezeAnimation(QObject):
         if self._origin == _ORIGIN_CENTER:
             return (int(half), int(half), int(half), int(half))
         if self._origin == _ORIGIN_TOP:
-
             return (int(half), 0, int(half), int(half))
 
         return (int(half), int(half), int(half), 0)

@@ -17,8 +17,6 @@
     - 双 variant：default（圆点 radio）+ card（卡片选择器，对齐 v2 Custom Styles 示例）
 """
 
-from typing import Optional
-
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import (
     QColor,
@@ -31,7 +29,7 @@ from PySide6.QtWidgets import QWidget
 
 from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS
-from ._base import RadioBase, VALID_COLORS, VALID_SIZES, VALID_VARIANTS
+from ._base import VALID_COLORS, VALID_SIZES, VALID_VARIANTS, RadioBase
 
 
 class Radio(RadioBase):
@@ -48,7 +46,7 @@ class Radio(RadioBase):
     def __init__(
         self,
         text: str = "",
-        value: Optional[str] = None,
+        value: str | None = None,
         description: str = "",
         is_selected: bool = False,
         color: str = "primary",
@@ -58,7 +56,7 @@ class Radio(RadioBase):
         is_invalid: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(
             text=text,
@@ -498,7 +496,7 @@ class Radio(RadioBase):
     # ============================================================
     @staticmethod
     def _lerp(a: int, b: int, t: float) -> int:
-        return max(0, min(255, int(round(a + (b - a) * t))))
+        return max(0, min(255, round(a + (b - a) * t)))
 
 
-__all__ = ["Radio", "RadioBase", "VALID_COLORS", "VALID_SIZES", "VALID_VARIANTS"]
+__all__ = ["VALID_COLORS", "VALID_SIZES", "VALID_VARIANTS", "Radio", "RadioBase"]

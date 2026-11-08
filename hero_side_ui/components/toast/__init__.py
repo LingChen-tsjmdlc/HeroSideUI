@@ -19,11 +19,11 @@ from .toast import Toast
 
 __all__ = [
     "Toast",
-    "ToastRegion",
     "ToastProvider",
+    "ToastRegion",
     "add_toast",
-    "close_toast",
     "clear_toasts",
+    "close_toast",
     "configure_toasts",
     "get_toast_provider",
 ]

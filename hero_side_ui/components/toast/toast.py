@@ -9,22 +9,20 @@
 
 from __future__ import annotations
 
-from ...animation import tween_property
-
-from typing import Callable, Optional
+from collections.abc import Callable
 
 import shiboken6
 from PySide6.QtCore import (
+    Property,
+    QEasingCurve,
     QElapsedTimer,
     QPoint,
     QPropertyAnimation,
-    QEasingCurve,
     QRect,
     QRectF,
     QSize,
     Qt,
     QTimer,
-    Property,
     Signal,
 )
 from PySide6.QtGui import QColor, QPainter, QPainterPath, QPixmap
@@ -35,6 +33,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ...animation import tween_property
 from ...core import ThemeProvider
 from ...themes import (
     RADIUS,
@@ -55,7 +54,7 @@ _LEGACY_COLOR = {"foreground": "default"}
 class Toast(QWidget):
     """HeroUI 风格 Toast 卡片。通常由 ``add_toast()`` 创建并交给 ToastRegion 管理。"""
 
-    closed = Signal()           # 用户点关闭按钮
+    closed = Signal()  # 用户点关闭按钮
     timeout_reached = Signal()  # 倒计时结束，请求外层走退出动画
     hover_changed = Signal(bool)
     drag_started = Signal()
@@ -71,19 +70,19 @@ class Toast(QWidget):
         variant: str = "flat",
         radius: str = "md",
         shadow: str = "sm",
-        severity: Optional[str] = None,
-        icon: Optional[str] = None,
+        severity: str | None = None,
+        icon: str | None = None,
         hide_icon: bool = False,
         hide_close_button: bool = False,
-        end_content: Optional[QWidget] = None,
-        timeout: Optional[int] = None,
+        end_content: QWidget | None = None,
+        timeout: int | None = None,
         should_show_timeout_progress: bool = False,
         is_loading: bool = False,
-        on_close: Optional[Callable[[], None]] = None,
+        on_close: Callable[[], None] | None = None,
         disable_animation: bool = False,
         placement: str = "bottom-right",
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroToast")
@@ -103,15 +102,15 @@ class Toast(QWidget):
         self._on_close = on_close
         self._disable_animation = disable_animation
         self._placement = placement
-        self._end_content: Optional[QWidget] = None
+        self._end_content: QWidget | None = None
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
         # timeout=None → 预设值；<=0 表示不自动关闭
         self._timeout = TOAST_SPEC["timeout"] if timeout is None else int(timeout)
 
-        self._width_inset = 0.0   # 折叠堆叠时背景左右内缩（每侧）
-        self._progress = 0.0      # 0..1 倒计时进度
+        self._width_inset = 0.0  # 折叠堆叠时背景左右内缩（每侧）
+        self._progress = 0.0  # 0..1 倒计时进度
         self._styles = build_toast_styles(variant, color, self._theme)
 
         self._clock = QElapsedTimer()
@@ -121,7 +120,7 @@ class Toast(QWidget):
         self._timer.setInterval(TOAST_SPEC["tick_interval"])
         self._timer.timeout.connect(self._on_tick)
 
-        self._drag_origin: Optional[QPoint] = None
+        self._drag_origin: QPoint | None = None
         self._drag_delta = QPoint()
 
         self._build_ui(description)
@@ -144,8 +143,10 @@ class Toast(QWidget):
 
         self._root = QHBoxLayout(self)
         self._root.setContentsMargins(
-            pad + spec["padding_x"], pad + spec["padding_y"],
-            pad + spec["padding_x"], pad + spec["padding_y"],
+            pad + spec["padding_x"],
+            pad + spec["padding_y"],
+            pad + spec["padding_x"],
+            pad + spec["padding_y"],
         )
         self._root.setSpacing(TOAST_SPEC["content_gap"])
 
@@ -169,16 +170,20 @@ class Toast(QWidget):
         self._text_col = QVBoxLayout()
         self._text_col.setSpacing(0)
         self._title_label = Text(
-            "", size=TOAST_SPEC["title_size"], weight="medium", theme=self._theme,
+            "",
+            size=TOAST_SPEC["title_size"],
+            weight="medium",
+            theme=self._theme,
             selectable=False,
         )
         self._title_label.setWordWrap(False)
-        self._title_label.setSizePolicy(
-            QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred
-        )
+        self._title_label.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
         self._desc_label = Text(
-            description, size=TOAST_SPEC["desc_size"], weight="normal",
-            theme=self._theme, selectable=False,
+            description,
+            size=TOAST_SPEC["desc_size"],
+            weight="normal",
+            theme=self._theme,
+            selectable=False,
         )
         self._desc_label.setWordWrap(True)
         self._text_col.addWidget(self._title_label)
@@ -210,12 +215,15 @@ class Toast(QWidget):
         # 卡片禁止挂 QGraphicsEffect——Button 等子件自带 effect，父子嵌套
         # 会触发 "one painter at a time" 告警洪水。
         self._paint_opacity = 1.0
-        self._fade_pixmap: Optional[QPixmap] = None
+        self._fade_pixmap: QPixmap | None = None
         self._snapshot_visible: list = []
-        self._inset_anim: Optional[QPropertyAnimation] = None
+        self._inset_anim: QPropertyAnimation | None = None
         self._content_children: list = [
-            self._icon_label, self._spinner, self._title_label,
-            self._desc_label, self._close_btn,
+            self._icon_label,
+            self._spinner,
+            self._title_label,
+            self._desc_label,
+            self._close_btn,
         ]
 
     # ============================================================
@@ -281,10 +289,7 @@ class Toast(QWidget):
 
         # 显隐用 isHidden() 判定（只看自身 hide 标志）；isVisible() 在父未
         # show 的构造期恒 False，会把 title/desc 高度算成 0
-        title_h = (
-            self._title_label.sizeHint().height()
-            if not self._title_label.isHidden() else 0
-        )
+        title_h = self._title_label.sizeHint().height() if not self._title_label.isHidden() else 0
         if not self._desc_label.isHidden():
             desc_h = max(
                 self._desc_label.heightForWidth(self._text_avail_width()),
@@ -292,10 +297,7 @@ class Toast(QWidget):
             )
         else:
             desc_h = 0
-        end_h = (
-            self._end_content.sizeHint().height()
-            if self._end_content is not None else 0
-        )
+        end_h = self._end_content.sizeHint().height() if self._end_content is not None else 0
         content_h = max(TOAST_SPEC["icon"], title_h + desc_h, end_h)
         self.setFixedHeight(content_h + 2 * (TOAST_SPEC["padding_y"] + pad))
 
@@ -322,10 +324,7 @@ class Toast(QWidget):
         w = max(self.width(), self.sizeHint().width())
         pad = self._shadow_pad()
         rect_w = max(0.0, w - 2 * pad - 2 * self._width_inset)
-        icon_w = (
-            0 if self._hide_icon
-            else TOAST_SPEC["icon"] + TOAST_SPEC["content_gap"]
-        )
+        icon_w = 0 if self._hide_icon else TOAST_SPEC["icon"] + TOAST_SPEC["content_gap"]
         # 左右各有一份 padding_x：此前漏减右侧一份，elide 判定的可用宽
         # 比文本列实际宽 12px，长标题不触发截断、钻进关闭按钮区
         avail = int(rect_w) - icon_w - 2 * TOAST_SPEC["padding_x"]
@@ -452,7 +451,7 @@ class Toast(QWidget):
         self._refresh_icon()
         self.update()
 
-    def _resolve_icon_name(self) -> Optional[str]:
+    def _resolve_icon_name(self) -> str | None:
         if self._icon_src:
             return self._icon_src
         key = self._severity or self._color
@@ -620,9 +619,7 @@ class Toast(QWidget):
         self.render(pm, QPoint(), QRect(), QWidget.RenderFlag.DrawChildren)
         self._fade_pixmap = pm
         # 只隐藏快照前可见的子件；故意隐藏的（Spinner/icon）恢复时不能被强拉出来
-        self._snapshot_visible = [
-            w for w in self._content_children if not w.isHidden()
-        ]
+        self._snapshot_visible = [w for w in self._content_children if not w.isHidden()]
         for w in self._snapshot_visible:
             w.hide()
         self.update()
@@ -667,8 +664,14 @@ class Toast(QWidget):
     width_inset = Property(float, _get_width_inset, _set_width_inset_prop)
 
     def animate_width_inset(self, target: float):
-        tween_property(self, "_inset_anim", b"width_inset", float(target),
-                       duration=TOAST_SPEC["duration_move"], easing=QEasingCurve.Type.Linear)
+        tween_property(
+            self,
+            "_inset_anim",
+            b"width_inset",
+            float(target),
+            duration=TOAST_SPEC["duration_move"],
+            easing=QEasingCurve.Type.Linear,
+        )
 
     def sync_height(self):
         """宽度变化后立即按新宽度重算高度（入列前调用，避免显示时高度跳变）。"""
@@ -707,7 +710,7 @@ class Toast(QWidget):
         self._relayout()
         self.content_changed.emit()
 
-    def set_end_content(self, widget: Optional[QWidget]):
+    def set_end_content(self, widget: QWidget | None):
         if not self._alive():
             return
         if self._end_content is not None:
@@ -771,9 +774,7 @@ class Toast(QWidget):
         self._refresh_close_visibility()
 
     def _refresh_close_visibility(self):
-        self._apply_child_visible(
-            self._close_btn, not self._hide_close and not self._folded
-        )
+        self._apply_child_visible(self._close_btn, not self._hide_close and not self._folded)
 
     def set_show_timeout_progress(self, show: bool):
         if not self._alive():

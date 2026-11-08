@@ -2,15 +2,16 @@
 Text 组件示例 — 全 13 档字号 / 6 档物理字重 / HeroUI 颜色 / HEX / RGBA / 透明度 / 选区高亮
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from hero_side_ui import Text, Title, Subtitle, Caption, Body
-from _base import DemoBase
+from hero_side_ui import Body, Caption, Subtitle, Text, Title
 
 
 class TextDemo(DemoBase):
@@ -86,8 +87,7 @@ class TextDemo(DemoBase):
             "neutral",
         ]
         token_widgets = [
-            Text(f"color={n!r}", size="lg", weight="medium", color=n)
-            for n in token_names
+            Text(f"color={n!r}", size="lg", weight="medium", color=n) for n in token_names
         ]
         self.add_section_grid(
             layout,
@@ -312,12 +312,8 @@ class TextDemo(DemoBase):
         hl.setContentsMargins(0, 0, 0, 0)
         hl.setAlignment(Qt.AlignmentFlag.AlignLeft)
         hl.addWidget(Text("auto (跟随主题切换器)", size="lg", weight="medium"))
-        hl.addWidget(
-            Text('theme="light" 硬锁', size="lg", weight="medium", theme="light")
-        )
-        hl.addWidget(
-            Text('theme="dark" 硬锁', size="lg", weight="medium", theme="dark")
-        )
+        hl.addWidget(Text('theme="light" 硬锁', size="lg", weight="medium", theme="light"))
+        hl.addWidget(Text('theme="dark" 硬锁', size="lg", weight="medium", theme="dark"))
         self.add_section(
             layout, "主题模式 (auto / 硬锁 light / 硬锁 dark)", [theme_row], labels_bag
         )
@@ -344,9 +340,7 @@ class TextDemo(DemoBase):
         # ============================================================
         # 10) 动态 setter 演示
         # ============================================================
-        dyn = Text(
-            "Click buttons to mutate me", size="2xl", weight="medium", color="default"
-        )
+        dyn = Text("Click buttons to mutate me", size="2xl", weight="medium", color="default")
         from hero_side_ui import Button
 
         btn_color = Button("color=primary", size="sm", variant="flat", color="primary")
@@ -439,8 +433,8 @@ def _diagnose():
     ``QApplication(sys.argv)`` 冲突报 "Please destroy the QApplication
     singleton before creating a new QApplication instance."
     """
-    from hero_side_ui.core import FontProvider
     from hero_side_ui import Text
+    from hero_side_ui.core import FontProvider
 
     p = FontProvider.instance()
     print(f"[FontProvider] builtin_loaded = {p.builtin_loaded}")

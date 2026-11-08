@@ -12,8 +12,7 @@ from __future__ import annotations
 import pytest
 from PySide6.QtGui import QColor
 
-from hero_side_ui.utils import hex_to_rgba, aligned_color_pair
-
+from hero_side_ui.utils import aligned_color_pair, hex_to_rgba
 
 # ============================================================
 # hex_to_rgba
@@ -107,7 +106,10 @@ class TestAlignedColorPair:
 
         # 入参未被修改
         assert (start.red(), start.green(), start.blue(), start.alpha()) == (
-            start_copy.red(), start_copy.green(), start_copy.blue(), start_copy.alpha()
+            start_copy.red(),
+            start_copy.green(),
+            start_copy.blue(),
+            start_copy.alpha(),
         )
         assert end.name() == end_copy.name()
 

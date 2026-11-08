@@ -13,8 +13,8 @@
 
 from __future__ import annotations
 
+from collections.abc import Callable
 from html import escape
-from typing import Callable, Dict, List, Optional
 
 from markdown_it.tree import SyntaxTreeNode
 from PySide6.QtCore import Qt
@@ -81,7 +81,7 @@ def _plain_text(node: SyntaxTreeNode) -> str:
     return "".join(_plain_text(c) for c in node.children)
 
 
-def widget_types_for(inline_widgets: Optional[Dict[str, InlineWidget]]) -> tuple:
+def widget_types_for(inline_widgets: dict[str, InlineWidget] | None) -> tuple:
     """默认 widget 类型 + 用户覆盖类型的并集。"""
     extra = tuple(inline_widgets.keys()) if inline_widgets else ()
     return tuple(dict.fromkeys(_DEFAULT_WIDGET_TYPES + extra))
@@ -89,7 +89,7 @@ def widget_types_for(inline_widgets: Optional[Dict[str, InlineWidget]]) -> tuple
 
 def paragraph_needs_flow(
     inline: SyntaxTreeNode,
-    inline_widgets: Optional[Dict[str, InlineWidget]],
+    inline_widgets: dict[str, InlineWidget] | None,
 ) -> bool:
     """段落是否含 widget 型行内元素（决定走 FlowLayout 而非 HTML 快路径）。"""
     wtypes = widget_types_for(inline_widgets)
@@ -114,10 +114,10 @@ class _InlineFlow(QWidget):
         self,
         inline: SyntaxTreeNode,
         theme: str,
-        inline_widgets: Optional[Dict[str, InlineWidget]],
-        parent: Optional[QWidget] = None,
-        sheet: Optional[InlineStyleSheet] = None,
-        footnote_texts: Optional[Dict[str, str]] = None,
+        inline_widgets: dict[str, InlineWidget] | None,
+        parent: QWidget | None = None,
+        sheet: InlineStyleSheet | None = None,
+        footnote_texts: dict[str, str] | None = None,
     ):
         super().__init__(parent)
         self._theme = theme
@@ -127,7 +127,7 @@ class _InlineFlow(QWidget):
         self._footnote_texts = footnote_texts or {}
 
         self._flow = FlowLayout(self, h_spacing=0, v_spacing=4)
-        self._html_buf: List[str] = []
+        self._html_buf: list[str] = []
         self._emit_children(inline, fmt=frozenset())
         self._flush_text()
 
@@ -157,7 +157,7 @@ class _InlineFlow(QWidget):
         return self._sheet.wrap(inner, fmt)
 
     def _render_inline_html(self, node: SyntaxTreeNode, fmt: frozenset) -> str:
-        parts: List[str] = []
+        parts: list[str] = []
         for c in node.children:
             if c.type == "text":
                 parts.append(self._wrap_fmt(escape(c.content), fmt))
@@ -175,9 +175,7 @@ class _InlineFlow(QWidget):
         self._html_buf = []
         if not html:
             return
-        label = Text(
-            size="md", theme=self._theme, selectable=True, rich_text=True, parent=self
-        )
+        label = Text(size="md", theme=self._theme, selectable=True, rich_text=True, parent=self)
         label.setTextFormat(Qt.TextFormat.RichText)
         label.setWordWrap(False)
         label.setOpenExternalLinks(True)
@@ -192,7 +190,7 @@ class _InlineFlow(QWidget):
         plain = _plain_text(node)
         default_fn = self._make_default_fn(node, plain)
         override = self._inline_widgets.get(node.type)
-        widget: Optional[QWidget] = None
+        widget: QWidget | None = None
         if override is not None:
             ctx = InlineWidgetContext(node, plain, self._theme, self, default_fn)
             try:
@@ -205,9 +203,7 @@ class _InlineFlow(QWidget):
             widget.setParent(self)
         self._flow.addWidget(widget)
 
-    def _make_default_fn(
-        self, node: SyntaxTreeNode, plain: str
-    ) -> Callable[[], QWidget]:
+    def _make_default_fn(self, node: SyntaxTreeNode, plain: str) -> Callable[[], QWidget]:
         t = node.type
         theme = self._theme
 
@@ -254,4 +250,4 @@ class _InlineFlow(QWidget):
         return build
 
 
-__all__ = ["_InlineFlow", "InlineWidgetContext", "InlineWidget", "paragraph_needs_flow"]
+__all__ = ["InlineWidget", "InlineWidgetContext", "_InlineFlow", "paragraph_needs_flow"]

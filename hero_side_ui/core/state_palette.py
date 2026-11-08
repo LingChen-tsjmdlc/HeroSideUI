@@ -62,7 +62,7 @@ from PySide6.QtGui import QColor
 
 from ..themes import HEROUI_COLORS
 
-__all__ = ["StatePalette", "Variant", "Color", "Theme", "State"]
+__all__ = ["Color", "State", "StatePalette", "Theme", "Variant"]
 
 
 # ---- Type aliases (仅用于类型提示，运行期是普通 str) ---------------------------
@@ -197,9 +197,7 @@ class StatePalette:
         palette = _pal(color)
         if variant == "bordered":
             if color == "default":
-                return (
-                    QColor(palette[300]) if theme == "light" else QColor(palette[600])
-                )
+                return QColor(palette[300]) if theme == "light" else QColor(palette[600])
             return QColor(palette[500])
 
         if variant == "faded":

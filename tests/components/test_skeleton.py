@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import pytest
-
 from PySide6.QtWidgets import QWidget
 
 from hero_side_ui import Skeleton

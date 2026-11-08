@@ -3,13 +3,12 @@
 import pytest
 
 from hero_side_ui import Table
+from hero_side_ui.components.table._cell import _corner_radii
 from hero_side_ui.components.table._palette import (
     resolve_radius_px,
     selected_before_bg,
     selected_text,
 )
-from hero_side_ui.components.table._cell import _corner_radii
-
 
 COLUMNS = [
     {"key": "name", "label": "NAME"},
@@ -61,32 +60,48 @@ class TestTableCornerRadii:
     def test_single_each_row_is_pill(self):
         # 单选：每行独立药丸，首列左圆、尾列右圆，与行位置无关
         tl, tr, br, bl = _corner_radii(
-            is_multi=False, is_first_row=False, is_last_row=False,
-            is_first_col=True, is_last_col=False, r=10,
+            is_multi=False,
+            is_first_row=False,
+            is_last_row=False,
+            is_first_col=True,
+            is_last_col=False,
+            r=10,
         )
         assert (tl, bl) == (10, 10) and (tr, br) == (0, 0)
 
     def test_multi_middle_row_square(self):
         # 多选中间行：四角全直角，连成整块
         tl, tr, br, bl = _corner_radii(
-            is_multi=True, is_first_row=False, is_last_row=False,
-            is_first_col=True, is_last_col=True, r=10,
+            is_multi=True,
+            is_first_row=False,
+            is_last_row=False,
+            is_first_col=True,
+            is_last_col=True,
+            r=10,
         )
         assert (tl, tr, br, bl) == (0, 0, 0, 0)
 
     def test_multi_first_row_top_rounded(self):
         # 多选首行首列：仅左上圆
-        tl, tr, br, bl = _corner_radii(
-            is_multi=True, is_first_row=True, is_last_row=False,
-            is_first_col=True, is_last_col=False, r=10,
+        tl, _tr, _br, bl = _corner_radii(
+            is_multi=True,
+            is_first_row=True,
+            is_last_row=False,
+            is_first_col=True,
+            is_last_col=False,
+            r=10,
         )
         assert tl == 10 and bl == 0
 
     def test_multi_last_row_bottom_rounded(self):
         # 多选尾行尾列：仅右下圆
-        tl, tr, br, bl = _corner_radii(
-            is_multi=True, is_first_row=False, is_last_row=True,
-            is_first_col=False, is_last_col=True, r=10,
+        _tl, tr, br, _bl = _corner_radii(
+            is_multi=True,
+            is_first_row=False,
+            is_last_row=True,
+            is_first_col=False,
+            is_last_col=True,
+            r=10,
         )
         assert br == 10 and tr == 0
 
@@ -105,8 +120,7 @@ class TestTableInit:
         assert t._selection_mode == "none"
 
     def test_invalid_fallback(self, qtbot):
-        t = Table(color="xxx", size="xxx", radius="xxx", shadow="xxx",
-                  selection_mode="xxx")
+        t = Table(color="xxx", size="xxx", radius="xxx", shadow="xxx", selection_mode="xxx")
         qtbot.addWidget(t)
         assert t._color == "default"
         assert t._size == "md"
@@ -119,8 +133,9 @@ class TestTableInit:
 # 样式矩阵
 # ============================================================
 class TestTableStyleMatrix:
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary",
-                                       "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     @pytest.mark.parametrize("size", ["sm", "md", "lg"])
     @pytest.mark.parametrize("theme", ["light", "dark"])
     def test_matrix_propagates(self, qtbot, color, size, theme):
@@ -262,10 +277,12 @@ class TestTableDisabled:
         t = Table(selection_mode="multiple")
         qtbot.addWidget(t)
         t.set_columns(COLUMNS)
-        t.set_rows([
-            {"key": "1", "name": "A", "role": "x", "status": "s", "_disabled": True},
-            {"key": "2", "name": "B", "role": "y", "status": "s"},
-        ])
+        t.set_rows(
+            [
+                {"key": "1", "name": "A", "role": "x", "status": "s", "_disabled": True},
+                {"key": "2", "name": "B", "role": "y", "status": "s"},
+            ]
+        )
         assert t.disabled_keys() == {"1"}
         t.set_disabled_keys({"2"})
         # 用户禁用 2，内联禁用 1，应并集
@@ -342,10 +359,12 @@ class TestTableSorting:
     def test_switch_column_resets_ascending(self, qtbot):
         t = Table()
         qtbot.addWidget(t)
-        t.set_columns([
-            {"key": "name", "label": "N", "allows_sorting": True},
-            {"key": "role", "label": "R", "allows_sorting": True},
-        ])
+        t.set_columns(
+            [
+                {"key": "name", "label": "N", "allows_sorting": True},
+                {"key": "role", "label": "R", "allows_sorting": True},
+            ]
+        )
         t.set_rows(ROWS)
         t._on_header_sort_clicked("name")
         t._on_header_sort_clicked("name")
@@ -436,11 +455,13 @@ class TestTableRowReuse:
         # 同结构换数据，cell 对象应被复用（id 不变），内容已更新
         t = _make(qtbot)
         cell_before = t._cells["1"]["name"]
-        t.set_rows([
-            {"key": "1", "name": "AAA", "role": "x", "status": "s"},
-            {"key": "2", "name": "B", "role": "y", "status": "s"},
-            {"key": "3", "name": "C", "role": "z", "status": "s"},
-        ])
+        t.set_rows(
+            [
+                {"key": "1", "name": "AAA", "role": "x", "status": "s"},
+                {"key": "2", "name": "B", "role": "y", "status": "s"},
+                {"key": "3", "name": "C", "role": "z", "status": "s"},
+            ]
+        )
         cell_after = t._cells["1"]["name"]
         assert cell_before is cell_after  # 行槽被复用，未销毁重建
 
@@ -453,7 +474,7 @@ class TestTableRowReuse:
         # 列变化触发引擎 reset，cell 集合重建
         t = _make(qtbot)
         t.set_columns([{"key": "name", "label": "N"}])
-        assert set(c for c in t._cells["1"].keys()) == {"name"}
+        assert set(c for c in t._cells["1"]) == {"name"}
 
 
 class TestTableVirtualized:
@@ -469,8 +490,7 @@ class TestTableVirtualized:
         t = Table(is_virtualized=True, max_height=200)
         qtbot.addWidget(t)
         t.set_columns(COLUMNS)
-        big = [{"key": str(i), "name": f"U{i}", "role": "r", "status": "s"}
-               for i in range(500)]
+        big = [{"key": str(i), "name": f"U{i}", "role": "r", "status": "s"} for i in range(500)]
         t.set_rows(big)
         t.show()
         # 已渲染行数应远小于总行数（只覆盖可视区 + 缓冲）

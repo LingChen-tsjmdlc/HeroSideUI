@@ -83,8 +83,9 @@ class TestThemeIntegration:
 
 ```python
 COLORS = ("default", "primary", "secondary", "success", "warning", "danger")
-SIZES  = ("sm", "md", "lg")
+SIZES = ("sm", "md", "lg")
 VARIANTS = ("solid", "bordered", "flat", "light", "faded", "ghost")
+
 
 @pytest.mark.parametrize("color", COLORS)
 @pytest.mark.parametrize("size", SIZES)
@@ -103,8 +104,12 @@ def test_construct_all_combos(qtbot, color, size, variant):
 ```python
 def test_popover_open_close(qtbot):
     from hero_side_ui import Popover, Button
-    btn = Button("Trigger"); qtbot.addWidget(btn); btn.show()
-    pop = Popover(); pop.attach(btn, event="manual")
+
+    btn = Button("Trigger")
+    qtbot.addWidget(btn)
+    btn.show()
+    pop = Popover()
+    pop.attach(btn, event="manual")
     with qtbot.waitSignal(pop.opened, timeout=1000):
         pop.open()
     with qtbot.waitSignal(pop.closed, timeout=1000):
@@ -123,8 +128,10 @@ def test_popover_open_close(qtbot):
 def test_external_widget_visible_after_attach(qtbot):
     from PySide6.QtWidgets import QLabel
     from hero_side_ui import Input
+
     inp = Input(label="X", end_content=QLabel("END"))
-    qtbot.addWidget(inp); inp.show()
+    qtbot.addWidget(inp)
+    inp.show()
     qtbot.wait(30)
     # 外部 widget 经历 reparent 后必须仍 visible
     end = inp.findChild(QLabel)

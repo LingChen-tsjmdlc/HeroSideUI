@@ -54,22 +54,18 @@ class FadeScaleAnimation(QObject):
         self._easing_out = easing_out
         self._opacity_mode = apply_opacity_via
 
-
         self._progress = 0.0
         self._anim = QPropertyAnimation(self, b"progress")
         self._anim.setEasingCurve(self._easing_in)
         self._anim.finished.connect(self._on_finished)
 
-
         self._direction: str | None = None
-
 
         self._effect: QGraphicsOpacityEffect | None = None
         if apply_opacity_via == "effect":
             self._effect = QGraphicsOpacityEffect(target)
             self._effect.setOpacity(0.0)
             target.setGraphicsEffect(self._effect)
-
 
     def _get_progress(self) -> float:
         return self._progress
@@ -79,7 +75,6 @@ class FadeScaleAnimation(QObject):
         self._apply()
 
     progress = Property(float, _get_progress, _set_progress)
-
 
     def play_in(self, instant: bool = False):
         """从当前进度进入。
@@ -134,7 +129,6 @@ class FadeScaleAnimation(QObject):
     def scale_value(self) -> float:
         """返回由进度换算的缩放比例。"""
         return self._scale_min + (1.0 - self._scale_min) * self._progress
-
 
     def _apply(self):
         opacity = self._progress

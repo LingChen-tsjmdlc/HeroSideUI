@@ -10,7 +10,6 @@ tabs、checkbox 内嵌 label、switch on/off label、divider 文本）共用此�
 from __future__ import annotations
 
 import re
-from typing import Optional, Tuple, Union
 
 from PySide6.QtGui import QColor, QFont
 
@@ -21,9 +20,9 @@ from .font_provider import make_qfont
 # 公共类型
 # ============================================================
 
-ColorInput = Union[str, QColor, Tuple[int, int, int], Tuple[int, int, int, int], None]
-SizeInput = Union[str, int, float]
-WeightInput = Union[str, int, "QFont.Weight"]
+ColorInput = str | QColor | tuple[int, int, int] | tuple[int, int, int, int] | None
+SizeInput = str | int | float
+WeightInput = str | int | QFont.Weight
 
 # ============================================================
 # Tailwind text-* 字号 token
@@ -82,7 +81,7 @@ _RGBA_RE = re.compile(
 )
 
 
-def _parse_token(token: str) -> Optional[QColor]:
+def _parse_token(token: str) -> QColor | None:
     """HeroUI token → QColor；不匹配返 None 交给调用方继续走 HEX/QColor。"""
     parts = token.strip().split("-")
     name = parts[0].lower()
@@ -130,7 +129,7 @@ def resolve_text_color(color: ColorInput, theme: str) -> QColor:
                 return QColor(r, g, b)
             a_f = float(a_str)
             if 0.0 <= a_f <= 1.0:
-                return QColor(r, g, b, int(round(a_f * 255)))
+                return QColor(r, g, b, round(a_f * 255))
             return QColor(r, g, b, int(a_f))
         c = QColor(s)
         if c.isValid():
@@ -169,9 +168,7 @@ def resolve_text_weight(weight: WeightInput) -> int:
             f"expected one of {sorted(WEIGHT_MAP.keys())} "
             "or QFont.Weight / int(1~1000)."
         )
-    raise TypeError(
-        f"weight must be str / int / QFont.Weight, got {type(weight).__name__}."
-    )
+    raise TypeError(f"weight must be str / int / QFont.Weight, got {type(weight).__name__}.")
 
 
 # ============================================================
@@ -235,8 +232,8 @@ def selection_palette(
     *,
     force_selection_text_color: bool = True,
     selection_adapts_color: bool = False,
-    text_color: Optional[QColor] = None,
-) -> Tuple[QColor, QColor]:
+    text_color: QColor | None = None,
+) -> tuple[QColor, QColor]:
     """返回 (选区底色, 选中文字色)。Text/Input/Textarea 等所有可选中文字组件共用。
 
     默认行为（force_selection_text_color=True 且 selection_adapts_color=False）：
@@ -262,15 +259,15 @@ def selection_palette(
 
 
 __all__ = [
+    "DEFAULT_TEXT_COLORS",
+    "SIZE_MAP",
+    "WEIGHT_MAP",
     "ColorInput",
     "SizeInput",
     "WeightInput",
-    "SIZE_MAP",
-    "WEIGHT_MAP",
-    "DEFAULT_TEXT_COLORS",
+    "make_text_qfont",
     "resolve_text_color",
     "resolve_text_size",
     "resolve_text_weight",
-    "make_text_qfont",
     "selection_palette",
 ]

@@ -49,7 +49,6 @@ def paint_animated_check(
     if p <= 0.001:
         return
 
-
     if isinstance(rect, (QRect, QRectF)):
         x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
     else:
@@ -144,7 +143,6 @@ class CheckDrawAnimation(QObject):
         self._delay_timer.timeout.connect(self._start_in_anim)
         self._pending_target = None
 
-
     def _get_progress(self) -> float:
         return self._progress
 
@@ -157,7 +155,6 @@ class CheckDrawAnimation(QObject):
             self._on_step(v)
 
     progress = Property(float, _get_progress, _set_progress)
-
 
     def play(self, checked: bool):
         """取消旧请求，按选中状态描出或擦除对勾。
@@ -185,7 +182,6 @@ class CheckDrawAnimation(QObject):
                 self._anim.setEasingCurve(self._easing_out)
                 self._anim.start()
             else:
-
                 self._set_progress(1.0)
 
     def set_immediate(self, checked: bool):
@@ -206,7 +202,6 @@ class CheckDrawAnimation(QObject):
         self._pending_target = None
 
     def _start_in_anim(self):
-
         """仅为仍有效的选中请求启动描勾。"""
         if self._pending_target is not True:
             return

@@ -14,8 +14,6 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPainter
 from PySide6.QtWidgets import QScrollArea, QSizePolicy, QVBoxLayout, QWidget
@@ -31,9 +29,9 @@ from ._highlight import build_code_html
 class _Tab:
     """单个 tab 的数据载体。"""
 
-    __slots__ = ("name", "code", "language", "highlight_lines")
+    __slots__ = ("code", "highlight_lines", "language", "name")
 
-    def __init__(self, name: str, code: str, language: str, highlight_lines: List[int]):
+    def __init__(self, name: str, code: str, language: str, highlight_lines: list[int]):
         self.name = name
         self.code = code
         self.language = language
@@ -78,13 +76,13 @@ class CodeBlock(QWidget):
         *,
         language: str = "text",
         filename: str = "",
-        highlight_lines: Optional[List[int]] = None,
-        font: Optional[str] = None,
-        font_size: Optional[int] = None,
-        tabs: Optional[List[dict]] = None,
+        highlight_lines: list[int] | None = None,
+        font: str | None = None,
+        font_size: int | None = None,
+        tabs: list[dict] | None = None,
         show_line_numbers: bool = True,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._theme_mode = theme
@@ -138,9 +136,7 @@ class CodeBlock(QWidget):
         self._scroll.setStyleSheet("QScrollArea{background:transparent;border:none;}")
         self._scroll.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
         self._scroll.viewport().setAutoFillBackground(False)
-        self._scroll.viewport().setAttribute(
-            Qt.WidgetAttribute.WA_TranslucentBackground, True
-        )
+        self._scroll.viewport().setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground, True)
 
         self._code_label = Text(
             size="md",
@@ -165,9 +161,7 @@ class CodeBlock(QWidget):
         self._code_label.setFont(mono_qfont(self._font_size, font))
         self._scroll.setWidget(self._code_label)
         # 滚动区纵向按内容撑开，不吃多余高度
-        self._scroll.setSizePolicy(
-            QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum
-        )
+        self._scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         outer.addWidget(self._scroll)
 
         self._render_code()
@@ -216,9 +210,7 @@ class CodeBlock(QWidget):
         self._wrap = wrap
         # 换行开启时禁横向滚动
         self._scroll.setHorizontalScrollBarPolicy(
-            Qt.ScrollBarPolicy.ScrollBarAlwaysOff
-            if wrap
-            else Qt.ScrollBarPolicy.ScrollBarAsNeeded
+            Qt.ScrollBarPolicy.ScrollBarAlwaysOff if wrap else Qt.ScrollBarPolicy.ScrollBarAsNeeded
         )
         self._render_code()
 

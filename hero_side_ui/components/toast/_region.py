@@ -11,17 +11,14 @@
 
 from __future__ import annotations
 
-from ...animation import tween_property, stop_tween
-
 from dataclasses import dataclass, field
-from typing import Optional
 
 from PySide6.QtCore import (
+    QEasingCurve,
     QEvent,
     QObject,
     QPoint,
     QPropertyAnimation,
-    QEasingCurve,
     QRect,
     Qt,
     QTimer,
@@ -29,6 +26,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QCursor
 from PySide6.QtWidgets import QApplication, QWidget
 
+from ...animation import stop_tween, tween_property
 from ...themes import TOAST_SPEC
 from ...utils import safe_delete
 
@@ -39,15 +37,15 @@ class _ToastItem:
 
     key: str
     card: QWidget
-    exiting: bool = False     # 退出动画进行中
-    entering: bool = False    # 入场淡入进行中（_relayout 不得踩透明度）
-    hiding: bool = False      # 折叠淡出进行中（淡出结束才真正 hide）
-    visible: bool = False     # 当前是否显示（折叠态超配额的旧卡隐藏）
+    exiting: bool = False  # 退出动画进行中
+    entering: bool = False  # 入场淡入进行中（_relayout 不得踩透明度）
+    hiding: bool = False  # 折叠淡出进行中（淡出结束才真正 hide）
+    visible: bool = False  # 当前是否显示（折叠态超配额的旧卡隐藏）
     drag_dx: int = 0
     drag_dy: int = 0
     base_geom: QRect = field(default_factory=QRect)
-    geo_anim: Optional[QPropertyAnimation] = None
-    fade_anim: Optional[QPropertyAnimation] = None
+    geo_anim: QPropertyAnimation | None = None
+    fade_anim: QPropertyAnimation | None = None
 
 
 class _HoverWatcher(QObject):
@@ -57,7 +55,7 @@ class _HoverWatcher(QObject):
     所以统一按"指针是否落在卡片联合矩形内"判定（等价于 HeroUI 的 region hover）。
     """
 
-    def __init__(self, region: "ToastRegion"):
+    def __init__(self, region: ToastRegion):
         super().__init__(region)
         self._region = region
 
@@ -72,7 +70,7 @@ class ToastRegion(QWidget):
 
     def __init__(
         self,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
         placement: str = "bottom-right",
         max_visible_toasts: int = TOAST_SPEC["max_visible_toasts"],
         toast_offset: int = 0,
@@ -113,7 +111,7 @@ class ToastRegion(QWidget):
     # 增删
     # ============================================================
 
-    def add(self, card, key: Optional[str] = None) -> str:
+    def add(self, card, key: str | None = None) -> str:
         """挂载一张卡片，返回它的 key。超配额的旧卡只是隐藏，不销毁。"""
         self._counter += 1
         key = key or f"toast-{self._counter}"
@@ -178,7 +176,7 @@ class ToastRegion(QWidget):
     def keys(self) -> list:
         return [it.key for it in self._items if not it.exiting]
 
-    def card(self, key: str) -> Optional[QWidget]:
+    def card(self, key: str) -> QWidget | None:
         """按 key 取卡片，便于运行中改文案 / 结束 loading。"""
         item = self._find(key)
         return None if item is None else item.card
@@ -240,7 +238,7 @@ class ToastRegion(QWidget):
             # 语义，其 heights 含 margin）；只加一次会被相邻卡差值精确
             # 抵消，展开态卡片会零间距贴合
             n_below = total - 1 - index
-            below = sum(heights[index + 1:]) + n_below * TOAST_SPEC["stack_gap"]
+            below = sum(heights[index + 1 :]) + n_below * TOAST_SPEC["stack_gap"]
             return TOAST_SPEC["stack_gap"] + below + self._toast_offset
         return (total - 1 - index) * TOAST_SPEC["collapsed_step"] + self._toast_offset
 
@@ -249,8 +247,7 @@ class ToastRegion(QWidget):
         off = (total - 1 - index) * TOAST_SPEC["collapsed_step"] + self._toast_offset
         if self._placement.startswith("top"):
             return TOAST_SPEC["margin"] + off - card.pad_top
-        return (self.height() - TOAST_SPEC["margin"] - off
-                - card.content_height() - card.pad_top)
+        return self.height() - TOAST_SPEC["margin"] - off - card.content_height() - card.pad_top
 
     def _target_geometry(self, item: _ToastItem, index: int, total: int, heights: list) -> QRect:
         """按 heights（布局开始时统一采集的可见主体高度）定位，避免与
@@ -290,19 +287,25 @@ class ToastRegion(QWidget):
                 item.visible = False
                 if item.hiding:
                     pass  # 淡出进行中，等 _finish_hide 回调再隐藏
-                elif (animate and not self._disable_animation
-                      and not item.entering and not card.isHidden()):
+                elif (
+                    animate
+                    and not self._disable_animation
+                    and not item.entering
+                    and not card.isHidden()
+                ):
                     # 折叠淡出的卡同步滑回折叠堆叠位再隐藏（与展开时从该位
                     # 起飞对称；只淡出不位移会停在展开位，与其余卡的下浮脱节）
                     item.hiding = True
-                    self._animate_move(item, QRect(
-                        self._x_for(self._card_width()),
-                        self._folded_y(index, total, card),
-                        self._card_width(), card.height(),
-                    ))
-                    self._animate_opacity(
-                        item, 0.0, then=lambda it=item: self._finish_hide(it)
+                    self._animate_move(
+                        item,
+                        QRect(
+                            self._x_for(self._card_width()),
+                            self._folded_y(index, total, card),
+                            self._card_width(),
+                            card.height(),
+                        ),
                     )
+                    self._animate_opacity(item, 0.0, then=lambda it=item: self._finish_hide(it))
                 elif not item.hiding:
                     card.hide()
                 revealed.append(False)
@@ -340,18 +343,17 @@ class ToastRegion(QWidget):
 
             # 折叠态隐藏的卡被展开揭示时不能瞬跳满透明度（突兀弹出）：
             # 位置动画本就从折叠位滑向展开位，这里补上同步淡入
-            if (revealed[index] and animate and not self._disable_animation
-                    and not item.entering):
+            if revealed[index] and animate and not self._disable_animation and not item.entering:
                 # 起点重置到折叠堆叠位（HeroUI 中隐藏 toast 始终保有折叠
                 # transform，展开时从该位滑向展开位）。不重置的话几何冻结
                 # 在上次的展开位，第二次展开只剩原位淡入、没有滑动
-                card.setGeometry(target.x(), self._folded_y(index, total, card),
-                                 target.width(), card.height())
+                card.setGeometry(
+                    target.x(), self._folded_y(index, total, card), target.width(), card.height()
+                )
                 card.set_opacity(0.0)
                 self._animate_opacity(item, 1.0)
             elif not item.entering:
-                tween_property(card, "fade_anim", b"paint_opacity", 1.0, owner=item,
-                               duration=0)
+                tween_property(card, "fade_anim", b"paint_opacity", 1.0, owner=item, duration=0)
 
             if item.drag_dx or item.drag_dy:
                 target = target.translated(item.drag_dx, item.drag_dy)
@@ -359,15 +361,21 @@ class ToastRegion(QWidget):
             if animate and not self._disable_animation:
                 self._animate_move(item, target)
             else:
-                tween_property(card, "geo_anim", b"geometry", target, owner=item,
-                               duration=0)
+                tween_property(card, "geo_anim", b"geometry", target, owner=item, duration=0)
 
             # 越新的越靠上层
             card.raise_()
 
     def _animate_move(self, item: _ToastItem, target: QRect):
-        tween_property(item.card, "geo_anim", b"geometry", target, owner=item,
-                       duration=TOAST_SPEC["duration_move"], easing=QEasingCurve.Type.Linear)
+        tween_property(
+            item.card,
+            "geo_anim",
+            b"geometry",
+            target,
+            owner=item,
+            duration=TOAST_SPEC["duration_move"],
+            easing=QEasingCurve.Type.Linear,
+        )
 
     # ============================================================
     # 进出场动画
@@ -416,14 +424,28 @@ class ToastRegion(QWidget):
         else:
             end.translate(-geo.width(), 0)
 
-        tween_property(card, "geo_anim", b"geometry", end, owner=item,
-                       duration=TOAST_SPEC["duration_exit"], easing=QEasingCurve.Type.Linear)
+        tween_property(
+            card,
+            "geo_anim",
+            b"geometry",
+            end,
+            owner=item,
+            duration=TOAST_SPEC["duration_exit"],
+            easing=QEasingCurve.Type.Linear,
+        )
         self._animate_opacity(item, 0.0, then=lambda: self._finalize_exit(item))
 
     def _animate_opacity(self, item: _ToastItem, target: float, then=None):
-        tween_property(item.card, "fade_anim", b"paint_opacity", target, owner=item,
-                       duration=TOAST_SPEC["duration_exit"], on_finished=then,
-                       easing=QEasingCurve.Type.Linear)
+        tween_property(
+            item.card,
+            "fade_anim",
+            b"paint_opacity",
+            target,
+            owner=item,
+            duration=TOAST_SPEC["duration_exit"],
+            on_finished=then,
+            easing=QEasingCurve.Type.Linear,
+        )
 
     def _finish_hide(self, item: _ToastItem):
         """折叠淡出结束的回调：仍处于隐藏态才真正 hide（中途被重新
@@ -546,7 +568,7 @@ class ToastRegion(QWidget):
             app.removeEventFilter(self._watcher)
             self._set_hovering(False)
 
-    def _find(self, key: str) -> Optional[_ToastItem]:
+    def _find(self, key: str) -> _ToastItem | None:
         for item in self._items:
             if item.key == key:
                 return item

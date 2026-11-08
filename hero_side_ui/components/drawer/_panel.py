@@ -17,15 +17,13 @@ size=full 时四角全平（!rounded-none）。
     https://github.com/heroui-inc/heroui/blob/main/packages/core/theme/src/components/modal.ts
 """
 
-from typing import Optional
-
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from ...core import ThemeProvider
 from ...themes import DRAWER_SPEC, HEROUI_COLORS, RADIUS
 from ...utils import clear_layout, safe_delete
-from ...core import ThemeProvider
 from ..button import Button
 
 
@@ -43,7 +41,7 @@ class _DrawerPanel(QWidget):
 
     close_requested = Signal()
 
-    def __init__(self, theme: str = "auto", parent: Optional[QWidget] = None):
+    def __init__(self, theme: str = "auto", parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroDrawer")
         self._theme_mode = theme
@@ -52,7 +50,7 @@ class _DrawerPanel(QWidget):
         self._placement = "right"
         self._is_full = False
         self._hide_close = False
-        self._close_btn: Optional[QWidget] = None
+        self._close_btn: QWidget | None = None
 
         # QWidget 子类的 QSS 背景必须显式开 WA_StyledBackground 才会绘制
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -95,7 +93,7 @@ class _DrawerPanel(QWidget):
         widget.show()
         self._content_mutated()
 
-    def set_content(self, widget: Optional[QWidget]):
+    def set_content(self, widget: QWidget | None):
         """用单个组件替换全部内容（旧的会被销毁）。"""
         clear_layout(self._content_layout)
         if widget is not None:
@@ -178,7 +176,7 @@ class _DrawerPanel(QWidget):
         self._hide_close = bool(hide)
         self._sync_close_button()
 
-    def set_close_button(self, widget: Optional[QWidget]):
+    def set_close_button(self, widget: QWidget | None):
         """换成自定义关闭按钮；传 None 恢复内置默认按钮。"""
         if self._close_btn is not None:
             safe_delete(self._close_btn)

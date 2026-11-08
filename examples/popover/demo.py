@@ -3,27 +3,28 @@ Popover 组件示例 — 12 placement / 7 colors / shadow / radius / backdrop /
 插槽（任意内容）/ hover trigger / arrow
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QWidget
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import (
+    Body,
+    Button,
+    Card,
+    CardBody,
+    CardHeader,
+    Checkbox,
+    Input,
     Popover,
     PopoverContent,
-    Button,
-    Input,
-    Checkbox,
     Spinner,
-    Card,
-    CardHeader,
-    CardBody,
-    Body,
     Subtitle,
 )
-from _base import DemoBase
 
 
 def make_popover(text: str, **kwargs) -> Popover:
@@ -87,9 +88,7 @@ class PopoverDemo(DemoBase):
         scroll_btns = []
 
         # 左：跟随不关闭
-        follow_btn = Button(
-            "跟随不关闭 (close_on_scroll=False)", color="primary", variant="flat"
-        )
+        follow_btn = Button("跟随不关闭 (close_on_scroll=False)", color="primary", variant="flat")
         follow_pop = Popover(
             placement="bottom",
             color="default",
@@ -99,9 +98,7 @@ class PopoverDemo(DemoBase):
         )
         fc = PopoverContent()
         fc.layout().addWidget(Subtitle("Sticky Popover"))
-        fc.layout().addWidget(
-            Body("点开后滚动页面，我会一直跟着按钮走\n不会自动消失。")
-        )
+        fc.layout().addWidget(Body("点开后滚动页面，我会一直跟着按钮走\n不会自动消失。"))
         follow_pop.set_content(fc)
         follow_pop.attach(follow_btn)
         self._popovers.append(follow_pop)
@@ -256,13 +253,9 @@ class PopoverDemo(DemoBase):
         # 表单小标题用 Subtitle
         form.layout().addWidget(Subtitle("Account Settings"))
         form.layout().addWidget(Input(label="Username", placeholder="@you", size="sm"))
-        form.layout().addWidget(
-            Input(label="Email", placeholder="you@example.com", size="sm")
-        )
+        form.layout().addWidget(Input(label="Email", placeholder="you@example.com", size="sm"))
         form.layout().addWidget(Checkbox("Receive emails", color="primary", size="sm"))
-        form.layout().addWidget(
-            Button("Save", color="primary", variant="solid", size="sm")
-        )
+        form.layout().addWidget(Button("Save", color="primary", variant="solid", size="sm"))
         form_pop.set_content(form)
         form_pop.attach(form_btn)
         self._popovers.append(form_pop)
@@ -289,9 +282,7 @@ class PopoverDemo(DemoBase):
         h.layout().addWidget(Subtitle("Jerry Lu"))
         inner_card.add_header(h)
         bb = CardBody()
-        bb.layout().addWidget(
-            Body("Senior Tech Artist @ Tencent\nWorking on HeroSideUI")
-        )
+        bb.layout().addWidget(Body("Senior Tech Artist @ Tencent\nWorking on HeroSideUI"))
         inner_card.add_body(bb)
         cc.layout().addWidget(inner_card)
         card_pop.set_content(cc)
@@ -308,9 +299,7 @@ class PopoverDemo(DemoBase):
 
         # hover trigger
         hover_btn = Button("Hover me", color="danger", variant="flat")
-        hover_pop = make_popover(
-            "Triggered by hover", placement="bottom", color="danger"
-        )
+        hover_pop = make_popover("Triggered by hover", placement="bottom", color="danger")
         hover_pop.attach(hover_btn, event="hover")
         self._popovers.append(hover_pop)
         self.add_section(layout, "hover 触发", [hover_btn], labels_bag, spacing=12)
@@ -319,23 +308,17 @@ class PopoverDemo(DemoBase):
         arrow_btns = []
         for place in ["top", "bottom", "left", "right"]:
             b = Button(f"{place} + arrow", color="primary", variant="flat")
-            p = make_popover(
-                f"arrow @ {place}", placement=place, color="default", arrow=True
-            )
+            p = make_popover(f"arrow @ {place}", placement=place, color="default", arrow=True)
             p.attach(b)
             self._popovers.append(p)
             arrow_btns.append(b)
-        self.add_section(
-            layout, "arrow=True（显示箭头）", arrow_btns, labels_bag, spacing=12
-        )
+        self.add_section(layout, "arrow=True（显示箭头）", arrow_btns, labels_bag, spacing=12)
 
         # 彩色 arrow
         color_arrow_btns = []
         for c in ["primary", "success", "warning", "danger"]:
             b = Button(f"arrow {c}", color=c, variant="flat")
-            p = make_popover(
-                f"{c} popover with arrow", placement="bottom", color=c, arrow=True
-            )
+            p = make_popover(f"{c} popover with arrow", placement="bottom", color=c, arrow=True)
             p.attach(b)
             self._popovers.append(p)
             color_arrow_btns.append(b)

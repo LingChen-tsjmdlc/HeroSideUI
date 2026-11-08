@@ -7,6 +7,7 @@ from .loop import LoopDriver
 
 class SkeletonShimmerAnimation(LoopDriver):
     """使用 InOutCubic 曲线的骨架扫光效果。"""
+
     def __init__(self, owner, duration=1500, parent=None):
         """初始化扫光循环。
 

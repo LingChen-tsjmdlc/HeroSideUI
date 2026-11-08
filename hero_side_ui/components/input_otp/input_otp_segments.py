@@ -6,14 +6,19 @@
 
 from __future__ import annotations
 
-from ...animation import tween_property, stop_tween
+from typing import TYPE_CHECKING
+
+from ...animation import stop_tween, tween_property
+
+if TYPE_CHECKING:
+    from .input_otp import InputOtp
 
 from PySide6.QtCore import (
     Property,
-    QSize,
     QPointF,
     QRect,
     QRectF,
+    QSize,
     Qt,
     QTimer,
     Signal,
@@ -31,7 +36,7 @@ class _SegmentRow(QWidget):
     value_edited = Signal(str)  # 用户输入导致 value 变化（含删除）
     caret_moved = Signal()
 
-    def __init__(self, host: "InputOtp"):
+    def __init__(self, host: InputOtp):
         super().__init__(host)
         self._host = host
         self._blink = True
@@ -54,8 +59,14 @@ class _SegmentRow(QWidget):
     expand_progress = Property(float, _get_expand, _set_expand)
 
     def _run_underline_anim(self, active: bool):
-        tween_property(self, "_expand_anim", b"expand_progress", 1.0 if active else 0.0,
-                       duration=200, animated=not self._host._disable_animation)
+        tween_property(
+            self,
+            "_expand_anim",
+            b"expand_progress",
+            1.0 if active else 0.0,
+            duration=200,
+            animated=not self._host._disable_animation,
+        )
 
     def _on_caret_moved(self):
         if self.hasFocus() and not self._host._is_read_only:
@@ -180,8 +191,11 @@ class _SegmentRow(QWidget):
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QColor(bg))
                 p.drawRoundedRect(draw, radius, radius)
-            border = (styles["active_border"]
-                      if (active and styles["active_border"]) else styles["border"])
+            border = (
+                styles["active_border"]
+                if (active and styles["active_border"])
+                else styles["border"]
+            )
             if border and border != "none":
                 pen = QPen(QColor(border), float(styles["border_w"]))
                 p.setPen(pen)
@@ -190,29 +204,28 @@ class _SegmentRow(QWidget):
                 border_rect = draw.adjusted(inset, inset, -inset, -inset)
                 if underlined:
                     # 官方 underlined !rounded-none + border-b-medium：只画底边
-                    p.drawLine(QPointF(border_rect.left(), draw.bottom() - inset),
-                               QPointF(border_rect.right(), draw.bottom() - inset))
+                    p.drawLine(
+                        QPointF(border_rect.left(), draw.bottom() - inset),
+                        QPointF(border_rect.right(), draw.bottom() - inset),
+                    )
                 else:
                     p.drawRoundedRect(border_rect, radius, radius)
             if underlined:
                 # 官方 after 下划线：静止为段内 2px 短线，活动段随进度
                 # 从中心展开到全宽（after:transition-width）
-                line_color = (styles["underline_active"] if active
-                              else styles["underline_base"])
+                line_color = styles["underline_active"] if active else styles["underline_base"]
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QColor(line_color))
                 bottom = draw.bottom() - 2
                 if active:
                     line_w = draw.width() * max(0.0, min(1.0, self._expand))
-                    p.drawRect(QRectF(draw.center().x() - line_w / 2, bottom,
-                                      line_w, 2))
+                    p.drawRect(QRectF(draw.center().x() - line_w / 2, bottom, line_w, 2))
                 else:
                     p.drawRect(QRectF(draw.center().x() - 1, bottom, 2, 2))
 
             self._draw_content(p, rect, char, active, styles)
 
-    def _draw_content(self, p: QPainter, rect: QRect, char: str, active: bool,
-                      styles: dict):
+    def _draw_content(self, p: QPainter, rect: QRect, char: str, active: bool, styles: dict):
         host = self._host
         has_value = bool(char)
         p.setFont(host._font)
@@ -230,8 +243,7 @@ class _SegmentRow(QWidget):
                 p.setPen(Qt.PenStyle.NoPen)
                 p.setBrush(QColor(styles["caret_color"]))
                 c = rect.center()
-                p.drawRect(QRectF(c.x() - 0.5, c.y() - rect.height() / 4, 1,
-                                  rect.height() / 2))
+                p.drawRect(QRectF(c.x() - 0.5, c.y() - rect.height() / 4, 1, rect.height() / 2))
             return
         if has_value:
             fg = QColor(styles["text_filled"] if has_value else styles["text"])

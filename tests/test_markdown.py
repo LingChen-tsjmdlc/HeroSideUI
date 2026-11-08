@@ -7,10 +7,10 @@
 import pytest
 
 from hero_side_ui import Markdown
-from hero_side_ui.components.text import Text
 from hero_side_ui.components.divider import Divider
-from hero_side_ui.components.table import Table
 from hero_side_ui.components.markdown._blocks import _ListBlock, _QuoteBlock
+from hero_side_ui.components.table import Table
+from hero_side_ui.components.text import Text
 
 
 def _block_widgets(md: Markdown):
@@ -97,8 +97,8 @@ def test_paragraph_with_link_default_richtext(qtbot):
 
 
 def test_code_inline_widget_uses_flow(qtbot):
-    from hero_side_ui.components.markdown._inline_flow import _InlineFlow
     from hero_side_ui.components.chip import Chip
+    from hero_side_ui.components.markdown._inline_flow import _InlineFlow
 
     # 显式传 inline_widgets → 含 code 的段落降级 _InlineFlow，ctx.default() 得 Chip
     md = Markdown(
@@ -114,8 +114,8 @@ def test_code_inline_widget_uses_flow(qtbot):
 
 
 def test_link_widget_uses_flow(qtbot):
-    from hero_side_ui.components.markdown._inline_flow import _InlineFlow
     from hero_side_ui.components.link import Link
+    from hero_side_ui.components.markdown._inline_flow import _InlineFlow
 
     md = Markdown(
         "see [docs](https://x.com) please",
@@ -235,7 +235,8 @@ def test_block_renderer_render_children(qtbot):
     captured = {}
 
     def custom(ctx):
-        from PySide6.QtWidgets import QWidget as _W, QVBoxLayout
+        from PySide6.QtWidgets import QVBoxLayout
+        from PySide6.QtWidgets import QWidget as _W
 
         box = _W(ctx.parent)
         lay = QVBoxLayout(box)
@@ -249,4 +250,3 @@ def test_block_renderer_render_children(qtbot):
     qtbot.addWidget(md)
     # 引用块内两段 → render_children 返回 2 个 widget
     assert captured["n"] == 2
-

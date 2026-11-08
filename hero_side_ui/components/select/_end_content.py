@@ -3,9 +3,8 @@
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
-from ..button import Button
-
 from ..._shared.selection import SelectorButton as _SelectorButton
+from ..button import Button
 
 
 class _EndContentWidget(QWidget):

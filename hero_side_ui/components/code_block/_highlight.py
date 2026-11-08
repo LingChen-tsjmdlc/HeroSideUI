@@ -12,12 +12,11 @@ pygments 缺失或语言无法识别时降级为纯文本（保留内容不丢�
 from __future__ import annotations
 
 from html import escape
-from typing import Dict, List, Optional
 
 from ...themes import CODE_BLOCK_SPEC, CODE_BLOCK_SYNTAX
 
 
-def _token_color(ttype, syntax: Dict[str, str]) -> str:
+def _token_color(ttype, syntax: dict[str, str]) -> str:
     """pygments token 类型 → 十六进制色（映射到语义键）。"""
     from pygments.token import (
         Comment,
@@ -62,7 +61,7 @@ def _token_color(ttype, syntax: Dict[str, str]) -> str:
     return syntax["text"]
 
 
-def highlight_to_lines(code: str, language: str, syntax: Dict[str, str]) -> List[str]:
+def highlight_to_lines(code: str, language: str, syntax: dict[str, str]) -> list[str]:
     """把源码高亮成"每行一个 HTML 片段"的列表（不含行号 / 行容器）。
 
     返回每行已着色的 HTML；pygments 不可用或识别失败时，每行退化为转义纯文本。
@@ -81,7 +80,7 @@ def highlight_to_lines(code: str, language: str, syntax: Dict[str, str]) -> List
             except Exception:
                 return [escape(line) for line in code.split("\n")]
 
-        lines: List[str] = [""]
+        lines: list[str] = [""]
         for ttype, value in lex(code, lexer):
             color = _token_color(ttype, syntax)
             segments = value.split("\n")
@@ -104,7 +103,7 @@ def build_code_html(
     *,
     show_line_numbers: bool = True,
     wrap: bool = False,
-    highlight_lines: Optional[List[int]] = None,
+    highlight_lines: list[int] | None = None,
 ) -> str:
     """把源码渲染成整段 ``<div>`` 富文本 HTML（随主题配色）。
 
@@ -132,16 +131,14 @@ def build_code_html(
     width = len(str(len(lines)))
     ws = "pre-wrap" if wrap else "pre"
 
-    rows: List[str] = []
+    rows: list[str] = []
     for idx, line_html in enumerate(lines, start=1):
         prefix = ""
         if show_line_numbers:
             num = str(idx).rjust(width)
             prefix = f'<span style="color:{num_color}">{num}</span>  '
         bg = f"background-color:{hl_bg};" if idx in highlight_lines else ""
-        rows.append(
-            f'<div style="white-space:{ws}; {bg}">{prefix}{line_html or " "}</div>'
-        )
+        rows.append(f'<div style="white-space:{ws}; {bg}">{prefix}{line_html or " "}</div>')
 
     body = "".join(rows)
     return f'<div style="color:{fg};">{body}</div>'

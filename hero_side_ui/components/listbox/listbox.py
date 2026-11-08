@@ -15,12 +15,11 @@
 
 from __future__ import annotations
 
-from typing import Iterable, Optional
+from collections.abc import Iterable
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
-    QLabel,
     QVBoxLayout,
     QWidget,
 )
@@ -61,18 +60,18 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         variant: str = "solid",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         selection_mode: str = "none",
-        selected_keys: Optional[Iterable[str]] = None,
-        disabled_keys: Optional[Iterable[str]] = None,
+        selected_keys: Iterable[str] | None = None,
+        disabled_keys: Iterable[str] | None = None,
         disallow_empty_selection: bool = False,
-        empty_content: Optional[str] = None,
+        empty_content: str | None = None,
         hide_selected_icon: bool = False,
         should_highlight_on_focus: bool = False,
         disable_animation: bool = False,
         is_disabled: bool = False,
-        top_content: Optional[QWidget] = None,
-        bottom_content: Optional[QWidget] = None,
+        top_content: QWidget | None = None,
+        bottom_content: QWidget | None = None,
         theme: str = "auto",
         parent=None,
     ):
@@ -114,7 +113,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         )
         self._outer.setSpacing(cfg["group_gap"])
 
-        self._top_content: Optional[QWidget] = None
+        self._top_content: QWidget | None = None
         if top_content is not None:
             self.set_top_content(top_content)
 
@@ -128,17 +127,15 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
 
         # emptyContent：None/"" 走默认 icon + 中英双语；非空 str 单行文字
         self._empty_content_text = empty_content
-        self._empty_widget: QWidget = (
-            QWidget()
-        )  # 占位，立刻被 _rebuild_empty_widget 替换
+        self._empty_widget: QWidget = QWidget()  # 占位，立刻被 _rebuild_empty_widget 替换
         self._list_v.addWidget(self._empty_widget)
-        self._empty_label: "Text" = Text("")
+        self._empty_label: Text = Text("")
         self._rebuild_empty_widget()
         self._empty_widget.hide()
         # 末尾 stretch：让 items 在父容器给的高度大于实际总高时顶部对齐
         self._list_v.addStretch(1)
 
-        self._bottom_content: Optional[QWidget] = None
+        self._bottom_content: QWidget | None = None
         if bottom_content is not None:
             self.set_bottom_content(bottom_content)
 
@@ -189,7 +186,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     # ------------------------------------------------------------
     # 装配 API
     # ------------------------------------------------------------
-    def set_top_content(self, w: Optional[QWidget]):
+    def set_top_content(self, w: QWidget | None):
         if self._top_content is not None:
             self._outer.removeWidget(self._top_content)
             safe_delete(self._top_content)
@@ -198,7 +195,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
             self._top_content = w
             self._outer.insertWidget(0, w)
 
-    def set_bottom_content(self, w: Optional[QWidget]):
+    def set_bottom_content(self, w: QWidget | None):
         if self._bottom_content is not None:
             self._outer.removeWidget(self._bottom_content)
             safe_delete(self._bottom_content)
@@ -211,7 +208,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self,
         item_or_title,
         *,
-        key: Optional[str] = None,
+        key: str | None = None,
         description: str = "",
         start_content=None,
         end_content=None,
@@ -245,9 +242,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._refresh_empty()
         return it
 
-    def add_section(
-        self, sec_or_title, *, show_divider: bool = False
-    ) -> ListboxSection:
+    def add_section(self, sec_or_title, *, show_divider: bool = False) -> ListboxSection:
         if isinstance(sec_or_title, ListboxSection):
             sec = sec_or_title
         else:
@@ -279,7 +274,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
     def items(self) -> list[ListboxItem]:
         return list(self._items)
 
-    def item_by_key(self, key: str) -> Optional[ListboxItem]:
+    def item_by_key(self, key: str) -> ListboxItem | None:
         for it in self._items:
             if it.key() == key:
                 return it
@@ -388,7 +383,7 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         self._empty_label.setMinimumHeight(cfg["empty_height"])
         self._propagate_style()
 
-    def set_radius(self, r: Optional[str]):
+    def set_radius(self, r: str | None):
         # None = 回落 size token（item_radius）；"full" 是动态半高，不在 RADIUS 表内
         if r is not None and r not in RADIUS and r != "full":
             return

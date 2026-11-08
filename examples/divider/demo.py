@@ -2,14 +2,15 @@
 Divider 组件示例 — 水平/垂直分割线、自定义颜色、带文字
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from hero_side_ui import Divider, Body
-from _base import DemoBase
+from hero_side_ui import Body, Divider
 
 
 class DividerDemo(DemoBase):

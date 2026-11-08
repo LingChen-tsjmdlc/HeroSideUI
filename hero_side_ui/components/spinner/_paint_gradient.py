@@ -12,9 +12,7 @@ Qt 等价做法:
 
 from __future__ import annotations
 
-import math
-
-from PySide6.QtCore import QPointF, QRectF, Qt
+from PySide6.QtCore import QPointF, Qt
 from PySide6.QtGui import (
     QBrush,
     QColor,
@@ -59,9 +57,9 @@ def paint_gradient(
     grad = QConicalGradient(QPointF(cx, cy), 90.0 - phase * 360.0)
     transparent = QColor(indicator)
     transparent.setAlpha(0)
-    grad.setColorAt(0.0, QColor(indicator))   # 头部：实色
-    grad.setColorAt(0.4, transparent)         # 拖尾末端：完全透明
-    grad.setColorAt(1.0, transparent)         # 前方：透明
+    grad.setColorAt(0.0, QColor(indicator))  # 头部：实色
+    grad.setColorAt(0.4, transparent)  # 拖尾末端：完全透明
+    grad.setColorAt(1.0, transparent)  # 前方：透明
 
     painter.setPen(Qt.PenStyle.NoPen)
     painter.setBrush(QBrush(grad))

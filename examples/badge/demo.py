@@ -5,14 +5,14 @@
   One Char & Multi Char / Outline / Invisible（桌面扩展交互切换）。
 """
 
-import sys
 import os
+import sys
 
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), "..", "..")))
 
+from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
-from examples._base import DemoBase
 from hero_side_ui import Avatar, Badge, Body, Button
 from hero_side_ui.themes import (
     VALID_BADGE_PLACEMENTS,
@@ -96,9 +96,7 @@ class BadgeDemo(DemoBase):
         layout.addWidget(
             self._row(
                 *[
-                    self._captioned(
-                        c, Badge(Button("通知", size="sm"), content="9", color=c)
-                    )
+                    self._captioned(c, Badge(Button("通知", size="sm"), content="9", color=c))
                     for c in DEMO_COLORS
                 ]
             )
@@ -221,9 +219,7 @@ class BadgeDemo(DemoBase):
         )
 
         # ---------- Outline ----------
-        layout.addWidget(
-            self._section_title("Outline 描边（默认开启，宿主背景色 2px）")
-        )
+        layout.addWidget(self._section_title("Outline 描边（默认开启，宿主背景色 2px）"))
         layout.addWidget(
             self._row(
                 self._captioned(
@@ -249,9 +245,7 @@ class BadgeDemo(DemoBase):
         )
 
         # ---------- Invisible ----------
-        layout.addWidget(
-            self._section_title("Invisible 隐藏（点击按钮切换，带 300ms 过渡）")
-        )
+        layout.addWidget(self._section_title("Invisible 隐藏（点击按钮切换，带 300ms 过渡）"))
         toggle_host = self._row()
         layout.addWidget(toggle_host)
         inv_badge = Badge(
@@ -261,9 +255,7 @@ class BadgeDemo(DemoBase):
         toggle_host.layout().addWidget(inv_badge)
         toggle_host.layout().addWidget(toggle_btn)
         # clicked 带 checked 参数，槽用 lambda 折叠
-        toggle_btn.clicked.connect(
-            lambda *_: inv_badge.set_invisible(not inv_badge.is_invisible())
-        )
+        toggle_btn.clicked.connect(lambda *_: inv_badge.set_invisible(not inv_badge.is_invisible()))
 
 
 if __name__ == "__main__":

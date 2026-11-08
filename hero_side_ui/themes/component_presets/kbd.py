@@ -53,7 +53,7 @@ VALID_KBD_SIZES = tuple(KBD_SIZE_TABLE.keys())
 
 # 合法 radius —— 从 sm 档的 radius keys 取齐 + 'full'
 # （三档 radius 表的 keys 必须一致）
-VALID_KBD_RADII = tuple(KBD_SIZE_TABLE["sm"]["radius"].keys()) + ("full",)
+VALID_KBD_RADII = (*tuple(KBD_SIZE_TABLE["sm"]["radius"].keys()), "full")
 
 # shadow-small 阴影预设（与 Card sm 同源，对齐 HeroUI shadow-small）
 KBD_SHADOW = {
@@ -63,9 +63,9 @@ KBD_SHADOW = {
 }
 
 __all__ = [
+    "KBD_SHADOW",
     "KBD_SIZES",
     "KBD_SIZE_TABLE",
-    "VALID_KBD_SIZES",
     "VALID_KBD_RADII",
-    "KBD_SHADOW",
+    "VALID_KBD_SIZES",
 ]

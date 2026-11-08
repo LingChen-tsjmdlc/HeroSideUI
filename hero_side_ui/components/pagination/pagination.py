@@ -10,11 +10,7 @@
 公共信号: page_changed(int)
 """
 
-from ...animation import tween_property
-
-from typing import Callable, List, Optional, Union
-
-from PySide6.QtCore import QEasingCurve, QPoint, QRect, QSize, Qt, QTimer, Signal
+from PySide6.QtCore import QEasingCurve, QRect, Qt, QTimer, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -22,17 +18,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import start_cursor_slide, stop_tween
+from ...animation import start_cursor_slide, stop_tween, tween_property
 from ...core import ThemeProvider
 from ...themes import PAGINATION_SIZES
-
 from ._constants import (
-    PaginationItemType,
     VALID_COLORS,
     VALID_RADII,
     VALID_SIZES,
     VALID_THEMES,
     VALID_VARIANTS,
+    PaginationItemType,
 )
 from ._cursor import _CursorWidget
 from ._item import _PaginationItem
@@ -58,7 +53,7 @@ class Pagination(QWidget):
         total: int,
         *,
         initial_page: int = 1,
-        page: Optional[int] = None,
+        page: int | None = None,
         siblings: int = 1,
         boundaries: int = 1,
         dots_jump: int = 5,
@@ -73,7 +68,7 @@ class Pagination(QWidget):
         disable_animation: bool = False,
         disable_cursor_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -87,9 +82,7 @@ class Pagination(QWidget):
 
         # ---- 状态 ----
         self._total = max(1, int(total))
-        self._active_page = max(
-            1, min(int(initial_page if page is None else page), self._total)
-        )
+        self._active_page = max(1, min(int(initial_page if page is None else page), self._total))
         self._siblings = max(0, int(siblings))
         self._boundaries = max(0, int(boundaries))
         self._dots_jump = max(1, int(dots_jump))
@@ -102,26 +95,24 @@ class Pagination(QWidget):
         self._show_controls = bool(show_controls)
         self._loop = bool(loop)
         self._disable_animation = bool(disable_animation)
-        self._disable_cursor_animation = (
-            bool(disable_cursor_animation) or self._disable_animation
-        )
+        self._disable_cursor_animation = bool(disable_cursor_animation) or self._disable_animation
 
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
         # 当前 range 和对应的 item widgets
-        self._items: List[_PaginationItem] = []
+        self._items: list[_PaginationItem] = []
         # active page 对应的 item (用于 cursor 跟踪)
-        self._active_item: Optional[_PaginationItem] = None
+        self._active_item: _PaginationItem | None = None
 
         # cursor 动画状态
         self._cursor_x = 0.0
         self._cursor_anim_runner = None
         self._cursor_fade_runner = None
         self._cursor_first_show = True
-        self._cursor_opacity_effect: Optional[QGraphicsOpacityEffect] = None
+        self._cursor_opacity_effect: QGraphicsOpacityEffect | None = None
         # 待执行的 cursor 移动请求: True=带动画, False=静态, None=无
-        self._cursor_pending_animate: Optional[bool] = None
+        self._cursor_pending_animate: bool | None = None
         # 下一次动画路径上 cursor 文字滚动方向 ("up"/"down");
         # 默认 "up" (页码增大)
         self._next_text_direction: str = "up"
@@ -393,9 +384,7 @@ class Pagination(QWidget):
                     page=v,
                     parent=self._wrapper,
                 )
-                item.clicked.connect(
-                    lambda _checked=False, p=v: self._on_page_clicked(p)
-                )
+                item.clicked.connect(lambda _checked=False, p=v: self._on_page_clicked(p))
                 if v == self._active_page:
                     self._active_item = item
                     item.set_active(True)
@@ -418,9 +407,7 @@ class Pagination(QWidget):
                 jump = self._dots_jump
                 if is_before:
                     item.clicked.connect(
-                        lambda _=False, j=jump: self.set_page(
-                            max(1, self._active_page - j)
-                        )
+                        lambda _=False, j=jump: self.set_page(max(1, self._active_page - j))
                     )
                 else:
                     item.clicked.connect(
@@ -436,9 +423,7 @@ class Pagination(QWidget):
 
         # 标记首/末位置 (compact 圆角剪裁)
         if self._items:
-            self._items[0].set_position_flags(
-                is_first=True, is_last=len(self._items) == 1
-            )
+            self._items[0].set_position_flags(is_first=True, is_last=len(self._items) == 1)
             self._items[-1].set_position_flags(is_first=False, is_last=True)
             for it in self._items[1:-1]:
                 it.set_position_flags(is_first=False, is_last=False)
@@ -464,10 +449,7 @@ class Pagination(QWidget):
             )
         # active item 单独打 show_active_fill (cursor 关闭模式)
         for it in self._items:
-            is_active = (
-                it.item_type() == PaginationItemType.PAGE
-                and it.page() == self._active_page
-            )
+            is_active = it.item_type() == PaginationItemType.PAGE and it.page() == self._active_page
             it.set_active(is_active)
             it.set_show_active_fill(is_active and self._disable_cursor_animation)
 
@@ -533,12 +515,9 @@ class Pagination(QWidget):
     def _reposition_cursor_async(self):
         self._schedule_cursor_move(animate=False)
 
-    def _find_active_item(self) -> Optional[_PaginationItem]:
+    def _find_active_item(self) -> _PaginationItem | None:
         for it in self._items:
-            if (
-                it.item_type() == PaginationItemType.PAGE
-                and it.page() == self._active_page
-            ):
+            if it.item_type() == PaginationItemType.PAGE and it.page() == self._active_page:
                 return it
         return None
 
@@ -626,8 +605,15 @@ class Pagination(QWidget):
         animated = self._cursor_first_show and not self._disable_animation
         self._cursor_first_show = False
         self._cursor.set_opacity(1.0)
-        tween_property(self._cursor_opacity_effect, "_cursor_fade_runner", b"opacity",
-                       1.0, owner=self, duration=self.CURSOR_FADE_IN_MS, animated=animated)
+        tween_property(
+            self._cursor_opacity_effect,
+            "_cursor_fade_runner",
+            b"opacity",
+            1.0,
+            owner=self,
+            duration=self.CURSOR_FADE_IN_MS,
+            animated=animated,
+        )
 
     # ============================================================
     # disabled 状态

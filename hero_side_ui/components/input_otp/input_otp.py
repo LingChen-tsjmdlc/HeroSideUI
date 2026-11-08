@@ -9,7 +9,6 @@
 from __future__ import annotations
 
 import re
-from typing import Optional
 
 from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
@@ -20,7 +19,6 @@ from ...themes import (
     INPUT_OTP_CARET_PERIOD_MS,
     INPUT_OTP_SIZES,
     VALID_INPUT_OTP_RADII,
-    VALID_INPUT_OTP_SIZES,
     VALID_INPUT_OTP_TEXT_ALIGNS,
     VALID_INPUT_OTP_VARIANTS,
 )
@@ -33,8 +31,8 @@ class InputOtp(QWidget):
     """HeroUI 风格验证码输入框：length 个等宽段 + helper 行。"""
 
     value_changed = Signal(str)  # 值变化（对齐官方 onValueChange）
-    completed = Signal(str)      # 值填满 length 位时触发（对齐官方 onComplete）
-    text_changed = Signal(str)   # 值变化（对齐官方 onChange 的可用子集）
+    completed = Signal(str)  # 值填满 length 位时触发（对齐官方 onComplete）
+    text_changed = Signal(str)  # 值变化（对齐官方 onChange 的可用子集）
 
     def __init__(
         self,
@@ -58,7 +56,7 @@ class InputOtp(QWidget):
         text_align: str = "center",
         type: str = "text",
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroInputOtp")
@@ -132,13 +130,15 @@ class InputOtp(QWidget):
 
     def _is_active_segment(self) -> bool:
         """活动段是否呈现 active 视觉：聚焦且非禁用（readonly 不缩放）。"""
-        return (self._row.hasFocus() and not self._is_disabled
-                and not self._is_read_only)
+        return self._row.hasFocus() and not self._is_disabled and not self._is_read_only
 
     def _segment_styles(self) -> dict:
         return build_input_otp_styles(
-            self._variant, self._color, self._theme,
-            self._is_invalid, self._is_read_only,
+            self._variant,
+            self._color,
+            self._theme,
+            self._is_invalid,
+            self._is_read_only,
         )
 
     # ---- 值编辑 ----
@@ -158,7 +158,7 @@ class InputOtp(QWidget):
         if not allowed:
             return False
         pos = min(self._cursor, len(self._value))
-        new_value = self._value[:pos] + allowed + self._value[pos:self._length]
+        new_value = self._value[:pos] + allowed + self._value[pos : self._length]
         self._set_value(new_value)
         self._set_cursor(pos + len(allowed))
         return True
@@ -171,7 +171,7 @@ class InputOtp(QWidget):
         pos = min(self._cursor, len(self._value))
         if pos == 0:
             return
-        new_value = self._value[:pos - 1] + self._value[pos:]
+        new_value = self._value[: pos - 1] + self._value[pos:]
         self._set_value(new_value)
         self._set_cursor(pos - 1)
 
@@ -181,7 +181,7 @@ class InputOtp(QWidget):
         pos = min(self._cursor, len(self._value))
         if pos >= len(self._value):
             return
-        new_value = self._value[:pos] + self._value[pos + 1:]
+        new_value = self._value[:pos] + self._value[pos + 1 :]
         self._set_value(new_value)
 
     def _move_cursor(self, delta: int):
@@ -193,7 +193,7 @@ class InputOtp(QWidget):
         self._row.caret_moved.emit()
 
     def _set_value(self, value: str):
-        value = value[:self._length]
+        value = value[: self._length]
         if value == self._value:
             return
         self._value = value
@@ -237,13 +237,13 @@ class InputOtp(QWidget):
         """外部设值：仅保留合法字符，截断到 length，光标移到末尾。"""
         allowed = "".join(ch for ch in str(value) if self._char_allowed(ch))
         self._value = ""
-        self._set_value(allowed[:self._length])
+        self._set_value(allowed[: self._length])
         self._set_cursor(len(self._value))
 
     def set_length(self, length: int):
         """改变段数：值与光标截断到新长度。"""
         self._length = max(1, int(length))
-        self._value = self._value[:self._length]
+        self._value = self._value[: self._length]
         self._set_cursor(min(self._cursor, self._length))
         self._update_row_size()
         self._sync_helper()
@@ -343,9 +343,7 @@ class InputOtp(QWidget):
         """段文字字体：官方 font-semibold(600)，字重表无 semibold 用 medium(500)。"""
         from ...core.text_style import make_text_qfont
 
-        return make_text_qfont(
-            size=self._size_token()["font"], weight="medium", style_name=False
-        )
+        return make_text_qfont(size=self._size_token()["font"], weight="medium", style_name=False)
 
     def showEvent(self, event):
         super().showEvent(event)

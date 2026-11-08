@@ -13,17 +13,17 @@ AvatarGroup 堆叠重叠量 -ms-2 ≈ 8px，hover 时后一个位移 12px（-tra
 AVATAR_SIZES = {
     "sm": {
         "box": 32,
-        "text_size": "xs",   # 12px ≈ text-tiny
+        "text_size": "xs",  # 12px ≈ text-tiny
         "icon_ratio": 0.8,
     },
     "md": {
         "box": 40,
-        "text_size": "xs",   # 12px ≈ text-tiny
+        "text_size": "xs",  # 12px ≈ text-tiny
         "icon_ratio": 0.8,
     },
     "lg": {
         "box": 56,
-        "text_size": "sm",   # 14px ≈ text-small
+        "text_size": "sm",  # 14px ≈ text-small
         "icon_ratio": 0.8,
     },
 }
@@ -58,14 +58,14 @@ VALID_AVATAR_COLORS = (
 VALID_AVATAR_RADII = ("none", "sm", "md", "lg", "full")
 
 __all__ = [
-    "AVATAR_SIZES",
-    "AVATAR_RING_WIDTH",
-    "AVATAR_RING_OFFSET",
-    "AVATAR_GROUP_OVERLAP",
-    "AVATAR_GROUP_HOVER_SHIFT",
-    "AVATAR_GROUP_GRID_GAP",
     "AVATAR_GROUP_GRID_COLS",
-    "VALID_AVATAR_SIZES",
+    "AVATAR_GROUP_GRID_GAP",
+    "AVATAR_GROUP_HOVER_SHIFT",
+    "AVATAR_GROUP_OVERLAP",
+    "AVATAR_RING_OFFSET",
+    "AVATAR_RING_WIDTH",
+    "AVATAR_SIZES",
     "VALID_AVATAR_COLORS",
     "VALID_AVATAR_RADII",
+    "VALID_AVATAR_SIZES",
 ]

@@ -39,7 +39,6 @@ class LabelFloatAnimation(QObject):
         self._anim.setEasingCurve(QEasingCurve.Type.OutCubic)
         self._anim.finished.connect(lambda: self.finished.emit(self._floated))
 
-
     def _get_progress(self) -> float:
         return self._progress
 

@@ -2,15 +2,16 @@
 Input 组件示例 — 4 变体 × 6 颜色 × 3 尺寸 × 4 label 位置 × 各种状态
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QWidget
-
-from hero_side_ui import Input, Button
 from _base import DemoBase
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout, QWidget
+
+from hero_side_ui import Button, Input
 
 COLORS = ["default", "primary", "secondary", "success", "warning", "danger"]
 VARIANTS = ["flat", "faded", "bordered", "underlined"]
@@ -57,9 +58,7 @@ class InputDemo(DemoBase):
                     is_clearable=True,
                 )
             )
-        self.add_full_width(
-            layout, "3 sizes (variant=flat, color=primary)", size_row, labels_bag
-        )
+        self.add_full_width(layout, "3 sizes (variant=flat, color=primary)", size_row, labels_bag)
 
         # 4 label placements
         for lp in ["inside", "outside", "outside-top", "outside-left"]:
@@ -95,18 +94,14 @@ class InputDemo(DemoBase):
         self.add_full_width(
             layout,
             "is_readonly",
-            Input(
-                label="Readonly", value="这是只读内容", variant="flat", is_readonly=True
-            ),
+            Input(label="Readonly", value="这是只读内容", variant="flat", is_readonly=True),
             labels_bag,
         )
 
         self.add_full_width(
             layout,
             "is_required",
-            Input(
-                label="Username", variant="bordered", color="primary", is_required=True
-            ),
+            Input(label="Username", variant="bordered", color="primary", is_required=True),
             labels_bag,
         )
 
@@ -120,9 +115,7 @@ class InputDemo(DemoBase):
             )
             for v in VARIANTS
         ]
-        self.add_full_width_group(
-            layout, "is_invalid + error_message", invalid_widgets, labels_bag
-        )
+        self.add_full_width_group(layout, "is_invalid + error_message", invalid_widgets, labels_bag)
 
         # start/end content
         self.add_full_width(
@@ -153,18 +146,12 @@ class InputDemo(DemoBase):
             em = pwd.line_edit.EchoMode
             pwd.line_edit.setEchoMode(em.Normal if st["visible"] else em.Password)
             pwd.set_end_content(
-                (
-                    "heroicons--eye-slash-solid"
-                    if st["visible"]
-                    else "heroicons--eye-solid"
-                ),
+                ("heroicons--eye-slash-solid" if st["visible"] else "heroicons--eye-solid"),
                 on_click=toggle,
             )
 
         pwd.set_on_end_content_click(toggle)
-        self.add_full_width(
-            layout, "字符串图标 + 点击回调 (密码框眼睛)", pwd, labels_bag
-        )
+        self.add_full_width(layout, "字符串图标 + 点击回调 (密码框眼睛)", pwd, labels_bag)
 
         # 直接塞 Button
         go_btn = Button("GO", size="sm", variant="flat", color="primary")
@@ -177,9 +164,7 @@ class InputDemo(DemoBase):
         )
 
         # 事件
-        ev = Input(
-            label="Type here", variant="flat", color="primary", is_clearable=True
-        )
+        ev = Input(label="Type here", variant="flat", color="primary", is_clearable=True)
         ev.text_changed.connect(lambda t: print(f"[changed] {t!r}"))
         ev.returned.connect(lambda: print("[enter]"))
         ev.cleared.connect(lambda: print("[cleared]"))

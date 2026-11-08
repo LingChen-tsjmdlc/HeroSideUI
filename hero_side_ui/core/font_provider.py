@@ -14,7 +14,6 @@ import os
 import warnings
 import weakref
 from pathlib import Path
-from typing import Dict, List, Optional
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication
@@ -28,7 +27,7 @@ _VF_FONT_FILE = "SourceHanSansCN-VF.ttf"
 _VF_FAMILY_NAME = "Source Han Sans CN VF"
 
 # VF 6 档物理 instance：styleName -> Qt weight
-_NATIVE_INSTANCES: Dict[str, int] = {
+_NATIVE_INSTANCES: dict[str, int] = {
     "ExtraLight": 200,
     "Light": 300,
     "Regular": 400,
@@ -48,8 +47,7 @@ _WEIGHT_BUCKETS = (
 )
 
 _FALLBACK_FAMILY_CSS = (
-    '"Inter", "SF Pro Display", -apple-system, '
-    '"Segoe UI", "Helvetica Neue", Arial, sans-serif'
+    '"Inter", "SF Pro Display", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif'
 )
 
 
@@ -64,7 +62,7 @@ class FontProvider(QObject):
     family_changed = Signal(str)
     base_size_changed = Signal(int)
 
-    _instance: Optional["FontProvider"] = None
+    _instance: FontProvider | None = None
 
     def __init__(self) -> None:
         super().__init__()
@@ -73,14 +71,14 @@ class FontProvider(QObject):
         self._font_id: int = -1
         self._family: str = _VF_FAMILY_NAME
         self._base_size_px: int = 16
-        self._widgets: "weakref.WeakSet" = weakref.WeakSet()
+        self._widgets: weakref.WeakSet = weakref.WeakSet()
 
     # ------------------------------------------------------------
     # 单例
     # ------------------------------------------------------------
 
     @classmethod
-    def instance(cls) -> "FontProvider":
+    def instance(cls) -> FontProvider:
         if cls._instance is None:
             cls._instance = FontProvider()
         cls._instance.ensure_loaded()
@@ -103,7 +101,7 @@ class FontProvider(QObject):
         return self._base_size_px
 
     @property
-    def native_instances(self) -> Dict[str, int]:
+    def native_instances(self) -> dict[str, int]:
         return dict(_NATIVE_INSTANCES)
 
     # ------------------------------------------------------------
@@ -145,7 +143,7 @@ class FontProvider(QObject):
         families = QFontDatabase.applicationFontFamilies(font_id)
 
         # 选主 family：精确匹配 _VF_FAMILY_NAME；否则取第一个非幽灵 ASCII family
-        main_fam: Optional[str] = None
+        main_fam: str | None = None
         for fam in families:
             if fam == _VF_FAMILY_NAME:
                 main_fam = fam
@@ -189,7 +187,7 @@ class FontProvider(QObject):
     # 字重解析
     # ------------------------------------------------------------
 
-    def style_for_weight(self, weight: int) -> Optional[str]:
+    def style_for_weight(self, weight: int) -> str | None:
         # 非 VF / VF 加载失败时返回 None，调用方就别走 setStyleName 了。
         if not self._builtin_ok or self._family != _VF_FAMILY_NAME:
             return None
@@ -274,7 +272,7 @@ class FontProvider(QObject):
     # ------------------------------------------------------------
 
     def dump_diagnostics(self) -> str:
-        lines: List[str] = []
+        lines: list[str] = []
         lines.append("=" * 60)
         lines.append("[FontProvider] Diagnostics")
         lines.append("=" * 60)
@@ -302,7 +300,7 @@ class FontProvider(QObject):
 
 def make_qfont(
     *,
-    size_px: Optional[int] = None,
+    size_px: int | None = None,
     weight: int = int(QFont.Weight.Normal),
     style_name: bool = True,
 ) -> QFont:

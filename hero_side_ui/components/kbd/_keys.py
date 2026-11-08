@@ -141,9 +141,9 @@ KBD_KEY_NAMES = tuple(KBD_KEYS_LABEL_MAP.keys())
 VALID_PLATFORMS = ("auto", "mac", "win", "linux")
 
 __all__ = [
-    "KBD_KEY_NAMES",
-    "KBD_KEYS_LABEL_MAP",
     "KBD_KEYS_GLYPH_MAP",
+    "KBD_KEYS_LABEL_MAP",
+    "KBD_KEY_NAMES",
     "VALID_PLATFORMS",
     "resolve_icon",
 ]

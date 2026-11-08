@@ -5,7 +5,6 @@
 """
 
 import shiboken6
-
 from PySide6.QtCore import QEvent, Qt
 from PySide6.QtWidgets import QAbstractButton, QApplication
 

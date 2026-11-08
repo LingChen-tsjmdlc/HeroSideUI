@@ -2,4 +2,4 @@
 
 from .breadcrumbs import BreadcrumbItem, Breadcrumbs
 
-__all__ = ["Breadcrumbs", "BreadcrumbItem"]
+__all__ = ["BreadcrumbItem", "Breadcrumbs"]

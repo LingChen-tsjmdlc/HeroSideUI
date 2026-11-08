@@ -12,15 +12,16 @@ https://v2.heroui.com/docs/components/scroll-shadow
 - 禁用 (is_enabled=False)
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QGridLayout, QWidget
-
-from hero_side_ui import ScrollShadow, Card, CardBody, Body, Title, Button, Input
 from _base import DemoBase
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QGridLayout, QHBoxLayout, QVBoxLayout, QWidget
+
+from hero_side_ui import Body, Button, Card, CardBody, Input, ScrollShadow, Title
 
 # ------------------------------------------------------------
 # 工具: 生成一段很长的文本内容
@@ -163,22 +164,27 @@ class ScrollShadowDemo(DemoBase):
         # 5 块,每块一个 variant × 6 colors → 30 行 × 6 列 = 180 个按钮
         # 行数远超容器可视高度,必然触发滚动
         row = 0
-        for repeat in range(5):
+        for _repeat in range(5):
             for variant in variants:
                 for c, color in enumerate(colors):
                     btn_grid.addWidget(
                         Button(
                             f"{variant[:3]}/{color[:3]}",
-                            color=color, variant=variant, size="sm",
+                            color=color,
+                            variant=variant,
+                            size="sm",
                         ),
-                        row, c,
+                        row,
+                        c,
                     )
                 row += 1
         sc_btns.add_widget(btn_grid_w)
         sc_btns.add_stretch()
         self.add_full_width(
-            layout, "大量 Button 装配 (180 个,触发滚动)",
-            sc_btns, labels_bag,
+            layout,
+            "大量 Button 装配 (180 个,触发滚动)",
+            sc_btns,
+            labels_bag,
         )
 
         # --- 8. 插槽装配很多 Input (触发滚动+阴影) ---
@@ -204,13 +210,13 @@ class ScrollShadowDemo(DemoBase):
             ("工作经验", "X 年", "faded", "primary"),
         ]
         for label, ph, variant, color in input_specs:
-            sc_inputs.add_widget(
-                Input(label=label, placeholder=ph, variant=variant, color=color)
-            )
+            sc_inputs.add_widget(Input(label=label, placeholder=ph, variant=variant, color=color))
         sc_inputs.add_stretch()
         self.add_full_width(
-            layout, "大量 Input 装配 (15 个,触发滚动)",
-            sc_inputs, labels_bag,
+            layout,
+            "大量 Input 装配 (15 个,触发滚动)",
+            sc_inputs,
+            labels_bag,
         )
 
         # --- 9. is_enabled=False ---

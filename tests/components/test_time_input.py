@@ -6,7 +6,6 @@ test_date_input_widget.py。
 """
 
 import pytest
-
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
@@ -56,35 +55,27 @@ def _show_active(qtbot, ti: TimeInput) -> None:
 
 
 def test_time_only_segments_have_no_date_fields():
-    specs = build_segments(
-        granularity="minute", hour_cycle=24, include_date=False
-    )
+    specs = build_segments(granularity="minute", hour_cycle=24, include_date=False)
     types = [s.type for s in specs if s.is_editable]
     assert types == ["hour", "minute"]
     assert all(s.type not in ("year", "month", "day") for s in specs)
 
 
 def test_second_granularity_segments():
-    specs = build_segments(
-        granularity="second", hour_cycle=24, include_date=False
-    )
+    specs = build_segments(granularity="second", hour_cycle=24, include_date=False)
     types = [s.type for s in specs if s.is_editable]
     assert types == ["hour", "minute", "second"]
 
 
 def test_twelve_hour_cycle_has_day_period():
-    specs = build_segments(
-        granularity="minute", hour_cycle=12, include_date=False
-    )
+    specs = build_segments(granularity="minute", hour_cycle=12, include_date=False)
     types = [s.type for s in specs if s.is_editable]
     assert "dayPeriod" in types
     assert types.index("hour") < types.index("dayPeriod")
 
 
 def test_time_only_state_is_complete_without_date():
-    state = DateFieldState(
-        value=_T0930, granularity="minute", hour_cycle=24, include_date=False
-    )
+    state = DateFieldState(value=_T0930, granularity="minute", hour_cycle=24, include_date=False)
     assert state.is_complete()
     assert state.value() == _T0930
 
@@ -258,23 +249,17 @@ def test_typing_full_time_produces_value(qtbot):
 
 
 def test_arrow_up_wraps_minute(qtbot):
-    ti = _make(
-        qtbot, hour_cycle=24, value=parse_datetime("2024-04-04T09:59:00")
-    )
+    ti = _make(qtbot, hour_cycle=24, value=parse_datetime("2024-04-04T09:59:00"))
     _show_active(qtbot, ti)
 
-    minute = next(
-        s for s in ti._editable_segments() if s.seg_type == "minute"
-    )
+    minute = next(s for s in ti._editable_segments() if s.seg_type == "minute")
     minute.setFocus()
     QTest.keyClick(minute, Qt.Key.Key_Up)
     assert minute.text() == "00"
 
 
 def test_arrow_down_wraps_hour_24h(qtbot):
-    ti = _make(
-        qtbot, hour_cycle=24, value=parse_datetime("2024-04-04T00:30:00")
-    )
+    ti = _make(qtbot, hour_cycle=24, value=parse_datetime("2024-04-04T00:30:00"))
     _show_active(qtbot, ti)
 
     hour = next(s for s in ti._editable_segments() if s.seg_type == "hour")
@@ -287,9 +272,7 @@ def test_a_p_keys_toggle_day_period(qtbot):
     ti = _make(qtbot, hour_cycle=12, value=_T0930)
     _show_active(qtbot, ti)
 
-    period = next(
-        s for s in ti._editable_segments() if s.seg_type == "dayPeriod"
-    )
+    period = next(s for s in ti._editable_segments() if s.seg_type == "dayPeriod")
     period.setFocus()
     QTest.keyClick(period, Qt.Key.Key_P)
     assert ti.value().hour == 21

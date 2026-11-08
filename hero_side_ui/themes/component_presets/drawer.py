@@ -58,10 +58,10 @@ VALID_DRAWER_PLACEMENTS = ("left", "right", "top", "bottom")
 VALID_DRAWER_BACKDROPS = ("transparent", "opaque", "blur")
 
 __all__ = [
-    "DRAWER_SPEC",
     "DRAWER_SIZES",
-    "VALID_DRAWER_SIZES",
-    "VALID_DRAWER_RADII",
-    "VALID_DRAWER_PLACEMENTS",
+    "DRAWER_SPEC",
     "VALID_DRAWER_BACKDROPS",
+    "VALID_DRAWER_PLACEMENTS",
+    "VALID_DRAWER_RADII",
+    "VALID_DRAWER_SIZES",
 ]

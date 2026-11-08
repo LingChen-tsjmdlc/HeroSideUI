@@ -16,17 +16,16 @@ from __future__ import annotations
 import re
 
 import pytest
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QFont, QPalette
 
 from hero_side_ui import (
-    ThemeProvider,
-    Text,
-    Title,
-    Subtitle,
-    Caption,
     Body,
+    Caption,
+    Subtitle,
+    Text,
+    ThemeProvider,
+    Title,
 )
 
 

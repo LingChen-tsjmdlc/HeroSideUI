@@ -2,24 +2,25 @@
 Listbox 组件示例 — 6 variants × 6 colors × 3 sizes × 状态 × 分组 × 选择模式
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QFrame, QWidget
+from _base import DemoBase
 from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QFrame, QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import (
+    Body,
+    Caption,
+    Card,
+    CardBody,
     Listbox,
     ListboxItem,
     ListboxSection,
-    Card,
-    CardBody,
-    Body,
-    Caption,
     Title,
 )
-from _base import DemoBase
 
 
 def _frame(child: QWidget, *, width: int = 260) -> Card:
@@ -41,9 +42,7 @@ class ListboxDemo(DemoBase):
         # 1) 基础：默认 (variant=solid, color=default, mode=none)
         # ============================================================
         lb = Listbox()
-        lb.add_item(
-            "New file", key="new", description="Create a new file", shortcut="Ctrl+N"
-        )
+        lb.add_item("New file", key="new", description="Create a new file", shortcut="Ctrl+N")
         lb.add_item(
             "Copy link",
             key="copy",
@@ -64,9 +63,7 @@ class ListboxDemo(DemoBase):
             is_disabled=False,
         )
         lb.action.connect(lambda key: print(f"[default] action: {key}"))
-        self.add_section(
-            layout, "默认 (solid / default / no selection)", [_frame(lb)], labels_bag
-        )
+        self.add_section(layout, "默认 (solid / default / no selection)", [_frame(lb)], labels_bag)
 
         # ============================================================
         # 2) 6 种颜色 × variant=flat（最常用组合）
@@ -113,17 +110,13 @@ class ListboxDemo(DemoBase):
         # ============================================================
         sizes = []
         for s in ("sm", "md", "lg"):
-            lb = Listbox(
-                variant="flat", color="primary", size=s, selection_mode="single"
-            )
+            lb = Listbox(variant="flat", color="primary", size=s, selection_mode="single")
             lb.add_item("Tiny", key="t")
             lb.add_item("Medium", key="m")
             lb.add_item("Large", key="l")
             lb.set_selected_keys({"m"})
             sizes.append(_frame(lb, width=220))
-        self.add_section(
-            layout, "3 sizes (sm / md / lg)", sizes, labels_bag, spacing=16
-        )
+        self.add_section(layout, "3 sizes (sm / md / lg)", sizes, labels_bag, spacing=16)
 
         # ============================================================
         # 5) 多选 + 自定义 emptyContent
@@ -138,9 +131,7 @@ class ListboxDemo(DemoBase):
         empty_default = Listbox(
             variant="flat", color="default"
         )  # 默认 emptyContent: icon + 中英双语
-        empty_custom = Listbox(
-            variant="flat", color="default", empty_content="🍂 No items found."
-        )
+        empty_custom = Listbox(variant="flat", color="default", empty_content="🍂 No items found.")
 
         self.add_section(
             layout,
@@ -207,15 +198,9 @@ class ListboxDemo(DemoBase):
             color="primary",
             selection_mode="single",
         )
-        kb.add_item(
-            "New file", key="new", description="Create a new file", shortcut="Ctrl+N"
-        )
-        kb.add_item(
-            "Copy link", key="copy", description="Copy item link", shortcut="Ctrl+L"
-        )
-        kb.add_item(
-            "Edit file", key="edit", description="Allow editing", shortcut="Ctrl+E"
-        )
+        kb.add_item("New file", key="new", description="Create a new file", shortcut="Ctrl+N")
+        kb.add_item("Copy link", key="copy", description="Copy item link", shortcut="Ctrl+L")
+        kb.add_item("Edit file", key="edit", description="Allow editing", shortcut="Ctrl+E")
         kb.add_item(
             "Delete file",
             key="del",

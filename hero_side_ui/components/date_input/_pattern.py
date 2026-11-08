@@ -8,7 +8,6 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import List, Optional
 
 import icu
 
@@ -46,9 +45,7 @@ _TIME_SKELETON = {
 }
 
 # 可编辑的段类型（timeZone / 字面量不可编辑）
-EDITABLE_TYPES = frozenset(
-    {"era", "year", "month", "day", "hour", "minute", "second", "dayPeriod"}
-)
+EDITABLE_TYPES = frozenset({"era", "year", "month", "day", "hour", "minute", "second", "dayPeriod"})
 
 VALID_GRANULARITIES = ("day", "hour", "minute", "second")
 
@@ -83,7 +80,7 @@ def build_pattern(
     locale: str = "en_US",
     identifier: str = "gregorian",
     granularity: str = "day",
-    hour_cycle: Optional[int] = None,
+    hour_cycle: int | None = None,
     include_date: bool = True,
 ) -> str:
     """按 locale/历法/粒度/小时制求 ICU best pattern。
@@ -105,13 +102,13 @@ def build_pattern(
     return gen.getBestPattern(("yMd" if include_date else "") + time_part)
 
 
-def parse_pattern(pattern: str) -> List[SegmentSpec]:
+def parse_pattern(pattern: str) -> list[SegmentSpec]:
     """把 ICU pattern 字符串扫描成段/字面量序列。
 
     ICU pattern 中单引号包裹的是字面量（如 de_DE 的 'um'），需原样保留。
     """
-    specs: List[SegmentSpec] = []
-    buffer: List[str] = []
+    specs: list[SegmentSpec] = []
+    buffer: list[str] = []
 
     def flush_literal():
         if buffer:
@@ -164,11 +161,11 @@ def build_segments(
     locale: str = "en_US",
     identifier: str = "gregorian",
     granularity: str = "day",
-    hour_cycle: Optional[int] = None,
+    hour_cycle: int | None = None,
     hide_time_zone: bool = False,
     has_timezone: bool = False,
     include_date: bool = True,
-) -> List[SegmentSpec]:
+) -> list[SegmentSpec]:
     """求最终段列表：解析 pattern 后按需补/删时区段。
 
     ICU 的 yMd 系 skeleton 不含时区字段，带时区的值需要额外补一个 timeZone
@@ -185,16 +182,16 @@ def build_segments(
     )
 
     if has_timezone and not hide_time_zone and granularity != "day":
-        specs = specs + [SegmentSpec("literal", text=" "), SegmentSpec("timeZone")]
+        specs = [*specs, SegmentSpec("literal", text=" "), SegmentSpec("timeZone")]
     else:
         specs = [s for s in specs if s.type != "timeZone"]
 
     return _strip_dangling_literals(specs)
 
 
-def _strip_dangling_literals(specs: List[SegmentSpec]) -> List[SegmentSpec]:
+def _strip_dangling_literals(specs: list[SegmentSpec]) -> list[SegmentSpec]:
     """去掉首尾多余的字面量与因删段而产生的连续分隔符。"""
-    out: List[SegmentSpec] = []
+    out: list[SegmentSpec] = []
     for spec in specs:
         if spec.is_literal and out and out[-1].is_literal:
             out[-1] = SegmentSpec("literal", text=out[-1].text + spec.text)
@@ -209,8 +206,8 @@ def _strip_dangling_literals(specs: List[SegmentSpec]) -> List[SegmentSpec]:
 
 __all__ = [
     "EDITABLE_TYPES",
-    "VALID_GRANULARITIES",
     "TIME_GRANULARITIES",
+    "VALID_GRANULARITIES",
     "SegmentSpec",
     "build_pattern",
     "build_segments",

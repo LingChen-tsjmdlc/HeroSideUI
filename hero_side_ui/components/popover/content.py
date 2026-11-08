@@ -1,13 +1,9 @@
 """PopoverContent — Popover 浮层的内容容器（用户传入的内容会挂在这里）。"""
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ._constants import DEFAULT_PADDING
-
-
 
 
 # ============================================================
@@ -24,7 +20,7 @@ class PopoverContent(QWidget):
         popover.set_content(pc)
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroPopoverContent")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)

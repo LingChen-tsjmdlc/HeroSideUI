@@ -2,14 +2,15 @@
 Accordion 组件示例 — 四种变体（light/shadow/bordered/splitted）+ 不同圆角
 """
 
-import os, sys
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QVBoxLayout
 
 from hero_side_ui import Accordion, AccordionItem
-from _base import DemoBase
-
 
 FAQ_DATA = [
     {
@@ -36,11 +37,13 @@ FAQ_DATA = [
 def create_accordion(variant: str, radius: str = "md") -> Accordion:
     acc = Accordion(variant=variant, radius=radius)
     for data in FAQ_DATA:
-        acc.add_item(AccordionItem(
-            title=data["title"],
-            subtitle=data.get("subtitle", ""),
-            content_text=data["content"],
-        ))
+        acc.add_item(
+            AccordionItem(
+                title=data["title"],
+                subtitle=data.get("subtitle", ""),
+                content_text=data["content"],
+            )
+        )
     return acc
 
 
@@ -49,11 +52,21 @@ class AccordionDemo(DemoBase):
 
     def build_content(self, layout: QVBoxLayout, labels_bag: list):
         self.add_full_width(layout, "Light", create_accordion("light"), labels_bag)
-        self.add_full_width(layout, "Shadow (radius=md)", create_accordion("shadow", "md"), labels_bag)
-        self.add_full_width(layout, "Bordered (radius=lg)", create_accordion("bordered", "lg"), labels_bag)
-        self.add_full_width(layout, "Splitted (radius=sm)", create_accordion("splitted", "sm"), labels_bag)
-        self.add_full_width(layout, "Shadow radius=none", create_accordion("shadow", "none"), labels_bag)
-        self.add_full_width(layout, "Shadow radius=lg", create_accordion("shadow", "lg"), labels_bag)
+        self.add_full_width(
+            layout, "Shadow (radius=md)", create_accordion("shadow", "md"), labels_bag
+        )
+        self.add_full_width(
+            layout, "Bordered (radius=lg)", create_accordion("bordered", "lg"), labels_bag
+        )
+        self.add_full_width(
+            layout, "Splitted (radius=sm)", create_accordion("splitted", "sm"), labels_bag
+        )
+        self.add_full_width(
+            layout, "Shadow radius=none", create_accordion("shadow", "none"), labels_bag
+        )
+        self.add_full_width(
+            layout, "Shadow radius=lg", create_accordion("shadow", "lg"), labels_bag
+        )
 
 
 if __name__ == "__main__":

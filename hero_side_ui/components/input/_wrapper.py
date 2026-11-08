@@ -1,18 +1,10 @@
 """_InputWrapper — Input/Textarea 的背景画布（私有，自绘 bg + border + radius）。"""
 
-from ...animation import tween_property
-
-from PySide6.QtWidgets import QWidget
-from typing import Optional
-
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen
-from PySide6.QtWidgets import QFrame
+from PySide6.QtGui import QColor, QPainter, QPen
+from PySide6.QtWidgets import QFrame, QWidget
 
-from ...themes import HEROUI_COLORS, RADIUS
-from ...utils import hex_to_rgba
-
-
+from ...animation import tween_property
 
 
 # ============================================================
@@ -26,7 +18,7 @@ class _InputWrapper(QFrame):
     `transition-background !duration-150` 与 `transition-colors`）。
     """
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroInputWrapper")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
@@ -89,14 +81,19 @@ class _InputWrapper(QFrame):
         tween_property(self, "_bg_anim", b"bg_color", QColor(c), duration=150, animated=animate)
 
     def set_border_color(self, c: QColor, animate: bool = True):
-        tween_property(self, "_border_anim", b"border_color", QColor(c), duration=150, animated=animate)
+        tween_property(
+            self, "_border_anim", b"border_color", QColor(c), duration=150, animated=animate
+        )
 
     def set_bottom_line_color(self, c: QColor, animate: bool = True):
-        tween_property(self, "_bottom_anim", b"bottom_line_color", QColor(c), duration=150, animated=animate)
+        tween_property(
+            self, "_bottom_anim", b"bottom_line_color", QColor(c), duration=150, animated=animate
+        )
 
     # ---- 手绘背景 + 边框 ----
     def paintEvent(self, event):
         from PySide6.QtCore import QRectF
+
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
 
@@ -120,7 +117,9 @@ class _InputWrapper(QFrame):
             # 画边框（stroke）
             if self._border_color.alpha() > 0:
                 painter.setPen(QPen(self._border_color, bw))
-                painter.setBrush(self._bg_color if self._bg_color.alpha() > 0 else Qt.BrushStyle.NoBrush)
+                painter.setBrush(
+                    self._bg_color if self._bg_color.alpha() > 0 else Qt.BrushStyle.NoBrush
+                )
                 rect = QRectF(inner_offset, inner_offset, w - bw, h - bw)
                 painter.drawRoundedRect(rect, max(0, r - inner_offset), max(0, r - inner_offset))
             else:

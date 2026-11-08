@@ -2,24 +2,17 @@
 
 from __future__ import annotations
 
-from typing import Optional, Union
-
-from PySide6.QtCore import QEvent, QRect, QSize, Qt, Signal
+from PySide6.QtCore import QRect, QSize, Qt, Signal
 from PySide6.QtGui import (
     QColor,
-    QFont,
     QFontMetrics,
     QPainter,
     QPainterPath,
-    QPalette,
-    QPixmap,
 )
 from PySide6.QtWidgets import (
     QAbstractButton,
-    QGraphicsOpacityEffect,
     QHBoxLayout,
     QLabel,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -29,10 +22,9 @@ from ...animation import (
     paint_animated_check,
     tween_value,
 )
-from ...core import StatePalette, ThemeProvider
-from ...themes import HEROUI_COLORS, LISTBOX_SIZES, RADIUS
+from ...core import StatePalette
+from ...themes import LISTBOX_SIZES, RADIUS
 from ...utils import aligned_color_pair, load_svg_icon, safe_delete
-
 from ..text import Text
 
 # ============================================================
@@ -91,10 +83,10 @@ class ListboxItem(QAbstractButton):
         self,
         title: str = "",
         *,
-        key: Optional[str] = None,
+        key: str | None = None,
         description: str = "",
-        start_content: Optional[Union[str, QWidget]] = None,
-        end_content: Optional[Union[str, QWidget]] = None,
+        start_content: str | QWidget | None = None,
+        end_content: str | QWidget | None = None,
         shortcut: str = "",
         is_disabled: bool = False,
         show_divider: bool = False,
@@ -133,9 +125,7 @@ class ListboxItem(QAbstractButton):
         self._radius = "sm"
         self._theme = "light"
         self._disable_animation = False
-        self._hide_selected_icon = (
-            False  # 对齐 HeroUI 源码 hideSelectedIcon=false：默认显示对勾
-        )
+        self._hide_selected_icon = False  # 对齐 HeroUI 源码 hideSelectedIcon=false：默认显示对勾
         self._highlight_on_focus = False
         # selection 行为
         self._selectable = True
@@ -172,9 +162,7 @@ class ListboxItem(QAbstractButton):
 
         # 内部布局：HBox = [start_content] [wrapper(title/description)] [shortcut] [end_content / selectedIcon]
         self._h = QHBoxLayout(self)
-        self._h.setContentsMargins(
-            0, 0, 0, 0
-        )  # padding 由 _content_margins 决定（见 _apply_size）
+        self._h.setContentsMargins(0, 0, 0, 0)  # padding 由 _content_margins 决定（见 _apply_size）
         self._h.setSpacing(0)
 
         # start_content 槽（QWidget 或 SVG 名/路径，str 时内部包成 QLabel + pixmap）
@@ -182,8 +170,8 @@ class ListboxItem(QAbstractButton):
         self._start_label.setAttribute(Qt.WA_TranslucentBackground, True)
         self._start_label.hide()
         self._h.addWidget(self._start_label, 0, Qt.AlignVCenter)
-        self._start_widget: Optional[QWidget] = None
-        self._start_src: Optional[str] = None
+        self._start_widget: QWidget | None = None
+        self._start_src: str | None = None
 
         # wrapper: title + description
         self._wrap = QWidget(self)
@@ -213,8 +201,8 @@ class ListboxItem(QAbstractButton):
         self._end_label.setAttribute(Qt.WA_TranslucentBackground, True)
         self._end_label.hide()
         self._h.addWidget(self._end_label, 0, Qt.AlignVCenter)
-        self._end_widget: Optional[QWidget] = None
-        self._end_src: Optional[str] = None
+        self._end_widget: QWidget | None = None
+        self._end_src: str | None = None
 
         # selectedIcon 占位槽 —— 用一个空 QWidget 占住对勾画的位置，
         # 让 wrapper / shortcut / end_content 的 layout 自动避开（不会重叠）。
@@ -314,12 +302,9 @@ class ListboxItem(QAbstractButton):
         # 高度需重算
         self.updateGeometry()
 
-    def set_start_content(self, content: Optional[Union[str, QWidget]]):
+    def set_start_content(self, content: str | QWidget | None):
         # 清旧
-        if (
-            self._start_widget is not None
-            and self._start_widget is not self._start_label
-        ):
+        if self._start_widget is not None and self._start_widget is not self._start_label:
             self._h.removeWidget(self._start_widget)
             safe_delete(self._start_widget)
             self._start_widget = None
@@ -337,7 +322,7 @@ class ListboxItem(QAbstractButton):
             self._h.insertWidget(0, content, 0, Qt.AlignVCenter)
         self._update_layout_spacing()
 
-    def set_end_content(self, content: Optional[Union[str, QWidget]]):
+    def set_end_content(self, content: str | QWidget | None):
         if self._end_widget is not None and self._end_widget is not self._end_label:
             self._h.removeWidget(self._end_widget)
             safe_delete(self._end_widget)
@@ -441,9 +426,7 @@ class ListboxItem(QAbstractButton):
         # 但这里为了保持 1px 边框观感不变，后续用 setProperty 传递 ——
         # 最简单的做法是在 set_color 之后追加 styleSheet。）
         self._shortcut_label.set_size(cfg["shortcut_font_size"])
-        self._shortcut_label.set_color(
-            StatePalette.text_description(self._theme).name()
-        )
+        self._shortcut_label.set_color(StatePalette.text_description(self._theme).name())
         # set_color 以后 Text 的 styleSheet 存下了 color/background/selection-*，
         # 另外追加一个外部 QSS（同个 QLabel 只能 setStyleSheet 一次，
         # 所以干脆在这里完整重写 —— Text 下一次 _apply_color 会覆写，
@@ -520,11 +503,7 @@ class ListboxItem(QAbstractButton):
             return
         cfg = self._size_cfg()
         size = cfg["title_font_size"] + 2
-        c = (
-            self._cur_text
-            if self._cur_text.isValid()
-            else StatePalette.text_default(self._theme)
-        )
+        c = self._cur_text if self._cur_text.isValid() else StatePalette.text_default(self._theme)
         pix = load_svg_icon(self._start_src, size=size, color=c)
         self._start_label.setPixmap(pix)
         self._start_label.setFixedSize(size, size)
@@ -534,11 +513,7 @@ class ListboxItem(QAbstractButton):
             return
         cfg = self._size_cfg()
         size = cfg["title_font_size"] + 2
-        c = (
-            self._cur_text
-            if self._cur_text.isValid()
-            else StatePalette.text_default(self._theme)
-        )
+        c = self._cur_text if self._cur_text.isValid() else StatePalette.text_default(self._theme)
         pix = load_svg_icon(self._end_src, size=size, color=c)
         self._end_label.setPixmap(pix)
         self._end_label.setFixedSize(size, size)
@@ -657,15 +632,9 @@ class ListboxItem(QAbstractButton):
         active = self._is_active()
         # 目标色
         if active:
-            target_bg = StatePalette.bg(
-                self._variant, self._color, self._theme, "hover"
-            )
-            target_border = StatePalette.border(
-                self._variant, self._color, self._theme, "hover"
-            )
-            target_text = StatePalette.text(
-                self._variant, self._color, self._theme, "hover"
-            )
+            target_bg = StatePalette.bg(self._variant, self._color, self._theme, "hover")
+            target_border = StatePalette.border(self._variant, self._color, self._theme, "hover")
+            target_text = StatePalette.text(self._variant, self._color, self._theme, "hover")
         elif self._is_disabled and self._is_hover:
             # disabled 但鼠标在上面:给一个"减弱版"hover 背景作为视觉反馈
             # ——告诉用户"我知道你 hover 我,但我点不动",观感比完全无反应好。
@@ -702,7 +671,8 @@ class ListboxItem(QAbstractButton):
             bg_start,
             bg_end,
             self._on_bg_step,
-            duration=self.HOVER_ANIM_DURATION, animated=animated,
+            duration=self.HOVER_ANIM_DURATION,
+            animated=animated,
         )
         tween_value(
             self,
@@ -710,7 +680,8 @@ class ListboxItem(QAbstractButton):
             bd_start,
             bd_end,
             self._on_border_step,
-            duration=self.HOVER_ANIM_DURATION, animated=animated,
+            duration=self.HOVER_ANIM_DURATION,
+            animated=animated,
         )
         tween_value(
             self,
@@ -718,7 +689,8 @@ class ListboxItem(QAbstractButton):
             QColor(self._cur_text),
             QColor(target_text),
             self._on_text_step,
-            duration=self.HOVER_ANIM_DURATION, animated=animated,
+            duration=self.HOVER_ANIM_DURATION,
+            animated=animated,
         )
         tween_value(
             self,
@@ -726,7 +698,8 @@ class ListboxItem(QAbstractButton):
             float(self._cur_indicator_alpha),
             float(target_indicator),
             self._on_indicator_step,
-            duration=self.SELECT_ANIM_DURATION, animated=animated,
+            duration=self.SELECT_ANIM_DURATION,
+            animated=animated,
         )
 
     def _on_bg_step(self, c):
@@ -767,9 +740,7 @@ class ListboxItem(QAbstractButton):
         # 留出 divider 的位置
         body_rect = QRect(rect)
         if self._show_divider:
-            body_rect.setHeight(
-                rect.height() - cfg["divider_height"] - cfg["divider_margin_bot"]
-            )
+            body_rect.setHeight(rect.height() - cfg["divider_height"] - cfg["divider_margin_bot"])
 
         p = QPainter(self)
         p.setRenderHint(QPainter.Antialiasing, True)
@@ -778,9 +749,7 @@ class ListboxItem(QAbstractButton):
         # 背景 (圆角)
         if self._cur_bg.alpha() > 0:
             path = QPainterPath()
-            path.addRoundedRect(
-                body_rect.adjusted(0, 0, 0, 0), item_radius, item_radius
-            )
+            path.addRoundedRect(body_rect.adjusted(0, 0, 0, 0), item_radius, item_radius)
             p.fillPath(path, self._cur_bg)
 
         # 边框（仅当颜色非透明时）
@@ -833,9 +802,7 @@ class ListboxItem(QAbstractButton):
             return
 
         slot = self._check_slot.geometry()
-        c = QColor(
-            StatePalette.selected_indicator(self._variant, self._color, self._theme)
-        )
+        c = QColor(StatePalette.selected_indicator(self._variant, self._color, self._theme))
         paint_animated_check(
             p,
             slot,

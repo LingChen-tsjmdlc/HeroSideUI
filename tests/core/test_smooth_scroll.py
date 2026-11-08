@@ -32,6 +32,7 @@ class TestSmoothScrollAttach:
 
     def test_attach_non_scrollarea_returns_none(self, qtbot):
         from PySide6.QtWidgets import QPushButton
+
         btn = QPushButton()
         qtbot.addWidget(btn)
         filt = SmoothScroll.attach(btn)

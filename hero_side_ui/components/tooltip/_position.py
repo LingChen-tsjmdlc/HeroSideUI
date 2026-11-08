@@ -13,27 +13,24 @@
 
 from __future__ import annotations
 
-from typing import Tuple
-
 from PySide6.QtCore import QPoint, QRect
 from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
+from ...themes import POPOVER_SHADOWS
 from ._constants import ARROW_SIZE
 
-from ...themes import POPOVER_SHADOWS
-
 __all__ = [
-    "frame_margins",
-    "flip_placement",
-    "compute_pos_for",
     "calc_position",
+    "compute_pos_for",
+    "flip_placement",
+    "frame_margins",
 ]
 
 
 def frame_margins(
     shadow: str, show_arrow: bool, actual_placement: str
-) -> Tuple[int, int, int, int]:
+) -> tuple[int, int, int, int]:
     """内 layout 四方向让出空间给 arrow 和阴影。返回 (left, top, right, bottom)。"""
     cfg = POPOVER_SHADOWS.get(shadow, POPOVER_SHADOWS["sm"])
     sm = cfg["blur"] + abs(cfg["offset_y"])
@@ -70,7 +67,7 @@ def compute_pos_for(
     tr_h: int,
     my_w: int,
     my_h: int,
-    margins: Tuple[int, int, int, int],
+    margins: tuple[int, int, int, int],
     gap: int,
 ) -> QPoint:
     """根据 placement 在给定原点上计算 tooltip 左上角。
@@ -121,11 +118,11 @@ def calc_position(
     trigger: QWidget,
     placement: str,
     offset_gap: int,
-    my_size: Tuple[int, int],
-    margins: Tuple[int, int, int, int],
+    my_size: tuple[int, int],
+    margins: tuple[int, int, int, int],
     embedded: bool,
     anchor_ancestor: QWidget = None,
-) -> Tuple[QPoint, str]:
+) -> tuple[QPoint, str]:
     """计算 tooltip 的目标坐标 + 实际 placement（含 auto-flip）。
 
     返回 (pos, actual_placement)：
@@ -147,9 +144,7 @@ def calc_position(
         origin = trigger.mapTo(anchor_ancestor, QPoint(0, 0))
         tr_w = trigger.width()
         tr_h = trigger.height()
-        pos = compute_pos_for(
-            placement, origin, tr_w, tr_h, my_w, my_h, margins, offset_gap
-        )
+        pos = compute_pos_for(placement, origin, tr_w, tr_h, my_w, my_h, margins, offset_gap)
 
         # 越界检测以 ancestor rect 为边界
         anc = anchor_ancestor.rect()
@@ -160,9 +155,7 @@ def calc_position(
             or pos.y() + my_h > anc.bottom()
         ):
             flipped = flip_placement(placement)
-            pos = compute_pos_for(
-                flipped, origin, tr_w, tr_h, my_w, my_h, margins, offset_gap
-            )
+            pos = compute_pos_for(flipped, origin, tr_w, tr_h, my_w, my_h, margins, offset_gap)
             return pos, flipped
         return pos, placement
 
@@ -182,9 +175,7 @@ def calc_position(
     if scr is None:
         scr = QGuiApplication.screenAt(tr_pos) or QGuiApplication.primaryScreen()
     screen = scr.availableGeometry()
-    pos = compute_pos_for(
-        placement, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap
-    )
+    pos = compute_pos_for(placement, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
 
     rect = QRect(pos.x(), pos.y(), my_w, my_h)
     if (
@@ -194,9 +185,7 @@ def calc_position(
         or rect.bottom() > screen.bottom()
     ):
         flipped = flip_placement(placement)
-        new_pos = compute_pos_for(
-            flipped, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap
-        )
+        new_pos = compute_pos_for(flipped, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
         return new_pos, flipped
 
     return pos, placement

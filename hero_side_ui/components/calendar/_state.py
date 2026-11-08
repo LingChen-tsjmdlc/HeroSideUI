@@ -10,7 +10,7 @@ focused_date 与 value 分离：键盘方向键只动 focused_date（触发 focu
 
 from __future__ import annotations
 
-from typing import Callable, List, Optional, Tuple
+from collections.abc import Callable
 
 from ._date import (
     CalendarDate,
@@ -28,15 +28,15 @@ class CalendarState:
     def __init__(
         self,
         *,
-        value: Optional[CalendarDate] = None,
-        min_value: Optional[CalendarDate] = None,
-        max_value: Optional[CalendarDate] = None,
+        value: CalendarDate | None = None,
+        min_value: CalendarDate | None = None,
+        max_value: CalendarDate | None = None,
         visible_months: int = 1,
         page_behavior: str = "visible",  # "visible" | "single"
-        first_day_of_week: Optional[str] = None,
+        first_day_of_week: str | None = None,
         is_disabled: bool = False,
         is_readonly: bool = False,
-        is_unavailable_fn: Optional[Callable[[CalendarDate], bool]] = None,
+        is_unavailable_fn: Callable[[CalendarDate], bool] | None = None,
         identifier: str = "gregorian",
     ) -> None:
         self._identifier = identifier
@@ -55,13 +55,13 @@ class CalendarState:
         self._visible_start = self._focused.first_of_month()
 
         # 回调（渲染层注入）
-        self.on_change: Optional[Callable[[Optional[CalendarDate]], None]] = None
-        self.on_focus_change: Optional[Callable[[CalendarDate], None]] = None
+        self.on_change: Callable[[CalendarDate | None], None] | None = None
+        self.on_focus_change: Callable[[CalendarDate], None] | None = None
 
     # ---- 只读视图 -----------------------------------------------------
 
     @property
-    def value(self) -> Optional[CalendarDate]:
+    def value(self) -> CalendarDate | None:
         return self._value
 
     @property
@@ -84,7 +84,7 @@ class CalendarState:
     def identifier(self) -> str:
         return self._identifier
 
-    def visible_month_starts(self) -> List[CalendarDate]:
+    def visible_month_starts(self) -> list[CalendarDate]:
         """当前可见的每个月的 1 号（用于渲染多月并排）。"""
         return [self._visible_start.add(months=i) for i in range(self.visible_months)]
 
@@ -93,7 +93,7 @@ class CalendarState:
     def is_range(self) -> bool:
         return False
 
-    def selected_range(self) -> Optional[Tuple[CalendarDate, CalendarDate]]:
+    def selected_range(self) -> tuple[CalendarDate, CalendarDate] | None:
         return None
 
     def is_readonly(self) -> bool:
@@ -156,14 +156,16 @@ class CalendarState:
     def focus_next_page(self) -> None:
         step = self._page_step()
         self._visible_start = self._visible_start.add(months=step)
-        self._set_focused(clamp_date(self._focused.add(months=step), self._min, self._max),
-                          notify=True)
+        self._set_focused(
+            clamp_date(self._focused.add(months=step), self._min, self._max), notify=True
+        )
 
     def focus_previous_page(self) -> None:
         step = self._page_step()
         self._visible_start = self._visible_start.add(months=-step)
-        self._set_focused(clamp_date(self._focused.add(months=-step), self._min, self._max),
-                          notify=True)
+        self._set_focused(
+            clamp_date(self._focused.add(months=-step), self._min, self._max), notify=True
+        )
 
     def can_page_next(self) -> bool:
         return self._visible_start.add(months=self.visible_months).first_of_month() <= self._max

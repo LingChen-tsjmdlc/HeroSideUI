@@ -4,10 +4,6 @@
 也可单独使用（会退化到 splitted 外观）。
 """
 
-from ...animation import tween_property
-
-from typing import Optional
-
 from PySide6.QtCore import (
     Qt,
     Signal,
@@ -22,10 +18,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...animation import CollapseAnimation
+from ...animation import CollapseAnimation, tween_property
 from ...themes import ACCORDION_SIZES, HEROUI_COLORS, RADIUS
 from ..text import Text
-
 from ._indicator import _IndicatorWidget
 
 
@@ -51,13 +46,13 @@ class AccordionItem(QWidget):
         self,
         title: str = "",
         subtitle: str = "",
-        content_widget: Optional[QWidget] = None,
+        content_widget: QWidget | None = None,
         content_text: str = "",
         expanded: bool = False,
         is_disabled: bool = False,
-        start_icon: Optional[str] = None,
-        end_icon: Optional[str] = None,
-        parent: Optional[QWidget] = None,
+        start_icon: str | None = None,
+        end_icon: str | None = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._title_text = title
@@ -78,7 +73,7 @@ class AccordionItem(QWidget):
 
         self._setup_ui(content_widget, content_text)
 
-    def _setup_ui(self, content_widget: Optional[QWidget], content_text: str):
+    def _setup_ui(self, content_widget: QWidget | None, content_text: str):
         """构建 UI 结构"""
         self.setObjectName("heroAccordionItem")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -245,9 +240,7 @@ class AccordionItem(QWidget):
 
         # 分割线: light/shadow/bordered 有分割线，splitted 无
         if show_divider and variant != "splitted":
-            self._divider.setStyleSheet(
-                f"background-color: {divider_color}; border: none;"
-            )
+            self._divider.setStyleSheet(f"background-color: {divider_color}; border: none;")
             self._divider.show()
         else:
             self._divider.hide()
@@ -259,18 +252,14 @@ class AccordionItem(QWidget):
         icon_size = size_config["indicator_size"]
 
         if self._start_icon_name:
-            pixmap = load_svg_icon(
-                self._start_icon_name, size=icon_size, color=icon_color
-            )
+            pixmap = load_svg_icon(self._start_icon_name, size=icon_size, color=icon_color)
             self._start_icon_label.setFixedSize(icon_size, icon_size)
             self._start_icon_label.setPixmap(pixmap)
             self._start_icon_label.show()
 
         # 指示器颜色（如果有自定义 end_icon 也会跟随着色）
         self._indicator.set_color(QColor(indicator_color))
-        self._indicator.setFixedSize(
-            size_config["indicator_size"], size_config["indicator_size"]
-        )
+        self._indicator.setFixedSize(size_config["indicator_size"], size_config["indicator_size"])
 
         # Trigger / Content padding
         py = size_config["trigger_padding_y"]
@@ -281,9 +270,7 @@ class AccordionItem(QWidget):
             # splitted: 每项独立 Card — 白底 + 圆角
             bg = dc[800] if is_dark else "#ffffff"
             border_hint = (
-                f"border: 1px solid {dc[700]};"
-                if is_dark
-                else "border: 1px solid #f0f0f0;"
+                f"border: 1px solid {dc[700]};" if is_dark else "border: 1px solid #f0f0f0;"
             )
             r = RADIUS.get(radius, RADIUS["md"])
             self.setStyleSheet(f"""
@@ -342,8 +329,9 @@ class AccordionItem(QWidget):
             return
         self._expanded = True
         self._collapse_anim.expand()
-        tween_property(self._indicator, "_rotation_anim", b"rotation", 90.0,
-                       owner=self, duration=400)
+        tween_property(
+            self._indicator, "_rotation_anim", b"rotation", 90.0, owner=self, duration=400
+        )
         self.expanded_changed.emit(True)
 
     def collapse(self):
@@ -351,8 +339,9 @@ class AccordionItem(QWidget):
             return
         self._expanded = False
         self._collapse_anim.collapse()
-        tween_property(self._indicator, "_rotation_anim", b"rotation", 0.0,
-                       owner=self, duration=400)
+        tween_property(
+            self._indicator, "_rotation_anim", b"rotation", 0.0, owner=self, duration=400
+        )
         self.expanded_changed.emit(False)
 
     # ---- 公共 API ----

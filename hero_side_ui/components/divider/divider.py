@@ -19,13 +19,12 @@ HeroSideUI Divider Component
     - 可选中间文字（只水平方向生效，如 "OR"、"或"）
 """
 
+from PySide6.QtCore import QRectF, Qt
+from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QSizePolicy
-from PySide6.QtCore import Qt, QRectF
-from PySide6.QtGui import QPainter, QColor, QFont, QFontMetrics, QPen
-from typing import Optional
 
-from ...themes import HEROUI_COLORS, DIVIDER_SIZES
 from ...core import ThemeProvider
+from ...themes import DIVIDER_SIZES, HEROUI_COLORS
 
 
 class Divider(QFrame):
@@ -56,8 +55,8 @@ class Divider(QFrame):
         self,
         orientation: str = "horizontal",
         theme: str = "auto",
-        color: Optional[str] = None,
-        text: Optional[str] = None,
+        color: str | None = None,
+        text: str | None = None,
         text_size: int = 12,
         parent=None,
     ):
@@ -167,7 +166,7 @@ class Divider(QFrame):
 
         fm = QFontMetrics(font)
         text_w = fm.horizontalAdvance(self._text)
-        text_h = fm.height()
+        fm.height()
         gap = 8  # 文字与左右线条之间的间距
         baseline_y = h / 2  # 线条和文字中心
 
@@ -227,12 +226,12 @@ class Divider(QFrame):
             return mode
         return ThemeProvider.instance().current_theme
 
-    def set_color(self, color: Optional[str]):
+    def set_color(self, color: str | None):
         """设置自定义颜色 (十六进制字符串或 None 恢复默认)"""
         self._custom_color = color
         self._apply_styles()
 
-    def set_text(self, text: Optional[str]):
+    def set_text(self, text: str | None):
         """设置中间文字（仅水平方向生效；传 None 或 "" 恢复纯线）"""
         self._text = text or ""
         self._apply_styles()

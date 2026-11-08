@@ -17,7 +17,6 @@ ScrollShadow 是 QScrollArea 的派生，关键测试点：
 from __future__ import annotations
 
 import pytest
-
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QVBoxLayout, QWidget
@@ -84,6 +83,7 @@ class TestScrollShadowInit:
         sc = ScrollShadow()
         qtbot.addWidget(sc)
         from PySide6.QtWidgets import QScrollArea
+
         assert sc.frameShape() == QScrollArea.Shape.NoFrame
 
     def test_widget_resizable(self, qtbot):
@@ -203,6 +203,7 @@ class TestFadeColor:
 
     def test_duck_typing_finds_ancestor_bg(self, qtbot):
         """父链找到 current_bg_color() 时，使用其返回值"""
+
         class FakeContainer(QWidget):
             def current_bg_color(self):
                 return QColor("#abcdef")
@@ -240,6 +241,7 @@ class TestClipRadius:
 
     def test_invalid_ancestor_radius_returns_zero(self, qtbot):
         """祖先返回非数字/0 → 回退 0"""
+
         class BadParent(QWidget):
             def current_corner_radius(self):
                 return "not a number"

@@ -14,21 +14,17 @@
 
 from __future__ import annotations
 
-from typing import List, Optional
-
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFrame,
     QHBoxLayout,
-    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
 
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import ThemeProvider
-from ...themes import DATE_INPUT_SIZES
 from ..input._layout import _InputLayoutMixin
 from ..input._wrapper import _InputWrapper
 from ..text import Text
@@ -60,19 +56,19 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
     def __init__(
         self,
         label: str = "",
-        value: Optional[DateTimeValue] = None,
-        placeholder_value: Optional[DateTimeValue] = None,
+        value: DateTimeValue | None = None,
+        placeholder_value: DateTimeValue | None = None,
         variant: str = "flat",
         color: str = "default",
         size: str = "md",
-        radius: Optional[str] = None,
+        radius: str | None = None,
         label_placement: str = "inside",
-        granularity: Optional[str] = None,
-        hour_cycle: Optional[int] = None,
+        granularity: str | None = None,
+        hour_cycle: int | None = None,
         hide_time_zone: bool = False,
         should_force_leading_zeros: bool = True,
-        min_value: Optional[DateTimeValue] = None,
-        max_value: Optional[DateTimeValue] = None,
+        min_value: DateTimeValue | None = None,
+        max_value: DateTimeValue | None = None,
         locale: str = "en_US",
         calendar: str = "gregorian",
         is_disabled: bool = False,
@@ -87,15 +83,14 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         on_start_content_click=None,
         on_end_content_click=None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
         granularity = granularity or self._default_granularity
         if granularity not in self._valid_granularities:
             raise ValueError(
-                f"invalid granularity: {granularity!r}, "
-                f"expected one of {self._valid_granularities}"
+                f"invalid granularity: {granularity!r}, expected one of {self._valid_granularities}"
             )
 
         # ---- 状态 ----
@@ -144,8 +139,8 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         # 越界的初始值本身就该显示为 invalid，不能只看外部传参
         self._is_invalid = is_invalid or self._state.is_invalid()
 
-        self._segment_widgets: List[_DateSegment] = []
-        self._literal_widgets: List[_SegmentLiteral] = []
+        self._segment_widgets: list[_DateSegment] = []
+        self._literal_widgets: list[_SegmentLiteral] = []
 
         self._setup_ui()
         self._rebuild_segments()
@@ -168,9 +163,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
 
         # outside / outside-top 的静态 label
         self._outside_label = Text(self._label_text, weight="medium", selectable=False)
-        self._outside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_label.setTextFormat(Qt.TextFormat.RichText)
         self._root.addWidget(self._outside_label, 0, Qt.AlignmentFlag.AlignLeft)
 
@@ -180,12 +173,8 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         _row.setContentsMargins(0, 0, 0, 0)
         _row.setSpacing(8)
 
-        self._outside_left_label = Text(
-            self._label_text, weight="medium", selectable=False
-        )
-        self._outside_left_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._outside_left_label = Text(self._label_text, weight="medium", selectable=False)
+        self._outside_left_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._outside_left_label.setTextFormat(Qt.TextFormat.RichText)
         _row.addWidget(
             self._outside_left_label,
@@ -238,20 +227,14 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
 
         # 浮动 label（inside / outside 两种 placement 共用）
         self._inside_label = Text(self._label_text, parent=self, selectable=False)
-        self._inside_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
-        self._inside_label.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop
-        )
+        self._inside_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._inside_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignTop)
         self._inside_label.raise_()
 
         # helper 区
         self._helper_label = Text("", weight="normal", selectable=False)
         self._helper_label.setWordWrap(True)
-        self._helper_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
+        self._helper_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._helper_label.hide()
         self._root.addWidget(self._helper_label)
 
@@ -341,12 +324,8 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
                 seg.setFocus(Qt.FocusReason.MouseFocusReason)
                 return
 
-    def _editable_segments(self) -> List[_DateSegment]:
-        return [
-            s
-            for s in self._segment_widgets
-            if s.focusPolicy() != Qt.FocusPolicy.NoFocus
-        ]
+    def _editable_segments(self) -> list[_DateSegment]:
+        return [s for s in self._segment_widgets if s.focusPolicy() != Qt.FocusPolicy.NoFocus]
 
     def _on_segment_focus_move(self, direction: int):
         """左右键在可编辑段之间移动焦点。"""
@@ -428,11 +407,11 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
     # ============================================================
     # 公共 API
     # ============================================================
-    def value(self) -> Optional[DateTimeValue]:
+    def value(self) -> DateTimeValue | None:
         """当前值；有段未填时返回 None。"""
         return self._state.value()
 
-    def set_value(self, value: Optional[DateTimeValue]):
+    def set_value(self, value: DateTimeValue | None):
         self._state.set_value(value)
         self._refresh_segment_text()
         self._sync_invalid_from_state()
@@ -454,7 +433,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self._granularity = granularity
         self._recreate_state()
 
-    def set_hour_cycle(self, hour_cycle: Optional[int]):
+    def set_hour_cycle(self, hour_cycle: int | None):
         self._hour_cycle = hour_cycle
         self._recreate_state()
 
@@ -470,13 +449,13 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self._calendar = calendar
         self._recreate_state()
 
-    def set_min_value(self, value: Optional[DateTimeValue]):
+    def set_min_value(self, value: DateTimeValue | None):
         self._state._min_value = value
         self._refresh_segment_text()
         self._sync_invalid_from_state()
         self._apply_styles()
 
-    def set_max_value(self, value: Optional[DateTimeValue]):
+    def set_max_value(self, value: DateTimeValue | None):
         self._state._max_value = value
         self._refresh_segment_text()
         self._sync_invalid_from_state()
@@ -518,7 +497,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self._size = size
         self._apply_styles()
 
-    def set_radius(self, radius: Optional[str]):
+    def set_radius(self, radius: str | None):
         self._radius = radius
         self._apply_styles()
 
@@ -576,17 +555,17 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
     # ============================================================
     # 宽度接管
     # ============================================================
-    def setFixedWidth(self, w: int):  # noqa: N802
+    def setFixedWidth(self, w: int):
         self._user_width_locked = True
         super().setFixedWidth(w)
         self._apply_styles()
 
-    def setMinimumWidth(self, w: int):  # noqa: N802
+    def setMinimumWidth(self, w: int):
         self._user_width_locked = True
         super().setMinimumWidth(w)
         self._apply_styles()
 
-    def setMaximumWidth(self, w: int):  # noqa: N802
+    def setMaximumWidth(self, w: int):
         self._user_width_locked = True
         super().setMaximumWidth(w)
         self._apply_styles()

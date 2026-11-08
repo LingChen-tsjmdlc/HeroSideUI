@@ -37,9 +37,7 @@ class TestSelectInit:
         assert sel.item_by_key("a").title() == "Apple"
 
     def test_default_selected_keys_single(self, qtbot):
-        sel = Select(
-            items=[("cat", "Cat"), ("dog", "Dog")], default_selected_keys={"cat"}
-        )
+        sel = Select(items=[("cat", "Cat"), ("dog", "Dog")], default_selected_keys={"cat"})
         qtbot.addWidget(sel)
         assert sel.selected_key() == "cat"
         assert sel._input.text() == "Cat"

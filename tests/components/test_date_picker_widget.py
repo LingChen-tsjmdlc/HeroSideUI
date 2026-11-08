@@ -27,6 +27,7 @@ def _make_range(qtbot, **kwargs) -> DateRangePicker:
 
 # ---------------------------------------------------------------- DatePicker 构造
 
+
 def test_construct_default(qtbot):
     dp = _make(qtbot)
     assert dp.value() is None
@@ -55,6 +56,7 @@ def test_selector_placement_start_vs_end(qtbot):
 
 # ---------------------------------------------------------------- 值同步
 
+
 def test_set_value_roundtrip(qtbot):
     dp = _make(qtbot)
     v = parse_date("2025-12-31")
@@ -81,6 +83,7 @@ def test_set_value_emits_value_changed(qtbot):
 
 # ---------------------------------------------------------------- 禁用
 
+
 def test_disabled_getter_setter(qtbot):
     dp = _make(qtbot, is_disabled=True)
     assert dp.is_disabled() is True
@@ -100,6 +103,7 @@ def test_disabled_blocks_open_calendar(qtbot):
 
 # ---------------------------------------------------------------- 弹层开关
 
+
 def test_open_close_calendar(qtbot):
     dp = _make(qtbot)
     dp.open_calendar()
@@ -118,15 +122,16 @@ def test_selector_click_toggles_calendar(qtbot):
 
 # ---------------------------------------------------------------- 日历选择写回
 
+
 def test_calendar_change_writes_back(qtbot):
     dp = _make(qtbot)
-    cal = dp.calendar_widget
     target = parse_date("2026-06-15").date
     dp._on_calendar_change(target)
     assert dp.value() == parse_date("2026-06-15")
 
 
 # ---------------------------------------------------------------- DateRangePicker
+
 
 def test_range_construct_default(qtbot):
     drp = _make_range(qtbot)

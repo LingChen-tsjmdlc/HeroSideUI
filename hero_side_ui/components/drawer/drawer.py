@@ -25,9 +25,8 @@ HeroSideUI Drawer Component
     disable_animation=True 时直接跳到终态。
 """
 
-from ...animation import tween_property, stop_tween
-
-from typing import Callable, Optional, Union
+from collections.abc import Callable
+from typing import ClassVar
 from weakref import WeakKeyDictionary, ref
 
 from PySide6.QtCore import (
@@ -42,6 +41,8 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QWidget
 
+from ...animation import stop_tween, tween_property
+from ...core import ThemeProvider
 from ...themes import (
     DRAWER_SIZES,
     DRAWER_SPEC,
@@ -50,7 +51,6 @@ from ...themes import (
     VALID_DRAWER_RADII,
     VALID_DRAWER_SIZES,
 )
-from ...core import ThemeProvider
 from ...utils import safe_delete
 from ._backdrop import _DrawerBackdrop
 from ._panel import _DrawerPanel
@@ -80,11 +80,11 @@ class Drawer(QWidget):
 
     # 每个宿主窗口的开放抽屉栈（弱键 + 弱值引用）—— 只有栈顶启用 Esc，
     # 否则多个同键 QShortcut 同时启用会触发 Qt 二义性，Esc 一个都关不掉
-    _open_drawers: "WeakKeyDictionary[QWidget, list]" = WeakKeyDictionary()
+    _open_drawers: ClassVar["WeakKeyDictionary[QWidget, list]"] = WeakKeyDictionary()
 
     def __init__(
         self,
-        size: Union[str, int] = "md",
+        size: str | int = "md",
         radius: str = "lg",
         placement: str = "right",
         backdrop: str = "opaque",
@@ -92,13 +92,13 @@ class Drawer(QWidget):
         is_dismissable: bool = True,
         is_keyboard_dismiss_disabled: bool = False,
         hide_close_button: bool = False,
-        close_button: Optional[QWidget] = None,
+        close_button: QWidget | None = None,
         disable_animation: bool = False,
-        on_open_change: Optional[Callable[[bool], None]] = None,
-        on_close: Optional[Callable[[], None]] = None,
-        host: Optional[QWidget] = None,
+        on_open_change: Callable[[bool], None] | None = None,
+        on_close: Callable[[], None] | None = None,
+        host: QWidget | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         size = self._check_size(size)
         if radius not in VALID_DRAWER_RADII:
@@ -108,19 +108,17 @@ class Drawer(QWidget):
                 f"placement must be one of {VALID_DRAWER_PLACEMENTS}, got {placement!r}"
             )
         if backdrop not in VALID_DRAWER_BACKDROPS:
-            raise ValueError(
-                f"backdrop must be one of {VALID_DRAWER_BACKDROPS}, got {backdrop!r}"
-            )
+            raise ValueError(f"backdrop must be one of {VALID_DRAWER_BACKDROPS}, got {backdrop!r}")
 
         host_widget = host if host is not None else self._top_window(parent)
         super().__init__(host_widget)
 
-        self._host: Optional[QWidget] = host_widget
-        self._size: Union[str, int] = size
+        self._host: QWidget | None = host_widget
+        self._size: str | int = size
         self._radius = radius
         self._placement = placement
         self._backdrop_kind = backdrop
-        self._backdrop: Optional[_DrawerBackdrop] = None
+        self._backdrop: _DrawerBackdrop | None = None
         self._is_open = False
         self._closing = False
         self._is_dismissable = bool(is_dismissable)
@@ -167,12 +165,11 @@ class Drawer(QWidget):
     # 校验
     # ============================================================
     @staticmethod
-    def _check_size(size: Union[str, int]) -> Union[str, int]:
+    def _check_size(size: str | int) -> str | int:
         """校验 size —— 十档字符串，或正数（px，作用在滑出轴上）。"""
         if isinstance(size, bool) or not isinstance(size, (str, int, float)):
             raise ValueError(
-                f"size must be one of {VALID_DRAWER_SIZES} or a positive number, "
-                f"got {size!r}"
+                f"size must be one of {VALID_DRAWER_SIZES} or a positive number, got {size!r}"
             )
         if isinstance(size, (int, float)):
             px = int(size)
@@ -181,8 +178,7 @@ class Drawer(QWidget):
             return px
         if size not in VALID_DRAWER_SIZES:
             raise ValueError(
-                f"size must be one of {VALID_DRAWER_SIZES} or a positive number, "
-                f"got {size!r}"
+                f"size must be one of {VALID_DRAWER_SIZES} or a positive number, got {size!r}"
             )
         return size
 
@@ -202,7 +198,9 @@ class Drawer(QWidget):
         if self._host is None:
             return
         stack = Drawer._open_drawers.setdefault(self._host, [])
-        stack[:] = [r for r in stack if r() is not None and r() is not self]  # 防关闭途中重开重复入栈
+        stack[:] = [
+            r for r in stack if r() is not None and r() is not self
+        ]  # 防关闭途中重开重复入栈
         stack.append(ref(self))
         for d in (r() for r in stack):
             if d is not None:
@@ -343,9 +341,7 @@ class Drawer(QWidget):
 
         self._sync_geometry()
         target = self._panel_rect()
-        self._panel.setGeometry(
-            target if self._disable_animation else self._hidden_rect(target)
-        )
+        self._panel.setGeometry(target if self._disable_animation else self._hidden_rect(target))
         self.hide()  # 保证 blur 快照拍不到面板（关闭途中重开时自己还是可见的）
         self._create_backdrop()
         self.show()
@@ -399,9 +395,15 @@ class Drawer(QWidget):
             self._on_open_change(opened)
 
     def _slide_to(self, end: QPoint, duration: int, entering: bool):
-        tween_property(self._panel, "_slide_anim", b"pos", QPoint(end), owner=self,
-                       duration=max(0, duration),
-                       easing=QEasingCurve.Type.OutCubic if entering else QEasingCurve.Type.InCubic)
+        tween_property(
+            self._panel,
+            "_slide_anim",
+            b"pos",
+            QPoint(end),
+            owner=self,
+            duration=max(0, duration),
+            easing=QEasingCurve.Type.OutCubic if entering else QEasingCurve.Type.InCubic,
+        )
 
     # ============================================================
     # 事件
@@ -441,13 +443,13 @@ class Drawer(QWidget):
     # 宿主
     # ============================================================
     @staticmethod
-    def _top_window(widget: Optional[QWidget]) -> Optional[QWidget]:
+    def _top_window(widget: QWidget | None) -> QWidget | None:
         if widget is None:
             app = QApplication.instance()
             return app.activeWindow() if app is not None else None
         return widget.window()
 
-    def _bind_host(self, host: Optional[QWidget]):
+    def _bind_host(self, host: QWidget | None):
         """切换宿主：挪走 eventFilter 并重新挂父。"""
         if host is None or host is self._host:
             return
@@ -470,13 +472,13 @@ class Drawer(QWidget):
             self._panel.raise_()
             self._register_open()
 
-    def set_host(self, host: Optional[QWidget]):
+    def set_host(self, host: QWidget | None):
         """更换被覆盖的宿主窗口。"""
         self._bind_host(host)
         self._sync_geometry()
         self._reposition()
 
-    def host(self) -> Optional[QWidget]:
+    def host(self) -> QWidget | None:
         return self._host
 
     # ============================================================
@@ -491,7 +493,7 @@ class Drawer(QWidget):
         self._panel.add_widget(widget)
         self._reposition()
 
-    def set_content(self, widget: Optional[QWidget]):
+    def set_content(self, widget: QWidget | None):
         """用单个组件替换全部内容；已打开时自适应几何即时重排。"""
         self._panel.set_content(widget)
         self._reposition()
@@ -535,7 +537,7 @@ class Drawer(QWidget):
     def close_drawer(self):
         self.set_is_open(False)
 
-    def set_size(self, size: Union[str, int]):
+    def set_size(self, size: str | int):
         """改 size —— 十档字符串，或数字（px 强制滑出轴长度，不看内容）。"""
         self._size = self._check_size(size)
         self._apply_style()
@@ -559,9 +561,7 @@ class Drawer(QWidget):
     def set_backdrop(self, backdrop: str):
         """改遮罩：transparent / opaque / blur；已打开会立刻换掉。"""
         if backdrop not in VALID_DRAWER_BACKDROPS:
-            raise ValueError(
-                f"backdrop must be one of {VALID_DRAWER_BACKDROPS}, got {backdrop!r}"
-            )
+            raise ValueError(f"backdrop must be one of {VALID_DRAWER_BACKDROPS}, got {backdrop!r}")
         if backdrop == self._backdrop_kind:
             return
         self._backdrop_kind = backdrop
@@ -579,7 +579,7 @@ class Drawer(QWidget):
     def set_hide_close_button(self, value: bool):
         self._panel.set_hide_close_button(value)
 
-    def set_close_button(self, widget: Optional[QWidget]):
+    def set_close_button(self, widget: QWidget | None):
         """自定义关闭按钮（传 None 恢复内置按钮）。"""
         self._panel.set_close_button(widget)
 
@@ -610,7 +610,7 @@ class Drawer(QWidget):
         return ThemeProvider.instance().current_theme
 
     # ---- 只读访问器 ----
-    def size(self) -> Union[str, int]:
+    def size(self) -> str | int:
         return self._size
 
     def radius(self) -> str:

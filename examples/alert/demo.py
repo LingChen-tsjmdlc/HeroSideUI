@@ -5,11 +5,11 @@ import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget, QSizePolicy
-from PySide6.QtCore import Qt
-
-from hero_side_ui import Alert, Button, Title, Subtitle, Body
 from _base import DemoBase
+from PySide6.QtCore import Qt
+from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
+
+from hero_side_ui import Alert, Body, Button, Subtitle, Title
 
 COLORS = ["default", "primary", "secondary", "success", "warning", "danger"]
 VARIANTS = ["solid", "bordered", "flat", "faded"]

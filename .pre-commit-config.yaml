@@ -6,6 +6,21 @@ repos:
   # 不再通过 pre-commit 框架管理（post-commit 阶段 + amend 方式）。
 
   # ============================================================
+  # Ruff — lint + format（等价 TS 生态 ESLint + Prettier）
+  # 规则配置见 ruff.toml；版本升级改 rev 后跑 pre-commit install 一次即可
+  # ============================================================
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.17.4
+    hooks:
+      # 先 lint 自动修复（import 排序/未用导入/现代化语法等）
+      - id: ruff
+        name: Ruff Lint | 代码规范检查（自动修复）
+        args: ["--fix"]
+      # 再 format（保证修复后的文件格式统一）
+      - id: ruff-format
+        name: Ruff Format | 代码格式化
+
+  # ============================================================
   # 标准钩子
   # ============================================================
   - repo: https://github.com/pre-commit/pre-commit-hooks

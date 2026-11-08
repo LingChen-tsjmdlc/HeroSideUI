@@ -4,23 +4,35 @@ Card 组件示例 — 三层结构、阴影、圆角、可按压、可悬停、B
 文字层全部使用语义化组件 Title / Subtitle / Caption / Body，主题自动跟随。
 """
 
-import os, sys
+import os
+import sys
+
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtCore import Qt
-from PySide6.QtGui import QColor, QLinearGradient, QPainter, QBrush
-from PySide6.QtWidgets import QVBoxLayout, QHBoxLayout, QWidget
+from PySide6.QtGui import QBrush, QColor, QLinearGradient, QPainter
+from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import (
-    Card, CardHeader, CardBody, CardFooter, Divider,
-    Button, Input, Checkbox,
-    Title, Subtitle, Caption, Body,
+    Body,
+    Button,
+    Caption,
+    Card,
+    CardBody,
+    CardFooter,
+    CardHeader,
+    Checkbox,
+    Divider,
+    Input,
+    Subtitle,
+    Title,
 )
-from _base import DemoBase
 
 
 class _GradientBackground(QWidget):
     """用于展示 Blurred Card 的渐变背景（这里的颜色是装饰意图，不是主题色）"""
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setMinimumHeight(200)
@@ -78,11 +90,22 @@ def build_login_card() -> Card:
     body = CardBody()
     body.layout().setSpacing(14)
 
-    email_input = Input(label="Email", placeholder="you@example.com",
-                       variant="faded", color="primary", is_required=True, is_clearable=True)
-    password_input = Input(label="Password", placeholder="Enter your password",
-                          variant="faded", color="primary", is_required=True,
-                          end_content="heroicons--eye-slash-solid")
+    email_input = Input(
+        label="Email",
+        placeholder="you@example.com",
+        variant="faded",
+        color="primary",
+        is_required=True,
+        is_clearable=True,
+    )
+    password_input = Input(
+        label="Password",
+        placeholder="Enter your password",
+        variant="faded",
+        color="primary",
+        is_required=True,
+        end_content="heroicons--eye-slash-solid",
+    )
     password_input.line_edit.setEchoMode(password_input.line_edit.EchoMode.Password)
 
     def toggle_pw():
@@ -94,6 +117,7 @@ def build_login_card() -> Card:
             le.setEchoMode(le.EchoMode.Password)
             password_input.set_end_content("heroicons--eye-slash-solid")
         password_input.set_on_end_content_click(toggle_pw)
+
     password_input.set_on_end_content_click(toggle_pw)
 
     body.layout().addWidget(email_input)
@@ -166,7 +190,9 @@ def build_prefs_card() -> Card:
 
     body = CardBody()
     body.layout().setSpacing(8)
-    body.layout().addWidget(Checkbox("Select all (indeterminate)", is_indeterminate=True, color="primary"))
+    body.layout().addWidget(
+        Checkbox("Select all (indeterminate)", is_indeterminate=True, color="primary")
+    )
     body.layout().addWidget(Divider())
     body.layout().addWidget(Checkbox("Email", is_selected=True, color="primary", size="sm"))
     body.layout().addWidget(Checkbox("SMS", color="primary", size="sm"))
@@ -209,9 +235,12 @@ class CardDemo(DemoBase):
         # Shadow
         cards = []
         for shadow in ["none", "sm", "md", "lg"]:
-            c = make_card(f"Shadow: {shadow}",
-                          "Make beautiful websites regardless of your design experience.",
-                          f'shadow="{shadow}"', shadow=shadow)
+            c = make_card(
+                f"Shadow: {shadow}",
+                "Make beautiful websites regardless of your design experience.",
+                f'shadow="{shadow}"',
+                shadow=shadow,
+            )
             c.setFixedWidth(200)
             cards.append(c)
         self.add_section(layout, "Shadow Variants", cards, labels_bag, spacing=16)
@@ -219,35 +248,57 @@ class CardDemo(DemoBase):
         # Radius
         cards = []
         for radius in ["none", "sm", "md", "lg"]:
-            c = make_card(f"Radius: {radius}",
-                          "Beautiful, fast and modern UI library.",
-                          f'radius="{radius}"', radius=radius)
+            c = make_card(
+                f"Radius: {radius}",
+                "Beautiful, fast and modern UI library.",
+                f'radius="{radius}"',
+                radius=radius,
+            )
             c.setFixedWidth(200)
             cards.append(c)
         self.add_section(layout, "Radius Variants", cards, labels_bag, spacing=16)
 
         # Interactive
-        hover = make_card("Hoverable", "Hover over me to see the background change.",
-                         "is_hoverable=True", is_hoverable=True)
+        hover = make_card(
+            "Hoverable",
+            "Hover over me to see the background change.",
+            "is_hoverable=True",
+            is_hoverable=True,
+        )
         hover.setFixedWidth(200)
-        press = make_card("Pressable", "Click me! I have a ripple animation.",
-                         "is_pressable=True", is_pressable=True)
+        press = make_card(
+            "Pressable",
+            "Click me! I have a ripple animation.",
+            "is_pressable=True",
+            is_pressable=True,
+        )
         press.setFixedWidth(200)
         press.pressed.connect(lambda: print("Card pressed!"))
-        disabled = make_card("Disabled", "I am disabled and cannot be interacted with.",
-                            "is_disabled=True", is_disabled=True)
+        disabled = make_card(
+            "Disabled",
+            "I am disabled and cannot be interacted with.",
+            "is_disabled=True",
+            is_disabled=True,
+        )
         disabled.setFixedWidth(200)
-        self.add_section(layout, "Interactive Cards", [hover, press, disabled],
-                         labels_bag, spacing=16)
+        self.add_section(
+            layout, "Interactive Cards", [hover, press, disabled], labels_bag, spacing=16
+        )
 
-        self.add_full_width(layout, "Card with Input Form (Login)",
-                           build_login_card(), labels_bag)
-        self.add_full_width(layout, "Card with Checkbox List (Todo)",
-                           build_todo_card(), labels_bag)
-        self.add_full_width(layout, "Card with indeterminate + CheckboxGroup-like layout",
-                           build_prefs_card(), labels_bag)
-        self.add_full_width(layout, "Blurred Card (with gradient background)",
-                           build_blurred_card_in_gradient(), labels_bag)
+        self.add_full_width(layout, "Card with Input Form (Login)", build_login_card(), labels_bag)
+        self.add_full_width(layout, "Card with Checkbox List (Todo)", build_todo_card(), labels_bag)
+        self.add_full_width(
+            layout,
+            "Card with indeterminate + CheckboxGroup-like layout",
+            build_prefs_card(),
+            labels_bag,
+        )
+        self.add_full_width(
+            layout,
+            "Blurred Card (with gradient background)",
+            build_blurred_card_in_gradient(),
+            labels_bag,
+        )
 
 
 if __name__ == "__main__":

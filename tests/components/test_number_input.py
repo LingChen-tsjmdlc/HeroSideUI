@@ -6,7 +6,6 @@ test_time_input.py。
 """
 
 import pytest
-
 from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
@@ -172,15 +171,19 @@ def test_wheel_steps_when_focused(qtbot):
 
     ni.line_edit.setFocus()
     # 模拟滚轮事件发给 line_edit（pixelDelta/angleDelta 必须 QPoint，phase 用 ScrollUpdate）
-    from PySide6.QtGui import QWheelEvent
     from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
 
     pos = QPointF(ni.line_edit.rect().center())
     up = QWheelEvent(
-        pos, QPointF(ni.line_edit.mapToGlobal(ni.line_edit.rect().center())),
-        QPoint(0, 0), QPoint(0, 120),
-        Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier,
-        Qt.ScrollPhase.ScrollUpdate, False,
+        pos,
+        QPointF(ni.line_edit.mapToGlobal(ni.line_edit.rect().center())),
+        QPoint(0, 0),
+        QPoint(0, 120),
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+        Qt.ScrollPhase.ScrollUpdate,
+        False,
     )
     ni.eventFilter(ni.line_edit, up)
     assert ni.value() == 6.0
@@ -191,15 +194,19 @@ def test_wheel_disabled_prop(qtbot):
     _show_active(qtbot, ni)
 
     ni.line_edit.setFocus()
-    from PySide6.QtGui import QWheelEvent
     from PySide6.QtCore import QPoint, QPointF
+    from PySide6.QtGui import QWheelEvent
 
     pos = QPointF(ni.line_edit.rect().center())
     ev = QWheelEvent(
-        pos, QPointF(ni.line_edit.mapToGlobal(ni.line_edit.rect().center())),
-        QPoint(0, 0), QPoint(0, 120),
-        Qt.MouseButton.NoButton, Qt.KeyboardModifier.NoModifier,
-        Qt.ScrollPhase.ScrollUpdate, False,
+        pos,
+        QPointF(ni.line_edit.mapToGlobal(ni.line_edit.rect().center())),
+        QPoint(0, 0),
+        QPoint(0, 120),
+        Qt.MouseButton.NoButton,
+        Qt.KeyboardModifier.NoModifier,
+        Qt.ScrollPhase.ScrollUpdate,
+        False,
     )
     ni.eventFilter(ni.line_edit, ev)
     assert ni.value() == 5.0

@@ -4,15 +4,12 @@ QAbstractButton 子类,负责自绘 + press scale 动画。
 四种类型: PAGE / PREV / NEXT / DOTS,父组件按 type 注入文本/图标。
 """
 
-from typing import Optional
-
-from PySide6.QtCore import QPoint, QRectF, QSize, Qt, Signal
+from PySide6.QtCore import QRectF, QSize, Qt, Signal
 from PySide6.QtGui import (
     QColor,
     QPainter,
     QPainterPath,
     QPen,
-    QPixmap,
 )
 from PySide6.QtWidgets import QAbstractButton, QHBoxLayout, QWidget
 
@@ -20,16 +17,15 @@ from ...animation import PressScaleEffect
 from ...core.text_style import make_text_qfont
 from ...themes import PAGINATION_SIZES
 from ...utils import load_svg_icon
-
 from ._constants import PaginationItemType
 from ._ellipsis_icon import _DotsIcon
 from ._palette import (
     resolve_compact_corners,
+    resolve_cursor_text,
     resolve_item_bg,
     resolve_item_border,
     resolve_item_disabled_text,
     resolve_item_text,
-    resolve_cursor_text,
 )
 
 
@@ -43,9 +39,9 @@ class _PaginationItem(QAbstractButton):
         self,
         item_type: PaginationItemType,
         *,
-        page: Optional[int] = None,
+        page: int | None = None,
         is_before: bool = False,  # 仅 DOTS 用: True=左侧省略号
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._type = item_type
@@ -77,14 +73,14 @@ class _PaginationItem(QAbstractButton):
         self._focus_visible = False
 
         # 子部件: PREV/NEXT 装 chevron icon, DOTS 装 _DotsIcon
-        self._icon_label: Optional[QWidget] = None
+        self._icon_label: QWidget | None = None
         if self._type in (PaginationItemType.PREV, PaginationItemType.NEXT):
             self._setup_chevron()
         elif self._type == PaginationItemType.DOTS:
             self._setup_dots()
 
         # press scale 0.97 动画
-        self._press_scaler: Optional[PressScaleEffect] = None
+        self._press_scaler: PressScaleEffect | None = None
         # 延迟创建 (disable_animation=True 时不创建)
 
         self._apply_size()
@@ -108,9 +104,7 @@ class _PaginationItem(QAbstractButton):
 
     def _setup_dots(self):
         """DOTS 按钮的省略号/双 chevron 切换图标。"""
-        icon = _DotsIcon(
-            is_before=self._is_before, size=self._size_cfg["icon_size"], parent=self
-        )
+        icon = _DotsIcon(is_before=self._is_before, size=self._size_cfg["icon_size"], parent=self)
         self._icon_label = icon
         layout = QHBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -123,7 +117,7 @@ class _PaginationItem(QAbstractButton):
     def item_type(self) -> PaginationItemType:
         return self._type
 
-    def page(self) -> Optional[int]:
+    def page(self) -> int | None:
         return self._page
 
     def is_before(self) -> bool:
@@ -245,17 +239,13 @@ class _PaginationItem(QAbstractButton):
 
     def enterEvent(self, ev):
         super().enterEvent(ev)
-        if self._type == PaginationItemType.DOTS and isinstance(
-            self._icon_label, _DotsIcon
-        ):
+        if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(True)
         self.update()
 
     def leaveEvent(self, ev):
         super().leaveEvent(ev)
-        if self._type == PaginationItemType.DOTS and isinstance(
-            self._icon_label, _DotsIcon
-        ):
+        if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(False)
         self.update()
 
@@ -277,18 +267,14 @@ class _PaginationItem(QAbstractButton):
             Qt.FocusReason.TabFocusReason,
             Qt.FocusReason.BacktabFocusReason,
         )
-        if self._type == PaginationItemType.DOTS and isinstance(
-            self._icon_label, _DotsIcon
-        ):
+        if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(True)
         self.update()
 
     def focusOutEvent(self, ev):
         super().focusOutEvent(ev)
         self._focus_visible = False
-        if self._type == PaginationItemType.DOTS and isinstance(
-            self._icon_label, _DotsIcon
-        ):
+        if self._type == PaginationItemType.DOTS and isinstance(self._icon_label, _DotsIcon):
             self._icon_label.set_hover(False)
         self.update()
 
@@ -362,9 +348,7 @@ class _PaginationItem(QAbstractButton):
 
         p.end()
 
-    def _build_corner_path(
-        self, rect: QRectF, tl: int, tr: int, br: int, bl: int
-    ) -> QPainterPath:
+    def _build_corner_path(self, rect: QRectF, tl: int, tr: int, br: int, bl: int) -> QPainterPath:
         """构造 4 角独立圆角的 path (compact 模式必需)。"""
         path = QPainterPath()
         if tl == tr == br == bl:
@@ -387,9 +371,7 @@ class _PaginationItem(QAbstractButton):
         path.closeSubpath()
         return path
 
-    def _paint_compact_border(
-        self, p: QPainter, rect: QRectF, tl: int, tr: int, br: int, bl: int
-    ):
+    def _paint_compact_border(self, p: QPainter, rect: QRectF, tl: int, tr: int, br: int, bl: int):
         """紧凑模式: 仅画外侧边框,避免相邻 item 边框相撞。"""
         x, y, w, h = rect.x(), rect.y(), rect.width(), rect.height()
         # 单一 item: 画完整闭环

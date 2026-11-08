@@ -18,47 +18,35 @@ CircularProgress (圆形进度条):
     变体: color × size × is_indeterminate × is_disabled × theme
 """
 
-from ...animation import tween_property
-
-import math
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSizePolicy,
-    QGraphicsOpacityEffect,
-)
 from PySide6.QtCore import (
-    Qt,
     Property,
     QRectF,
-    QPointF,
     QSize,
+    Qt,
 )
 from PySide6.QtGui import (
-    QPainter,
     QColor,
-    QPen,
-    QBrush,
-    QFont,
+    QPainter,
     QPainterPath,
-    QTransform,
 )
-from typing import Optional
+from PySide6.QtWidgets import (
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ...themes import (
-    HEROUI_COLORS,
-    RADIUS,
-    PROGRESS_SIZES,
-    CIRCULAR_PROGRESS_SIZES,
-)
-from ...utils import hex_to_rgba
 from ...animation import (
     IndeterminateBarAnimation,
     StripeFlowAnimation,
+    tween_property,
 )
 from ...core import ThemeProvider
+from ...themes import (
+    HEROUI_COLORS,
+    PROGRESS_SIZES,
+)
 from ..text import Text
 
 
@@ -83,7 +71,7 @@ def _indicator_hex(name: str) -> str:
 class _LinearTrack(QWidget):
     """自绘 track + indicator（含斜纹 / 不确定态动画）"""
 
-    def __init__(self, owner: "Progress", parent: Optional[QWidget] = None):
+    def __init__(self, owner: "Progress", parent: QWidget | None = None):
         super().__init__(parent)
         self._owner = owner
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
@@ -131,8 +119,9 @@ class _LinearTrack(QWidget):
         self._stripe_flow.stop()
 
     def animate_to(self, ratio: float, disable_animation: bool = False):
-        tween_property(self, "_ratio_anim", b"anim_ratio", ratio,
-                       duration=500, animated=not disable_animation)
+        tween_property(
+            self, "_ratio_anim", b"anim_ratio", ratio, duration=500, animated=not disable_animation
+        )
 
     # ----- 尺寸 -----
     def sizeHint(self):
@@ -269,7 +258,7 @@ class Progress(QWidget):
         is_disabled: bool = False,
         disable_animation: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
@@ -325,12 +314,8 @@ class Progress(QWidget):
         self._label = Text("", selectable=False)
         self._label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
         self._value_label = Text("", selectable=False)
-        self._value_label.setAttribute(
-            Qt.WidgetAttribute.WA_TransparentForMouseEvents, True
-        )
-        self._value_label.setAlignment(
-            Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._value_label.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        self._value_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
         self._label_row.addWidget(self._label, 0, Qt.AlignmentFlag.AlignLeft)
         self._label_row.addStretch()
         self._label_row.addWidget(self._value_label, 0, Qt.AlignmentFlag.AlignRight)
@@ -378,7 +363,7 @@ class Progress(QWidget):
     def _format_value(self) -> str:
         if self._formatter is not None:
             return str(self._formatter(self._value, self._min, self._max))
-        pct = int(round(self._progress_ratio() * 100))
+        pct = round(self._progress_ratio() * 100)
         return f"{pct}%"
 
     # ------------------------------------------------------------

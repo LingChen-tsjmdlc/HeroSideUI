@@ -23,29 +23,26 @@ HeroSideUI Card Component
     在回调里插值计算 QColor 并刷新内层 _content 的 QSS。
 """
 
-from ...animation import tween_property
-
-from PySide6.QtWidgets import (
-    QWidget,
-    QVBoxLayout,
-    QHBoxLayout,
-    QSizePolicy,
-    QGraphicsOpacityEffect,
-    QLabel,
-)
 from PySide6.QtCore import (
-    Qt,
-    Signal,
     Property,
     QRectF,
+    Qt,
+    Signal,
 )
-from PySide6.QtGui import QColor, QPainter, QPainterPath, QPen, QPalette
-from typing import Optional
+from PySide6.QtGui import QColor, QPainter, QPalette
+from PySide6.QtWidgets import (
+    QGraphicsOpacityEffect,
+    QHBoxLayout,
+    QLabel,
+    QSizePolicy,
+    QVBoxLayout,
+    QWidget,
+)
 
-from ...themes import HEROUI_COLORS, RADIUS, CARD_SHADOWS
-from ...utils import hex_to_rgba
-from ...animation import RippleOverlay, PressScaleEffect
+from ...animation import PressScaleEffect, RippleOverlay, tween_property
 from ...core import ThemeProvider
+from ...themes import CARD_SHADOWS, HEROUI_COLORS, RADIUS
+from ...utils import hex_to_rgba
 
 # Card 的固定结构参数（对齐 HeroUI，不再暴露 size prop）
 # padding 统一 12，字号由用户自己在子控件上设置（header 用 h3，body 用正文）
@@ -64,16 +61,14 @@ def _sync_word_wrap_label_height(label: QLabel) -> None:
 class CardHeader(QWidget):
     """Card 标题插槽"""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroCardHeader")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._layout = QHBoxLayout(self)
         self._layout.setContentsMargins(12, 12, 12, 12)
         self._layout.setSpacing(8)
-        self._layout.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
     def set_padding(self, p: int):
@@ -83,7 +78,7 @@ class CardHeader(QWidget):
 class CardBody(QWidget):
     """Card 内容插槽"""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroCardBody")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -109,16 +104,14 @@ class CardBody(QWidget):
 class CardFooter(QWidget):
     """Card 底部插槽"""
 
-    def __init__(self, parent: Optional[QWidget] = None):
+    def __init__(self, parent: QWidget | None = None):
         super().__init__(parent)
         self.setObjectName("heroCardFooter")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
         self._layout = QHBoxLayout(self)
         self._layout.setContentsMargins(12, 12, 12, 12)
         self._layout.setSpacing(8)
-        self._layout.setAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        self._layout.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         self._is_blurred = False
 
@@ -152,7 +145,7 @@ class Card(QWidget):
         is_footer_blurred: bool = False,
         full_width: bool = False,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self._shadow = shadow
@@ -169,10 +162,10 @@ class Card(QWidget):
         self._is_hovered = False
         self._is_pressed_state = False
 
-        self._header: Optional[CardHeader] = None
-        self._body: Optional[CardBody] = None
-        self._footer: Optional[CardFooter] = None
-        self._content: Optional[QWidget] = None  # 在 _setup_ui 中创建
+        self._header: CardHeader | None = None
+        self._body: CardBody | None = None
+        self._footer: CardFooter | None = None
+        self._content: QWidget | None = None  # 在 _setup_ui 中创建
 
         # hover 过渡: 0.0=normal, 1.0=hovered
         self._hover_progress = 0.0
@@ -182,8 +175,8 @@ class Card(QWidget):
         self._apply_styles()
 
         # 按压动画（挂在内层 _content 上，避免影响外壳 paintEvent 阴影）
-        self._press_scale: Optional[PressScaleEffect] = None
-        self._ripple_overlay: Optional[RippleOverlay] = None
+        self._press_scale: PressScaleEffect | None = None
+        self._ripple_overlay: RippleOverlay | None = None
         if self._is_pressable:
             self._press_scale = PressScaleEffect(target=self._content)
             self._ripple_overlay = RippleOverlay(
@@ -329,9 +322,7 @@ class Card(QWidget):
         """当前插值后的背景色"""
         if not self._is_hoverable:
             return self._get_normal_bg()
-        return self._lerp_color(
-            self._get_normal_bg(), self._get_hover_bg(), self._hover_progress
-        )
+        return self._lerp_color(self._get_normal_bg(), self._get_hover_bg(), self._hover_progress)
 
     def current_bg_color(self) -> QColor:
         """返回 Card 当前实际底色(主题/hover 状态解析后)。
@@ -497,11 +488,7 @@ class Card(QWidget):
             self._footer.set_padding(p)
             fbg, fex = "transparent", ""
             if self._is_footer_blurred:
-                fbg = (
-                    hex_to_rgba("#18181b", 0.7)
-                    if is_dark
-                    else hex_to_rgba("#ffffff", 0.7)
-                )
+                fbg = hex_to_rgba("#18181b", 0.7) if is_dark else hex_to_rgba("#ffffff", 0.7)
                 fex = "border-top: 1px solid rgba(255, 255, 255, 0.1);"
             self._footer.setStyleSheet(f"""
                 #heroCardFooter {{
@@ -515,7 +502,7 @@ class Card(QWidget):
         rs = RADIUS.get(rk, RADIUS["lg"])
         try:
             return int(rs.replace("px", ""))
-        except:
+        except Exception:
             return 14
 
     @staticmethod
@@ -710,11 +697,11 @@ class Card(QWidget):
         else:
             super().setMaximumSize(*args)
 
-    def header(self) -> Optional[CardHeader]:
+    def header(self) -> CardHeader | None:
         return self._header
 
-    def body(self) -> Optional[CardBody]:
+    def body(self) -> CardBody | None:
         return self._body
 
-    def footer(self) -> Optional[CardFooter]:
+    def footer(self) -> CardFooter | None:
         return self._footer

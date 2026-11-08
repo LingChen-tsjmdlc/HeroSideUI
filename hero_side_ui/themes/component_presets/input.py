@@ -12,14 +12,14 @@ INPUT_SIZES = {
     "sm": {
         # 外观
         "height": 32,
-        "inside_height": 48,               # inside label 模式下的高度
+        "inside_height": 48,  # inside label 模式下的高度
         "padding_x": 8,
         "padding_y": 4,
         "inside_padding_y": 6,
-        "gap": 8,                          # start_icon / input / end_icon 之间的间距
+        "gap": 8,  # start_icon / input / end_icon 之间的间距
         # 字号（单位 px，对齐 HeroUI 的 text-tiny/small/medium）
-        "label_font_size": 12,             # resting label font
-        "label_float_font_size": 10,       # floated label font (≈ scale 85%)
+        "label_font_size": 12,  # resting label font
+        "label_float_font_size": 10,  # floated label font (≈ scale 85%)
         "input_font_size": 13,
         "outside_label_font_size": 12,
         "helper_font_size": 11,
@@ -31,10 +31,10 @@ INPUT_SIZES = {
         "border_width": 2,
         # inside label 浮起时相对 wrapper 内部的偏移 & 输入文字的预留空间
         # label_float_x/y 是相对 wrapper 内 padding 起点的偏移（正常落在 wrapper 内部左上）
-        "label_float_x": 0,                # 贴 wrapper 左 padding 对齐 line_edit 左
-        "label_float_y": 5,                # 距 wrapper 顶 5px（留呼吸空间，不要顶死）
-        "inside_input_top_space": 14,      # inside 模式下输入文字上方预留高度（容纳浮起 label）
-        "min_width": 240,                  # 组件整体最小宽度
+        "label_float_x": 0,  # 贴 wrapper 左 padding 对齐 line_edit 左
+        "label_float_y": 5,  # 距 wrapper 顶 5px（留呼吸空间，不要顶死）
+        "inside_input_top_space": 14,  # inside 模式下输入文字上方预留高度（容纳浮起 label）
+        "min_width": 240,  # 组件整体最小宽度
     },
     "md": {
         "height": 40,

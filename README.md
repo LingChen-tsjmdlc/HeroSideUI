@@ -321,12 +321,27 @@ uv run pre-commit install --hook-type commit-msg --hook-type pre-commit
 
 内置钩子：
 
-- **版本号自动递增**（commit-msg 阶段）
+- **Ruff lint + format**（pre-commit 阶段，自动修复暂存区文件）
+  - 规则配置见 [`ruff.toml`](ruff.toml)；CI 中同版本兜底检查
+  - 提交时自动执行 import 排序、未用导入清理、现代化语法转换与统一格式化
+- **版本号自动递增**（post-commit 阶段，`.hooks/commit_msg_bump.py`）
   - 默认提交 → `z+1`（0.0.1 → 0.0.2）
   - 消息末尾加 `(y)` → `y+1`（0.0.2 → 0.1.0）
   - 消息末尾加 `(x)` → `x+1`（0.1.0 → 1.0.0）
   - 支持中英文括号：`(y)` `（y）` `(Y)` `（Y）`
 - **尾部空白清理** / **文件末尾换行** / **YAML/TOML 检查** / **大文件检查** / **合并冲突检查**
+
+## 代码规范
+
+全仓库使用 [Ruff](https://docs.astral.sh/ruff/)（lint + format 一体，等价 TS 生态的 ESLint + Prettier）：
+
+```bash
+uvx ruff check hero_side_ui/ examples/ tests/      # 检查（CI 同款）
+uvx ruff check --fix hero_side_ui/ examples/ tests/  # 自动修复
+uvx ruff format hero_side_ui/ examples/ tests/     # 格式化
+```
+
+规则集：E/W/F（错误）+ I（import 排序）+ UP（现代化语法）+ B（bugbear）+ SIM（简化）+ RUF，中文全角标点与 Qt 惯用写法已按 `ruff.toml` 中的注释逐条豁免。
 
 ---
 

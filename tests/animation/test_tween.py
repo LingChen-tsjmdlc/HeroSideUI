@@ -17,7 +17,7 @@ from PySide6.QtCore import QObject
 from PySide6.QtGui import QColor
 from shiboken6 import isValid
 
-from hero_side_ui.animation import tween_value, tween_geometry, stop_tween
+from hero_side_ui.animation import stop_tween, tween_geometry, tween_value
 
 
 class _Owner(QObject):
@@ -68,8 +68,13 @@ class TestTweenValueBasic:
         owner = _Owner()
         done = []
         tween_value(
-            owner, "_r", 0.0, 1.0, lambda v: None,
-            duration=50, on_finished=lambda: done.append(True),
+            owner,
+            "_r",
+            0.0,
+            1.0,
+            lambda v: None,
+            duration=50,
+            on_finished=lambda: done.append(True),
         )
         qtbot.wait(120)
         assert done == [True]
@@ -100,9 +105,12 @@ class TestTweenValueQColor:
         owner = _Owner()
         captured: list[QColor] = []
         tween_value(
-            owner, "_r",
-            QColor("#000000"), QColor("#FFFFFF"),
-            captured.append, duration=50,
+            owner,
+            "_r",
+            QColor("#000000"),
+            QColor("#FFFFFF"),
+            captured.append,
+            duration=50,
         )
         qtbot.wait(120)
         assert len(captured) > 0
@@ -145,8 +153,8 @@ class TestStopTween:
 
 class TestTweenGeometry:
     def test_geometry_animates_widget(self, qtbot):
-        from PySide6.QtWidgets import QWidget
         from PySide6.QtCore import QRect
+        from PySide6.QtWidgets import QWidget
 
         w = QWidget()
         qtbot.addWidget(w)
@@ -164,8 +172,8 @@ class TestTweenGeometry:
         assert w._geo_anim is None
 
     def test_same_geometry_returns_none(self, qtbot):
-        from PySide6.QtWidgets import QWidget
         from PySide6.QtCore import QRect
+        from PySide6.QtWidgets import QWidget
 
         w = QWidget()
         qtbot.addWidget(w)

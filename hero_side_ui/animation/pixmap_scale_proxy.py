@@ -34,7 +34,6 @@ class PixmapScaleProxy:
         self._enable_predicate = enable_predicate
         self._pixmap: QPixmap | None = None
 
-
     def is_active(self) -> bool:
         """返回当前是否持有代理截图。"""
         return self._pixmap is not None
@@ -46,7 +45,6 @@ class PixmapScaleProxy:
             当前 QPixmap；未启用代理时为 None。
         """
         return self._pixmap
-
 
     def begin(self):
         """条件满足且宿主尺寸有效时截图并隐藏真实内容。"""
@@ -82,7 +80,6 @@ class PixmapScaleProxy:
         if content is not None:
             content.show()
         self._owner.update()
-
 
     def draw(self, painter: QPainter, owner_rect: QRect, anchor: tuple[float, float]):
         """按当前缩放比例和锚点绘制代理。

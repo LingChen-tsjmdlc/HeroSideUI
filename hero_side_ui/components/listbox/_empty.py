@@ -1,7 +1,5 @@
 """空状态占位 widget 构建（mixin）。"""
 
-from typing import Optional
-
 from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
@@ -20,7 +18,7 @@ class _EmptyContentMixin:
         self._items
     """
 
-    def set_empty_content(self, text: Optional[str]):
+    def set_empty_content(self, text: str | None):
         # None / "" 恢复默认 icon + 中英双语；非空 str 单行文字
         self._empty_content_text = text
         self._rebuild_empty_widget()
@@ -31,6 +29,7 @@ class _EmptyContentMixin:
         was_visible = not self._empty_widget.isHidden()
         self._list_v.removeWidget(self._empty_widget)
         from ...utils import safe_delete
+
         safe_delete(self._empty_widget)
         self._empty_widget = self._build_empty_widget()
         cfg = LISTBOX_SIZES.get(self._size, LISTBOX_SIZES["md"])
@@ -49,9 +48,7 @@ class _EmptyContentMixin:
             self._list_v.addWidget(self._empty_widget)
         else:
             self._list_v.insertWidget(idx, self._empty_widget)
-        self._empty_label = self._empty_widget.findChild(
-            QLabel, "heroEmptyText"
-        ) or Text("")
+        self._empty_label = self._empty_widget.findChild(QLabel, "heroEmptyText") or Text("")
         self._empty_widget.setVisible(was_visible)
 
     def _refresh_empty(self):

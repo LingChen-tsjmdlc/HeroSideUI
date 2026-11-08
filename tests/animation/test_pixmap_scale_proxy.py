@@ -14,8 +14,8 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtCore import QRect
-from PySide6.QtGui import QPainter, QImage, QColor
-from PySide6.QtWidgets import QWidget, QVBoxLayout, QLabel
+from PySide6.QtGui import QColor, QImage, QPainter
+from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from hero_side_ui.animation import PixmapScaleProxy
 

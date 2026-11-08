@@ -15,19 +15,16 @@ shadow 用 QGraphicsDropShadowEffect 挂在 wrapper 上。
 
 from __future__ import annotations
 
-from ...animation import tween_property
-
-from typing import Optional
-
 from PySide6.QtCore import (
     Signal,
 )
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget
 
+from ...animation import tween_property
 from ..skeleton import Skeleton
-from ._loader import ImageLoader, ImageSrc
 from ._blurred import BlurredImage
+from ._loader import ImageLoader, ImageSrc
 from ._rounded_image import _RoundedImage
 from ._shadow import content_margins, make_shadow_effect
 
@@ -61,8 +58,8 @@ class Image(QWidget):
     def __init__(
         self,
         src: ImageSrc = None,
-        width: Optional[int] = None,
-        height: Optional[int] = None,
+        width: int | None = None,
+        height: int | None = None,
         radius: str = "lg",
         shadow: str = "none",
         object_fit: str = "cover",
@@ -75,7 +72,7 @@ class Image(QWidget):
         disable_animation: bool = False,
         remove_wrapper: bool = False,
         fallback_src: ImageSrc = None,
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
         self.setObjectName("HeroImage")
@@ -100,8 +97,8 @@ class Image(QWidget):
 
         # 内部状态
         self._image_status: str = "pending"  # loading / loaded / failed / pending
-        self._loaded_pixmap: Optional[QPixmap] = None
-        self._fallback_pixmap: Optional[QPixmap] = None
+        self._loaded_pixmap: QPixmap | None = None
+        self._fallback_pixmap: QPixmap | None = None
 
         self._setup_ui()
         self._apply_shadow()
@@ -119,14 +116,14 @@ class Image(QWidget):
         self._img.move(0, 0)
 
         # 模糊副本（按需）
-        self._blurred: Optional[BlurredImage] = None
+        self._blurred: BlurredImage | None = None
         if self._is_blurred and not self._remove_wrapper:
             self._blurred = BlurredImage(self, blur_amount=self._blur_amount)
             self._blurred.lower()  # 放最底
             self._blurred.move(0, 0)
 
         # Skeleton 占位（按需）
-        self._skeleton: Optional[Skeleton] = None
+        self._skeleton: Skeleton | None = None
         if not self._disable_skeleton and not self._remove_wrapper:
             self._skeleton = Skeleton(
                 radius=self._radius,
@@ -222,8 +219,15 @@ class Image(QWidget):
             self._img.raise_()
 
     def _fade_in(self):
-        tween_property(self._img, "_fade_anim", b"fadeOpacity", 1.0, owner=self,
-                       duration=300, animated=not self._disable_animation)
+        tween_property(
+            self._img,
+            "_fade_anim",
+            b"fadeOpacity",
+            1.0,
+            owner=self,
+            duration=300,
+            animated=not self._disable_animation,
+        )
 
     # ============================================================
     # 阴影
@@ -295,14 +299,28 @@ class Image(QWidget):
     # ============================================================
     def enterEvent(self, event):
         if self._is_zoomed and self._image_status == "loaded":
-            tween_property(self._img, "_zoom_anim", b"zoomFactor", self._zoom_factor,
-                           owner=self, duration=300, animated=not self._disable_animation)
+            tween_property(
+                self._img,
+                "_zoom_anim",
+                b"zoomFactor",
+                self._zoom_factor,
+                owner=self,
+                duration=300,
+                animated=not self._disable_animation,
+            )
         super().enterEvent(event)
 
     def leaveEvent(self, event):
         if self._is_zoomed:
-            tween_property(self._img, "_zoom_anim", b"zoomFactor", 1.0,
-                           owner=self, duration=300, animated=not self._disable_animation)
+            tween_property(
+                self._img,
+                "_zoom_anim",
+                b"zoomFactor",
+                1.0,
+                owner=self,
+                duration=300,
+                animated=not self._disable_animation,
+            )
         super().leaveEvent(event)
 
     # ============================================================
@@ -384,7 +402,7 @@ class Image(QWidget):
     def status(self) -> str:
         return self._image_status
 
-    def pixmap(self) -> Optional[QPixmap]:
+    def pixmap(self) -> QPixmap | None:
         return self._loaded_pixmap
 
 

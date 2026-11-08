@@ -1,3 +1,3 @@
-from .card import Card, CardHeader, CardBody, CardFooter
+from .card import Card, CardBody, CardFooter, CardHeader
 
-__all__ = ["Card", "CardHeader", "CardBody", "CardFooter"]
+__all__ = ["Card", "CardBody", "CardFooter", "CardHeader"]

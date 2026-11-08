@@ -1,16 +1,13 @@
 """Tabs 包内私有 helper 函数（颜色解析、圆角映射等）。"""
 
-from typing import Optional
-
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
 
-
-
 # ============================================================
 # 工具：选中态文字色 / 未选中文字色 / cursor 填充色 解析
 # ============================================================
+
 
 def _opt(d: dict, *keys, default=None):
     for k in keys:
@@ -46,7 +43,7 @@ def _resolve_selected_text(variant: str, color: str, theme: str) -> QColor:
     return QColor("#FFFFFF")
 
 
-def _resolve_cursor_fill(variant: str, color: str, theme: str) -> Optional[QColor]:
+def _resolve_cursor_fill(variant: str, color: str, theme: str) -> QColor | None:
     """cursor 填充色（None 表示这个 variant 下不画填充 cursor）。"""
     if variant == "underlined":
         # underlined 下 cursor 是底边线条，不画矩形填充
@@ -61,7 +58,7 @@ def _resolve_cursor_fill(variant: str, color: str, theme: str) -> Optional[QColo
     return QColor(HEROUI_COLORS[color][500])
 
 
-def _resolve_list_bg(variant: str, theme: str) -> Optional[QColor]:
+def _resolve_list_bg(variant: str, theme: str) -> QColor | None:
     """tabList 背景色。"""
     if variant in ("light", "underlined", "bordered"):
         return None  # 透明
@@ -73,7 +70,7 @@ def _resolve_list_bg(variant: str, theme: str) -> Optional[QColor]:
     return c
 
 
-def _resolve_list_border(variant: str, theme: str) -> Optional[QColor]:
+def _resolve_list_border(variant: str, theme: str) -> QColor | None:
     """tabList 边框色（仅 bordered 变体）。"""
     if variant != "bordered":
         return None
@@ -108,4 +105,3 @@ def _resolve_radius_px(radius: str, size: str, height: int) -> tuple:
     if radius == "lg":
         return (14, 8)
     return (8, 4)
-

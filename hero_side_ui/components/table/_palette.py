@@ -24,18 +24,18 @@ from PySide6.QtGui import QColor
 from ...themes import HEROUI_COLORS, RADIUS
 
 __all__ = [
-    "wrapper_bg",
+    "cell_text",
+    "cell_text_disabled",
+    "divider",
     "header_bg",
     "header_text",
     "header_text_hover",
-    "cell_text",
-    "cell_text_disabled",
+    "hover_before_bg",
+    "resolve_radius_px",
     "selected_before_bg",
     "selected_text",
-    "hover_before_bg",
     "striped_before_bg",
-    "divider",
-    "resolve_radius_px",
+    "wrapper_bg",
 ]
 
 _TRANSPARENT = QColor(0, 0, 0, 0)

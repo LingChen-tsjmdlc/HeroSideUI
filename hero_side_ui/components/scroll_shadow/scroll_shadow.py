@@ -33,11 +33,9 @@ Qt 实现:
 
 from __future__ import annotations
 
-from typing import Optional
-
-from PySide6.QtCore import Qt, QEvent, QObject, Signal, QTimer
-from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPalette, QPainterPath
-from PySide6.QtWidgets import QScrollArea, QWidget, QVBoxLayout, QHBoxLayout, QLayout
+from PySide6.QtCore import QEvent, QObject, Qt, QTimer, Signal
+from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPalette
+from PySide6.QtWidgets import QHBoxLayout, QLayout, QScrollArea, QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 
@@ -59,7 +57,7 @@ class _ShadowOverlay(QWidget):
         self._orientation: str = "vertical"
         self._size: int = 40
         self._show_start: bool = False  # 顶/左
-        self._show_end: bool = False    # 底/右
+        self._show_end: bool = False  # 底/右
         self._fade_color: QColor = QColor("#FAFBFD")
         # 裁剪圆角(px)。>0 时 paintEvent 用 QPainterPath 把渐变裁到圆角矩形内,
         # 让阴影跟随父级 popover/card 的圆角内收,避免"中间滚动时四角变直角"。
@@ -176,20 +174,16 @@ class ScrollShadow(QScrollArea):
         visibility: str = "auto",
         is_enabled: bool = True,
         hide_scrollbar: bool = False,
-        fade_color: Optional[str] = None,
+        fade_color: str | None = None,
         theme: str = "auto",
-        parent: Optional[QWidget] = None,
+        parent: QWidget | None = None,
     ):
         super().__init__(parent)
 
         if orientation not in _ORIENTATION:
-            raise ValueError(
-                f"orientation must be one of {_ORIENTATION}, got {orientation!r}"
-            )
+            raise ValueError(f"orientation must be one of {_ORIENTATION}, got {orientation!r}")
         if visibility not in _VISIBILITY:
-            raise ValueError(
-                f"visibility must be one of {_VISIBILITY}, got {visibility!r}"
-            )
+            raise ValueError(f"visibility must be one of {_VISIBILITY}, got {visibility!r}")
 
         self._orientation = orientation
         self._size = int(size)
@@ -197,7 +191,7 @@ class ScrollShadow(QScrollArea):
         self._visibility = visibility
         self._is_enabled = bool(is_enabled)
         self._hide_scrollbar = bool(hide_scrollbar)
-        self._fade_color_user: Optional[str] = fade_color
+        self._fade_color_user: str | None = fade_color
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
@@ -540,7 +534,7 @@ class ScrollShadow(QScrollArea):
         self._sync_overlay_geometry()
         self._refresh_shadow()
 
-    def set_fade_color(self, c: Optional[str]) -> None:
+    def set_fade_color(self, c: str | None) -> None:
         """设置淡出渐变的目标色 —— **同时**把 ScrollShadow 自身+viewport 的
         背景也填成这个色,保证阴影与底色严丝合缝。
 

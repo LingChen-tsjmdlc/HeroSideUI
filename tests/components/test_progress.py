@@ -2,7 +2,7 @@
 
 import pytest
 
-from hero_side_ui import Progress, CircularProgress
+from hero_side_ui import CircularProgress, Progress
 
 
 # ============================================================
@@ -43,7 +43,9 @@ class TestProgressInit:
 
 
 class TestProgressVariants:
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     def test_colors(self, qtbot, color):
         p = Progress(color=color)
         qtbot.addWidget(p)
@@ -98,8 +100,12 @@ class TestProgressLabel:
         assert "33" in p._value_label.text()
 
     def test_custom_formatter(self, qtbot):
-        p = Progress(value=3, max_value=10, show_value_label=True,
-                     value_label_formatter=lambda v, mn, mx: f"{int(v)}/{int(mx)}")
+        p = Progress(
+            value=3,
+            max_value=10,
+            show_value_label=True,
+            value_label_formatter=lambda v, mn, mx: f"{int(v)}/{int(mx)}",
+        )
         qtbot.addWidget(p)
         p.show()
         assert p._value_label.text() == "3/10"
@@ -163,7 +169,9 @@ class TestCircularProgressInit:
         assert cp._size == "md"
         assert cp._is_indeterminate is False
 
-    @pytest.mark.parametrize("color", ["default", "primary", "secondary", "success", "warning", "danger"])
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
     def test_colors(self, qtbot, color):
         cp = CircularProgress(color=color)
         qtbot.addWidget(cp)

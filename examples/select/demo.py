@@ -2,14 +2,15 @@
 Select 组件示例 — 单选 / 多选 / 6 色 4 变体 3 尺寸 / 状态 / 主题
 """
 
-import os, sys
+import os
+import sys
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
+from _base import DemoBase
 from PySide6.QtWidgets import QVBoxLayout
 
 from hero_side_ui import Select
-from _base import DemoBase
 
 ANIMALS = [
     {"key": "cat", "label": "Cat", "description": "Small domestic feline"},
@@ -56,9 +57,7 @@ class SelectDemo(DemoBase):
         )
         sel_basic.selection_changed.connect(lambda k: print(f"[basic] selected: {k}"))
         sel_basic.setFixedWidth(300)
-        self.add_section(
-            layout, "基础（单选，点击 trigger 展开）", [sel_basic], labels_bag
-        )
+        self.add_section(layout, "基础（单选，点击 trigger 展开）", [sel_basic], labels_bag)
 
         # ============================================================
         # 1.1) 无 placeholder = 默认模式：label 居中（resting），选中后浮起
@@ -144,9 +143,7 @@ class SelectDemo(DemoBase):
             )
             sel.setFixedWidth(300)
             sizes.append(sel)
-        self.add_section(
-            layout, "3 种尺寸 (sm / md / lg)", sizes, labels_bag, spacing=16
-        )
+        self.add_section(layout, "3 种尺寸 (sm / md / lg)", sizes, labels_bag, spacing=16)
 
         # ============================================================
         # 4.1) 5 种圆角
@@ -182,9 +179,7 @@ class SelectDemo(DemoBase):
             color="secondary",
             default_selected_keys={"apple", "banana"},
         )
-        sel_multi.selection_changed.connect(
-            lambda keys: print(f"[multi] selected: {keys}")
-        )
+        sel_multi.selection_changed.connect(lambda keys: print(f"[multi] selected: {keys}"))
         sel_multi.setFixedWidth(300)
 
         sel_multi_clearable = Select(
