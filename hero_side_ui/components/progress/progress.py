@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from ...animation import (
     IndeterminateBarAnimation,
     StripeFlowAnimation,
+    stop_tween,
     tween_property,
 )
 from ...core import ThemeProvider
@@ -152,11 +153,16 @@ class _LinearTrack(QWidget):
             disable_animation: True 时立即应用目标值，不播放 500ms 过渡。
 
         Note:
-            经 tween_property 写入 anim_ratio；同通道的旧过渡会被抢占。
+            动态过渡经 tween_property 写入 anim_ratio；立即态直接赋值，
+            避免 QObject.setProperty 发 QDynamicPropertyChangeEvent 触发
+            app 级事件过滤器（macOS Cocoa 下会包装悬空 QObject 而崩溃）。
         """
-        tween_property(
-            self, "_ratio_anim", b"anim_ratio", ratio, duration=500, animated=not disable_animation
-        )
+        if disable_animation:
+            stop_tween(self, "_ratio_anim")
+            self._anim_ratio = ratio
+            self.update()
+            return
+        tween_property(self, "_ratio_anim", b"anim_ratio", ratio, duration=500)
 
     # ----- 尺寸 -----
     def sizeHint(self):

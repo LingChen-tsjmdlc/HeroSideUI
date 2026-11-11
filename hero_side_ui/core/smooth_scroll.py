@@ -6,6 +6,8 @@
 
 from __future__ import annotations
 
+import weakref
+
 from PySide6.QtCore import (
     QEasingCurve,
     QEvent,
@@ -17,10 +19,12 @@ from PySide6.QtWidgets import QAbstractScrollArea, QApplication, QScrollBar
 __all__ = ["SmoothScroll"]
 
 
-# 标记 widget 是否已挂过 SmoothScroll，避免重复
-_ATTACHED_FLAG = "_hs_smooth_scroll_attached"
+# attach 状态放在 Python 侧：Qt 动态属性的 QVariant 只持有裸 QObject*，
+# 对象销毁后 PySide 从 property() 读回并包装会触发 dynamic_cast 悬空；
+# setProperty 还会发 QDynamicPropertyChangeEvent，制造嵌套事件过滤。
+_ATTACHED: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 # 永久退出标记：opt_out() 写 True 后，auto-attach 与显式 attach 都不再挂
-_OPT_OUT_FLAG = "_hs_smooth_scroll_opted_out"
+_OPTED_OUT: weakref.WeakKeyDictionary = weakref.WeakKeyDictionary()
 
 
 class _SmoothScrollFilter(QObject):
@@ -184,8 +188,12 @@ class _GlobalAutoAttachFilter(QObject):
     def eventFilter(self, obj, event):
         """在新出现的滚动区显示时自动挂载平滑滚动。"""
         if event.type() == QEvent.Type.Show and isinstance(obj, QAbstractScrollArea):
-            if obj.property(_OPT_OUT_FLAG) is not True and obj.property(_ATTACHED_FLAG) is None:
-                SmoothScroll.attach(obj)
+            try:
+                if not _OPTED_OUT.get(obj) and obj not in _ATTACHED:
+                    SmoothScroll.attach(obj)
+            except RuntimeError:
+                # obj 的 C++ 端已释放，不再尝试包装或挂载
+                return False
         return super().eventFilter(obj, event)
 
 
@@ -229,10 +237,10 @@ class SmoothScroll:
             return None
         if not isinstance(area, QAbstractScrollArea):
             return None
-        if area.property(_OPT_OUT_FLAG) is True:
+        if _OPTED_OUT.get(area):
             return None  # 永久退出过，尊重之
 
-        existing = area.property(_ATTACHED_FLAG)
+        existing = _ATTACHED.get(area)
         if existing is not None:
             return existing
 
@@ -244,13 +252,13 @@ class SmoothScroll:
             duration=duration if duration is not None else cls._default_duration,
             easing=easing if easing is not None else cls._default_easing,
         )
-        area.setProperty(_ATTACHED_FLAG, filt)
+        _ATTACHED[area] = filt
         return filt
 
     @classmethod
     def detach(cls, area: QAbstractScrollArea):
         """从 area 上卸载平滑滚动"""
-        existing = area.property(_ATTACHED_FLAG)
+        existing = _ATTACHED.pop(area, None)
         if existing is None:
             return
         try:
@@ -259,14 +267,13 @@ class SmoothScroll:
         except RuntimeError:
             pass
         existing.deleteLater()
-        area.setProperty(_ATTACHED_FLAG, None)
 
     @classmethod
     def opt_out(cls, area: QAbstractScrollArea):
         """永久退出平滑滚动（detach + 写禁用标记，auto-attach 与 attach 都不再挂）"""
         cls.detach(area)
         if isinstance(area, QAbstractScrollArea):
-            area.setProperty(_OPT_OUT_FLAG, True)
+            _OPTED_OUT[area] = True
 
     @classmethod
     def ensure_applied(cls) -> bool:
@@ -310,7 +317,7 @@ class SmoothScroll:
 
         # 立即扫一遍现有的 area
         for w in app.allWidgets():
-            if isinstance(w, QAbstractScrollArea) and w.property(_ATTACHED_FLAG) is None:
+            if isinstance(w, QAbstractScrollArea) and w not in _ATTACHED:
                 cls.attach(w)
 
     @classmethod
