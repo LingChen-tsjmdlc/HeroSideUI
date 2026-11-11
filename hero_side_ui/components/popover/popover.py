@@ -541,14 +541,16 @@ class Popover(
             同步清理全局监听、backdrop 与滚动监听，并发射 closed 信号，
             等价于一次隐式 finalize，避免状态卡在"已开"导致 toggle 失效。
         """
+        # 过滤器是否安装与 _is_open 不是同一件事：hide 时无条件卸载，
+        # 否则状态被别处改过就会把 QApplication 级过滤器留到后续事件。
+        app = QApplication.instance()
+        if app is not None:
+            app.removeEventFilter(self._global_filter)
         if self._is_open:
             # 可能是 Qt 自动 hide（如切到其他应用），同步状态
             self._is_open = False
             self._closing = False
             self._just_closed.start()
-            app = QApplication.instance()
-            if app is not None:
-                app.removeEventFilter(self._global_filter)
             if self._backdrop is not None:
                 self._backdrop.hide()
                 self._backdrop.deleteLater()

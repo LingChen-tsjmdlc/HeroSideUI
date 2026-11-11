@@ -9,9 +9,9 @@
    退出，定时器回调会在下一个测试期间 fire，访问已释放的 widget。
 
 做法：
+- 在 pytest-qt 于 CALL 尾部处理事件之前，先停掉所有活跃动画 / QTimer。
 - 在每个测试前后，反复抽干 Qt 事件队列（含 deleteLater 和 Timer），
   最多 10 轮或 200ms。
-- 主动停止所有 top-level widget 下的动画 / QTimer。
 """
 
 from __future__ import annotations
@@ -19,7 +19,7 @@ from __future__ import annotations
 import gc
 
 import pytest
-from PySide6.QtCore import QTimer
+from PySide6.QtCore import QAbstractAnimation, QEvent, QTimer
 from PySide6.QtWidgets import QApplication
 
 
@@ -31,32 +31,43 @@ def _drain_events(max_iterations: int = 10) -> None:
     for _ in range(max_iterations):
         # 处理常规事件
         app.processEvents()
-        # 处理 deleteLater 队列
-        app.sendPostedEvents(None, 0)  # 0 = QEvent.DeferredDelete 相关
+        # 必须显式指定 DeferredDelete：传 0 时 Qt 按事件循环嵌套层级跳过
+        # deleteLater 队列，顶层窗口会跨测试累积（真实 GUI 下都是原生窗口）。
+        app.sendPostedEvents(None, int(QEvent.Type.DeferredDelete))
         # 再给 GC 一次机会
         gc.collect()
 
 
 def _stop_all_timers_and_animations() -> None:
-    """扫描所有 top-level widget，停止其 QTimer 子对象和 QPropertyAnimation。"""
+    """停止所有顶层 widget 与 app 自身子树里的 QTimer 和动画。"""
     app = QApplication.instance()
     if app is None:
         return
-    try:
-        from PySide6.QtCore import QPropertyAnimation
-    except ImportError:
-        QPropertyAnimation = None  # type: ignore[assignment]
-
-    for widget in list(app.topLevelWidgets()):
+    for root in [*app.topLevelWidgets(), app]:
         try:
-            for timer in widget.findChildren(QTimer):
+            for timer in root.findChildren(QTimer):
                 timer.stop()
-            if QPropertyAnimation is not None:
-                for anim in widget.findChildren(QPropertyAnimation):
-                    anim.stop()
+            # QAbstractAnimation 覆盖 QPropertyAnimation / QVariantAnimation /
+            # QAnimationGroup；只找 QPropertyAnimation 会漏掉 tween_value 通道。
+            for anim in root.findChildren(QAbstractAnimation):
+                anim.stop()
         except RuntimeError:
-            # widget 可能已经被 C++ 端销毁
+            # root 可能已经被 C++ 端销毁
             continue
+
+
+@pytest.hookimpl(wrapper=True, trylast=True)
+def pytest_runtest_call(item):
+    """在 pytest-qt 恢复并调用 app.processEvents() 之前停掉活跃动画。
+
+    Note:
+        pytest-qt 的 pytest_runtest_call 是 tryfirst wrapper，yield 之后
+        立刻处理事件队列；trylast wrapper 会先恢复，所以这里的清理赶在
+        事件派发之前，动画 tick 不会跨测试访问已释放的 widget。
+    """
+    result = yield
+    _stop_all_timers_and_animations()
+    return result
 
 
 @pytest.fixture(autouse=True)

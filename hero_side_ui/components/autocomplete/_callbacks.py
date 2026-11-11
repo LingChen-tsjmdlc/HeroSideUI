@@ -1,6 +1,7 @@
 """Autocomplete 内部信号回调 mixin：input/action/clear/popover 各回调集中处。"""
 
 from PySide6.QtCore import QTimer
+from shiboken6 import isValid
 
 from ...themes import AUTOCOMPLETE_SIZES
 
@@ -126,6 +127,17 @@ class _AutocompleteCallbacksMixin:
             关闭且不允许自定义值时，输入文本若不匹配任何 item.label，
             回退到 selected_key 的 label；无选中则清空，避免游离文本。
         """
+        # popover 信号是开关状态的唯一来源。不同步会让 close() 早退，
+        # 全局点击过滤器留在 QApplication 上，后续鼠标事件访问已释放对象。
+        self._is_open = is_open
+        # popover 随宿主一起 deleteLater 时也会发 closed；此时子部件可能已由
+        # C++ 端回收，后续刷新会抛 RuntimeError 并污染下一个测试。
+        try:
+            alive = isValid(self) and isValid(self._input.line_edit)
+        except RuntimeError:
+            alive = False
+        if not alive:
+            return
         # popover 打开/关闭都刷一次 clear:open 时即使无 hover 也保留(键盘流),
         # close 时若 hover 也没了就该收起。
         self._refresh_clear_visibility()

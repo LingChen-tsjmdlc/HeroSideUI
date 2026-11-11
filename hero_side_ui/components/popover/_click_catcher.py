@@ -6,6 +6,7 @@
 from typing import TYPE_CHECKING
 
 from PySide6.QtCore import QEvent, QObject, QPoint
+from shiboken6 import isValid
 
 if TYPE_CHECKING:
     from .popover import Popover
@@ -40,8 +41,13 @@ class _GlobalClickCatcher(QObject):
             点到 popover 自身或 trigger 时保持打开，让 trigger 的 click
             逻辑走 toggle，避免出现"点两次才开关"的体感。
         """
+        owner = self._owner
+        # owner 生命周期不归本过滤器管；C++ 端已释放时只放行，
+        # 继续访问其属性会在事件派发阶段变成悬空访问。
+        if not isValid(owner):
+            return False
         if event.type() == QEvent.Type.MouseButtonPress:
-            if not self._owner._is_open:
+            if not owner._is_open:
                 return False
             # 全局坐标
             try:
@@ -49,19 +55,20 @@ class _GlobalClickCatcher(QObject):
             except AttributeError:
                 gp = event.globalPos()
             # 点到 popover 自己 → 保持打开
-            if self._owner.geometry().contains(gp):
+            if owner.geometry().contains(gp):
                 return False
             # 点到 trigger → 也保持（让 trigger 的 click 逻辑走 toggle，
             # 否则这里先关一次，用户点击再开一次，体感还是"点两次")
-            if self._owner._trigger is not None:
-                tr_top_left = self._owner._trigger.mapToGlobal(QPoint(0, 0))
-                w = self._owner._trigger.width()
-                h = self._owner._trigger.height()
+            trigger = owner._trigger
+            if trigger is not None and isValid(trigger):
+                tr_top_left = trigger.mapToGlobal(QPoint(0, 0))
+                w = trigger.width()
+                h = trigger.height()
                 if (
                     tr_top_left.x() <= gp.x() <= tr_top_left.x() + w
                     and tr_top_left.y() <= gp.y() <= tr_top_left.y() + h
                 ):
                     return False
             # 外部点击 → 关
-            self._owner.close()
+            owner.close()
         return False

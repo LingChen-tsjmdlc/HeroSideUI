@@ -46,7 +46,14 @@ class LabelFloatAnimation(QObject):
     def _set_progress(self, value: float):
         """设置过渡进度并通知回调。"""
         self._progress = value
-        self._on_progress(value)
+        self._emit_progress()
+
+    def _emit_progress(self):
+        """通知进度；宿主部件已销毁时停掉动画，避免后续 tick 访问悬空对象。"""
+        try:
+            self._on_progress(self._progress)
+        except RuntimeError:
+            self._anim.stop()
 
     progress = Property(float, _get_progress, _set_progress)
 
@@ -96,4 +103,4 @@ class LabelFloatAnimation(QObject):
             self._anim.stop()
             self._floated = floated
             self._progress = 1.0 if floated else 0.0
-            self._on_progress(self._progress)
+            self._emit_progress()
