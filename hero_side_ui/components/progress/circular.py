@@ -154,7 +154,7 @@ class CircularProgress(QWidget):
         layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
 
         # SVG（自绘）+ 内部居中 value label
-        self._svg = _CircularSvg(owner=self)
+        self._svg = _CircularSvg(owner=self, parent=self)
 
         # value label 放在 SVG 上方（作为子控件，绝对居中）
         self._value_label = Text("", parent=self._svg, selectable=False)

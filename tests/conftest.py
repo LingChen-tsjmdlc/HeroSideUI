@@ -56,6 +56,27 @@ def _stop_all_timers_and_animations() -> None:
             continue
 
 
+def _keep_toplevel_widgets_alive(item) -> None:
+    """把当前全部顶层 widget 挂到 item 上保活，直到 qtbot teardown 完成删除。
+
+    测试函数 return 后其局部顶层窗口（Python-owned，qtbot 只持 weakref）已不可
+    达，而 qtbot 的 close+deleteLater 要等 teardown hook；此间隙的任何一次自动
+    GC 都会在 GC 内析构原生窗口，~QWidget 发出的 Destroy 事件经 app 级 Python
+    eventFilter 需要重建 wrapper，Shiboken 对半析构对象做 __dynamic_cast 会读
+    到已退化的 RTTI/vtable（macOS Cocoa 崩 exit 139 的根因）。挂强引用后 GC
+    不会碰这些 wrapper，析构改由 qtbot 的 deleteLater + teardown 尾部
+    processEvents 驱动，此时 wrapper 仍然有效。
+    """
+    app = QApplication.instance()
+    if app is None:
+        return
+    try:
+        widgets = [w for w in app.topLevelWidgets() if w.parentWidget() is None]
+    except RuntimeError:
+        return
+    item._hs_keepalive = widgets
+
+
 @pytest.hookimpl(wrapper=True, trylast=True)
 def pytest_runtest_call(item):
     """在 pytest-qt 恢复并调用 app.processEvents() 之前停掉活跃动画。
@@ -64,9 +85,18 @@ def pytest_runtest_call(item):
         pytest-qt 的 pytest_runtest_call 是 tryfirst wrapper，yield 之后
         立刻处理事件队列；trylast wrapper 会先恢复，所以这里的清理赶在
         事件派发之前，动画 tick 不会跨测试访问已释放的 widget。
+
+        测试函数返回后其局部 widget（顶层窗口，Python-owned）已不可达，
+        qtbot 的 close+deleteLater 却要等 teardown 阶段；此间隙若自动 GC
+        触发，会在 GC 内析构原生窗口，~QWidget 发出的 Destroy 事件经
+        app 级 Python eventFilter 需要重建 wrapper，Shiboken 对半析构
+        对象做 __dynamic_cast 读到退化 RTTI（macOS exit 139 根因）。
+        故在此把顶层 widget 挂到 item 上保活，析构统一交给 qtbot 的
+        close+deleteLater + teardown 尾部 processEvents，全程 wrapper 有效。
     """
     result = yield
     _stop_all_timers_and_animations()
+    _keep_toplevel_widgets_alive(item)
     return result
 
 

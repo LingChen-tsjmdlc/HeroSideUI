@@ -402,12 +402,12 @@ class Progress(QWidget):
         self._label_row.addWidget(self._label, 0, Qt.AlignmentFlag.AlignLeft)
         self._label_row.addStretch()
         self._label_row.addWidget(self._value_label, 0, Qt.AlignmentFlag.AlignRight)
-        self._label_row_widget = QWidget()
+        self._label_row_widget = QWidget(self)
         self._label_row_widget.setLayout(self._label_row)
         self._layout.addWidget(self._label_row_widget)
 
         # track
-        self._track = _LinearTrack(owner=self)
+        self._track = _LinearTrack(owner=self, parent=self)
         self._layout.addWidget(self._track)
 
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
