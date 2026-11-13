@@ -84,6 +84,7 @@ class HeroSideUIProvider:
         # ThemeProvider.instance() 内部会再调一次 ensure_core_ready()，但此时
         # _setup_done=True 已短路，不会重复激活也不会发 warning——符合预期。
         provider = ThemeProvider.instance()
+        provider.acquire_app_palette()
         if theme is not None:
             provider.set_mode(theme)
 

@@ -3,13 +3,21 @@
 from __future__ import annotations
 
 from PySide6.QtCore import QObject, Qt, Signal
-from PySide6.QtGui import QColor, QGuiApplication, QPalette
+from PySide6.QtGui import QBrush, QColor, QGuiApplication, QPalette
 from PySide6.QtWidgets import QApplication
 
 from ._registry import WidgetRegistry
 
 VALID_MODES = ("auto", "light", "dark")
 VALID_THEMES = ("light", "dark")
+
+# 全局调色板同步涉及的颜色组与角色，还原时逐组写回
+_PALETTE_GROUPS = (
+    QPalette.ColorGroup.Active,
+    QPalette.ColorGroup.Inactive,
+    QPalette.ColorGroup.Disabled,
+)
+_PALETTE_ROLES = (QPalette.ColorRole.Window, QPalette.ColorRole.WindowText)
 
 
 class ThemeProvider(QObject):
@@ -41,8 +49,12 @@ class ThemeProvider(QObject):
         # 是否在主题变化时自动同步 QApplication 全局 palette
         # 默认开启 → 用户写普通 QWidget/QMainWindow 也能开箱即用
         self._auto_app_palette: bool = True
-        # 首次改动前的 Window/WindowText 原色，release_app_palette 据此还原
-        self._original_palette: tuple[QColor, QColor] | None = None
+        # 首次改动前 Window/WindowText 在各颜色组的画刷，release_app_palette 据此还原
+        self._original_palette: (
+            dict[tuple[QPalette.ColorGroup, QPalette.ColorRole], QBrush] | None
+        ) = None
+        # release 前的自动同步开关，acquire 时恢复；None 表示未处于释放状态
+        self._auto_before_release: bool | None = None
 
         # 监听系统主题变化（Qt 6.5+ 提供 colorSchemeChanged）
         self._connect_system_signals()
@@ -252,30 +264,46 @@ class ThemeProvider(QObject):
 
         pal = app.palette()
         if self._original_palette is None:
-            self._original_palette = (
-                pal.color(QPalette.ColorRole.Window),
-                pal.color(QPalette.ColorRole.WindowText),
-            )
+            self._original_palette = {
+                (group, role): pal.brush(group, role)
+                for group in _PALETTE_GROUPS
+                for role in _PALETTE_ROLES
+            }
         pal.setColor(QPalette.ColorRole.Window, QColor(bg))
         pal.setColor(QPalette.ColorRole.WindowText, QColor(fg))
         app.setPalette(pal)
 
     def release_app_palette(self) -> None:
-        """停止同步并把 QApplication 的 Window/WindowText 还原为首次改动前的值。
+        """停止同步，并按颜色组还原 Window/WindowText 的首次改动前的值。
 
         Note:
+            只写回这两个角色，宿主后来改动的其他角色保持不变。
             未改动过调色板时只停止同步。
         """
+        if self._auto_before_release is None:
+            self._auto_before_release = self._auto_app_palette
         self._auto_app_palette = False
         app = QApplication.instance()
         if app is None or self._original_palette is None:
             return
-        window, window_text = self._original_palette
         pal = app.palette()
-        pal.setColor(QPalette.ColorRole.Window, window)
-        pal.setColor(QPalette.ColorRole.WindowText, window_text)
+        for (group, role), brush in self._original_palette.items():
+            pal.setBrush(group, role, brush)
         app.setPalette(pal)
         self._original_palette = None
+
+    def acquire_app_palette(self) -> None:
+        """恢复 release_app_palette 之前的同步开关，并按当前主题重新同步。
+
+        Note:
+            未释放过时不做任何事，不会覆盖用户用 set_auto_app_palette 设定的开关。
+        """
+        if self._auto_before_release is None:
+            return
+        self._auto_app_palette = self._auto_before_release
+        self._auto_before_release = None
+        if self._auto_app_palette:
+            self._sync_app_palette()
 
     def set_auto_app_palette(self, enabled: bool) -> None:
         """开关"主题变化时自动同步 QApplication palette"。
@@ -283,6 +311,7 @@ class ThemeProvider(QObject):
         Args:
             enabled: False 时 ThemeProvider 不再改全局 palette。
         """
+        self._auto_before_release = None  # 显式设置优先于 release 前的旧值
         self._auto_app_palette = bool(enabled)
         if self._auto_app_palette:
             self._sync_app_palette()

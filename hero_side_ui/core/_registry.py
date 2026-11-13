@@ -7,12 +7,14 @@ import weakref
 from collections.abc import Callable
 from typing import Any
 
+from shiboken6 import isValid
+
 
 class WidgetRegistry:
     """以弱引用登记组件，并向其广播变更。
 
-    组件销毁后自动脱离。广播时 C++ 对象已被删除的组件被静默注销；
-    其他异常说明组件自身有问题，每种组件与错误组合只告警一次。
+    组件销毁后自动脱离。广播时 Qt 对象已失效的组件被静默注销；
+    其他异常说明组件自身有问题，组件保持登记，每种组件与错误组合只告警一次。
     """
 
     def __init__(self, owner: str) -> None:
@@ -50,8 +52,8 @@ class WidgetRegistry:
             notify: 接收单个组件的回调。
 
         Note:
-            遍历副本，回调中登记或注销不影响本轮。RuntimeError 视为
-            组件的 C++ 对象已销毁并注销；其他异常告警后继续通知其余组件。
+            遍历副本，回调中登记或注销不影响本轮。回调抛错时只在组件的
+            Qt 对象已失效时注销；其他异常告警后继续通知其余组件。
         """
         for widget in list(self._widgets):
             self.broadcast_to(widget, notify)
@@ -65,10 +67,11 @@ class WidgetRegistry:
         """
         try:
             notify(widget)
-        except RuntimeError:
-            self._widgets.discard(widget)
         except Exception as exc:
-            self._warn_once(widget, exc)
+            if isinstance(exc, RuntimeError) and not isValid(widget):
+                self._widgets.discard(widget)
+            else:
+                self._warn_once(widget, exc)
 
     def _warn_once(self, widget: Any, exc: Exception) -> None:
         """同一组件类型与错误只告警一次。"""
