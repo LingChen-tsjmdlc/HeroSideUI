@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.18.0"
+__version__ = "0.18.1"
 
 from importlib import import_module
 from typing import TYPE_CHECKING
