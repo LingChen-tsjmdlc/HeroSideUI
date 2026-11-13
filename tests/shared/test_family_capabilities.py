@@ -228,13 +228,12 @@ class TestDateModel:
         st.set_segment("month", 2)
         assert st.value().date.month == 2
 
-    def test_legacy_import_paths_resolve_to_the_same_objects(self):
-        from hero_side_ui import parse_datetime
-        from hero_side_ui.components.calendar._date import CalendarDate as LegacyDate
-        from hero_side_ui.components.date_input._value import parse_datetime as legacy_parse
+    def test_calendar_date_is_exported_from_every_public_entry(self):
+        from hero_side_ui import components
+        from hero_side_ui.components.calendar import CalendarDate as FromCalendar
 
-        assert LegacyDate is CalendarDate
-        assert legacy_parse is parse_datetime
+        assert components.CalendarDate is CalendarDate
+        assert FromCalendar is CalendarDate
 
 
 class TestCalendarSurface:

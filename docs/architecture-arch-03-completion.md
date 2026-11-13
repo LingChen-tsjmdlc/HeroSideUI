@@ -22,14 +22,14 @@
 
 ## 改了什么
 
-| 位置                                           | 改动                                                                                                      | 动态能力是否保留                                                 |
-| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- |
-| `themes/font.py`                               | 只保留静态常量 `DEFAULT_FONT_FAMILY`；`core.font_provider` 改为引用它，去掉重复定义                       | 字体切换不受影响，组件本来就走 `FontProvider`                    |
-| `themes.FONT_FAMILY`                           | 保留为已弃用名称，返回静态默认字体栈并发出 `DeprecationWarning`，不再从 `__all__` 导出                    | 仓库内无使用。外部若使用，拿到的值不再随字体切换而变             |
-| `core.ThemeProvider`                           | 新增 `peek()`：返回已存在的单例，不创建                                                                   | 不适用                                                           |
-| `utils/icon_utils.py`                          | 默认色改用 `peek()`：Provider 已存在则跟随主题，否则用浅色主题色，不创建 Provider                         | 主题切换后重新取色走组件自己的刷新路径，不受影响                 |
-| Accordion 起始图标                             | `set_start_icon` 与样式刷新共用 `_render_start_icon()`，都显式传色                                        | 修正了此前 `set_start_icon` 用默认色、与样式刷新结果不一致的细节 |
-| `hero_side_ui/__init__`、`components/__init__` | 按名称延迟加载（PEP 562），保留 `__all__`、`TYPE_CHECKING` 下的真实导入（IDE 与类型检查可用）和 `__dir__` | 写法不变：`from hero_side_ui import Button`、`import *` 均可用   |
+| 位置                                           | 改动                                                                                                      | 动态能力是否保留                                                         |
+| ---------------------------------------------- | --------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
+| `themes/font.py`                               | 只保留静态常量 `DEFAULT_FONT_FAMILY`；`core.font_provider` 改为引用它，去掉重复定义                       | 字体切换不受影响，组件本来就走 `FontProvider`                            |
+| `themes.FONT_FAMILY`                           | 已在 ARCH-06 中删除；主题层只保留静态常量 `DEFAULT_FONT_FAMILY`                                           | 仓库内无使用。运行时字体栈用 `FontProvider.instance().font_family_css()` |
+| `core.ThemeProvider`                           | 新增 `peek()`：返回已存在的单例，不创建                                                                   | 不适用                                                                   |
+| `utils/icon_utils.py`                          | 默认色改用 `peek()`：Provider 已存在则跟随主题，否则用浅色主题色，不创建 Provider                         | 主题切换后重新取色走组件自己的刷新路径，不受影响                         |
+| Accordion 起始图标                             | `set_start_icon` 与样式刷新共用 `_render_start_icon()`，都显式传色                                        | 修正了此前 `set_start_icon` 用默认色、与样式刷新结果不一致的细节         |
+| `hero_side_ui/__init__`、`components/__init__` | 按名称延迟加载（PEP 562），保留 `__all__`、`TYPE_CHECKING` 下的真实导入（IDE 与类型检查可用）和 `__dir__` | 写法不变：`from hero_side_ui import Button`、`import *` 均可用           |
 
 结果：`import hero_side_ui` 约 1.1 秒降到约 0.2 秒，且不加载任何组件；只使用 `Text` 时只加载 `text` 包，不加载 `icu`、`markdown_it`、`mdit_py_plugins`、`pygments`。
 
@@ -45,7 +45,7 @@
 
 | 项目                                     | 说明                                                                                     |
 | ---------------------------------------- | ---------------------------------------------------------------------------------------- |
-| `themes.FONT_FAMILY`                     | 已弃用，下一个次要版本移除。替代写法：`FontProvider.instance().font_family_css()`        |
+| `themes.FONT_FAMILY`                     | 已删除。替代写法：`FontProvider.instance().font_family_css()`                            |
 | 新增导出                                 | `themes.DEFAULT_FONT_FAMILY`；`ThemeProvider.peek()`                                     |
 | 导入写法                                 | 全部不变；319 个模块逐个在全新解释器中单独导入均通过                                     |
 | 导入副作用                               | 之前导入任何组件会顺带加载其他组件，依赖这一副作用的代码需要显式导入。仓库内没有此类用法 |
@@ -53,12 +53,12 @@
 
 ## 验证
 
-| 检查             | 范围                                                                                                                                                                                                          |
-| ---------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 依赖方向         | `tests/shared/test_layer_boundaries.py`：`themes`、`animation`、`icons`、`utils` 不依赖 `core` 或 `components`，`core` 不依赖 `components`；已注入违规验证检查会失败                                          |
-| 弃用与不创建设施 | 同文件：`FONT_FAMILY` 为静态值并告警；独立进程中调用 `load_svg_icon()` 后 `ThemeProvider.peek()` 仍为 `None`                                                                                                  |
-| 延迟加载         | `tests/shared/test_lazy_exports.py`：名称表与 `__all__`、`TYPE_CHECKING` 导入一致；全部名称可解析；`import *` 与 `dir()` 可用；导入包不加载组件；`Text` 不引入日期与 Markdown 依赖；`Calendar` 按需加载 `icu` |
-| 消费者           | `tests/components/test_accordion.py` 新增起始图标取色用例                                                                                                                                                     |
+| 检查       | 范围                                                                                                                                                                                                          |
+| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 依赖方向   | `tests/shared/test_layer_boundaries.py`：`themes`、`animation`、`icons`、`utils` 不依赖 `core` 或 `components`，`core` 不依赖 `components`；已注入违规验证检查会失败                                          |
+| 不创建设施 | 同文件：独立进程中调用 `load_svg_icon()` 后 `ThemeProvider.peek()` 仍为 `None`；主题层不再提供 `FONT_FAMILY`                                                                                                  |
+| 延迟加载   | `tests/shared/test_lazy_exports.py`：名称表与 `__all__`、`TYPE_CHECKING` 导入一致；全部名称可解析；`import *` 与 `dir()` 可用；导入包不加载组件；`Text` 不引入日期与 Markdown 依赖；`Calendar` 按需加载 `icu` |
+| 消费者     | `tests/components/test_accordion.py` 新增起始图标取色用例                                                                                                                                                     |
 
 测试结果见本次提交说明。未运行全量测试。
 

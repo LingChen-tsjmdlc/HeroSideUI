@@ -132,3 +132,37 @@ def test_code_fonts_are_independent_of_the_global_family(qtbot):
     before = w._code_label.font().family()
     FontProvider.instance().set_family(CHANGED)
     assert w._code_label.font().family() == before
+
+
+# ============================================================
+# 新组件必须接入全局字体
+# ============================================================
+# 直接设置字体却不登记的组件包：原因见 docs/architecture-arch-04-completion.md。
+FONT_REGISTRATION_EXCEPTIONS = {
+    "code_block": "等宽字体，独立于全局字体",
+    "code_editor": "等宽字体，独立于全局字体",
+    "link": "文字由已登记的 Text 承担",
+}
+
+
+def test_every_component_that_sets_a_font_registers_for_font_changes():
+    import re
+    from pathlib import Path
+
+    root = Path(__file__).resolve().parents[2] / "hero_side_ui" / "components"
+    uses = re.compile(r"make_text_qfont\(|make_qfont\(|\.setFont\(|mono_qfont\(")
+    registers = re.compile(r"FontProvider\.instance\(\)\.register|def _apply_font")
+    state: dict[str, list[bool]] = {}
+    for path in root.rglob("*.py"):
+        text = path.read_text(encoding="utf-8")
+        flags = state.setdefault(path.relative_to(root).parts[0], [False, False])
+        flags[0] = flags[0] or bool(uses.search(text))
+        flags[1] = flags[1] or bool(registers.search(text))
+    missing = sorted(
+        name
+        for name, (sets_font, registered) in state.items()
+        if sets_font and not registered and name not in FONT_REGISTRATION_EXCEPTIONS
+    )
+    assert not missing, f"Add _apply_font() and register with FontProvider: {missing}"
+    stale = sorted(n for n in FONT_REGISTRATION_EXCEPTIONS if state.get(n, [False, True])[1])
+    assert not stale, f"Remove from FONT_REGISTRATION_EXCEPTIONS: {stale}"

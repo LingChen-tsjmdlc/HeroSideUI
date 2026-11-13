@@ -62,14 +62,11 @@ def _run(code: str) -> str:
     return result.stdout.strip()
 
 
-def test_font_family_is_a_static_deprecated_value():
-    from hero_side_ui.themes import DEFAULT_FONT_FAMILY
+def test_theme_layer_exposes_only_the_static_default_font_stack():
+    import hero_side_ui.themes as themes
 
-    with warnings.catch_warnings(record=True) as caught:
-        warnings.simplefilter("always")
-        from hero_side_ui.themes import FONT_FAMILY
-    assert FONT_FAMILY == DEFAULT_FONT_FAMILY
-    assert any(issubclass(w.category, DeprecationWarning) for w in caught)
+    assert themes.DEFAULT_FONT_FAMILY
+    assert not hasattr(themes, "FONT_FAMILY")
 
 
 def test_default_icon_color_does_not_create_the_theme_provider():

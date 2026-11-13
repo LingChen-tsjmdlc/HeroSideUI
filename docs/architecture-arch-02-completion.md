@@ -56,14 +56,14 @@
 
 ## 兼容说明
 
-| 项目                       | 说明                                                                                                                                                                                                                        |
-| -------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 兼容垫片                   | `components/calendar/_date.py`、`components/date_input/_value.py` 只做重新导出，旧文档与示例曾推荐这两个路径。旧模块的全部公开名都保留。退出条件：下一个次要版本移除，届时发布说明中提示                                    |
-| 新增公开导出               | `CalendarDate` 可从 `hero_side_ui`、`hero_side_ui.components`、`hero_side_ui.components.calendar` 导入                                                                                                                      |
-| 新增参数                   | `Calendar(surface="default")`，默认行为不变                                                                                                                                                                                 |
-| 已删除的私有路径（无垫片） | `popover/_backdrop`、`drawer/_backdrop`、`input/_wrapper`、`input/_clear_button`、`input/_layout`、`input/_styling`、`image/_loader`、`chip/_styling`、`code_block/_font`、`date_input/_field_state`、`date_input/_pattern` |
-| 已改名的私有方法           | Listbox 的 `_set_focus_index` 等改为公开名，不留别名                                                                                                                                                                        |
-| 视觉与交互                 | 未改变。Calendar 嵌入浮层时的底色与之前一致                                                                                                                                                                                 |
+| 项目                       | 说明                                                                                                                                                                                                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| 旧路径                     | `components/calendar/_date.py`、`components/date_input/_value.py` 曾作为兼容垫片，已在 ARCH-06 中删除。`CalendarDate` 从 `hero_side_ui.components.calendar` 导入，日期值与解析函数从 `hero_side_ui.components.date_input` 导入 |
+| 新增公开导出               | `CalendarDate` 可从 `hero_side_ui`、`hero_side_ui.components`、`hero_side_ui.components.calendar` 导入                                                                                                                         |
+| 新增参数                   | `Calendar(surface="default")`，默认行为不变                                                                                                                                                                                    |
+| 已删除的私有路径（无垫片） | `popover/_backdrop`、`drawer/_backdrop`、`input/_wrapper`、`input/_clear_button`、`input/_layout`、`input/_styling`、`image/_loader`、`chip/_styling`、`code_block/_font`、`date_input/_field_state`、`date_input/_pattern`    |
+| 已改名的私有方法           | Listbox 的 `_set_focus_index` 等改为公开名，不留别名                                                                                                                                                                           |
+| 视觉与交互                 | 未改变。Calendar 嵌入浮层时的底色与之前一致                                                                                                                                                                                    |
 
 ## 验证
 
@@ -71,7 +71,7 @@
 | -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
 | 依赖边界             | `tests/shared/test_import_boundaries.py`：组件不得导入其他组件的私有模块；共享层不得运行时依赖组件；已清除的私有字段穿透不得回归。已注入违规验证检查确实会失败                                                                                                                                   |
 | 宿主契约             | `tests/shared/test_fields_contract.py`：Input、NumberInput、DateInput、TimeInput 逐项校验 Mixin 所需属性                                                                                                                                                                                         |
-| 公共接口与真实消费者 | `tests/shared/test_family_capabilities.py`：遮罩、Popover、Listbox、下拉高度、Input、日期模型、Calendar 底色、兼容垫片                                                                                                                                                                           |
+| 公共接口与真实消费者 | `tests/shared/test_family_capabilities.py`：遮罩、Popover、Listbox、下拉高度、Input、日期模型、Calendar 底色、公开入口                                                                                                                                                                           |
 | 既有消费者测试       | 日期家族（Calendar、RangeCalendar、DateInput、TimeInput、DatePicker）217 项；输入与展示（Input、Textarea、NumberInput、Avatar、Image、Badge、Chip、Markdown、标签与遮罩动画）388 项；选择类浮层（Select、Autocomplete、Dropdown、Popover、Drawer、Listbox）与 `tests/shared` 共 362 项。均已通过 |
 | 其他检查             | 仓库 pre-commit 钩子（ruff lint 与 format、行数、空白、大文件）；全部 319 个模块逐个导入；旧兼容路径与新入口指向同一对象                                                                                                                                                                         |
 

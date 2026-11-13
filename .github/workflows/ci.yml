@@ -9,9 +9,9 @@ on:
 jobs:
   # ============================================================
   # 测试：按 (group × python-version) 矩阵并行
-  #   group   : core / utils / animation / components-1..5 共 8 组并行
+  #   group   : core / utils / animation / shared / components-1..5 共 9 组并行
   #   python  : 3.11 / 3.12 / 3.13 三档并行
-  # 总并行度 = 8 × 3 = 24 个 job 同时跑（受 GitHub Actions runner 配额限制）
+  # 总并行度 = 9 × 3 = 27 个 job 同时跑（受 GitHub Actions runner 配额限制）
   # components 按字母序动态分片（shard: "N/5"），新增测试文件无需改 CI
   # ============================================================
   test:
@@ -31,6 +31,7 @@ jobs:
           - { name: core,         path: "tests/core" }
           - { name: utils,        path: "tests/utils" }
           - { name: animation,    path: "tests/animation" }
+          - { name: shared,       path: "tests/shared" }
           - { name: "components-1", path: "tests/components", shard: "1/5" }
           - { name: "components-2", path: "tests/components", shard: "2/5" }
           - { name: "components-3", path: "tests/components", shard: "3/5" }
@@ -138,13 +139,13 @@ jobs:
         run: >-
           uv run python -c
           "from hero_side_ui import Button, Accordion, AccordionItem;
-          from hero_side_ui.themes import HEROUI_COLORS, RADIUS, FONT_FAMILY, BUTTON_SIZES, ACCORDION_SIZES;
+          from hero_side_ui.themes import HEROUI_COLORS, RADIUS, DEFAULT_FONT_FAMILY, BUTTON_SIZES, ACCORDION_SIZES;
           from hero_side_ui.utils import hex_to_rgba, load_svg_icon;
           from hero_side_ui.animation import RippleOverlay, PressScaleEffect, CollapseAnimation;
           print('All imports OK')"
 
   # ============================================================
-  # 构建检查：所有 test (24 个并行 job) + lint 都过后才跑
+  # 构建检查：所有 test (27 个并行 job) + lint 都过后才跑
   # ============================================================
   build:
     name: Build | 构建检查

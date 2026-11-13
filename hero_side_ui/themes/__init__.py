@@ -111,23 +111,6 @@ from .component_presets import (
 from .font import DEFAULT_FONT_FAMILY
 from .radius import RADIUS
 
-
-def __getattr__(name: str):
-    """转发已弃用的 FONT_FAMILY 到 themes.font，其余名称抛 AttributeError。
-
-    Args:
-        name: 被访问的模块属性名。
-
-    Returns:
-        FONT_FAMILY 对应的静态默认字体栈，访问时发出 DeprecationWarning。
-    """
-    if name == "FONT_FAMILY":
-        from . import font
-
-        return font.__getattr__(name)
-    raise AttributeError(f"module 'hero_side_ui.themes' has no attribute {name!r}")
-
-
 __all__ = [
     "ACCORDION_SIZES",
     "AUTOCOMPLETE_SIZES",
