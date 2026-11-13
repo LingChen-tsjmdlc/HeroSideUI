@@ -8,10 +8,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QGuiApplication, QPainter
 from PySide6.QtWidgets import QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
+from ..._shared.code import mono_qfont
 from ...core import ThemeProvider
 from ...themes import CODE_BLOCK_SPEC, HEROUI_COLORS
 from ..text import Text
-from ._font import mono_qfont
 from ._header import _CodeHeaderBar
 from ._highlight import build_code_html
 

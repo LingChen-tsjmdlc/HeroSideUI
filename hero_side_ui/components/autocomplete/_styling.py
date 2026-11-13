@@ -79,7 +79,7 @@ class _AutocompleteStylingMixin:
             self._is_clearable
             and has_value
             and not self._is_disabled
-            and not self._input._is_readonly
+            and not self._input.is_readonly()
             and (self._is_hovered or is_focused)
         )
         self._end.clear_btn.setVisible(show)

@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QLineEdit, QWidget
 # 内部控件：无边框/无焦点框的 QLineEdit
 # ============================================================
 class _LineEdit(QLineEdit):
-    """无边框透明背景的 QLineEdit，融入 _InputWrapper 底色。
+    """无边框透明背景的 QLineEdit，融入 InputWrapper 底色。
 
     Note:
         背景完全由 wrapper paintEvent 负责；每次 setPalette 须保持

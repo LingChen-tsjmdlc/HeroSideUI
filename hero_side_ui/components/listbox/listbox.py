@@ -332,6 +332,22 @@ class Listbox(_KeyboardNavMixin, _SelectionMixin, _EmptyContentMixin, QWidget):
         """
         return list(self._items)
 
+    def visible_content_height(self) -> int:
+        """返回未隐藏条目的内容总高度；无可见条目时按空态占位计算。
+
+        Returns:
+            含外边距与条目间距的像素高度。
+        """
+        margins = self._outer.contentsMargins()
+        gap = max(0, self._list_v.spacing())
+        widgets = [self._list_v.itemAt(i).widget() for i in range(self._list_v.count())]
+        widgets = [w for w in widgets if w is not None and not w.isHidden()]
+        if not widgets:
+            widgets = [self._empty_widget]
+        height = sum(w.sizeHint().height() for w in widgets)
+        height += (len(widgets) - 1) * gap
+        return int(height + margins.top() + margins.bottom())
+
     def item_by_key(self, key: str) -> ListboxItem | None:
         """按 key 查找 item。
 

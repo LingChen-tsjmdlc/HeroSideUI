@@ -14,17 +14,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ...core import ThemeProvider
-from ...themes import CALENDAR_SIZES, RADIUS
-from ..text import Text
-from . import _palette as pal
-from ._date import (
+from ..._shared.dates import (
     CalendarDate,
     month_name,
     month_title,
     weekday_names,
     year_range,
 )
+from ...core import ThemeProvider
+from ...themes import CALENDAR_SIZES, RADIUS
+from ..text import Text
+from . import _palette as pal
 from ._header import _CalendarHeader
 from ._month import _MonthGrid
 from ._picker import _CalendarPicker
@@ -33,6 +33,7 @@ from ._transition import _SlideTransition
 from ._weekday_bar import _WeekdayBar
 
 VALID_COLORS = ("foreground", "primary", "secondary", "success", "warning", "danger")
+VALID_SURFACES = ("default", "popover")
 
 
 class Calendar(QWidget):
@@ -62,6 +63,7 @@ class Calendar(QWidget):
         top_content: QWidget | None = None,
         bottom_content: QWidget | None = None,
         identifier: str = "gregorian",
+        surface: str = "default",
         theme: str = "auto",
         parent=None,
     ) -> None:
@@ -87,12 +89,18 @@ class Calendar(QWidget):
             top_content: 头部上方自定义内容。
             bottom_content: 网格下方自定义内容。
             identifier: ICU 历法标识。
+            surface: 日期区底色；popover 与 Popover 实心底一致，用于嵌入浮层。
             theme: 主题名；auto 时跟随 ThemeProvider。
             parent: Qt 父对象。
+
+        Raises:
+            ValueError: surface 不在 VALID_SURFACES 内。
 
         Note:
             RangeCalendar 通过覆写 _create_state 复用本骨架。
         """
+        if surface not in VALID_SURFACES:
+            raise ValueError(f"surface must be one of {VALID_SURFACES}, got {surface!r}")
         super().__init__(parent)
         self.setObjectName("HeroCalendar")
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, True)
@@ -106,6 +114,7 @@ class Calendar(QWidget):
         self._is_invalid = is_invalid
         self._error_message = error_message
         self._sizes = CALENDAR_SIZES
+        self._surface = surface
 
         self._theme_mode = theme
         self._theme = ThemeProvider.instance().current_theme if theme == "auto" else theme
@@ -465,7 +474,10 @@ class Calendar(QWidget):
         """
         radius = int(RADIUS["lg"].rstrip("px"))
         # 分层：日期区底 = 窗口背景色；header/星期名行 = content1（亮，_MonthGrid 自绘）。
-        base_bg = pal.surface_base(self._theme)
+        if self._surface == "popover":
+            base_bg = pal.surface_popover(self._theme)
+        else:
+            base_bg = pal.surface_base(self._theme)
         header_bg = pal.surface_content1(self._theme).name()
         if self._is_invalid:
             border = pal._shade("danger", 500).name()  # invalid 红边框
@@ -598,6 +610,20 @@ class Calendar(QWidget):
             self._error_message = error_message
             self._error_label.setText(error_message)
         self._error_label.setVisible(bool(self._is_invalid and self._error_message))
+        self._apply_styles()
+
+    def set_surface(self, surface: str) -> None:
+        """切换日期区底色。
+
+        Args:
+            surface: default 为日历自身底色，popover 与 Popover 实心底一致。
+
+        Raises:
+            ValueError: surface 不在 VALID_SURFACES 内。
+        """
+        if surface not in VALID_SURFACES:
+            raise ValueError(f"surface must be one of {VALID_SURFACES}, got {surface!r}")
+        self._surface = surface
         self._apply_styles()
 
     def is_header_expanded(self) -> bool:

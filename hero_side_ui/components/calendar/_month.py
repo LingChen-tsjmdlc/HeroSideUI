@@ -5,8 +5,8 @@ from __future__ import annotations
 from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtWidgets import QGridLayout, QSizePolicy, QWidget
 
+from ..._shared.dates import CalendarDate
 from ._cell import _CalendarCell
-from ._date import CalendarDate
 from ._grid import compute_cell_state, get_weeks
 
 _MAX_WEEKS = 6

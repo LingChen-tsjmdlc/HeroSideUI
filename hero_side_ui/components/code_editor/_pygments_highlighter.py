@@ -6,8 +6,8 @@ from __future__ import annotations
 
 from PySide6.QtGui import QColor, QSyntaxHighlighter, QTextCharFormat, QTextDocument
 
+from ..._shared.code import token_color
 from ...themes import CODE_EDITOR_SYNTAX
-from ..code_block._highlight import _token_color
 
 _MAX_LEX_LINES = 20000
 
@@ -97,7 +97,7 @@ class PygmentsHighlighter(QSyntaxHighlighter):
 
         pos = 0  # 跨 token 累加；每个 token 内部的 \n 段间再各 +1
         for ttype, value in lex(doc.toPlainText(), self._lexer):
-            color = _token_color(ttype, syn)
+            color = token_color(ttype, syn)
             first = True
             for seg in value.split("\n"):
                 if not first:

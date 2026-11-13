@@ -10,7 +10,7 @@ from dataclasses import dataclass
 
 import icu
 
-from ._value import _locale_for_locale
+from .value import _locale_for_locale
 
 # ICU pattern 字段字母 → 段类型
 _FIELD_LETTERS = {

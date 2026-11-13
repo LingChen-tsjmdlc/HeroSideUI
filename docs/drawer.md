@@ -7,10 +7,10 @@ HeroUI 的 Drawer = Modal + use-drawer：`placement` 决定贴哪条边，`size`
 | 层   | 类                 | 职责                                                         |
 | ---- | ------------------ | ------------------------------------------------------------ |
 | 外壳 | `Drawer`           | 宿主窗口的子 widget，覆盖整个客户区；管开合、层级与 Esc       |
-| 遮罩 | `_DrawerBackdrop`  | 私有。复用 Popover 的 `_Backdrop`，画 opaque / blur           |
+| 遮罩 | `Backdrop`         | 共享（`_shared/overlays`），与 Popover 共用，画 opaque / blur |
 | 面板 | `_DrawerPanel`     | 私有。QSS 背景 + 按 placement 削平的圆角 + 内容容器 + 关闭按钮 |
 
-`Drawer` 是**宿主窗口的子 widget**，不是顶层窗口 —— 不抢焦点、不闪原生边框，跟随窗口 resize 自动同步几何。遮罩是 host 的**另一个**子 widget，用 `stackUnder` 压在 `Drawer` 下面，层级是 `宿主内容 < 遮罩 < Drawer < 面板`。绘制与模糊全部交给 `_Backdrop`，`Drawer` 自身不画东西，也不用 `QGraphicsEffect`，避免和 Button 自带的 `PressScaleEffect` 嵌套冲突。
+`Drawer` 是**宿主窗口的子 widget**，不是顶层窗口 —— 不抢焦点、不闪原生边框，跟随窗口 resize 自动同步几何。遮罩是 host 的**另一个**子 widget，用 `stackUnder` 压在 `Drawer` 下面，层级是 `宿主内容 < 遮罩 < Drawer < 面板`。绘制与模糊全部交给共享的 `Backdrop`，`Drawer` 自身不画东西，也不用 `QGraphicsEffect`，避免和 Button 自带的 `PressScaleEffect` 嵌套冲突。
 
 ## 快速开始
 
@@ -21,11 +21,11 @@ drawer = Drawer(placement="right", size="md", parent=main_window)
 drawer.add_widget(Title("设置", level=3))
 drawer.add_widget(Body("内容区就是普通 QWidget，随便塞组件"))
 
-drawer.open_drawer()      # 打开
-drawer.close_drawer()     # 关闭（走退出动画）
+drawer.open_drawer()  # 打开
+drawer.close_drawer()  # 关闭（走退出动画）
 drawer.toggle()
 
-drawer.content_widget()   # 拿到内容容器，自己加 layout / 子组件
+drawer.content_widget()  # 拿到内容容器，自己加 layout / 子组件
 ```
 
 ## API
@@ -118,7 +118,7 @@ drawer.content_widget()   # 拿到内容容器，自己加 layout / 子组件
 | `opaque`      | 黑色 50%（HeroUI `bg-overlay/50`），默认                    |
 | `blur`        | 宿主客户区快照做高斯模糊，再叠黑色 30%（HeroUI `backdrop-blur-md` + `bg-overlay/30`） |
 
-与 Popover 共用同一套 `_Backdrop` 实现：淡入 260ms、淡出 200ms，`blur` 是**打开瞬间的静态快照**（打开期间宿主内容变化不会反映到模糊底图上）。
+与 Popover 共用同一套 `Backdrop` 实现：淡入 260ms、淡出 200ms，`blur` 是**打开瞬间的静态快照**（打开期间宿主内容变化不会反映到模糊底图上）。
 
 `transparent` 时不画任何东西，但 `Drawer` 仍然覆盖整个客户区并接收点击 —— 点面板外部照样关闭（受 `is_dismissable` 控制）。想让底层可交互就不要用 Drawer 的覆盖模型。
 
@@ -155,7 +155,7 @@ Esc 用 `QShortcut` + `WindowShortcut` 上下文实现，只在抽屉打开时�
 - **内容区不内置滚动**。内容超出面板时，把 `ScrollShadow` 作为 `set_content()` 的参数传进去即可获得滚动与边缘渐变。
 - **上下抽屉高度内容自适应**（官方 `max-h` 只封顶不托底，仅档位 size）：面板高度 = min(内容 sizeHint, size 上限, 宿主高)，空内容兜底 80px；左右抽屉宽度固定为 size 档。数字 size 则强制控制对应轴长度，不看内容。
 - **内容从顶部堆叠**（HeroUI 是 flex-start）：内容容器布局固定 `AlignTop`，不随面板高度垂直居中。
-- **遮罩复用 Popover**：`_DrawerBackdrop` 只比 Popover 的 `_Backdrop` 多一个 `settle()`（`disable_animation` 时把淡入淡出进度直接推到终态）。改遮罩配色/模糊强度请改 `components/popover/_backdrop.py`，两边一起生效。创建遮罩前会先 `raise_()` 自己再 `stackUnder`，保证 Drawer 晚于 host 已有内容创建时遮罩仍盖在内容之上。
+- **遮罩与 Popover 共用**：两者使用 `_shared/overlays` 的 `Backdrop`；`disable_animation` 时调用它的 `settle()` 把淡入淡出进度直接推到终态。改遮罩配色/模糊强度请改 `_shared/overlays/backdrop.py`，两边一起生效。创建遮罩前会先 `raise_()` 自己再 `stackUnder`，保证 Drawer 晚于 host 已有内容创建时遮罩仍盖在内容之上。
 - **主题**：`theme="auto"` 时注册到 `ThemeProvider`，全局切换会同时刷新面板底色、边框与文字色；面板自身不注册，统一由 `Drawer` 转发，避免重复广播。
 - **宿主**：`host` 缺省时取 `parent.window()`，都没有则延迟到首次打开时取当前活动窗口，仍取不到会抛 `ValueError`。
 - **切换宿主 / 规格**：`set_host()` 与 `set_placement()` / `set_size()` 在打开状态下会直接重排面板（不播动画），不会把面板留在屏幕外。

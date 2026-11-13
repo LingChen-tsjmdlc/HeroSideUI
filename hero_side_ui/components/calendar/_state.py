@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ._date import (
+from ..._shared.dates import (
     CalendarDate,
     clamp_date,
     normalize_first_day_of_week,

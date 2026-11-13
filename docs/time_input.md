@@ -21,7 +21,7 @@ ti.value_changed.connect(lambda v: print(v))
 
 ```python
 from hero_side_ui import TimeInput
-from hero_side_ui.components.date_input._value import parse_datetime
+from hero_side_ui.components.date_input import parse_datetime
 
 ti = TimeInput(
     label="Event time",
@@ -77,7 +77,7 @@ ti = TimeInput(
 ## 粒度
 
 ```python
-TimeInput(label="Hour", granularity="hour")    # hh AM
+TimeInput(label="Hour", granularity="hour")  # hh AM
 TimeInput(label="Minute", granularity="minute")  # hh:mm AM（默认）
 TimeInput(label="Second", granularity="second")  # hh:mm:ss AM
 ```
@@ -96,12 +96,12 @@ TimeInput(label="Time", hour_cycle=12, value=v)  # 09:30 AM
 `min_value` / `max_value` 只按时刻比较，日期部分任意：
 
 ```python
-from hero_side_ui.components.date_input._value import parse_datetime
+from hero_side_ui.components.date_input import parse_datetime
 
 TimeInput(
     label="Event time",
     value=parse_datetime("2024-04-04T20:00:00"),
-    min_value=parse_datetime("2000-01-01T09:00:00"),   # 日期无所谓
+    min_value=parse_datetime("2000-01-01T09:00:00"),  # 日期无所谓
     max_value=parse_datetime("2000-01-01T18:00:00"),
 )  # 20:00 越界 → 自动 invalid
 ```

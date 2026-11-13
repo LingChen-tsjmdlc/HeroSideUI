@@ -8,8 +8,7 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
 from ..button import Button
-from ..calendar import RangeCalendar
-from ..calendar._date import CalendarDate
+from ..calendar import CalendarDate, RangeCalendar
 from ..date_input import DateTimeValue
 from ._range_field import RangeValue, _RangeDateField
 
@@ -19,37 +18,6 @@ _SELECTOR_ICON_SIZE = {"sm": 16, "md": 18, "lg": 20}
 _SELECTOR_BTN_SIZE = {"sm": 20, "md": 24, "lg": 28}
 
 _TIME_GRANULARITIES = ("hour", "minute", "second")
-
-
-class _PopoverRangeCalendar(RangeCalendar):
-    """RangeCalendar 子类：底色与 Popover _bg_color(default) 对齐。"""
-
-    def _apply_styles(self) -> None:
-        """覆写日期区底色使其与 Popover 实心底一致。
-
-        Note:
-            light #ffffff / dark #27272a，避免日历 surface_base
-            与 Popover 底色冲突透出；header 仍用 content1。
-        """
-        super()._apply_styles()
-        from ...themes import RADIUS
-        from ..calendar import _palette as pal
-
-        radius = int(RADIUS["lg"].rstrip("px"))
-        bg = "#ffffff" if self._theme != "dark" else "#27272a"
-        header_bg = pal.surface_content1(self._theme).name()
-        if self._is_invalid:
-            border = pal._shade("danger", 500).name()
-        elif self._theme == "dark":
-            border = "rgba(255, 255, 255, 0.08)"
-        else:
-            border = "rgba(0, 0, 0, 0.08)"
-        self.setStyleSheet(
-            f"#HeroCalendar {{ background: {bg}; border-radius: {radius}px;"
-            f" border: 1px solid {border}; }}"
-            f"#HeroCalendarHeader {{ background: {header_bg};"
-            f" border-top-left-radius: {radius}px; border-top-right-radius: {radius}px; }}"
-        )
 
 
 class DateRangePicker(QWidget):
@@ -195,7 +163,7 @@ class DateRangePicker(QWidget):
         if start_value is not None and end_value is not None:
             init_range = (start_value.date, end_value.date)
 
-        self._calendar = _PopoverRangeCalendar(
+        self._calendar = RangeCalendar(
             value=init_range,
             min_value=min_value.date if min_value is not None else None,
             max_value=max_value.date if max_value is not None else None,
@@ -211,6 +179,7 @@ class DateRangePicker(QWidget):
             bottom_content=calendar_bottom_content,
             is_header_default_expanded=calendar_header_default_expanded,
             identifier=calendar,
+            surface="popover",
             theme=theme,
         )
 

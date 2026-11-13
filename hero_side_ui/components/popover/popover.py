@@ -1,7 +1,7 @@
 """Popover 弹出层容器：trigger 任意 QWidget，浮层自动定位并避让屏幕边界。
 
-拆分：_click_catcher/_host_resize_watcher/content/_backdrop/_paint/
-_geometry/_trigger/_scroll/_api 各 mixin 与子组件。
+拆分：_click_catcher/_host_resize_watcher/content/_paint/
+_geometry/_trigger/_scroll/_api 各 mixin 与子组件；遮罩来自 _shared.overlays。
 """
 
 from PySide6.QtCore import (
@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.overlays import Backdrop
 from ...animation import (
     FadeScaleAnimation,
     PaddingSqueezeAnimation,
@@ -25,7 +26,6 @@ from ...animation import (
 )
 from ...core import ThemeProvider
 from ._api import _PopoverApiMixin
-from ._backdrop import _Backdrop
 from ._click_catcher import _GlobalClickCatcher
 from ._constants import DEFAULT_PADDING, VALID_PLACEMENTS
 from ._geometry import _PopoverGeometryMixin
@@ -120,14 +120,14 @@ class Popover(
         # backdrop='blur' 滚动重抓质量档位（4 档）：
         #   low(2级) / fast(3级,默认) / great(4级) / high(QGraphicsBlurEffect)。
         # 初始 snapshot 永远是 QGraphicsBlurEffect，不受此参数影响；此值仅控制滚动节流
-        # 帧重抓的路径。非法档位会在 _Backdrop 构造时 raise ValueError。
+        # 帧重抓的路径。非法档位会在 Backdrop 构造时 raise ValueError。
         self._blur_quality = blur_quality
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
 
         self._trigger: QWidget | None = None
         self._near: QWidget | None = None  # open() 时实际使用的锚点（manual attach 时 != trigger）
-        self._backdrop: _Backdrop | None = None
+        self._backdrop: Backdrop | None = None
         self._content: QWidget | None = None
         self._is_open = False
 
@@ -359,7 +359,7 @@ class Popover(
             if self._backdrop_kind != "transparent":
                 host = target.window() if hasattr(target, "window") else None
                 if host is not None:
-                    self._backdrop = _Backdrop(
+                    self._backdrop = Backdrop(
                         self._backdrop_kind,
                         host=host,
                         blur_quality=self._blur_quality,

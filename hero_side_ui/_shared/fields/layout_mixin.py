@@ -1,4 +1,4 @@
-"""Input 几何/label 位置 mixin：placement 切换重排、浮动动画几何同步。"""
+"""输入类组件的标签位置与浮动动画几何 mixin。"""
 
 import shiboken6
 from PySide6.QtCore import QPoint, Qt
@@ -7,7 +7,7 @@ from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS, INPUT_SIZES
 
 
-class _InputLayoutMixin:
+class InputLayoutMixin:
     """Input 的 layout / 几何 mixin。"""
 
     def _size_config(self) -> dict:
@@ -57,7 +57,7 @@ class _InputLayoutMixin:
         if not self._has_label() or self._label_placement not in ("inside", "outside"):
             return
 
-        progress = self._label_anim._progress
+        progress = self._label_anim.progress_value()
         self._apply_label_progress(progress)
 
     def _apply_label_progress(self, progress: float):

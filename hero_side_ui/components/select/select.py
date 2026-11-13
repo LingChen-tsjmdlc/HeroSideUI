@@ -5,9 +5,10 @@
 
 from collections.abc import Iterable
 
-from PySide6.QtCore import QEvent, QPoint, Qt, Signal
-from PySide6.QtWidgets import QApplication, QVBoxLayout, QWidget
+from PySide6.QtCore import QEvent, Qt, Signal
+from PySide6.QtWidgets import QVBoxLayout, QWidget
 
+from ..._shared.selection import available_height_below, fit_popup_height
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS, SELECT_SIZES
 from ..input import Input
@@ -225,8 +226,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             theme=theme,
         )
         # Select 与 Autocomplete 同属高频下拉,用更短的开关动画。
-        self._popover._fade._duration_in = 140
-        self._popover._fade._duration_out = 100
+        self._popover.set_fade_durations(140, 100)
         self._popover.attach(self._input, event="manual")
 
         pop_content = PopoverContent()
@@ -275,9 +275,8 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         # ---------- 事件过滤 ----------
         # 拦截整个 trigger 区域的点击（line_edit / wrapper 空白 / 浮动 label）
         # 都能 toggle popover；line_edit 上还顺便处理键盘导航。
-        self._input.line_edit.installEventFilter(self)
-        self._input._wrapper.installEventFilter(self)
-        self._input._inside_label.installEventFilter(self)
+        for target in self._input.click_targets():
+            target.installEventFilter(self)
 
         # ---------- disabled ----------
         self._apply_disabled_state()
@@ -455,62 +454,17 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         return int(cfg["popover_max_height"])
 
     def _available_scroll_height_below(self) -> int:
-        """计算 trigger 下方到屏幕可用区域底部的剩余高度。
-
-        Returns:
-            可用高度（像素）；无主屏时回退到 popover 最大高度。
-        """
-        screen = QApplication.primaryScreen()
-        if screen is None:
-            return self._popover_max_height()
-        rect = screen.availableGeometry()
-        pos = self._input.mapToGlobal(QPoint(0, 0))
-        gap = 6
-        _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin)
-
-    def _visible_listbox_content_height(self) -> int:
-        """同 Autocomplete.同名方法。"""
-        try:
-            cfg_outer = self._listbox._outer.contentsMargins()
-            gap = self._listbox._list_v.spacing()
-            visible_widgets = [
-                self._listbox._list_v.itemAt(i).widget()
-                for i in range(self._listbox._list_v.count())
-            ]
-            visible_widgets = [w for w in visible_widgets if w is not None and not w.isHidden()]
-            if not visible_widgets:
-                visible_widgets = [self._listbox._empty_widget]
-            h = sum(w.sizeHint().height() for w in visible_widgets)
-            h += max(0, len(visible_widgets) - 1) * max(0, gap)
-            h += cfg_outer.top() + cfg_outer.bottom()
-            return int(h)
-        except Exception:
-            return int(self._listbox.sizeHint().height())
+        """返回触发控件下方可容纳的滚动区高度。"""
+        return available_height_below(self._input, self._popover, self._popover_max_height())
 
     def _refresh_popover_height(self, prefer_below: bool = False) -> None:
-        """按内容高度与屏幕可用空间刷新 scroll 的最小 / 最大高度。
+        """按内容与可用空间刷新滚动区高度。
 
         Args:
-            prefer_below: 是否把 trigger 下方可用高度纳入上限计算。
+            prefer_below: 是否把触发控件下方的剩余空间计入上限。
         """
-        token_max = self._popover_max_height()
-        max_h = token_max
-        if prefer_below:
-            max_h = min(max_h, self._available_scroll_height_below())
-        max_h = min(token_max, max(80, int(max_h)))
-
-        content_h = max(1, self._visible_listbox_content_height())
-        old_cap = max(80, token_max // 2)
-        if content_h > old_cap:
-            target = max_h
-        else:
-            target = min(content_h, max_h)
-            target = max(80, int(target))
-
-        self._scroll.setMinimumHeight(target)
-        self._scroll.setMaximumHeight(max_h)
-        self._scroll.updateGeometry()
+        available = self._available_scroll_height_below() if prefer_below else None
+        fit_popup_height(self._scroll, self._listbox, self._popover_max_height(), available)
 
     # ============================================================
     # Popover 控制
@@ -576,8 +530,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._input.set_text(text)
         # 兜底刷一次浮动 label 与 filled 状态，避免 setText 在某些 reentrancy
         # 场景下 textChanged 没把 label 归位（取消最后一个勾选时高发）
-        self._input._update_filled_state()
-        self._input._update_label_animation()
+        self._input.refresh_filled_state()
 
     def _emit_selection_payload(self):
         """构造 selection_changed 的载荷，按选择模式返回不同类型。
@@ -772,11 +725,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         """
         # ---- 鼠标点击：trigger 内任意位置（line_edit / wrapper / 浮动 label）
         # 都能 toggle popover ----
-        if obj in (
-            self._input.line_edit,
-            self._input._wrapper,
-            self._input._inside_label,
-        ):
+        if obj in self._input.click_targets():
             if event.type() == QEvent.MouseButtonRelease:
                 if not self._is_disabled and event.button() == Qt.LeftButton:
                     if self._just_committed:
@@ -791,21 +740,21 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             if key in (Qt.Key_Down, Qt.Key_Up):
                 if not self._is_open:
                     self.open()
-                    idx = self._listbox._first_enabled_index()
+                    idx = self._listbox.first_enabled_index()
                     if idx >= 0:
-                        self._listbox._set_focus_index(idx)
+                        self._listbox.set_focus_index(idx)
                 else:
-                    self._listbox._move_focus(1 if key == Qt.Key_Down else -1)
+                    self._listbox.move_focus(1 if key == Qt.Key_Down else -1)
                 return True
             if key == Qt.Key_Home and self._is_open:
-                idx = self._listbox._first_enabled_index()
+                idx = self._listbox.first_enabled_index()
                 if idx >= 0:
-                    self._listbox._set_focus_index(idx)
+                    self._listbox.set_focus_index(idx)
                 return True
             if key == Qt.Key_End and self._is_open:
-                idx = self._listbox._last_enabled_index()
+                idx = self._listbox.last_enabled_index()
                 if idx >= 0:
-                    self._listbox._set_focus_index(idx)
+                    self._listbox.set_focus_index(idx)
                 return True
             if key == Qt.Key_Escape and self._is_open:
                 self.close()
@@ -814,11 +763,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
                 if not self._is_open:
                     self.open()
                     return True
-                idx = self._listbox._focused_index
-                if 0 <= idx < len(self._listbox._items):
-                    it = self._listbox._items[idx]
-                    if not it.is_disabled():
-                        self._listbox._on_item_activated(it.key())
+                self._listbox.activate_focused()
                 return True
 
         return super().eventFilter(obj, event)

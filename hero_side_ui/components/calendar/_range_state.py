@@ -6,7 +6,7 @@ from __future__ import annotations
 
 from collections.abc import Callable
 
-from ._date import CalendarDate
+from ..._shared.dates import CalendarDate
 from ._state import CalendarState
 
 

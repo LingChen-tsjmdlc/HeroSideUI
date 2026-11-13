@@ -6,7 +6,7 @@
 import pytest
 
 from hero_side_ui import Calendar
-from hero_side_ui.components.calendar._date import CalendarDate
+from hero_side_ui.components.calendar import CalendarDate
 
 
 def _make(qtbot, **kwargs) -> Calendar:

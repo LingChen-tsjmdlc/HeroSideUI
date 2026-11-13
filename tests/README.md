@@ -16,6 +16,8 @@ tests/
 │   └── （color_utils / icon_utils 等纯函数测试）
 ├── animation/         # 动画基元（hero_side_ui/animation/）
 │   └── （tween / ripple / collapse 等动画测试）
+├── shared/            # 家族共享基础设施与依赖边界（hero_side_ui/_shared/）
+│   └── （导入边界 / Mixin 宿主契约 / 共享能力的真实消费者）
 └── components/        # 组件层（hero_side_ui/components/）
     └── test_*.py      # 与组件一一对应
 ```

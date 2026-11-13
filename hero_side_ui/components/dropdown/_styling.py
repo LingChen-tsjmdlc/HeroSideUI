@@ -99,7 +99,7 @@ class _DropdownStylingMixin:
         if rect is None:
             return int(self._size_cfg()["popover_max_height"])
         pos = self._trigger.mapToGlobal(QPoint(0, 0))
-        _, _, _, bottom_margin = self._popover._frame_margins()
+        _, _, _, bottom_margin = self._popover.frame_margins()
         return int(rect.bottom() - (pos.y() + self._trigger.height()) - 6 - bottom_margin)
 
     def _available_height_above(self) -> int:
@@ -112,7 +112,7 @@ class _DropdownStylingMixin:
         if rect is None:
             return int(self._size_cfg()["popover_max_height"])
         pos = self._trigger.mapToGlobal(QPoint(0, 0))
-        _, top_margin, _, _ = self._popover._frame_margins()
+        _, top_margin, _, _ = self._popover.frame_margins()
         return int(pos.y() - rect.top() - 6 - top_margin)
 
     def _menu_height_cap(self, prefer_below: bool) -> int:

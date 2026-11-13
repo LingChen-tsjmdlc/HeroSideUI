@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.17.1"
+__version__ = "0.17.2"
 
 from .components import (
     Accordion,
@@ -19,6 +19,7 @@ from .components import (
     Breadcrumbs,
     Button,
     Calendar,
+    CalendarDate,
     Caption,
     Card,
     CardBody,
@@ -115,6 +116,7 @@ __all__ = [
     "Breadcrumbs",
     "Button",
     "Calendar",
+    "CalendarDate",
     "Caption",
     "Card",
     "CardBody",

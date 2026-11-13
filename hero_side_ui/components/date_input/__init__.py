@@ -1,6 +1,6 @@
 """DateInput 组件包。"""
 
-from ._value import (
+from ..._shared.dates import (
     DateTimeValue,
     now,
     parse_absolute_to_local,

@@ -8,7 +8,7 @@
 
 ```python
 from hero_side_ui import Calendar, RangeCalendar
-from hero_side_ui.components.calendar._date import CalendarDate
+from hero_side_ui.components.calendar import CalendarDate
 
 # 单选
 cal = Calendar(value=CalendarDate(2026, 7, 15))
@@ -25,13 +25,13 @@ rng.change.connect(lambda pair: print("range:", pair))  # (start, end)
 `CalendarDate`（不可变）。
 
 ```python
-from hero_side_ui.components.calendar._date import CalendarDate
+from hero_side_ui import CalendarDate  # 也可从 hero_side_ui.components.calendar 导入
 
-d = CalendarDate(2026, 7, 15)          # 年, 月(1-based), 日
-CalendarDate.today()                    # 今天
-d.add(months=1)                         # 月末进位安全
-d.with_fields(day=1)                    # 替换字段
-d.year / d.month / d.day / d.weekday    # 字段（weekday: 周日=1..周六=7）
+d = CalendarDate(2026, 7, 15)  # 年, 月(1-based), 日
+CalendarDate.today()  # 今天
+d.add(months=1)  # 月末进位安全
+d.with_fields(day=1)  # 替换字段
+d.year / d.month / d.day / d.weekday  # 字段（weekday: 周日=1..周六=7）
 ```
 
 ## 构造参数（Calendar）
@@ -55,6 +55,7 @@ d.year / d.month / d.day / d.weekday    # 字段（weekday: 周日=1..周六=7�
 | `disable_animation`              | `bool`                                     | `False`       | 关闭翻页滑动动画                                                                      |
 | `top_content` / `bottom_content` | `Optional[QWidget]`                        | `None`        | 日历上方 / 下方的自定义内容（超宽时横向滚动，不撑宽日历）                             |
 | `identifier`                     | `str`                                      | `"gregorian"` | ICU 历法标识。当前完整支持公历；其他历法（`buddhist` 等）为实验性，纪年本地化尚未完成 |
+| `surface`                        | `str`                                      | `"default"`   | 日期区底色：`default` 为日历自身底色；`popover` 与 Popover 实心底一致，嵌入浮层时使用 |
 | `theme`                          | `str`                                      | `"auto"`      | `auto` / `light` / `dark`                                                             |
 
 `RangeCalendar` 参数与 `Calendar` 相同，仅 `value` 为 `(start, end)` 元组。
@@ -77,6 +78,7 @@ d.year / d.month / d.day / d.weekday    # 字段（weekday: 周日=1..周六=7�
 | `is_header_expanded()`      | 月/年选择器是否展开                                 |
 | `set_header_expanded(bool)` | 展开 / 收起月/年选择器                              |
 | `set_theme(theme)`          | 切换主题（`auto`/`light`/`dark`）                   |
+| `set_surface(surface)`      | 切换日期区底色（`default` / `popover`）             |
 
 ## 交互
 

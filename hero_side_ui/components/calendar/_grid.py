@@ -7,7 +7,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Protocol
 
-from ._date import CalendarDate, weeks_in_month
+from ..._shared.dates import CalendarDate, weeks_in_month
 
 
 class _GridState(Protocol):

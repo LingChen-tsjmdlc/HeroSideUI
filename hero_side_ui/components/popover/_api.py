@@ -29,6 +29,23 @@ class _PopoverApiMixin:
         else:
             self.open()
 
+    def frame_margins(self) -> tuple:
+        """返回内容四周为阴影与箭头预留的边距。
+
+        Returns:
+            (left, top, right, bottom) 像素边距。
+        """
+        return self._frame_margins()
+
+    def set_fade_durations(self, duration_in: int, duration_out: int):
+        """设置打开与关闭过渡的时长。
+
+        Args:
+            duration_in: 打开过渡毫秒数。
+            duration_out: 关闭过渡毫秒数。
+        """
+        self._fade.set_durations(duration_in, duration_out)
+
     # ============================================================
     # 视觉属性 setter
     # ============================================================

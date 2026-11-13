@@ -1,4 +1,4 @@
-"""_ClearButton — Input 右侧清除按钮（私有），带淡入/淡出动画。"""
+"""输入类组件右侧的清除按钮，带淡入淡出。"""
 
 from PySide6.QtCore import (
     Qt,
@@ -11,8 +11,8 @@ from ...animation import tween_property
 # ============================================================
 # 清除按钮：带 opacity 淡入 + scale 效果
 # ============================================================
-class _ClearButton(QPushButton):
-    """Clear 按钮。点击清空文本，跟随 filled 状态淡入/淡出"""
+class ClearButton(QPushButton):
+    """点击清空文本的按钮，随内容是否为空淡入淡出。"""
 
     def __init__(self, parent: QWidget | None = None):
         """创建透明无边框的清除按钮。

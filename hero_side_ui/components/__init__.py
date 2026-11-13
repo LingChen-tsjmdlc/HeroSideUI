@@ -6,7 +6,7 @@ from .avatar import Avatar, AvatarGroup
 from .badge import Badge
 from .breadcrumbs import BreadcrumbItem, Breadcrumbs
 from .button import Button
-from .calendar import Calendar, RangeCalendar
+from .calendar import Calendar, CalendarDate, RangeCalendar
 from .card import Card, CardBody, CardFooter, CardHeader
 from .checkbox import Checkbox, CheckboxGroup
 from .chip import Chip
@@ -79,6 +79,7 @@ __all__ = [
     "Breadcrumbs",
     "Button",
     "Calendar",
+    "CalendarDate",
     "Caption",
     "Card",
     "CardBody",

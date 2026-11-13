@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ._date import CalendarDate
+from ..._shared.dates import CalendarDate
 from ._range_state import RangeCalendarState
 from ._state import CalendarState
 from .calendar import Calendar

@@ -51,6 +51,14 @@ class _EmptyContentMixin:
         self._empty_label = self._empty_widget.findChild(QLabel, "heroEmptyText") or Text("")
         self._empty_widget.setVisible(was_visible)
 
+    def set_empty_visible(self, visible: bool):
+        """显示或隐藏空态占位，供外部按自身过滤结果控制。
+
+        Args:
+            visible: True 显示空态。
+        """
+        self._empty_widget.setVisible(visible)
+
     def _refresh_empty(self):
         """根据条目数显隐空态 widget（无条目时显示）。"""
         empty = len(self._items) == 0

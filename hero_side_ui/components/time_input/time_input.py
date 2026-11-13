@@ -8,9 +8,8 @@ from __future__ import annotations
 
 from PySide6.QtWidgets import QWidget
 
-from ..date_input._pattern import TIME_GRANULARITIES
-from ..date_input._value import DateTimeValue, now
-from ..date_input.date_input import DateInput
+from ..._shared.dates import TIME_GRANULARITIES, DateTimeValue, now
+from ..date_input import DateInput
 
 __all__ = ["TimeInput"]
 

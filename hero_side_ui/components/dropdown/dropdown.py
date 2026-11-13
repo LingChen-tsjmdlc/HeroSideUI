@@ -203,8 +203,7 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
             disable_animation=disable_animation,
             theme=theme,
         )
-        self._popover._fade._duration_in = 140
-        self._popover._fade._duration_out = 100
+        self._popover.set_fade_durations(140, 100)
         self._popover.attach(trigger, event="manual")
 
         pop_content = PopoverContent()

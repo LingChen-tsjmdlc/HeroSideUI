@@ -10,10 +10,10 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
 from hero_side_ui import TimeInput
-from hero_side_ui.components.date_input._field_state import DateFieldState
-from hero_side_ui.components.date_input._pattern import build_segments
-from hero_side_ui.components.date_input._value import (
+from hero_side_ui._shared.dates import (
+    DateFieldState,
     DateTimeValue,
+    build_segments,
     now,
     parse_datetime,
 )
@@ -133,7 +133,7 @@ def test_default_granularity_is_minute(qtbot):
 
 def test_placeholder_defaults_to_current_time(qtbot):
     ti = _make(qtbot)
-    ph = ti._state._placeholder
+    ph = ti._state.placeholder
     assert ph.has_time
     assert ph.timezone is None
     # 与当前时刻同分（占位起点是 now，而非 0 点）
@@ -285,7 +285,7 @@ def test_arrow_starts_from_placeholder_value(qtbot):
     ti = _make(qtbot, hour_cycle=24)
     _show_active(qtbot, ti)
 
-    ph_hour = ti._state._placeholder.hour
+    ph_hour = ti._state.placeholder.hour
     hour = next(s for s in ti._editable_segments() if s.seg_type == "hour")
     hour.setFocus()
     QTest.keyClick(hour, Qt.Key.Key_Up)
@@ -377,7 +377,7 @@ def test_set_hour_cycle_rebuilds_segments(qtbot):
 
 
 def test_zoned_value_shows_timezone(qtbot):
-    from hero_side_ui.components.date_input._value import parse_zoned_datetime
+    from hero_side_ui._shared.dates import parse_zoned_datetime
 
     ti = _make(
         qtbot,

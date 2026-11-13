@@ -6,19 +6,17 @@
 
 import pytest
 
-from hero_side_ui.components.date_input._field_state import DateFieldState
-from hero_side_ui.components.date_input._pattern import (
+from hero_side_ui._shared.dates import (
+    DateFieldState,
+    DateTimeValue,
     build_pattern,
     build_segments,
-    parse_pattern,
-)
-from hero_side_ui.components.date_input._value import (
-    DateTimeValue,
     clamp_value,
     now,
     parse_absolute_to_local,
     parse_date,
     parse_datetime,
+    parse_pattern,
     parse_zoned_datetime,
     today,
 )
@@ -268,7 +266,7 @@ def test_increment_from_placeholder_uses_placeholder_base():
 
 def test_changing_month_truncates_day():
     st = DateFieldState(value=parse_date("2024-01-31"))
-    st._set_segment("month", 2)
+    st.set_segment("month", 2)
     assert st.segment_text("day", 1) == "29"
 
 
@@ -334,7 +332,7 @@ def test_is_invalid_detects_out_of_range():
 
 def test_commit_segment_clamps_into_range():
     st = DateFieldState()
-    st._set_segment("month", 99)
+    st.set_segment("month", 99)
     st.commit_segment("month")
     assert st.segment_text("month", 1) == "12"
 
@@ -342,7 +340,7 @@ def test_commit_segment_clamps_into_range():
 def test_segment_range_day_depends_on_month():
     st = DateFieldState(value=parse_date("2024-02-10"))
     assert st.segment_range("day") == (1, 29)
-    st._set_segment("month", 1)
+    st.set_segment("month", 1)
     assert st.segment_range("day") == (1, 31)
 
 

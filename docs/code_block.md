@@ -28,10 +28,12 @@ cb = CodeBlock(code, language="python", filename="a.py", highlight_lines=[2, 3])
 cb = CodeBlock(code, language="python", filename="a.py", font="C:/fonts/JetBrainsMono.ttf")
 
 # 多 tab
-cb = CodeBlock(tabs=[
-    {"name": "main.py",  "code": code1, "language": "python"},
-    {"name": "style.css","code": code2, "language": "css"},
-])
+cb = CodeBlock(
+    tabs=[
+        {"name": "main.py", "code": code1, "language": "python"},
+        {"name": "style.css", "code": code2, "language": "css"},
+    ]
+)
 ```
 
 ## 构造参数
@@ -68,6 +70,6 @@ info 串首词作为语言标记，无需额外配置。
 - 代码字体通过 `QFont` + `setFont` 落地——Qt 富文本 `<pre>` 的 CSS `font-family`
   不生效，必须设 QFont。每行用 `<div white-space:pre>` 渲染（`<pre>` 会被 Qt 强制套
   monospace 覆盖自定义字体）。QFont 显式锁 Normal 字重，避免挑到偏细的变体。加载逻辑
-  独立于正文 `FontProvider`，见 `components/code_block/_font.py`。
+  独立于正文 `FontProvider`，见 `_shared/code/font.py`（CodeBlock 与 CodeEditor 共用）。
 - **高度自适应**：默认不限高、纵向不滚动，代码区随内容全展开。仅在超长行且未开启
   自动换行时出现横向滚动条。自动换行开启后行号依然保留。

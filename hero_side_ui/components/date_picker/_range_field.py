@@ -4,10 +4,8 @@ from __future__ import annotations
 
 from PySide6.QtCore import Qt, Signal
 
-from ..date_input._field_state import DateFieldState
-from ..date_input._segment import _DateSegment, _SegmentLiteral
-from ..date_input._value import DateTimeValue
-from ..date_input.date_input import DateInput
+from ..._shared.dates import DateFieldState, DateTimeValue
+from ..date_input import DateInput
 
 RangeValue = tuple[DateTimeValue | None, DateTimeValue | None]
 
@@ -51,15 +49,15 @@ class _RangeDateField(DateInput):
         self._separator_text = separator
         self._end_state = DateFieldState(
             value=end_value,
-            placeholder_value=self._state._placeholder,
+            placeholder_value=self._state.placeholder,
             granularity=self._granularity,
             hour_cycle=self._hour_cycle,
             locale=self._locale,
             identifier=self._calendar,
-            min_value=self._state._min_value,
-            max_value=self._state._max_value,
+            min_value=self._state.min_value,
+            max_value=self._state.max_value,
             hide_time_zone=self._hide_time_zone,
-            should_force_leading_zeros=self._state._force_zeros,
+            should_force_leading_zeros=self._state.force_zeros,
         )
         self._rebuild_segments()
         self._sync_invalid_from_state()
@@ -89,9 +87,7 @@ class _RangeDateField(DateInput):
 
         self._build_group("start", self._state)
 
-        sep = _SegmentLiteral(f" {self._separator_text} ", parent=self._segment_row)
-        self._segment_layout.addWidget(sep)
-        self._literal_widgets.append(sep)
+        self._add_literal(f" {self._separator_text} ")
 
         self._build_group("end", self._end_state)
 
@@ -108,26 +104,12 @@ class _RangeDateField(DateInput):
         Note:
             回调通过默认参数捕获 field，避免循环变量晚绑定。
         """
-        for spec in state.specs:
-            if spec.is_literal:
-                lit = _SegmentLiteral(spec.text, parent=self._segment_row)
-                self._segment_layout.addWidget(lit)
-                self._literal_widgets.append(lit)
-                continue
-
-            seg = _DateSegment(
-                spec.type,
-                min_digits=spec.min_digits,
-                on_edit=(lambda st, a, p, f=field: self._on_field_edit(f, st, a, p)),
-                on_focus_move=self._on_segment_focus_move,
-                on_focus_change=(lambda st, foc, f=field: self._on_field_focus_change(f, st, foc)),
-                parent=self._segment_row,
-            )
-            seg.field = field
-            seg.set_editable(spec.is_editable and not self._is_disabled)
-            seg.set_readonly(self._is_readonly)
-            self._segment_layout.addWidget(seg)
-            self._segment_widgets.append(seg)
+        self._add_segments(
+            state,
+            on_edit=(lambda st, a, p, f=field: self._on_field_edit(f, st, a, p)),
+            on_focus_change=(lambda st, foc, f=field: self._on_field_focus_change(f, st, foc)),
+            field=field,
+        )
 
     def _state_for(self, field: str) -> DateFieldState:
         """按归属标识取状态机。
@@ -177,7 +159,7 @@ class _RangeDateField(DateInput):
         elif action == "clear":
             state.clear_segment(seg_type)
         elif action == "day_period":
-            state._set_segment("dayPeriod", payload)
+            state.set_segment("dayPeriod", payload)
 
         self._refresh_segment_text()
         self._sync_invalid_from_state()
@@ -270,15 +252,15 @@ class _RangeDateField(DateInput):
             return
         self._end_state = DateFieldState(
             value=end_current,
-            placeholder_value=self._state._placeholder,
+            placeholder_value=self._state.placeholder,
             granularity=self._granularity,
             hour_cycle=self._hour_cycle,
             locale=self._locale,
             identifier=self._calendar,
-            min_value=self._state._min_value,
-            max_value=self._state._max_value,
+            min_value=self._state.min_value,
+            max_value=self._state.max_value,
             hide_time_zone=self._hide_time_zone,
-            should_force_leading_zeros=self._state._force_zeros,
+            should_force_leading_zeros=self._state.force_zeros,
         )
         self._rebuild_segments()
         self._apply_styles()

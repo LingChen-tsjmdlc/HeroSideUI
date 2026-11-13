@@ -6,7 +6,7 @@
 
 import pytest
 
-from hero_side_ui.components.calendar._date import (
+from hero_side_ui._shared.dates import (
     MON,
     SUN,
     CalendarDate,

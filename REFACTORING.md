@@ -409,13 +409,13 @@ API 形态（最终）：
 ```python
 from hero_side_ui import StatePalette
 
-StatePalette.bg(variant, color, theme, state)        # 背景
-StatePalette.border(variant, color, theme, state)    # 边框
-StatePalette.text(variant, color, theme, state)      # 文字
-StatePalette.text_default(theme)                     # 默认字色
-StatePalette.text_description(theme)                 # 次级字色
-StatePalette.shortcut_border(theme)                  # 快捷键标签边框
-StatePalette.divider(theme)                          # 分隔线
+StatePalette.bg(variant, color, theme, state)  # 背景
+StatePalette.border(variant, color, theme, state)  # 边框
+StatePalette.text(variant, color, theme, state)  # 文字
+StatePalette.text_default(theme)  # 默认字色
+StatePalette.text_description(theme)  # 次级字色
+StatePalette.shortcut_border(theme)  # 快捷键标签边框
+StatePalette.divider(theme)  # 分隔线
 StatePalette.selected_indicator(variant, color, theme)  # 选中标记
 ```
 
@@ -574,8 +574,7 @@ Phase 2 第一轮"包化"被用户当面指出"input.py 1196 / autocomplete.py 9
 ### 13.1 拆分手法：mixin 模式（继承 + 委托）
 
 ```python
-class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
-    ...
+class Input(_InputStylingMixin, _InputLayoutMixin, QWidget): ...
 ```
 
 - mixin 文件只 import Qt/typing/themes，**不 import 主组件本身**（避免循环）
@@ -621,7 +620,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
 
 2. **Heredoc 陷阱**：bash `<<'PY' ... PY` 里嵌 Python 多行字符串包含 `# === / # 圆角` 等组合时偶尔会破坏 heredoc 结束识别，把脚本写到 `.workbuddy/split_xxx.py` 单独执行最稳。
 
-3. **textarea 复用 input 的私有 widget**：`from ..input._wrapper import _InputWrapper; from ..input._clear_button import _ClearButton`。**显式指到模块文件，不走 `..input` 包级 import**——保持私有性（input 包的公共 `__init__.py` 不 re-export 它们）。
+3. **textarea 复用 input 的外框与清除按钮**：这是早期做法（显式指到 input 的私有模块文件），已被 ARCH-02 取代。这些部件现位于 `_shared/fields`，组件之间不再导入对方的私有模块，见 [架构整理与演进规则](docs/architecture.md)。
 
 ### 13.6 Phase 2 全部完成
 

@@ -3,11 +3,11 @@
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLayout, QSizePolicy, QWidget
 
+from ..._shared.fields import InputStylingMixin
 from ...themes import DATE_INPUT_SIZES, HEROUI_COLORS, RADIUS
-from ..input._styling import _InputStylingMixin
 
 
-class _DateInputStylingMixin(_InputStylingMixin):
+class _DateInputStylingMixin(InputStylingMixin):
     """DateInput 的样式 mixin。
 
     继承 Input 颜色决策方法，但重写 _apply_styles——内部是段列表而非
@@ -159,7 +159,7 @@ class _DateInputStylingMixin(_InputStylingMixin):
     # 外框绘制
     # ------------------------------------------------------------
     def _apply_wrapper_paint(self, is_dark, colors, dc, size_config):
-        """把 variant 对应的背景 / 边框 / 下划线交给 _InputWrapper 画。
+        """把 variant 对应的背景 / 边框 / 下划线交给 InputWrapper 画。
 
         Args:
             is_dark: 是否深色主题。

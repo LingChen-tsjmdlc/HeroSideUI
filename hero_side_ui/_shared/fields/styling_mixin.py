@@ -1,4 +1,4 @@
-"""Input 组件的样式计算与应用 mixin（私有）。"""
+"""输入类组件的样式决策与应用 mixin。"""
 
 from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPalette
@@ -15,8 +15,8 @@ from ...themes import HEROUI_COLORS, RADIUS
 from ...utils import hex_to_rgba, load_svg_icon
 
 
-class _InputStylingMixin:
-    """Input 的样式 mixin（参见模块 docstring）。"""
+class InputStylingMixin:
+    """输入类组件的样式 mixin，依赖宿主提供的状态与子控件见包说明。"""
 
     # ============================================================
     # 样式应用

@@ -1,4 +1,4 @@
-"""Input 单行输入组件；子组件 _LineEdit/_ClearButton/_InputWrapper。"""
+"""Input 单行输入组件；外框、清除按钮与样式决策来自 _shared.fields。"""
 
 from PySide6.QtCore import (
     QEvent,
@@ -14,20 +14,17 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.fields import ClearButton, InputLayoutMixin, InputStylingMixin, InputWrapper
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import ThemeProvider
 from ..text import Text
-from ._clear_button import _ClearButton
-from ._layout import _InputLayoutMixin
 from ._line_edit import _LineEdit
-from ._styling import _InputStylingMixin
-from ._wrapper import _InputWrapper
 
 
 # ============================================================
 # Input 主体
 # ============================================================
-class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
+class Input(InputStylingMixin, InputLayoutMixin, QWidget):
     """HeroUI 风格输入框，内嵌 QLineEdit。
 
     四变体、六色、三尺寸、四 label 位置；start/end_content 与 clear 按钮；
@@ -198,7 +195,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         )
 
         # --- inputWrapper (背景容器) ---
-        self._wrapper = _InputWrapper()
+        self._wrapper = InputWrapper()
         self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         wrap_layout = QHBoxLayout(self._wrapper)
@@ -249,7 +246,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
         wrap_layout.addWidget(self._end_slot, 0, Qt.AlignmentFlag.AlignVCenter)
 
         # clear 按钮
-        self._clear_btn = _ClearButton()
+        self._clear_btn = ClearButton()
         self._clear_btn.hide()
         wrap_layout.addWidget(self._clear_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
@@ -464,6 +461,27 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget):
     # ============================================================
     # 公共 API
     # ============================================================
+    def is_readonly(self) -> bool:
+        """返回当前是否只读。"""
+        return self._is_readonly
+
+    def click_targets(self) -> tuple[QWidget, ...]:
+        """返回构成输入框点击区域的控件，供外部统一监听鼠标事件。
+
+        Returns:
+            原生输入框、外框与内置浮动标签。
+        """
+        return (self.line_edit, self._wrapper, self._inside_label)
+
+    def refresh_filled_state(self, animate: bool = True):
+        """按当前文本刷新清除按钮与浮动标签，供外部直接写入文本后调用。
+
+        Args:
+            animate: False 时标签直接就位，不播放过渡。
+        """
+        self._update_filled_state()
+        self._update_label_animation(animate=animate)
+
     def text(self) -> str:
         """返回当前文本。
 

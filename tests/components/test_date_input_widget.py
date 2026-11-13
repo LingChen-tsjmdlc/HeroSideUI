@@ -9,7 +9,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtTest import QTest
 
 from hero_side_ui import DateInput
-from hero_side_ui.components.date_input._value import (
+from hero_side_ui.components.date_input import (
     parse_absolute_to_local,
     parse_date,
     parse_datetime,

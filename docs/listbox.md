@@ -8,9 +8,9 @@ HeroUI v2 风格的列表框组件，可作为独立菜单使用，也是 Autoco
 from hero_side_ui import Listbox
 
 lb = Listbox()
-lb.add_item("New file",   key="new",   description="Create a new file", shortcut="Ctrl+N")
-lb.add_item("Copy link",  key="copy",  description="Copy item link",    shortcut="Ctrl+L")
-lb.add_item("Delete",     key="del",   description="Delete this file",  shortcut="⌫")
+lb.add_item("New file", key="new", description="Create a new file", shortcut="Ctrl+N")
+lb.add_item("Copy link", key="copy", description="Copy item link", shortcut="Ctrl+L")
+lb.add_item("Delete", key="del", description="Delete this file", shortcut="⌫")
 lb.action.connect(lambda key: print(f"activated: {key}"))
 ```
 
@@ -40,21 +40,36 @@ lb.action.connect(lambda key: print(f"activated: {key}"))
 
 ```python
 lb.add_item("Title", key="key", description="...", shortcut="Ctrl+S", is_disabled=False)
-lb.add_item(ListboxItem(...))              # 也可以传现成 item
-lb.add_section(ListboxSection("Group"))    # 或 lb.add_section("Group")
+lb.add_item(ListboxItem(...))  # 也可以传现成 item
+lb.add_section(ListboxSection("Group"))  # 或 lb.add_section("Group")
 lb.clear()
-lb.items()              # -> list[ListboxItem]，含 section 内
-lb.item_by_key("key")   # -> ListboxItem | None
+lb.items()  # -> list[ListboxItem]，含 section 内
+lb.item_by_key("key")  # -> ListboxItem | None
+```
+
+#### 键盘焦点与内容尺寸
+
+供 Select、Autocomplete 等组合 Listbox 的组件使用，也可以直接调用：
+
+```python
+lb.focused_index()  # 键盘焦点项索引，无焦点为 -1
+lb.set_focus_index(2)  # 把焦点交给第 3 项
+lb.move_focus(1)  # 在可用项之间移动并循环，-1 向上
+lb.first_enabled_index()  # 首个未禁用项索引，没有为 -1
+lb.last_enabled_index()  # 末个未禁用项索引
+lb.activate_focused()  # 激活焦点项，禁用项或无焦点返回 False
+lb.set_empty_visible(True)  # 外部过滤后手动显示空态占位
+lb.visible_content_height()  # 未隐藏条目的内容总高度
 ```
 
 #### 选中 / 禁用
 
 ```python
-lb.set_selection_mode("single")      # none / single / multiple
-lb.selected_keys()                   # -> set[str]
+lb.set_selection_mode("single")  # none / single / multiple
+lb.selected_keys()  # -> set[str]
 lb.set_selected_keys({"a", "b"})
 lb.set_disabled_keys({"admin"})
-lb.set_is_disabled(True)             # 整体灰禁
+lb.set_is_disabled(True)  # 整体灰禁
 ```
 
 #### 信号
@@ -77,9 +92,9 @@ lb.set_is_disabled(True)             # 整体灰禁
 ```python
 ListboxItem(
     title="Hello",
-    key="hello",                # 缺省取 title
+    key="hello",  # 缺省取 title
     description="optional",
-    start_content=None,         # str (svg 名/路径) 或 QWidget
+    start_content=None,  # str (svg 名/路径) 或 QWidget
     end_content=None,
     shortcut="Ctrl+H",
     is_disabled=False,
@@ -95,7 +110,7 @@ ListboxItem(
 
 ```python
 sec = ListboxSection(title="Actions", show_divider=True)
-sec.add_item("Copy",  key="copy",  shortcut="Ctrl+C")
+sec.add_item("Copy", key="copy", shortcut="Ctrl+C")
 sec.add_item("Paste", key="paste", shortcut="Ctrl+V")
 lb.add_section(sec)
 ```
@@ -135,7 +150,7 @@ lb.add_section(sec)
 from hero_side_ui import Listbox, Card, CardBody
 
 lb = Listbox(variant="flat", color="primary", selection_mode="single")
-lb.add_item("Read",  key="read")
+lb.add_item("Read", key="read")
 lb.add_item("Write", key="write")
 lb.add_item("Admin", key="admin", is_disabled=True)
 lb.set_selected_keys({"read"})
@@ -155,7 +170,7 @@ from hero_side_ui import Listbox, ListboxSection
 lb = Listbox(variant="flat", color="primary", selection_mode="single")
 
 actions = ListboxSection("Actions", show_divider=True)
-actions.add_item("Copy",  key="copy",  shortcut="Ctrl+C")
+actions.add_item("Copy", key="copy", shortcut="Ctrl+C")
 actions.add_item("Paste", key="paste", shortcut="Ctrl+V")
 lb.add_section(actions)
 
@@ -167,10 +182,11 @@ lb.add_section(danger)
 ### 多选 + emptyContent
 
 ```python
-multi = Listbox(variant="flat", color="success", selection_mode="multiple",
-                empty_content="🍂 Nothing here.")
-multi.add_item("Free",       key="free")
-multi.add_item("Pro",        key="pro")
+multi = Listbox(
+    variant="flat", color="success", selection_mode="multiple", empty_content="🍂 Nothing here."
+)
+multi.add_item("Free", key="free")
+multi.add_item("Pro", key="pro")
 multi.add_item("Enterprise", key="ent")
 
 multi.selection_changed.connect(lambda keys: print("selected:", keys))

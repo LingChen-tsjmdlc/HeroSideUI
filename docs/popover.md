@@ -30,7 +30,7 @@ content.layout().addWidget(QLabel("Popover Title"))
 content.layout().addWidget(QLabel("Some helpful text in here."))
 popover.set_content(content)
 
-popover.attach(trigger)              # 默认 click 切换
+popover.attach(trigger)  # 默认 click 切换
 ```
 
 ## 插槽（任意内容）
@@ -77,6 +77,8 @@ p.attach(my_settings_button)
 - `popover.content()`：获取当前内容控件
 - `popover.open(near=None)` / `popover.close()` / `popover.toggle()`
 - `popover.is_open() -> bool`
+- `popover.frame_margins() -> (left, top, right, bottom)`：内容四周为阴影与箭头预留的边距
+- `popover.set_fade_durations(duration_in, duration_out)`：设置打开与关闭过渡的毫秒数
 - 信号：`opened` / `closed`
 - 动态：`set_color` / `set_size` / `set_radius` / `set_shadow` / `set_placement` / `set_backdrop` / `set_theme` / `set_is_disabled`
 

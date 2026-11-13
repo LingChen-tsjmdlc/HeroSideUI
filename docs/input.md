@@ -55,18 +55,21 @@ Input(label="Search", start_content="heroicons--chevron-right-solid")
 
 # 2. 字符串图标 + 点击回调 -> 自动变成可点击按钮
 # 典型场景: 密码框眼睛切显隐
-pwd = Input(label="Password", variant="bordered",
-            end_content="heroicons--eye-solid")
+pwd = Input(label="Password", variant="bordered", end_content="heroicons--eye-solid")
 pwd.line_edit.setEchoMode(pwd.line_edit.EchoMode.Password)
+
 
 def toggle():
     visible = pwd.line_edit.echoMode() == pwd.line_edit.EchoMode.Normal
-    pwd.line_edit.setEchoMode(pwd.line_edit.EchoMode.Password if visible
-                              else pwd.line_edit.EchoMode.Normal)
+    pwd.line_edit.setEchoMode(
+        pwd.line_edit.EchoMode.Password if visible else pwd.line_edit.EchoMode.Normal
+    )
     pwd.set_end_content(
         "heroicons--eye-solid" if visible else "heroicons--eye-slash-solid",
         on_click=toggle,
     )
+
+
 pwd.set_on_end_content_click(toggle)
 
 # 3. 直接塞任意 QWidget（比如另一个 HeroSideUI Button）
@@ -232,6 +235,7 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 | `set_is_invalid(bool)`                      | 动态切换无效态                                            |
 | `set_is_required(bool)`                     | 动态切换必填                                              |
 | `set_is_readonly(bool)`                     | 动态切换只读                                              |
+| `is_readonly()`                             | 当前是否只读                                              |
 | `set_is_clearable(bool)`                    | 动态切换清除按钮                                          |
 | `set_description(text)`                     | 设置描述文字                                              |
 | `set_error_message(text)`                   | 设置错误消息                                              |
@@ -241,6 +245,8 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 | `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                        |
 | `set_width(w)`                              | 高层语义 API，等价于 `setFixedWidth(w)`，见下文“宽度接管” |
 | `line_edit`                                 | 属性：内部 `QLineEdit` 实例                               |
+| `click_targets()`                           | 构成点击区域的控件元组（输入框、外框、浮动标签），供外部统一监听 |
+| `refresh_filled_state(animate=True)`        | 外部直接写入文本后，刷新清除按钮与浮动标签                |
 
 ---
 
@@ -261,7 +267,7 @@ Input 默认会按 `size` 注入一个建议最小宽度（`sm=240 / md=260 / lg
 ```python
 # 推荐写法
 num_input = Input(value="42", size="sm", radius="md")
-num_input.set_width(64)   # 立即接管，不会被 240 涨破
+num_input.set_width(64)  # 立即接管，不会被 240 涨破
 
 # 等价写法
 num_input = Input(value="42", size="sm")

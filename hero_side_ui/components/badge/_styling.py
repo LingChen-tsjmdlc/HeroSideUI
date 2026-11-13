@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from ..chip._styling import build_chip_styles
+from ..._shared.colors import build_chip_styles
 
 
 def build_badge_styles(variant: str, color: str, theme: str) -> dict:

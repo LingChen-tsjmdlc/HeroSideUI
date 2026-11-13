@@ -13,10 +13,9 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.fields import ClearButton, InputWrapper
 from ...animation import LabelFloatAnimation
 from ...core import ThemeProvider
-from ..input._clear_button import _ClearButton
-from ..input._wrapper import _InputWrapper
 from ..text import Text
 from ._autosize import _TextareaAutosizeMixin
 from ._layout import _TextareaLayoutMixin
@@ -224,7 +223,7 @@ class Textarea(
         )
 
         # --- inputWrapper ---
-        self._wrapper = _InputWrapper()
+        self._wrapper = InputWrapper()
         self._wrapper.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
 
         wrap_layout = QHBoxLayout(self._wrapper)
@@ -277,7 +276,7 @@ class Textarea(
         wrap_layout.addWidget(self._top_right_slot, 0, Qt.AlignmentFlag.AlignTop)
 
         # clear 按钮：始终在 top_right_slot **之后**（外侧），便于和 top_right_content 共存
-        self._clear_btn = _ClearButton()
+        self._clear_btn = ClearButton()
         self._clear_btn.hide()
         wrap_layout.addWidget(self._clear_btn, 0, Qt.AlignmentFlag.AlignTop)
 

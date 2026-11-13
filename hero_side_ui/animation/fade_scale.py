@@ -116,6 +116,16 @@ class FadeScaleAnimation(QObject):
         self._anim.setEndValue(0.0)
         self._anim.start()
 
+    def set_durations(self, duration_in: int, duration_out: int):
+        """设置后续过渡的时长，不影响正在运行的过渡。
+
+        Args:
+            duration_in: 入场毫秒数。
+            duration_out: 退场毫秒数。
+        """
+        self._duration_in = duration_in
+        self._duration_out = duration_out
+
     def is_running(self) -> bool:
         """返回过渡是否正在运行。"""
         return self._anim.state() == QPropertyAnimation.State.Running

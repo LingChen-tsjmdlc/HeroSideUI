@@ -2,13 +2,13 @@
 
 from collections.abc import Callable, Iterable
 
-from PySide6.QtCore import QPoint, Signal
+from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
-    QApplication,
     QVBoxLayout,
     QWidget,
 )
 
+from ..._shared.selection import available_height_below, fit_popup_height
 from ...core import ThemeProvider
 from ...themes import (
     AUTOCOMPLETE_SIZES,
@@ -255,8 +255,7 @@ class Autocomplete(
         )
         # Autocomplete 的 popover 节奏要快——下拉框是高频交互组件，默认 280/200
         # 偏长，缩成 140/100（in 减半、out 减半），更接近 native combobox 体感。
-        self._popover._fade._duration_in = 140
-        self._popover._fade._duration_out = 100
+        self._popover.set_fade_durations(140, 100)
         # 注:popover 在自定义插槽场景(Autocomplete/Select 等复合组件)只走 fade,
         # 不再做 padding squeeze——已在 Popover.open()/close() 中按
         # `_content_is_text_only` 分支控制。这里不需要再覆盖 squeeze 参数。
@@ -551,64 +550,17 @@ class Autocomplete(
         return int(cfg_ac["popover_max_height"])
 
     def _available_scroll_height_below(self) -> int:
-        """计算从 input 下沿到屏幕底部最多还能放下多少 scroll 内容高度。"""
-        screen = QApplication.primaryScreen()
-        if screen is None:
-            return self._popover_max_height()
-        rect = screen.availableGeometry()
-        pos = self._input.mapToGlobal(QPoint(0, 0))
-        # Popover bottom-start 公式：y = input_bottom - top_margin + gap；
-        # popover bottom = input_bottom + gap + scroll_height + bottom_margin。
-        # 因此 scroll_height 不能超过 screen_bottom - input_bottom - gap - bottom_margin。
-        gap = 6
-        _, _, _, bottom_margin = self._popover._frame_margins()
-        return int(rect.bottom() - (pos.y() + self._input.height()) - gap - bottom_margin)
-
-    def _visible_listbox_content_height(self) -> int:
-        """按未隐藏条目累加计算 Listbox 可见内容高度。
-
-        Note:
-            不用 sizeHint——QScrollArea 包裹后 hint 失真，过滤后残留项干扰。
-        """
-        try:
-            cfg_outer = self._listbox._outer.contentsMargins()
-            gap = self._listbox._list_v.spacing()
-            visible_widgets = [
-                self._listbox._list_v.itemAt(i).widget()
-                for i in range(self._listbox._list_v.count())
-            ]
-            visible_widgets = [w for w in visible_widgets if w is not None and not w.isHidden()]
-            if not visible_widgets:
-                visible_widgets = [self._listbox._empty_widget]
-            h = sum(w.sizeHint().height() for w in visible_widgets)
-            h += max(0, len(visible_widgets) - 1) * max(0, gap)
-            h += cfg_outer.top() + cfg_outer.bottom()
-            return int(h)
-        except Exception:
-            return int(self._listbox.sizeHint().height())
+        """返回触发控件下方可容纳的滚动区高度。"""
+        return available_height_below(self._input, self._popover, self._popover_max_height())
 
     def _refresh_popover_height(self, prefer_below: bool = False) -> None:
-        """刷新下拉高度：内容超过 max_height 时钳制滚动，短列表自然收缩。"""
-        token_max = self._popover_max_height()
-        max_h = token_max
-        if prefer_below:
-            max_h = min(max_h, self._available_scroll_height_below())
-        max_h = min(token_max, max(80, int(max_h)))
+        """按内容与可用空间刷新滚动区高度。
 
-        content_h = max(1, self._visible_listbox_content_height())
-        # 旧版上限正好是新版 token 的一半：sm 220 / md 260 / lg 300。
-        # 超过旧上限的列表视为"需要滚动的长列表"，高度固定到新版上限，
-        # 不再跟 item 数量上下漂移成 468/496 这种内容撑开高度。
-        old_cap = max(80, token_max // 2)
-        if content_h > old_cap:
-            target = max_h
-        else:
-            target = min(content_h, max_h)
-            target = max(80, int(target))
-
-        self._scroll.setMinimumHeight(target)
-        self._scroll.setMaximumHeight(max_h)
-        self._scroll.updateGeometry()
+        Args:
+            prefer_below: 是否把触发控件下方的剩余空间计入上限。
+        """
+        available = self._available_scroll_height_below() if prefer_below else None
+        fit_popup_height(self._scroll, self._listbox, self._popover_max_height(), available)
 
     def open(self, trigger: str = "manual"):
         """打开下拉 popover。
@@ -814,7 +766,7 @@ class Autocomplete(
 
         readonly=True 时全部条目禁用（对齐 HeroUI：可浏览不可选）。
         """
-        if self._input._is_readonly:
+        if self._input.is_readonly():
             all_keys = {it.key() for it in self._listbox.items()}
             effective = self._disabled_keys | all_keys
         else:
@@ -857,7 +809,7 @@ class Autocomplete(
         # popover 内 listbox 的 empty 状态：用 not isHidden() 计数（isVisible 在 popover
         # 未 show 时不可靠）
         visible_count = sum(1 for it in self._listbox.items() if not it.isHidden())
-        self._listbox._empty_widget.setVisible(visible_count == 0)
+        self._listbox.set_empty_visible(visible_count == 0)
         self._listbox.updateGeometry()
         self._refresh_popover_height(prefer_below=self._is_open)
 

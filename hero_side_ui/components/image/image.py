@@ -10,10 +10,10 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QPixmap
 from PySide6.QtWidgets import QWidget
 
+from ..._shared.images import ImageLoader, ImageSrc
 from ...animation import tween_property
 from ..skeleton import Skeleton
 from ._blurred import BlurredImage
-from ._loader import ImageLoader, ImageSrc
 from ._rounded_image import _RoundedImage
 from ._shadow import content_margins, make_shadow_effect
 

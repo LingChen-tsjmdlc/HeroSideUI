@@ -21,7 +21,7 @@ from hero_side_ui import (
     now,
     parse_zoned_datetime,
 )
-from hero_side_ui.components.date_input._value import parse_datetime
+from hero_side_ui.components.date_input import parse_datetime
 from hero_side_ui.themes import (
     VALID_DATE_INPUT_SIZES,
     VALID_DATE_INPUT_VARIANTS,

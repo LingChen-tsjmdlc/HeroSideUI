@@ -16,7 +16,7 @@ from examples._base import DemoBase
 from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from hero_side_ui import Body, Button, Calendar, RadioGroup, RangeCalendar
-from hero_side_ui.components.calendar._date import CalendarDate
+from hero_side_ui.components.calendar import CalendarDate
 
 
 def _fmt(d: CalendarDate) -> str:

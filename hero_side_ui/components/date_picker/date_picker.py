@@ -8,10 +8,8 @@ from PySide6.QtCore import Signal
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QWidget
 
 from ..button import Button
-from ..calendar import Calendar
-from ..calendar._date import CalendarDate
-from ..date_input import DateTimeValue
-from ..date_input.date_input import DateInput
+from ..calendar import Calendar, CalendarDate
+from ..date_input import DateInput, DateTimeValue
 from ..popover import Popover
 
 _CALENDAR_ICON = "solar--calendar-bold"
@@ -24,38 +22,6 @@ _SELECTOR_ICON_SIZE = {"sm": 16, "md": 18, "lg": 20}
 _SELECTOR_BTN_SIZE = {"sm": 20, "md": 24, "lg": 28}
 
 _TIME_GRANULARITIES = ("hour", "minute", "second")
-
-
-# Popover 内嵌用 Calendar 子类：底色与 Popover 的 _bg_color(default) 对齐，
-# 避免 surface_base(dark #0b0d12) 与 Popover 实心底(dark #27272a) 冲突透出。
-class _PopoverCalendar(Calendar):
-    def _apply_styles(self) -> None:
-        """覆写日期区底色使其与 Popover 实心底一致。
-
-        Note:
-            避免 surface_base(dark #0b0d12) 与 Popover 实心底
-            (dark #27272a) 冲突透出；header 仍用 content1。
-        """
-        super()._apply_styles()
-        # 覆写日期区底色为 Popover 同款（light #ffffff / dark #27272a）
-        from ...themes import RADIUS
-        from ..calendar import _palette as pal
-
-        radius = int(RADIUS["lg"].rstrip("px"))
-        bg = "#ffffff" if self._theme != "dark" else "#27272a"
-        header_bg = pal.surface_content1(self._theme).name()
-        if self._is_invalid:
-            border = pal._shade("danger", 500).name()
-        elif self._theme == "dark":
-            border = "rgba(255, 255, 255, 0.08)"
-        else:
-            border = "rgba(0, 0, 0, 0.08)"
-        self.setStyleSheet(
-            f"#HeroCalendar {{ background: {bg}; border-radius: {radius}px;"
-            f" border: 1px solid {border}; }}"
-            f"#HeroCalendarHeader {{ background: {header_bg};"
-            f" border-top-left-radius: {radius}px; border-top-right-radius: {radius}px; }}"
-        )
 
 
 class DatePicker(QWidget):
@@ -193,7 +159,7 @@ class DatePicker(QWidget):
             parent=self,
         )
 
-        self._calendar = _PopoverCalendar(
+        self._calendar = Calendar(
             value=value.date if value is not None else None,
             min_value=min_value.date if min_value is not None else None,
             max_value=max_value.date if max_value is not None else None,
@@ -209,6 +175,7 @@ class DatePicker(QWidget):
             bottom_content=calendar_bottom_content,
             is_header_default_expanded=calendar_header_default_expanded,
             identifier=calendar,
+            surface="popover",
             theme=theme,
         )
 

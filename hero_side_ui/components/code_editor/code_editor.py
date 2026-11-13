@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.code import mono_qfont
 from ...core import ThemeProvider
 from ...themes import (
     CODE_EDITOR_LINE,
@@ -23,7 +24,6 @@ from ...themes import (
     CODE_EDITOR_SYNTAX,
     HEROUI_COLORS,
 )
-from ..code_block._font import mono_qfont
 from ._gutter import _Gutter
 from ._pygments_highlighter import PygmentsHighlighter
 

@@ -1,4 +1,4 @@
-"""_InputWrapper — Input/Textarea 的背景画布（私有，自绘 bg + border + radius）。"""
+"""输入类组件的外框画布，自绘背景、边框与圆角。"""
 
 from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor, QPainter, QPen
@@ -10,7 +10,7 @@ from ...animation import tween_property
 # ============================================================
 # inputWrapper：带背景/边框/圆角的画布
 # ============================================================
-class _InputWrapper(QFrame):
+class InputWrapper(QFrame):
     """输入框背景容器：QPainter 自绘背景/边框/圆角，三颜色 Property 走
     QPropertyAnimation 做 150ms 过渡。
     """

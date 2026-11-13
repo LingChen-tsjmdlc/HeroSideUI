@@ -532,7 +532,7 @@ class _TextareaStylingMixin:
         """按当前动画进度重摆 inside/outside label。"""
         if not self._has_label() or self._label_placement not in ("inside", "outside"):
             return
-        progress = self._label_anim._progress
+        progress = self._label_anim.progress_value()
         self._apply_label_progress(progress)
 
     def _apply_label_progress(self, progress: float):

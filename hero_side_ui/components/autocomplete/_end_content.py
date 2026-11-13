@@ -6,16 +6,6 @@ from PySide6.QtWidgets import QHBoxLayout, QWidget
 from ..._shared.selection import SelectorButton as _SelectorButton
 from ..button import Button
 
-# ============================================================
-# Clear 按钮：data-visible 行为
-# ============================================================
-# 历史:这里曾经有 _ClearButton 手写 QPushButton —— 因为 16/14 px 的 x-mark icon
-# 在 Fusion QPushButton 默认 setIcon 路径下会被裁掉左侧。
-# 后来用户做了 16-design 的 heroicons--x-mark-16-solid(viewBox 16,path 在 4-12
-# 范围内,有充足 padding),配合 HeroSideUI 自己的 Button 组件就完全够用了 ——
-# 直接在 _EndContentWidget 里实例化 Button 即可,不需要再有 _ClearButton 类。
-# Button 的 icon 着色、hover bg、ripple 都是组件内置能力(铁律 3「高层意图 API」)。
-
 
 # ============================================================
 # endContentWrapper: [clear] + [selector]，对齐 HeroUI endContentWrapper slot

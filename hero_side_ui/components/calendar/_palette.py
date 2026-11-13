@@ -171,6 +171,18 @@ def surface_base(theme: str) -> str:
     return "#0b0d12" if theme == "dark" else "#fafbfd"
 
 
+def surface_popover(theme: str) -> str:
+    """嵌入浮层时的日期区底色，与 Popover 实心底一致。
+
+    Args:
+        theme: 主题名。
+
+    Returns:
+        hex 色串供 QSS 使用。
+    """
+    return "#27272a" if theme == "dark" else "#ffffff"
+
+
 def picker_highlight_bg(theme: str) -> QColor:
     """月/年选择器中央高亮条底色。
 

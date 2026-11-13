@@ -51,7 +51,7 @@ class _AutocompleteKeyboardMixin:
                     and self._menu_trigger != "manual"
                     and not self._is_open
                     and not self._is_disabled
-                    and not self._input._is_readonly
+                    and not self._input.is_readonly()
                     and event.button() == Qt.LeftButton
                 ):
                     self.open(trigger="focus")
@@ -63,12 +63,12 @@ class _AutocompleteKeyboardMixin:
                 if key == Qt.Key_Home and self._is_open:
                     vis = self._visible_items()
                     if vis:
-                        self._listbox._set_focus_index(self._listbox.items().index(vis[0]))
+                        self._listbox.set_focus_index(self._listbox.items().index(vis[0]))
                     return True
                 if key == Qt.Key_End and self._is_open:
                     vis = self._visible_items()
                     if vis:
-                        self._listbox._set_focus_index(self._listbox.items().index(vis[-1]))
+                        self._listbox.set_focus_index(self._listbox.items().index(vis[-1]))
                     return True
                 if key == Qt.Key_Escape:
                     if self._is_open:
@@ -121,7 +121,7 @@ class _AutocompleteKeyboardMixin:
             # 第一个可见项默认聚焦
             vis = self._visible_items()
             if vis:
-                self._listbox._set_focus_index(self._listbox.items().index(vis[0]))
+                self._listbox.set_focus_index(self._listbox.items().index(vis[0]))
             return
         vis = self._visible_items()
         if not vis:
@@ -137,7 +137,7 @@ class _AutocompleteKeyboardMixin:
         else:
             nxt = (cur_idx + (1 if down else -1)) % len(vis)
         target = vis[nxt]
-        self._listbox._set_focus_index(self._listbox.items().index(target))
+        self._listbox.set_focus_index(self._listbox.items().index(target))
 
     def _activate_focused_item(self):
         """激活（提交）当前有焦点的可见项。

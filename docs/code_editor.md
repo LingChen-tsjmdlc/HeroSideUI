@@ -65,7 +65,7 @@ layout.addWidget(ed)
 ## 设计说明
 
 - **视觉与 CodeBlock 同源**：代码区底色同 zinc 浅/深、语法配色同 One Light / One Dark（`CODE_EDITOR_SYNTAX` 直接引用 `CODE_BLOCK_SYNTAX`）。编辑器特有 token（行号栏、当前行、选区、边框）在 `themes/component_presets/code_editor.py` 的 `CODE_EDITOR_SPEC` / `CODE_EDITOR_LINE`。
-- **高亮统一 pygments**：复用 `code_block/_highlight.py` 的 `_token_color` 语义配色（与 CodeBlock 完全同源）；全文 lex → 按 block 缓存着色片段 → `highlightBlock` 查缓存上色；编辑停顿 150ms（QTimer 防抖）后重扫。超过 20000 行的文档不重扫（保留旧着色），防超大粘贴卡 UI。
+- **高亮统一 pygments**：复用 `_shared/code` 的 `token_color` 语义配色（与 CodeBlock 完全同源）；全文 lex → 按 block 缓存着色片段 → `highlightBlock` 查缓存上色；编辑停顿 150ms（QTimer 防抖）后重扫。超过 20000 行的文档不重扫（保留旧着色），防超大粘贴卡 UI。
 - **主题切换不重建编辑区**：文本、光标、撤销栈、滚动位置全部保留，只重设 QSS 与高亮配色。
 - **外壳圆角由 `paintEvent` 绘制**，编辑区与行号栏透明底叠在其上（同 CodeBlock 的分层做法）。
 - **明确不做**（v1 范围外）：自动补全、括号匹配、代码折叠、查找替换、多光标。

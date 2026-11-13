@@ -62,6 +62,16 @@ class BackdropFade(QObject):
         """返回当前遮罩进度。"""
         return self._progress
 
+    def settle(self, value: float):
+        """停止过渡并直接定位到终态。
+
+        Args:
+            value: 目标进度，0 为全透明，1 为完全显示。
+        """
+        self._anim.stop()
+        self._progress = float(value)
+        self._owner.update()
+
     def play_in(self):
         """从当前进度淡入。"""
         self._anim.stop()

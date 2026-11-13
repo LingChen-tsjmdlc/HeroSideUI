@@ -57,6 +57,10 @@ class LabelFloatAnimation(QObject):
 
     progress = Property(float, _get_progress, _set_progress)
 
+    def progress_value(self) -> float:
+        """返回当前浮动进度，0 为静置、1 为浮起。"""
+        return self._progress
+
     @property
     def is_floated(self) -> bool:
         """返回当前目标是否为浮起状态。"""

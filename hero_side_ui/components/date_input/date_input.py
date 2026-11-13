@@ -14,19 +14,16 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.dates import VALID_GRANULARITIES, DateFieldState, DateTimeValue
+from ..._shared.fields import InputLayoutMixin, InputWrapper
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import ThemeProvider
-from ..input._layout import _InputLayoutMixin
-from ..input._wrapper import _InputWrapper
 from ..text import Text
-from ._field_state import DateFieldState
-from ._pattern import VALID_GRANULARITIES
 from ._segment import _DateSegment, _SegmentLiteral
 from ._styling import _DateInputStylingMixin
-from ._value import DateTimeValue
 
 
-class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
+class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
     """HeroUI 风格分段日期输入。
 
     供子类覆写的类属性：_object_name、_valid_granularities、
@@ -215,7 +212,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         )
 
         # 背景画布（与 Input 同一个 wrapper 实现）
-        self._wrapper = _InputWrapper(self._outside_left_row)
+        self._wrapper = InputWrapper(self._outside_left_row)
         wrap_layout = QHBoxLayout(self._wrapper)
         wrap_layout.setContentsMargins(12, 6, 12, 6)
         wrap_layout.setSpacing(8)
@@ -296,29 +293,52 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         self._segment_widgets = []
         self._literal_widgets = []
 
-        for spec in self._state.specs:
+        self._add_segments(self._state, self._on_segment_edit, self._on_segment_focus_change)
+
+        self._refresh_segment_text()
+        self._segment_row.setUpdatesEnabled(True)
+
+    def _add_literal(self, text: str):
+        """在段行末尾追加一个不可编辑的字面量。
+
+        Args:
+            text: 字面量文本。
+        """
+        lit = _SegmentLiteral(text, parent=self._segment_row)
+        self._segment_layout.addWidget(lit)
+        self._literal_widgets.append(lit)
+
+    def _add_segments(self, state: DateFieldState, on_edit, on_focus_change, field=None):
+        """把状态机的段序渲染到段行末尾。
+
+        Args:
+            state: 提供段结构的状态机。
+            on_edit: 段编辑回调，签名为 (seg_type, action, payload)。
+            on_focus_change: 段焦点变化回调，签名为 (seg_type, focused)。
+            field: 范围组件用于标记归属的标识，写入段的 field 属性；None 不写。
+
+        Note:
+            时区段只展示，不可编辑。
+        """
+        for spec in state.specs:
             if spec.is_literal:
-                lit = _SegmentLiteral(spec.text, parent=self._segment_row)
-                self._segment_layout.addWidget(lit)
-                self._literal_widgets.append(lit)
+                self._add_literal(spec.text)
                 continue
 
             seg = _DateSegment(
                 spec.type,
                 min_digits=spec.min_digits,
-                on_edit=self._on_segment_edit,
+                on_edit=on_edit,
                 on_focus_move=self._on_segment_focus_move,
-                on_focus_change=self._on_segment_focus_change,
+                on_focus_change=on_focus_change,
                 parent=self._segment_row,
             )
-            # 时区段是纯展示，不可编辑
+            if field is not None:
+                seg.field = field
             seg.set_editable(spec.is_editable and not self._is_disabled)
             seg.set_readonly(self._is_readonly)
             self._segment_layout.addWidget(seg)
             self._segment_widgets.append(seg)
-
-        self._refresh_segment_text()
-        self._segment_row.setUpdatesEnabled(True)
 
     def _refresh_segment_text(self):
         """把状态机里的段值写回各段控件并调整段行尺寸。"""
@@ -457,7 +477,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         elif action == "clear":
             self._state.clear_segment(seg_type)
         elif action == "day_period":
-            self._state._set_segment("dayPeriod", payload)
+            self._state.set_segment("dayPeriod", payload)
 
         self._refresh_segment_text()
         self._sync_invalid_from_state()
@@ -581,7 +601,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         Args:
             value: 新下界；None 取消限制。
         """
-        self._state._min_value = value
+        self._state.min_value = value
         self._refresh_segment_text()
         self._sync_invalid_from_state()
         self._apply_styles()
@@ -592,7 +612,7 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         Args:
             value: 新上界；None 取消限制。
         """
-        self._state._max_value = value
+        self._state.max_value = value
         self._refresh_segment_text()
         self._sync_invalid_from_state()
         self._apply_styles()
@@ -607,15 +627,15 @@ class DateInput(_DateInputStylingMixin, _InputLayoutMixin, QWidget):
         current = self._state.value()
         self._state = DateFieldState(
             value=current,
-            placeholder_value=self._state._placeholder,
+            placeholder_value=self._state.placeholder,
             granularity=self._granularity,
             hour_cycle=self._hour_cycle,
             locale=self._locale,
             identifier=self._calendar,
-            min_value=self._state._min_value,
-            max_value=self._state._max_value,
+            min_value=self._state.min_value,
+            max_value=self._state.max_value,
             hide_time_zone=self._hide_time_zone,
-            should_force_leading_zeros=self._state._force_zeros,
+            should_force_leading_zeros=self._state.force_zeros,
             include_date=self._include_date,
         )
         self._rebuild_segments()

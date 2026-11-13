@@ -17,7 +17,7 @@
 | 选择框箭头按钮 | [_shared/selection/SelectorButton](../hero_side_ui/_shared/selection/selector_button.py) | Select、Autocomplete；父组件提供图像和展开状态 |
 | 图标资源与渲染 | [icons/](../hero_side_ui/icons/__init__.py)、[Icon](../hero_side_ui/components/icon/icon.py)、pyside-iconify | 新 Icon 与所有旧 load_svg_icon 消费者，详见 [Icon 文档](icon.md) |
 
-Input 的背景、边框与清除按钮也被 Textarea、DateInput 等间接复用。本次统一这些部件内部的动画；其仍位于 Input 私有包的归属问题继续由 ARCH-02 处理。
+Input 的背景、边框与清除按钮也被 Textarea、DateInput 等间接复用。本次统一这些部件内部的动画；其归属问题已由 [ARCH-02](architecture-arch-02-completion.md) 解决，现位于 `_shared/fields`。
 
 ## 单次过渡契约
 
@@ -40,12 +40,22 @@ Input 的背景、边框与清除按钮也被 Textarea、DateInput 等间接复�
 from hero_side_ui.animation import tween_value, tween_property, stop_tween
 
 tween_value(
-    widget, "_fade_runner", current_opacity, target_opacity, apply_opacity,
-    duration=150, animated=not disable_animation,
+    widget,
+    "_fade_runner",
+    current_opacity,
+    target_opacity,
+    apply_opacity,
+    duration=150,
+    animated=not disable_animation,
 )
 tween_property(
-    effect, "_opacity_runner", b"opacity", 1.0,
-    owner=widget, duration=150, animated=not disable_animation,
+    effect,
+    "_opacity_runner",
+    b"opacity",
+    1.0,
+    owner=widget,
+    duration=150,
+    animated=not disable_animation,
 )
 stop_tween(widget, "_opacity_runner")
 ```

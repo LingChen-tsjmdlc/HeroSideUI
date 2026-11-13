@@ -15,6 +15,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QColor, QMouseEvent, QPainter, QPainterPath, QPixmap
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QWidget
 
+from ..._shared.images import ImageLoader, ImageSrc
 from ...animation import stop_tween, tween_property
 from ...core import ThemeProvider
 from ...themes import (
@@ -25,7 +26,6 @@ from ...themes import (
     VALID_AVATAR_SIZES,
 )
 from ...utils import load_svg_icon
-from ..image._loader import ImageLoader, ImageSrc
 from ..text import Text
 from ._styling import build_avatar_styles
 

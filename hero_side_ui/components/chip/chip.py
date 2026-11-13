@@ -17,11 +17,11 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.colors import build_chip_styles
 from ...core import ThemeProvider
 from ...themes import CHIP_DOT_SIZE, CHIP_SIZES, RADIUS
 from ..button import Button
 from ..text import Text
-from ._styling import build_chip_styles
 
 
 class Chip(QWidget):

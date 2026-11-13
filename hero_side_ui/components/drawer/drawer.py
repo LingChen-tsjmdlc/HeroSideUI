@@ -1,6 +1,6 @@
 """Drawer 组件：侧滑面板 + 遮罩 + Esc 关闭（HeroUI v2 风格）。
 
-层级：宿主内容 < 遮罩(复用 Popover _Backdrop) < Drawer < 面板；入场滑入
+层级：宿主内容 < 遮罩(共享 Backdrop) < Drawer < 面板；入场滑入
 200ms + 遮罩淡入，出场 100ms 滑出后 hide()。
 """
 
@@ -20,6 +20,7 @@ from PySide6.QtCore import (
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QApplication, QWidget
 
+from ..._shared.overlays import Backdrop
 from ...animation import stop_tween, tween_property
 from ...core import ThemeProvider
 from ...themes import (
@@ -31,7 +32,6 @@ from ...themes import (
     VALID_DRAWER_SIZES,
 )
 from ...utils import safe_delete
-from ._backdrop import _DrawerBackdrop
 from ._panel import _DrawerPanel
 
 
@@ -113,7 +113,7 @@ class Drawer(QWidget):
         self._radius = radius
         self._placement = placement
         self._backdrop_kind = backdrop
-        self._backdrop: _DrawerBackdrop | None = None
+        self._backdrop: Backdrop | None = None
         self._is_open = False
         self._closing = False
         self._is_dismissable = bool(is_dismissable)
@@ -243,7 +243,7 @@ class Drawer(QWidget):
         # 先把自己顶到兄弟层最上方：Drawer 若还压在 centralWidget 之下，
         # stackUnder 以它为锚点会把遮罩也压到内容之下（首次打开踩过）
         self.raise_()
-        bd = _DrawerBackdrop(self._backdrop_kind, host=self._host)
+        bd = Backdrop(self._backdrop_kind, host=self._host)
         bd.setGeometry(0, 0, self._host.width(), self._host.height())
         if self._backdrop_kind == "blur":
             bd.prepare_blur_snapshot()

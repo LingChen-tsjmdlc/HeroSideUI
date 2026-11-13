@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QTextEdit, QWidget
 # 内部控件：无边框 / 透明背景的 QTextEdit
 # ============================================================
 class _TextEdit(QTextEdit):
-    """无边框透明背景的 QTextEdit，融入 _InputWrapper 底色。
+    """无边框透明背景的 QTextEdit，融入 InputWrapper 底色。
 
     Note:
         选 QTextEdit 而非 QPlainTextEdit——后者 scrollbar 单位是行号

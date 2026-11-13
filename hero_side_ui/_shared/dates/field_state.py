@@ -6,9 +6,9 @@ from functools import lru_cache
 
 import icu
 
-from ..calendar._date import CalendarDate, _fresh_calendar
-from ._pattern import SegmentSpec, build_segments
-from ._value import DateTimeValue, _locale_for_locale
+from .calendar_date import CalendarDate, _fresh_calendar
+from .pattern import SegmentSpec, build_segments
+from .value import DateTimeValue, _locale_for_locale
 
 # 各段的取值范围上界（year 上界由 max_value 决定，month/day 依赖具体年月）
 _HOUR12_MIN = 1
@@ -173,6 +173,34 @@ class DateFieldState:
             时区字符串；无时区段时为 None。
         """
         return self._timezone
+
+    @property
+    def placeholder(self) -> DateTimeValue:
+        """占位态下各段增减的起点值。"""
+        return self._placeholder
+
+    @property
+    def force_zeros(self) -> bool:
+        """数字段是否补前导零。"""
+        return self._force_zeros
+
+    @property
+    def min_value(self) -> DateTimeValue | None:
+        """值域下界，可直接赋值修改。"""
+        return self._min_value
+
+    @min_value.setter
+    def min_value(self, value: DateTimeValue | None) -> None:
+        self._min_value = value
+
+    @property
+    def max_value(self) -> DateTimeValue | None:
+        """值域上界，可直接赋值修改。"""
+        return self._max_value
+
+    @max_value.setter
+    def max_value(self, value: DateTimeValue | None) -> None:
+        self._max_value = value
 
     @property
     def editable_types(self) -> list[str]:
@@ -454,7 +482,7 @@ class DateFieldState:
             cur = self._placeholder_segment_value(seg_type)
         span = hi - lo + 1
         new = lo + ((cur - lo + delta) % span)
-        self._set_segment(seg_type, new)
+        self.set_segment(seg_type, new)
 
     def _placeholder_segment_value(self, seg_type: str) -> int:
         """取段在未写入状态下的起步值。
@@ -486,7 +514,7 @@ class DateFieldState:
             return 1 if hour >= 12 else 0
         return 0
 
-    def _set_segment(self, seg_type: str, raw: int) -> None:
+    def set_segment(self, seg_type: str, raw: int) -> None:
         """写入段值并做跨段一致性修正。
 
         Args:
@@ -548,7 +576,7 @@ class DateFieldState:
             self._typing = {}
         self._typing[seg_type] = typed
 
-        self._set_segment(seg_type, max(candidate, 0))
+        self.set_segment(seg_type, max(candidate, 0))
 
         # 已输满位数，或再输一位必然溢出 → 认为该段完成
         done = len(typed) >= width or candidate * 10 > hi
@@ -573,7 +601,7 @@ class DateFieldState:
         cur = self._values[seg_type]
         if seg_type == "hour" and self._is_hour12():
             cur = cur % 12 or 12
-        self._set_segment(seg_type, min(max(cur, lo), hi))
+        self.set_segment(seg_type, min(max(cur, lo), hi))
 
     def is_invalid(self) -> bool:
         """值是否越界。

@@ -16,13 +16,13 @@ class _KeyboardNavMixin:
             bool: True 表示已消费该按键（调用方应 e.accept()），False 表示未处理。
         """
         if key in (Qt.Key_Down, Qt.Key_Up):
-            self._move_focus(1 if key == Qt.Key_Down else -1)
+            self.move_focus(1 if key == Qt.Key_Down else -1)
             return True
         if key == Qt.Key_Home:
-            self._set_focus_index(self._first_enabled_index())
+            self.set_focus_index(self.first_enabled_index())
             return True
         if key == Qt.Key_End:
-            self._set_focus_index(self._last_enabled_index())
+            self.set_focus_index(self.last_enabled_index())
             return True
         if key in (Qt.Key_Return, Qt.Key_Enter):
             if 0 <= self._focused_index < len(self._items):
@@ -46,15 +46,28 @@ class _KeyboardNavMixin:
         super().keyPressEvent(e)
 
     def focus_first_enabled(self):
-        """把焦点落到第一个可用（未禁用）项。
-
-        Note:
-            供外部（Select / Autocomplete 弹出层打开时）调用。
-        """
-        # 给外部（Select/Autocomplete popover 打开时）调用，把焦点落到第一个可用项
-        idx = self._first_enabled_index()
+        """把焦点落到第一个可用（未禁用）项。"""
+        idx = self.first_enabled_index()
         if idx >= 0:
-            self._set_focus_index(idx)
+            self.set_focus_index(idx)
+
+    def focused_index(self) -> int:
+        """返回键盘焦点项的索引，无焦点时为 -1。"""
+        return self._focused_index
+
+    def activate_focused(self) -> bool:
+        """激活当前焦点项，等同于对其选中，禁用项除外。
+
+        Returns:
+            是否存在可激活的焦点项并已激活。
+        """
+        if not 0 <= self._focused_index < len(self._items):
+            return False
+        it = self._items[self._focused_index]
+        if it.is_disabled():
+            return False
+        self._on_item_activated(it.key())
+        return True
 
     def _enabled_indices(self) -> list[int]:
         """收集所有未禁用项的索引。
@@ -64,7 +77,7 @@ class _KeyboardNavMixin:
         """
         return [i for i, it in enumerate(self._items) if not it.is_disabled()]
 
-    def _first_enabled_index(self) -> int:
+    def first_enabled_index(self) -> int:
         """首个可用项的索引。
 
         Returns:
@@ -73,7 +86,7 @@ class _KeyboardNavMixin:
         idxs = self._enabled_indices()
         return idxs[0] if idxs else -1
 
-    def _last_enabled_index(self) -> int:
+    def last_enabled_index(self) -> int:
         """末个可用项的索引。
 
         Returns:
@@ -82,7 +95,7 @@ class _KeyboardNavMixin:
         idxs = self._enabled_indices()
         return idxs[-1] if idxs else -1
 
-    def _move_focus(self, step: int):
+    def move_focus(self, step: int):
         """在可用项之间按步长循环移动焦点。
 
         Args:
@@ -92,13 +105,13 @@ class _KeyboardNavMixin:
         if not idxs:
             return
         if self._focused_index < 0 or self._focused_index not in idxs:
-            self._set_focus_index(idxs[0] if step > 0 else idxs[-1])
+            self.set_focus_index(idxs[0] if step > 0 else idxs[-1])
             return
         cur = idxs.index(self._focused_index)
         nxt = (cur + step) % len(idxs)
-        self._set_focus_index(idxs[nxt])
+        self.set_focus_index(idxs[nxt])
 
-    def _set_focus_index(self, idx: int):
+    def set_focus_index(self, idx: int):
         """设置当前焦点项索引并真正把 Qt 焦点交给该项。
 
         Args:
