@@ -182,6 +182,8 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 | `bordered`   | 透明 + 灰边 + 黑/白文字 + 浅灰选区     | 透明 + 紫边 + 紫文字 + 浅紫选区（四件套同色相） |
 | `underlined` | 透明 + 灰下划线 + 黑/白文字 + 浅灰选区 | 透明 + 紫下划线 + 紫文字 + 浅紫选区             |
 
+### size 可选值
+
 | 值   | outside 高度 | inside 高度 | 说明         |
 | ---- | ------------ | ----------- | ------------ |
 | `sm` | 32px         | 48px        | 小号         |
@@ -218,35 +220,35 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 
 ## 公共 API
 
-| 方法                                        | 说明                                                      |
-| ------------------------------------------- | --------------------------------------------------------- |
-| `text()` / `set_text(text)`                 | 获取/设置当前文本                                         |
-| `clear()`                                   | 清空文本                                                  |
-| `set_value(value)`                          | 设置值（`set_text` 的别名）                               |
-| `set_placeholder(text)`                     | 设置占位符                                                |
-| `set_label(text)`                           | 设置 label                                                |
-| `set_color(color)`                          | 动态切换颜色                                              |
-| `set_variant(variant)`                      | 动态切换变体                                              |
-| `set_size(size)`                            | 动态切换尺寸                                              |
-| `set_radius(radius)`                        | 动态切换圆角                                              |
-| `set_label_placement(plc)`                  | 动态切换 label 位置                                       |
-| `set_theme(theme)`                          | 动态切换亮暗主题                                          |
-| `set_is_disabled(bool)`                     | 动态启用/禁用                                             |
-| `set_is_invalid(bool)`                      | 动态切换无效态                                            |
-| `set_is_required(bool)`                     | 动态切换必填                                              |
-| `set_is_readonly(bool)`                     | 动态切换只读                                              |
-| `is_readonly()`                             | 当前是否只读                                              |
-| `set_is_clearable(bool)`                    | 动态切换清除按钮                                          |
-| `set_description(text)`                     | 设置描述文字                                              |
-| `set_error_message(text)`                   | 设置错误消息                                              |
-| `set_start_content(content, on_click=None)` | 设置左侧内容（字符串图标或 QWidget；可选点击回调）        |
-| `set_end_content(content, on_click=None)`   | 设置右侧内容，同上                                        |
-| `set_on_start_content_click(cb)`            | 仅更新左侧点击回调                                        |
-| `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                        |
-| `set_width(w)`                              | 高层语义 API，等价于 `setFixedWidth(w)`，见下文“宽度接管” |
-| `line_edit`                                 | 属性：内部 `QLineEdit` 实例                               |
-| `click_targets()`                           | 构成点击区域的控件元组（输入框、外框、浮动标签），供外部统一监听 |
-| `refresh_filled_state(animate=True)`        | 外部直接写入文本后，刷新清除按钮与浮动标签                |
+| 方法                                        | 说明                                                                                        |
+| ------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| `text()` / `set_text(text)`                 | 获取/设置当前文本                                                                           |
+| `clear()`                                   | 清空文本                                                                                    |
+| `set_value(value)`                          | 设置值（`set_text` 的别名）                                                                 |
+| `set_placeholder(text)`                     | 设置占位符                                                                                  |
+| `set_label(text)`                           | 设置 label                                                                                  |
+| `set_color(color)`                          | 动态切换颜色                                                                                |
+| `set_variant(variant)`                      | 动态切换变体                                                                                |
+| `set_size(size)`                            | 动态切换尺寸                                                                                |
+| `set_radius(radius)`                        | 动态切换圆角                                                                                |
+| `set_label_placement(plc)`                  | 动态切换 label 位置                                                                         |
+| `set_theme(theme)`                          | 动态切换亮暗主题                                                                            |
+| `set_is_disabled(bool)`                     | 动态启用/禁用                                                                               |
+| `set_is_invalid(bool)`                      | 动态切换无效态                                                                              |
+| `set_is_required(bool)`                     | 动态切换必填                                                                                |
+| `set_is_readonly(bool)`                     | 动态切换只读                                                                                |
+| `is_readonly()`                             | 当前是否只读                                                                                |
+| `set_is_clearable(bool)`                    | 动态切换清除按钮                                                                            |
+| `set_description(text)`                     | 设置描述文字                                                                                |
+| `set_error_message(text)`                   | 设置错误消息                                                                                |
+| `set_start_content(content, on_click=None)` | 设置左侧内容（字符串图标或 QWidget；可选点击回调）；替换时调用方的 QWidget 摘下归还，不销毁 |
+| `set_end_content(content, on_click=None)`   | 设置右侧内容，同上                                                                          |
+| `set_on_start_content_click(cb)`            | 仅更新左侧点击回调                                                                          |
+| `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                                                          |
+| `set_width(w)`                              | 高层语义 API，等价于 `setFixedWidth(w)`，见下文“宽度接管”                                   |
+| `line_edit`                                 | 属性：内部 `QLineEdit` 实例                                                                 |
+| `click_targets()`                           | 构成点击区域的控件元组（输入框、外框、浮动标签），供外部统一监听                            |
+| `refresh_filled_state(animate=True)`        | 外部直接写入文本后，刷新清除按钮与浮动标签                                                  |
 
 ---
 

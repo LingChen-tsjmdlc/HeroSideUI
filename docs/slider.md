@@ -36,33 +36,43 @@ s = Slider(value=40, label="Volume")
 
 # 带值显示 + 自定义 formatter
 s2 = Slider(
-    value=65, min_value=0, max_value=100, step=5,
-    color="primary", size="md",
+    value=65,
+    min_value=0,
+    max_value=100,
+    step=5,
+    color="primary",
+    size="md",
     label="Brightness",
     value_formatter=lambda v: f"{int(v)}%",
 )
 
 # Range（双 thumb）
 s3 = Slider(
-    value=(20, 80), color="success",
+    value=(20, 80),
+    color="success",
     label="Price Range",
     value_formatter=lambda v: f"${int(v[0])} – ${int(v[1])}",
 )
 
 # Marks（吸附点 + 文字）
 s4 = Slider(
-    value=50, color="warning",
+    value=50,
+    color="warning",
     marks=[
-        {"value": 0,   "label": "0%"},
-        {"value": 50,  "label": "50%"},
+        {"value": 0, "label": "0%"},
+        {"value": 50, "label": "50%"},
         {"value": 100, "label": "100%"},
     ],
 )
 
 # 离散步长 + show_steps
 s5 = Slider(
-    value=30, min_value=0, max_value=100, step=10,
-    show_steps=True, color="secondary",
+    value=30,
+    min_value=0,
+    max_value=100,
+    step=10,
+    show_steps=True,
+    color="secondary",
 )
 
 # 垂直方向
@@ -71,7 +81,7 @@ s6.setFixedHeight(220)
 
 # 信号
 s.value_changed.connect(lambda v: print("now:", v))
-s.change_end.connect(lambda v: print("released:", v))   # 鼠标抬起/键盘抬起一次性发射
+s.change_end.connect(lambda v: print("released:", v))  # 鼠标抬起/键盘抬起一次性发射
 ```
 
 ## 参数
@@ -114,6 +124,8 @@ s.change_end.connect(lambda v: print("released:", v))   # 鼠标抬起/键盘抬
 ## 动态 API
 
 `set_value` / `set_range` / `set_step` / `set_label` / `set_color` / `set_size` / `set_radius` / `set_orientation` / `set_is_disabled` / `set_hide_value` / `set_hide_thumb` / `set_show_outline` / `set_disable_thumb_scale` / `set_disable_animation` / `set_show_steps` / `set_marks` / `set_value_formatter` / `set_fill_offset` / `set_show_tooltip` / `set_enable_wheel` / `set_start_content` / `set_end_content` / `set_theme`
+
+`set_start_content` / `set_end_content` / `set_top_end_content` / `set_bottom_start_content` 替换时：调用方传入的控件摘下归还、不销毁；由图标名字符串生成的内部图标由 Slider 销毁。
 
 ## 与 HeroUI 的差异
 

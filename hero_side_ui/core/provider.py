@@ -96,5 +96,29 @@ class HeroSideUIProvider:
             if font_base_size is not None:
                 fp.set_base_size_px(font_base_size)
 
+    @classmethod
+    def teardown(cls) -> None:
+        """撤销 setup 安装的应用级设施，使宿主恢复到 setup 之前的状态。
+
+        Note:
+            还原 QApplication 的 Window/WindowText 调色板、移除滚动条样式与
+            全局平滑滚动、停止 libpng 警告过滤并恢复 stderr 的文件描述符。
+            已创建组件与已设置的字体不受影响。可重复调用，之后可再次 setup。
+        """
+        from . import _boot, _libpng_filter
+        from .scroll_style import ScrollStyle
+        from .smooth_scroll import SmoothScroll
+        from .theme_provider import ThemeProvider
+
+        peek = ThemeProvider.peek()
+        if peek is not None:
+            peek.release_app_palette()
+        scroll_style = ScrollStyle.peek()
+        if scroll_style is not None:
+            scroll_style.remove_global()
+        SmoothScroll.disable_global()
+        _libpng_filter.uninstall()
+        _boot.reset()
+
 
 __all__ = ["HeroSideUIProvider"]

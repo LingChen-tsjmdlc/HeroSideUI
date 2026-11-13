@@ -12,10 +12,10 @@
 ```python
 from hero_side_ui import Avatar, Badge, Button
 
-Badge(Button("消息"), content="5", color="danger")      # 角标数字
+Badge(Button("消息"), content="5", color="danger")  # 角标数字
 Badge(Avatar(name="JW"), content="3", color="primary")  # 头像角标
-Badge(widget, content="", color="success")              # 空内容 → 圆点
-Badge(widget, content="99+", placement="top-left")      # 多字符 + 换角
+Badge(widget, content="", color="success")  # 空内容 → 圆点
+Badge(widget, content="99+", placement="top-left")  # 多字符 + 换角
 ```
 
 ## 构造参数
@@ -62,22 +62,22 @@ Badge(widget, content="99+", placement="top-left")      # 多字符 + 换角
 
 ## 公共方法
 
-| 方法                       | 说明                                 |
-| -------------------------- | ------------------------------------ |
-| `set_widget(widget)`       | 替换被包裹内容；旧控件脱离父级不销毁 |
-| `widget()`                 | 当前被包裹控件                       |
-| `set_content(content)`     | 更新角标内容（自动重判形态与尺寸）   |
-| `content()`                | 当前角标内容                         |
-| `set_color(color)`         | 切换语义色                           |
-| `set_variant(variant)`     | 切换变体                             |
-| `set_size(size)`           | 切换尺寸                             |
-| `set_shape(shape)`         | 切换形状（影响锚点偏移）             |
-| `set_placement(placement)` | 切换四角位置                         |
-| `set_show_outline(bool)`   | 切换描边                             |
-| `set_invisible(bool)`      | 切换角标显隐（默认 300ms 淡入淡出）  |
-| `is_invisible()`           | 当前显隐状态                         |
-| `set_disable_animation(b)` | 开关动画                             |
-| `set_theme(theme)`         | `"auto" \| "light" \| "dark"`        |
+| 方法                       | 说明                                               |
+| -------------------------- | -------------------------------------------------- |
+| `set_widget(widget)`       | 替换被包裹内容；旧控件脱离父级并归还调用方，不销毁 |
+| `widget()`                 | 当前被包裹控件                                     |
+| `set_content(content)`     | 更新角标内容（自动重判形态与尺寸）                 |
+| `content()`                | 当前角标内容                                       |
+| `set_color(color)`         | 切换语义色                                         |
+| `set_variant(variant)`     | 切换变体                                           |
+| `set_size(size)`           | 切换尺寸                                           |
+| `set_shape(shape)`         | 切换形状（影响锚点偏移）                           |
+| `set_placement(placement)` | 切换四角位置                                       |
+| `set_show_outline(bool)`   | 切换描边                                           |
+| `set_invisible(bool)`      | 切换角标显隐（默认 300ms 淡入淡出）                |
+| `is_invisible()`           | 当前显隐状态                                       |
+| `set_disable_animation(b)` | 开关动画                                           |
+| `set_theme(theme)`         | `"auto" \| "light" \| "dark"`                      |
 
 ## 定位规则
 

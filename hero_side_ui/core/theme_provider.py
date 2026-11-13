@@ -2,11 +2,11 @@
 
 from __future__ import annotations
 
-import weakref
-
 from PySide6.QtCore import QObject, Qt, Signal
-from PySide6.QtGui import QGuiApplication, QPalette
+from PySide6.QtGui import QColor, QGuiApplication, QPalette
 from PySide6.QtWidgets import QApplication
+
+from ._registry import WidgetRegistry
 
 VALID_MODES = ("auto", "light", "dark")
 VALID_THEMES = ("light", "dark")
@@ -35,12 +35,14 @@ class ThemeProvider(QObject):
         self._mode: str = "auto"
         self._current_theme: str = self._detect_system_theme()
 
-        # 用 WeakSet 存储已注册组件，组件销毁后自动剔除
-        self._widgets: weakref.WeakSet = weakref.WeakSet()
+        # 弱引用登记簿：组件销毁后自动剔除，C++ 已删对象广播时自动注销
+        self._widgets = WidgetRegistry("ThemeProvider")
 
         # 是否在主题变化时自动同步 QApplication 全局 palette
         # 默认开启 → 用户写普通 QWidget/QMainWindow 也能开箱即用
         self._auto_app_palette: bool = True
+        # 首次改动前的 Window/WindowText 原色，release_app_palette 据此还原
+        self._original_palette: tuple[QColor, QColor] | None = None
 
         # 监听系统主题变化（Qt 6.5+ 提供 colorSchemeChanged）
         self._connect_system_signals()
@@ -131,7 +133,9 @@ class ThemeProvider(QObject):
             )
         self._widgets.add(widget)
         # 注册时立即同步一次主题
-        self._push_theme_to_widget(widget, self._current_theme)
+        self._widgets.broadcast_to(
+            widget, lambda w: self._push_theme_to_widget(w, self._current_theme)
+        )
 
     def unregister(self, widget) -> None:
         """从主题管理器中移除组件"""
@@ -217,8 +221,7 @@ class ThemeProvider(QObject):
             self._sync_app_palette()
 
         # 广播给所有已注册组件
-        for widget in list(self._widgets):
-            self._push_theme_to_widget(widget, new_theme)
+        self._widgets.broadcast(lambda w: self._push_theme_to_widget(w, new_theme))
 
         self.theme_changed.emit(new_theme)
 
@@ -247,12 +250,32 @@ class ThemeProvider(QObject):
             # 仍能比窗口亮一丝浮出，色相统一冷调（不再有暖白 vs 纯白的色相分裂）。
             bg, fg = "#FAFBFD", "#18181b"
 
-        from PySide6.QtGui import QColor
-
         pal = app.palette()
+        if self._original_palette is None:
+            self._original_palette = (
+                pal.color(QPalette.ColorRole.Window),
+                pal.color(QPalette.ColorRole.WindowText),
+            )
         pal.setColor(QPalette.ColorRole.Window, QColor(bg))
         pal.setColor(QPalette.ColorRole.WindowText, QColor(fg))
         app.setPalette(pal)
+
+    def release_app_palette(self) -> None:
+        """停止同步并把 QApplication 的 Window/WindowText 还原为首次改动前的值。
+
+        Note:
+            未改动过调色板时只停止同步。
+        """
+        self._auto_app_palette = False
+        app = QApplication.instance()
+        if app is None or self._original_palette is None:
+            return
+        window, window_text = self._original_palette
+        pal = app.palette()
+        pal.setColor(QPalette.ColorRole.Window, window)
+        pal.setColor(QPalette.ColorRole.WindowText, window_text)
+        app.setPalette(pal)
+        self._original_palette = None
 
     def set_auto_app_palette(self, enabled: bool) -> None:
         """开关"主题变化时自动同步 QApplication palette"。
@@ -267,13 +290,10 @@ class ThemeProvider(QObject):
     @staticmethod
     def _push_theme_to_widget(widget, theme: str) -> None:
         """向组件推送主题——优先用内部方法，避免触发注册逻辑"""
-        try:
-            if hasattr(widget, "_apply_provider_theme"):
-                widget._apply_provider_theme(theme)
-            else:
-                widget.set_theme(theme)
-        except Exception:
-            pass
+        if hasattr(widget, "_apply_provider_theme"):
+            widget._apply_provider_theme(theme)
+        else:
+            widget.set_theme(theme)
 
     # ============================================================
     # 测试用：重置单例（仅用于单元测试）

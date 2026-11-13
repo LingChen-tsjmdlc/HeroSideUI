@@ -73,7 +73,7 @@ p.attach(my_settings_button)
 ## API
 
 - `popover.attach(trigger, event="click" | "hover" | "manual")`：绑定触发器
-- `popover.set_content(widget)`：替换内容
+- `popover.set_content(widget)`：替换内容，旧内容由 Popover 销毁
 - `popover.content()`：获取当前内容控件
 - `popover.open(near=None)` / `popover.close()` / `popover.toggle()`
 - `popover.is_open() -> bool`

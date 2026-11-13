@@ -22,11 +22,11 @@ key = add_toast(
     description="草稿已写入本地",
     severity="success",
     color="success",
-    parent=main_window,     # 省略时取当前活动窗口
+    parent=main_window,  # 省略时取当前活动窗口
 )
 
-close_toast(key)            # 提前关闭（走退出动画）
-clear_toasts(main_window)   # 清空某窗口上的全部 toast
+close_toast(key)  # 提前关闭（走退出动画）
+clear_toasts(main_window)  # 清空某窗口上的全部 toast
 ```
 
 `add_toast()` 返回 key；需要运行中改文案或结束 loading 时，用 `get_toast_provider(window).card(key)` 取回卡片。
@@ -66,27 +66,27 @@ clear_toasts(main_window)   # 清空某窗口上的全部 toast
 
 ### Toast 构造参数
 
-| 参数                           | 类型                                                                      | 默认             | 说明                                          |
-| ------------------------------ | ------------------------------------------------------------------------- | ---------------- | --------------------------------------------- |
-| `title`                        | `str`                                                                     | `""`             | 标题，单行省略号截断                          |
-| `description`                  | `str`                                                                     | `""`             | 描述，自动换行；为空时不占位                  |
-| `color`                        | `default / foreground / primary / secondary / success / warning / danger` | `"default"`      | 配色                                          |
-| `variant`                      | `flat / bordered / solid`                                                 | `"flat"`         | 变体                                          |
-| `radius`                       | `none / sm / md / lg / full`                                              | `"md"`           | 圆角；`full` 取半高                           |
-| `shadow`                       | `none / sm / md / lg`                                                     | `"sm"`           | 阴影档位                                      |
-| `severity`                     | `default / primary / secondary / success / warning / danger`              | `None`           | 决定内置图标；`None` 时按 `color` 取          |
-| `icon`                         | `str \| None`                                                             | `None`           | 自定义图标名，优先于 severity                 |
-| `hide_icon`                    | `bool`                                                                    | `False`          | 隐藏图标                                      |
-| `hide_close_button`            | `bool`                                                                    | `False`          | 隐藏右上角关闭按钮                            |
-| `end_content`                  | `QWidget \| None`                                                         | `None`           | 右侧附加内容（按钮等）                        |
-| `timeout`                      | `int \| None`                                                             | `None`           | 毫秒；`None` 用预设 6000，`0` 表示不自动关闭  |
-| `should_show_timeout_progress` | `bool`                                                                    | `False`          | 显示倒计时进度覆层                            |
-| `is_loading`                   | `bool`                                                                    | `False`          | 图标换 Spinner 并暂停倒计时                   |
-| `on_close`                     | `Callable \| None`                                                        | `None`           | 关闭回调                                      |
-| `disable_animation`            | `bool`                                                                    | `False`          | 关闭进出场动画                                |
-| `placement`                    | `str`                                                                     | `"bottom-right"` | 单卡方位，由 region 统一下发                  |
-| `theme`                        | `auto / light / dark`                                                     | `"auto"`         | `auto` 跟随 ThemeProvider                     |
-| `parent`                       | `QWidget \| None`                                                         | `None`           | 父 widget                                     |
+| 参数                           | 类型                                                                      | 默认             | 说明                                         |
+| ------------------------------ | ------------------------------------------------------------------------- | ---------------- | -------------------------------------------- |
+| `title`                        | `str`                                                                     | `""`             | 标题，单行省略号截断                         |
+| `description`                  | `str`                                                                     | `""`             | 描述，自动换行；为空时不占位                 |
+| `color`                        | `default / foreground / primary / secondary / success / warning / danger` | `"default"`      | 配色                                         |
+| `variant`                      | `flat / bordered / solid`                                                 | `"flat"`         | 变体                                         |
+| `radius`                       | `none / sm / md / lg / full`                                              | `"md"`           | 圆角；`full` 取半高                          |
+| `shadow`                       | `none / sm / md / lg`                                                     | `"sm"`           | 阴影档位                                     |
+| `severity`                     | `default / primary / secondary / success / warning / danger`              | `None`           | 决定内置图标；`None` 时按 `color` 取         |
+| `icon`                         | `str \| None`                                                             | `None`           | 自定义图标名，优先于 severity                |
+| `hide_icon`                    | `bool`                                                                    | `False`          | 隐藏图标                                     |
+| `hide_close_button`            | `bool`                                                                    | `False`          | 隐藏右上角关闭按钮                           |
+| `end_content`                  | `QWidget \| None`                                                         | `None`           | 右侧附加内容（按钮等）                       |
+| `timeout`                      | `int \| None`                                                             | `None`           | 毫秒；`None` 用预设 6000，`0` 表示不自动关闭 |
+| `should_show_timeout_progress` | `bool`                                                                    | `False`          | 显示倒计时进度覆层                           |
+| `is_loading`                   | `bool`                                                                    | `False`          | 图标换 Spinner 并暂停倒计时                  |
+| `on_close`                     | `Callable \| None`                                                        | `None`           | 关闭回调                                     |
+| `disable_animation`            | `bool`                                                                    | `False`          | 关闭进出场动画                               |
+| `placement`                    | `str`                                                                     | `"bottom-right"` | 单卡方位，由 region 统一下发                 |
+| `theme`                        | `auto / light / dark`                                                     | `"auto"`         | `auto` 跟随 ThemeProvider                    |
+| `parent`                       | `QWidget \| None`                                                         | `None`           | 父 widget                                    |
 
 ### Toast 方法与信号
 
@@ -94,7 +94,7 @@ clear_toasts(main_window)   # 清空某窗口上的全部 toast
 | ------------------------------------------------------------------- | --------------------------------------------------- |
 | `set_title(text)` / `set_description(text)`                         | 改文案，堆叠区自动重排                              |
 | `set_loading(loading)`                                              | 切 loading；`False` 时重启倒计时                    |
-| `set_end_content(widget)`                                           | 换右侧附加内容                                      |
+| `set_end_content(widget)`                                           | 换右侧附加内容，旧控件由卡片销毁                    |
 | `set_color / set_variant / set_radius / set_shadow`                 | 改外观                                              |
 | `set_hide_icon / set_hide_close_button / set_show_timeout_progress` | 改显隐                                              |
 | `set_paused(paused)`                                                | 暂停 / 恢复倒计时（hover 与展开由 region 自动调用） |

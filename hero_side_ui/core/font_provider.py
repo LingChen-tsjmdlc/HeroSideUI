@@ -8,13 +8,13 @@ from __future__ import annotations
 
 import os
 import warnings
-import weakref
 from pathlib import Path
 
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication
 
 from ..themes.font import DEFAULT_FONT_FAMILY
+from ._registry import WidgetRegistry
 
 # ============================================================
 # 常量: 字体文件夹，字体文件名，字体 family 名
@@ -69,7 +69,7 @@ class FontProvider(QObject):
         self._font_id: int = -1
         self._family: str = _VF_FAMILY_NAME
         self._base_size_px: int = 16
-        self._widgets: weakref.WeakSet = weakref.WeakSet()
+        self._widgets = WidgetRegistry("FontProvider")
 
     # ------------------------------------------------------------
     # 单例
@@ -288,15 +288,15 @@ class FontProvider(QObject):
         return len(self._widgets)
 
     def _broadcast_font_changed(self) -> None:
-        """向所有已注册组件广播字体变更，逐个吞掉刷新异常。"""
-        for w in list(self._widgets):
-            try:
-                if hasattr(w, "_apply_font"):
-                    w._apply_font()
-                else:
-                    w.set_font_family(self._family)
-            except Exception:
-                pass
+        """向所有已注册组件广播字体变更。"""
+        self._widgets.broadcast(self._push_font_to_widget)
+
+    def _push_font_to_widget(self, widget) -> None:
+        """通知单个组件刷新字体。"""
+        if hasattr(widget, "_apply_font"):
+            widget._apply_font()
+        else:
+            widget.set_font_family(self._family)
 
     # ------------------------------------------------------------
     # 测试用

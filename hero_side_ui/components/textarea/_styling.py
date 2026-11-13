@@ -2,8 +2,9 @@
 
 from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QColor, QPalette
-from PySide6.QtWidgets import QGraphicsOpacityEffect, QLabel, QPushButton, QSizePolicy, QWidget
+from PySide6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy
 
+from ..._shared.fields import fill_slot
 from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
 from ...utils import hex_to_rgba, load_svg_icon
 
@@ -431,7 +432,7 @@ class _TextareaStylingMixin:
     def _render_adornment_icons(self, is_dark, colors, dc, size_config):
         """填充三个右侧内容槽并重摆绝对定位 holder。"""
         # top_right_slot: 在 layout 内（layout 已管好位置）
-        self._fill_slot(
+        fill_slot(
             slot=self._top_right_slot,
             slot_layout=self._top_right_slot_layout,
             content=self._top_right_content,
@@ -441,7 +442,7 @@ class _TextareaStylingMixin:
             dc=dc,
         )
         # center_right / bottom_right：绝对定位 holder
-        self._fill_slot(
+        fill_slot(
             slot=self._center_right_holder,
             slot_layout=self._center_right_slot_layout,
             content=self._center_right_content,
@@ -450,7 +451,7 @@ class _TextareaStylingMixin:
             is_dark=is_dark,
             dc=dc,
         )
-        self._fill_slot(
+        fill_slot(
             slot=self._bottom_right_holder,
             slot_layout=self._bottom_right_slot_layout,
             content=self._bottom_right_content,
@@ -461,54 +462,6 @@ class _TextareaStylingMixin:
         )
         # 绝对定位的 holder 渲染完后，sizeHint 可能变了，重摆位置
         self._reposition_absolute_holders()
-
-    def _fill_slot(self, slot, slot_layout, content, on_click, icon_size, is_dark, dc):
-        """清空并重填单个内容槽，widget 直接放入，图标名渲染为按钮或标签。"""
-        while slot_layout.count():
-            item = slot_layout.takeAt(0)
-            w = item.widget()
-            if w is None:
-                continue
-            if w.property("_hs_internal") is True:
-                w.deleteLater()
-            else:
-                # 先 hide 再 detach，避免无父瞬间闪顶层窗口
-                w.hide()
-                w.setParent(None)
-
-        if content is None:
-            slot.hide()
-            return
-
-        if isinstance(content, QWidget):
-            slot_layout.addWidget(content, 0, Qt.AlignmentFlag.AlignVCenter)
-            content.show()
-            slot.show()
-            return
-
-        icon_color = QColor(dc[400] if is_dark else dc[500])
-        pix = load_svg_icon(str(content), size=icon_size, color=icon_color)
-
-        if on_click is not None:
-            btn = QPushButton()
-            btn.setProperty("_hs_internal", True)
-            btn.setFlat(True)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setIcon(pix)
-            btn.setIconSize(QSize(icon_size, icon_size))
-            btn.setFixedSize(icon_size + 4, icon_size + 4)
-            btn.setStyleSheet("QPushButton { background: transparent; border: none; padding: 0; }")
-            btn.clicked.connect(on_click)
-            slot_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
-        else:
-            lbl = QLabel()
-            lbl.setProperty("_hs_internal", True)
-            lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            lbl.setFixedSize(icon_size, icon_size)
-            lbl.setPixmap(pix)
-            slot_layout.addWidget(lbl, 0, Qt.AlignmentFlag.AlignVCenter)
-
-        slot.show()
 
     # ------------------------------------------------------------
     # label 位置 & 浮动定位

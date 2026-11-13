@@ -44,6 +44,11 @@ class ScrollStyle(QObject):
         cls._instance.ensure_applied()
         return cls._instance
 
+    @classmethod
+    def peek(cls) -> ScrollStyle | None:
+        """返回已存在的单例；尚未创建时返回 None，不触发初始化与安装。"""
+        return cls._instance
+
     def ensure_applied(self) -> bool:
         """幂等激活：已装则跳过；QApplication 未就绪时不置标志，等下次再试。
 

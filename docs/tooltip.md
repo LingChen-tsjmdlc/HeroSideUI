@@ -79,7 +79,7 @@ tooltip.set_content("新的内容文字")
 ## API
 
 - `tooltip.attach(trigger)`：绑定触发器（hover 自动触发）
-- `tooltip.set_content(str_or_widget)`：替换内容（运行时可调用，自动刷新）
+- `tooltip.set_content(str_or_widget)`：替换内容，旧内容由 Tooltip 销毁（运行时可调用，自动刷新）
 - `tooltip.open()` / `tooltip.close()`：手动控制
 - `tooltip.is_open() -> bool`
 - 信号：`opened` / `closed`

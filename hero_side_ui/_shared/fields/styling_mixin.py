@@ -594,85 +594,75 @@ class InputStylingMixin:
         )
 
     def _fill_slot(self, slot, slot_layout, content, on_click, icon_size, is_dark, dc):
-        """把 content 填充到 slot 容器中。
+        """把 content 填充到槽位，实现见模块函数 fill_slot。"""
+        fill_slot(slot, slot_layout, content, on_click, icon_size, is_dark, dc)
 
-        Args:
-            slot: 槽位 QWidget。
-            slot_layout: 槽位内部 layout。
-            content: None / 图标名字符串 / 用户 QWidget。
-            on_click: 图标点击回调；None 时渲染静态图标。
-            icon_size: 图标边长（像素）。
-            is_dark: 是否深色主题。
-            dc: default 色阶字典。
 
-        Note:
-            用户 QWidget 已在槽位时跳过 teardown+rebuild，避免 FocusOut
-            触发重排时 reparent 正在接收鼠标事件的按钮导致释放事件丢失；
-            内部创建的 widget 带 _hs_internal 标记可安全 deleteLater。
-        """
-        # 用户传入的 QWidget 已经在槽位里时跳过 teardown+rebuild，
-        # 避免 FocusOut 触发 _apply_styles → _fill_slot 时 reparent
-        # 正在接收鼠标事件的 Button，导致 mouseReleaseEvent 丢失。
-        if (
-            isinstance(content, QWidget)
-            and slot_layout.count() == 1
-            and slot_layout.itemAt(0).widget() is content
-        ):
-            slot.show()
-            return
+def fill_slot(slot, slot_layout, content, on_click, icon_size, is_dark, dc):
+    """把 content 填充到槽位，输入类组件的前后内容槽共用。
 
-        # 先清空槽位里"我们自己创建的"widget（不删除用户外部 widget，只 takeAt）
-        while slot_layout.count():
-            item = slot_layout.takeAt(0)
-            w = item.widget()
-            if w is None:
-                continue
-            # 如果是我们内部创建的图标 label / 按钮，安全删除
-            if w.property("_hs_internal") is True:
-                w.deleteLater()
-            else:
-                # 用户 widget，只从布局里移除，reparent 到 None。
-                # 先 hide 再 setParent(None)，避免 detach 瞬间变顶层窗口闪原生 frame。
-                w.hide()
-                w.setParent(None)
+    Args:
+        slot: 槽位 QWidget。
+        slot_layout: 槽位内部 layout。
+        content: None、图标名字符串或调用方的 QWidget。
+        on_click: 图标点击回调；None 时渲染静态图标。
+        icon_size: 图标边长（像素）。
+        is_dark: 是否深色主题。
+        dc: default 色阶字典。
 
-        if content is None:
-            slot.hide()
-            return
-
-        # content 是 QWidget（用户塞进来的自定义组件）
-        if isinstance(content, QWidget):
-            slot_layout.addWidget(content, 0, Qt.AlignmentFlag.AlignVCenter)
-            # setParent(None) / reparent 后 widget 默认 hidden，必须显式 show
-            # 否则用户传进来的 QWidget 根本不会显示（这是 QWidget 的默认行为，
-            # 调用方无感知）
-            content.show()
-            slot.show()
-            return
-
-        # content 是字符串：图标名 / SVG 路径
-        icon_color = QColor(dc[400] if is_dark else dc[500])
-        pix = load_svg_icon(str(content), size=icon_size, color=icon_color)
-
-        if on_click is not None:
-            # 包成可点击按钮
-            btn = QPushButton()
-            btn.setProperty("_hs_internal", True)
-            btn.setFlat(True)
-            btn.setCursor(Qt.CursorShape.PointingHandCursor)
-            btn.setIcon(pix)
-            btn.setIconSize(QSize(icon_size, icon_size))
-            btn.setFixedSize(icon_size + 4, icon_size + 4)
-            btn.setStyleSheet("QPushButton { background: transparent; border: none; padding: 0; }")
-            btn.clicked.connect(on_click)
-            slot_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
-        else:
-            # 静态图标
-            lbl = QLabel()
-            lbl.setProperty("_hs_internal", True)
-            lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
-            lbl.setFixedSize(icon_size, icon_size)
-            lbl.setPixmap(pix)
-            slot_layout.addWidget(lbl, 0, Qt.AlignmentFlag.AlignVCenter)
-
+    Note:
+        库自建的图标带 _hs_internal 标记，替换时销毁；调用方的控件只摘下
+        归还。同一控件已在槽位时直接返回，不重新挂接。
+    """
+    if (
+        isinstance(content, QWidget)
+        and slot_layout.count() == 1
+        and slot_layout.itemAt(0).widget() is content
+    ):
         slot.show()
+        return
+
+    while slot_layout.count():
+        item = slot_layout.takeAt(0)
+        w = item.widget()
+        if w is None:
+            continue
+        if w.property("_hs_internal") is True:
+            w.deleteLater()
+        else:
+            w.hide()  # 先隐藏再脱离父级，避免短暂变成顶层窗口
+            w.setParent(None)
+
+    if content is None:
+        slot.hide()
+        return
+
+    if isinstance(content, QWidget):
+        slot_layout.addWidget(content, 0, Qt.AlignmentFlag.AlignVCenter)
+        content.show()  # 脱离父级后控件默认隐藏，需显式显示
+        slot.show()
+        return
+
+    icon_color = QColor(dc[400] if is_dark else dc[500])
+    pix = load_svg_icon(str(content), size=icon_size, color=icon_color)
+
+    if on_click is not None:
+        btn = QPushButton()
+        btn.setProperty("_hs_internal", True)
+        btn.setFlat(True)
+        btn.setCursor(Qt.CursorShape.PointingHandCursor)
+        btn.setIcon(pix)
+        btn.setIconSize(QSize(icon_size, icon_size))
+        btn.setFixedSize(icon_size + 4, icon_size + 4)
+        btn.setStyleSheet("QPushButton { background: transparent; border: none; padding: 0; }")
+        btn.clicked.connect(on_click)
+        slot_layout.addWidget(btn, 0, Qt.AlignmentFlag.AlignVCenter)
+    else:
+        lbl = QLabel()
+        lbl.setProperty("_hs_internal", True)
+        lbl.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)
+        lbl.setFixedSize(icon_size, icon_size)
+        lbl.setPixmap(pix)
+        slot_layout.addWidget(lbl, 0, Qt.AlignmentFlag.AlignVCenter)
+
+    slot.show()

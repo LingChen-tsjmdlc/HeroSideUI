@@ -9,7 +9,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import RADIUS
-from ...utils import load_svg_icon
+from ...utils import load_svg_icon, safe_delete
 from ..button import Button
 from ..text import Text
 from ._styling import build_alert_styles
@@ -95,10 +95,10 @@ class Alert(QWidget):
         if not is_visible:
             self.hide()
 
-        if start_content:
-            self._layout.insertWidget(0, start_content)
-        if end_content:
-            self._layout.insertWidget(self._layout.count() - 1, end_content)
+        self._start_content: QWidget | None = None
+        self._end_content: QWidget | None = None
+        self.set_start_content(start_content)
+        self.set_end_content(end_content)
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
@@ -467,21 +467,38 @@ class Alert(QWidget):
         self._is_closable = closable
         self._close_btn.setVisible(closable or self._on_close is not None)
 
-    def set_start_content(self, widget: QWidget):
-        """把自定义 widget 插到布局最前。
+    def set_start_content(self, widget: QWidget | None):
+        """替换布局最前的自定义内容，旧内容由 Alert 销毁。
 
         Args:
-            widget: 要插入的 Qt widget，位置在图标容器之前。
+            widget: 新内容，位置在图标容器之前；None 只清空。
         """
-        self._layout.insertWidget(0, widget)
+        self._replace_content(self._start_content, widget, 0)
+        self._start_content = widget
 
-    def set_end_content(self, widget: QWidget):
-        """把自定义 widget 插到关闭按钮之前。
+    def set_end_content(self, widget: QWidget | None):
+        """替换关闭按钮之前的自定义内容，旧内容由 Alert 销毁。
 
         Args:
-            widget: 要插入的 Qt widget。
+            widget: 新内容；None 只清空。
 
         Note:
             用 count() - 1 定位，前提是关闭按钮始终是布局最后一个元素。
         """
-        self._layout.insertWidget(self._layout.count() - 1, widget)
+        self._replace_content(self._end_content, widget, None)
+        self._end_content = widget
+
+    def _replace_content(self, old: QWidget | None, new: QWidget | None, index: int | None):
+        """销毁旧内容并把新内容插到指定位置。
+
+        Args:
+            old: 当前内容。
+            new: 新内容。
+            index: 布局位置；None 表示关闭按钮之前。
+        """
+        if old is not None and old is not new:
+            self._layout.removeWidget(old)
+            safe_delete(old)
+        if new is not None and new is not old:
+            position = self._layout.count() - 1 if index is None else index
+            self._layout.insertWidget(position, new)

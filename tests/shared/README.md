@@ -9,6 +9,7 @@
 | `test_layer_boundaries.py` | 低层包不得依赖运行时设施或组件；`FONT_FAMILY` 已弃用；默认图标色不创建 Provider |
 | `test_lazy_exports.py` | 公开入口按名称延迟加载，名称表与导出一致，基础组件不拉入日期与 Markdown 依赖 |
 | `test_font_contract.py` | 全局字体变化后，依赖字体的组件必须跟随；内部 Text 的字号、下划线、等宽字体不被覆盖 |
+| `test_ownership.py` | 组件登记簿、`teardown()` 撤销应用级设施、传入控件的销毁与归还规则 |
 | `test_family_capabilities.py` | 遮罩、列表、浮层、日期模型等共享能力的公开接口与真实消费者 |
 
 新增跨组件共享能力时，同步补充消费者的断言，而不只测试共享模块本身。

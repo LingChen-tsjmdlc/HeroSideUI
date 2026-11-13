@@ -101,6 +101,14 @@ def _activate_defaults() -> None:
     _booted = True
 
 
+def reset() -> None:
+    """复位启动标志，teardown 之后允许再次 setup 或隐式激活。"""
+    global _booted, _setup_done, _warned
+    _booted = False
+    _setup_done = False
+    _warned = False
+
+
 def _reset_for_test() -> None:
     """仅供单元测试：复位启动标志，让钩子可重新触发。"""
     global _booted, _setup_done, _warned

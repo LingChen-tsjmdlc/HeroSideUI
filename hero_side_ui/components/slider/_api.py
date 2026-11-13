@@ -12,6 +12,7 @@ from PySide6.QtCore import Qt
 from PySide6.QtWidgets import QWidget
 
 from ...core import ThemeProvider
+from ...utils import safe_delete
 from ._geometry import clamp_value, snap_value
 from ._icon import _SliderIconLabel
 from ._marks import parse_marks
@@ -248,8 +249,24 @@ class _SliderAPIMixin:
     # ============================================================
     # 插槽 widget
     # ============================================================
+    @staticmethod
+    def _release_content(widget: QWidget) -> None:
+        """处理被替换下来的内容：库自建的图标销毁，调用方传入的控件摘下归还。"""
+        if isinstance(widget, _SliderIconLabel):
+            safe_delete(widget)
+        else:
+            widget.hide()
+            widget.setParent(None)
+
     def set_start_content(self, w: QWidget | str | None):
-        """设置 track 起始侧内容（水平=左/垂直=下，靠近 min）。"""
+        """设置 track 起始侧内容（水平=左/垂直=下，靠近 min）。
+
+        Args:
+            w: 图标名字符串或控件；None 清空。
+
+        Note:
+            被替换的旧控件摘下归还调用方，由字符串生成的图标由 Slider 销毁。
+        """
         if isinstance(w, str):
             w = _SliderIconLabel(w, parent=self)  # type: ignore[arg-type]
         old = self._start_content_widget  # type: ignore[attr-defined]
@@ -257,8 +274,7 @@ class _SliderAPIMixin:
         if old is not None:
             if band_layout is not None:
                 band_layout.removeWidget(old)
-            old.hide()
-            old.setParent(None)
+            self._release_content(old)
         self._start_content_widget = w  # type: ignore[attr-defined]
         if w is not None and band_layout is not None:
             w.setParent(self._canvas_band)  # type: ignore[attr-defined]
@@ -273,7 +289,14 @@ class _SliderAPIMixin:
         self._canvas.update()  # type: ignore[attr-defined]
 
     def set_end_content(self, w: QWidget | str | None):
-        """设置 track 结束侧内容（水平=右/垂直=上，靠近 max）。"""
+        """设置 track 结束侧内容（水平=右/垂直=上，靠近 max）。
+
+        Args:
+            w: 图标名字符串或控件；None 清空。
+
+        Note:
+            被替换的旧控件摘下归还调用方，由字符串生成的图标由 Slider 销毁。
+        """
         if isinstance(w, str):
             w = _SliderIconLabel(w, parent=self)  # type: ignore[arg-type]
         old = self._end_content_widget  # type: ignore[attr-defined]
@@ -281,8 +304,7 @@ class _SliderAPIMixin:
         if old is not None:
             if band_layout is not None:
                 band_layout.removeWidget(old)
-            old.hide()
-            old.setParent(None)
+            self._release_content(old)
         self._end_content_widget = w  # type: ignore[attr-defined]
         if w is not None and band_layout is not None:
             w.setParent(self._canvas_band)  # type: ignore[attr-defined]
@@ -308,8 +330,7 @@ class _SliderAPIMixin:
         if old is not None:
             if row_layout is not None:
                 row_layout.removeWidget(old)
-            old.hide()
-            old.setParent(None)
+            self._release_content(old)
         self._top_end_content_widget = w  # type: ignore[attr-defined]
         # 2) 挂入新 widget（仅水平方向有"行末尾"语义；垂直方向无视）
         if w is not None and self._orientation == "horizontal" and row_layout is not None:  # type: ignore[attr-defined]
@@ -327,8 +348,7 @@ class _SliderAPIMixin:
         old = self._bottom_start_content_widget  # type: ignore[attr-defined]
         if old is not None:
             self._root.removeWidget(old)  # type: ignore[attr-defined]
-            old.hide()
-            old.setParent(None)
+            self._release_content(old)
         self._bottom_start_content_widget = w  # type: ignore[attr-defined]
         # 仅水平方向有"轨道下方"语义；垂直方向无视
         if w is not None and self._orientation == "horizontal":  # type: ignore[attr-defined]

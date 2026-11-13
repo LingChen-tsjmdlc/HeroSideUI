@@ -9,7 +9,7 @@ tests/shared/test_fields_contract.py 逐宿主校验。
 
 from .clear_button import ClearButton
 from .layout_mixin import InputLayoutMixin
-from .styling_mixin import InputStylingMixin
+from .styling_mixin import InputStylingMixin, fill_slot
 from .wrapper import InputWrapper
 
-__all__ = ["ClearButton", "InputLayoutMixin", "InputStylingMixin", "InputWrapper"]
+__all__ = ["ClearButton", "InputLayoutMixin", "InputStylingMixin", "InputWrapper", "fill_slot"]
