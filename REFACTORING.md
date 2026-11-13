@@ -620,7 +620,7 @@ class Input(_InputStylingMixin, _InputLayoutMixin, QWidget): ...
 
 2. **Heredoc 陷阱**：bash `<<'PY' ... PY` 里嵌 Python 多行字符串包含 `# === / # 圆角` 等组合时偶尔会破坏 heredoc 结束识别，把脚本写到 `.workbuddy/split_xxx.py` 单独执行最稳。
 
-3. **textarea 复用 input 的外框与清除按钮**：这是早期做法（显式指到 input 的私有模块文件），已被 ARCH-02 取代。这些部件现位于 `_shared/fields`，组件之间不再导入对方的私有模块，见 [架构整理与演进规则](docs/architecture.md)。
+3. **textarea 复用 input 的外框与清除按钮**：这是早期做法（显式指到 input 的私有模块文件），已被 ARCH-02 取代。这些部件现位于 `_shared/fields`，组件之间不再导入对方的私有模块，规则见 [CONTRIBUTING.md](CONTRIBUTING.md)。
 
 ### 13.6 Phase 2 全部完成
 

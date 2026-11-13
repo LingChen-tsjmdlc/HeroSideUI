@@ -137,7 +137,7 @@ def test_code_fonts_are_independent_of_the_global_family(qtbot):
 # ============================================================
 # 新组件必须接入全局字体
 # ============================================================
-# 直接设置字体却不登记的组件包：原因见 docs/architecture-arch-04-completion.md。
+# 直接设置字体却不登记的组件包，每项注明原因。
 FONT_REGISTRATION_EXCEPTIONS = {
     "code_block": "等宽字体，独立于全局字体",
     "code_editor": "等宽字体，独立于全局字体",

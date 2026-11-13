@@ -49,7 +49,7 @@ from hero_side_ui import HeroSideUIProvider, Button
 app = QApplication(sys.argv)
 
 # 一行初始化：主题 / 字体 / 平滑滚动 全局生效
-HeroSideUIProvider.setup(app, theme="light")   # "auto" / "light" / "dark"
+HeroSideUIProvider.setup(app, theme="light")  # "auto" / "light" / "dark"
 
 window = QWidget()
 layout = QVBoxLayout(window)
@@ -82,8 +82,6 @@ uv run python examples/icon/demo.py       # Icon：内置离线图标 + pyside-i
 ## 组件文档
 
 各组件的详细 API、参数说明、代码示例请查看 **[docs/](docs/)** 目录。
-
-架构整理方向与公共能力接入约束见 [架构整理与演进规则](docs/architecture.md)；具体复现与验证边界见 [2026-11-06 审查验证明细](docs/architecture-audit-2026-11-06.md)。
 
 ### 已完成组件（51 个 HeroUI v2 复刻 + Icon 桌面端扩展）
 

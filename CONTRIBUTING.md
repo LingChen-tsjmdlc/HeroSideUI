@@ -2,7 +2,7 @@
 
 感谢你愿意为 HeroSideUI 做贡献。无论是报告问题、改进文档，还是新增组件，都欢迎。
 
-开始之前，建议先读一下 [README](README.md)，了解项目是什么、怎么使用；想知道代码为什么这样组织，见 [架构整理与演进规则](docs/architecture.md)。
+开始之前，建议先读一下 [README](README.md)，了解项目是什么、怎么使用。
 
 ## Issues
 
