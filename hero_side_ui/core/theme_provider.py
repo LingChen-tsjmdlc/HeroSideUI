@@ -70,6 +70,11 @@ class ThemeProvider(QObject):
             ensure_core_ready()
         return cls._instance
 
+    @classmethod
+    def peek(cls) -> ThemeProvider | None:
+        """返回已存在的单例；尚未创建时返回 None，不触发初始化。"""
+        return cls._instance
+
     # ============================================================
     # 公共属性
     # ============================================================

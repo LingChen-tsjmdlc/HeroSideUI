@@ -176,3 +176,18 @@ class TestAccordionDynamicAPI:
         acc.collapse_all()
         assert not item1.is_expanded()
         assert not item2.is_expanded()
+
+
+def test_start_icon_uses_the_same_explicit_color_as_the_styled_render(qtbot, monkeypatch):
+    import hero_side_ui.utils as utils
+    from hero_side_ui import AccordionItem
+    from hero_side_ui.themes import HEROUI_COLORS
+
+    item = AccordionItem(title="t")
+    qtbot.addWidget(item)
+    item._theme = "dark"
+    seen = {}
+    real = utils.load_svg_icon
+    monkeypatch.setattr(utils, "load_svg_icon", lambda *a, **kw: seen.update(kw) or real(*a, **kw))
+    item.set_start_icon("heroicons--check-solid")
+    assert seen["color"].name() == HEROUI_COLORS["default"][400].lower()

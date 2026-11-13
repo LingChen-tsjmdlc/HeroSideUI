@@ -9,12 +9,16 @@ from ..icons import IconNotFoundError, get_icon, resolve_icon
 
 
 def _resolve_theme_aware_color() -> str:
-    """按当前主题返回适配的文字色。"""
-    # Retained at the compatibility boundary; resource/rendering modules do not
-    # query Providers or install global facilities.
+    """返回未指定颜色时的默认图标色。
+
+    Note:
+        旧 API 的兼容边界：ThemeProvider 已存在时跟随其主题，否则用浅色主题色，
+        不会创建 Provider。
+    """
     from ..core import ThemeProvider
 
-    return "#fafafa" if ThemeProvider.instance().current_theme == "dark" else "#18181b"
+    provider = ThemeProvider.peek()
+    return "#fafafa" if provider is not None and provider.current_theme == "dark" else "#18181b"
 
 
 def load_svg_icon(

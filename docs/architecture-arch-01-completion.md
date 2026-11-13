@@ -6,16 +6,16 @@
 
 ## 能力、拥有者与消费者
 
-| 能力 | 维护入口 | 已接入消费者 |
-| --- | --- | --- |
-| 单次数值与颜色过渡 | [tween_value](../hero_side_ui/animation/tween.py) | Calendar、Link、Listbox、Pagination、Slider、Switch、Table、Tabs、Skeleton、共享箭头与 core.ScrollStyle |
-| Qt 属性与几何过渡 | 同文件的 `tween_property` / `tween_geometry` | Accordion、Avatar、AvatarGroup、Badge、Card、Checkbox、Drawer、Image、Input 家族部件、InputOTP、Progress、Radio、Skeleton、Slider、Toast、Tabs |
-| 通道抢占、完成、取消和释放 | [_runner.py](../hero_side_ui/animation/_runner.py) | 上述入口与 Pagination 两阶段光标；调用者不再重复维护连接和释放逻辑 |
-| 边距展开与收拢 | [PaddingSqueezeAnimation](../hero_side_ui/animation/padding_squeeze.py) | Popover；保留边距换算，驱动与释放使用公共 tween |
-| 循环进度与可见性 | [LoopDriver](../hero_side_ui/animation/loop.py) | 五种效果适配器，由 Spinner、Skeleton、Progress、CircularProgress 消费 |
-| 对勾绘制、延迟与取消 | [check_draw.py](../hero_side_ui/animation/check_draw.py) | Checkbox、Listbox 均使用 CheckDrawAnimation 与共享绘制函数 |
-| 选择框箭头按钮 | [_shared/selection/SelectorButton](../hero_side_ui/_shared/selection/selector_button.py) | Select、Autocomplete；父组件提供图像和展开状态 |
-| 图标资源与渲染 | [icons/](../hero_side_ui/icons/__init__.py)、[Icon](../hero_side_ui/components/icon/icon.py)、pyside-iconify | 新 Icon 与所有旧 load_svg_icon 消费者，详见 [Icon 文档](icon.md) |
+| 能力                       | 维护入口                                                                                                     | 已接入消费者                                                                                                                                   |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------- |
+| 单次数值与颜色过渡         | [tween_value](../hero_side_ui/animation/tween.py)                                                            | Calendar、Link、Listbox、Pagination、Slider、Switch、Table、Tabs、Skeleton、共享箭头与 core.ScrollStyle                                        |
+| Qt 属性与几何过渡          | 同文件的 `tween_property` / `tween_geometry`                                                                 | Accordion、Avatar、AvatarGroup、Badge、Card、Checkbox、Drawer、Image、Input 家族部件、InputOTP、Progress、Radio、Skeleton、Slider、Toast、Tabs |
+| 通道抢占、完成、取消和释放 | [\_runner.py](../hero_side_ui/animation/_runner.py)                                                          | 上述入口与 Pagination 两阶段光标；调用者不再重复维护连接和释放逻辑                                                                             |
+| 边距展开与收拢             | [PaddingSqueezeAnimation](../hero_side_ui/animation/padding_squeeze.py)                                      | Popover；保留边距换算，驱动与释放使用公共 tween                                                                                                |
+| 循环进度与可见性           | [LoopDriver](../hero_side_ui/animation/loop.py)                                                              | 五种效果适配器，由 Spinner、Skeleton、Progress、CircularProgress 消费                                                                          |
+| 对勾绘制、延迟与取消       | [check_draw.py](../hero_side_ui/animation/check_draw.py)                                                     | Checkbox、Listbox 均使用 CheckDrawAnimation 与共享绘制函数                                                                                     |
+| 选择框箭头按钮             | [\_shared/selection/SelectorButton](../hero_side_ui/_shared/selection/selector_button.py)                    | Select、Autocomplete；父组件提供图像和展开状态                                                                                                 |
+| 图标资源与渲染             | [icons/](../hero_side_ui/icons/__init__.py)、[Icon](../hero_side_ui/components/icon/icon.py)、pyside-iconify | 新 Icon 与所有旧 load_svg_icon 消费者，详见 [Icon 文档](icon.md)                                                                               |
 
 Input 的背景、边框与清除按钮也被 Textarea、DateInput 等间接复用。本次统一这些部件内部的动画；其归属问题已由 [ARCH-02](architecture-arch-02-completion.md) 解决，现位于 `_shared/fields`。
 
@@ -23,16 +23,16 @@ Input 的背景、边框与清除按钮也被 Textarea、DateInput 等间接复�
 
 每个 `(owner, runner_attr)` 是独立通道，同一控件可以并行持有颜色、透明度和几何等过渡。
 
-| 操作 | 行为 |
-| --- | --- |
-| 新请求 | 先取消旧请求，再从当前值开始 |
-| 同值请求 | 取消旧请求，不创建动画、不派发帧更新；存在完成回调时同步通知 |
-| `animated=False` 或 `duration<=0` | 取消旧请求，应用终态后通知完成 |
-| `stop_tween()` | 取消并保留当前值，不调用完成回调 |
-| 自然完成 | 清空通道、断开内部连接、安排 deleteLater；只通知当前请求完成 |
-| 回调重入 | 新请求优先，旧请求不覆盖画面、不误清新通道、不发出过期完成通知 |
-| 宿主或属性目标销毁 | 停止更新及完成通知，按 Qt 所有权释放 |
-| 多阶段效果 | 保留组合编排，通道所有权与释放仍使用公共实现 |
+| 操作                              | 行为                                                           |
+| --------------------------------- | -------------------------------------------------------------- |
+| 新请求                            | 先取消旧请求，再从当前值开始                                   |
+| 同值请求                          | 取消旧请求，不创建动画、不派发帧更新；存在完成回调时同步通知   |
+| `animated=False` 或 `duration<=0` | 取消旧请求，应用终态后通知完成                                 |
+| `stop_tween()`                    | 取消并保留当前值，不调用完成回调                               |
+| 自然完成                          | 清空通道、断开内部连接、安排 deleteLater；只通知当前请求完成   |
+| 回调重入                          | 新请求优先，旧请求不覆盖画面、不误清新通道、不发出过期完成通知 |
+| 宿主或属性目标销毁                | 停止更新及完成通知，按 Qt 所有权释放                           |
+| 多阶段效果                        | 保留组合编排，通道所有权与释放仍使用公共实现                   |
 
 `owner` 通常是 QObject。`tween_property` 也接受支持弱引用和属性赋值的普通运行态对象，例如 Toast 条目；此时 Qt 动画以目标对象为父对象。业务队列仍由 Toast 管理。
 
@@ -72,13 +72,13 @@ stop_tween(widget, "_opacity_runner")
 
 五种类保留原有名称和读取接口，内部共用 LoopDriver：
 
-| 适配器 | 进度换算 | 消费者 |
-| --- | --- | --- |
-| PhaseDriver | 0～1 进度 | Spinner；default 使用两个实例，其余变体使用一个 |
-| SpinAnimation | 进度 × 360° | CircularProgress |
-| SkeletonShimmerAnimation | 0～1 扫光进度，InOutCubic | Skeleton |
-| StripeFlowAnimation | 进度 × 图案周期 | Progress |
-| IndeterminateBarAnimation | 从 -bar_ratio 到 1 的位置，InOutSine | Progress |
+| 适配器                    | 进度换算                             | 消费者                                          |
+| ------------------------- | ------------------------------------ | ----------------------------------------------- |
+| PhaseDriver               | 0～1 进度                            | Spinner；default 使用两个实例，其余变体使用一个 |
+| SpinAnimation             | 进度 × 360°                          | CircularProgress                                |
+| SkeletonShimmerAnimation  | 0～1 扫光进度，InOutCubic            | Skeleton                                        |
+| StripeFlowAnimation       | 进度 × 图案周期                      | Progress                                        |
+| IndeterminateBarAnimation | 从 -bar_ratio 到 1 的位置，InOutSine | Progress                                        |
 
 每个控件仍独立持有动画实例。共用控制实现，保留各效果的周期、曲线和绘制。
 
@@ -105,31 +105,31 @@ stop_tween(widget, "_opacity_runner")
 
 Checkbox 删除独立描勾动画与不可取消的 singleShot，使用 CheckDrawAnimation 管理延迟、取消和立即终态；Listbox 继续使用相同控制器。
 
-| 消费者 | 选中 | 取消 |
-| --- | --- | --- |
+| 消费者   | 选中                   | 取消                 |
+| -------- | ---------------------- | -------------------- |
 | Checkbox | 延迟 100ms，500ms 描出 | 完整对勾配合填充淡出 |
-| Listbox | 延迟 80ms，400ms 描出 | 120ms 反向擦除 |
+| Listbox  | 延迟 80ms，400ms 描出  | 120ms 反向擦除       |
 
 停止和立即终态会清理待执行目标。Checkbox 进入未定态、关闭动画时也取消待执行描勾。
 
-Select、Autocomplete 的旧 _selector_button 模块只保留兼容导入，实际组件直接使用内部共享 SelectorButton。没有增加顶层用户组件 API。
+Select、Autocomplete 的旧 \_selector_button 模块只保留兼容导入，实际组件直接使用内部共享 SelectorButton。没有增加顶层用户组件 API。
 
 ## 保留的专属职责
 
-| 拥有者 | 保留职责与消费者 |
-| --- | --- |
-| PressScaleEffect | 图形效果安装与按压缩放；Button、Card、Pagination |
-| RippleOverlay | 每个水波纹的绘制、覆盖层与退场释放；Button、Card |
-| CollapseAnimation | 高度与透明度组合时序；Accordion |
-| FadeScaleAnimation | 淡入缩放联动及透明度适配；Popover、Tooltip |
-| LabelFloatAnimation | 浮动标签语义与回调；Input、Textarea、DateInput |
-| UnderlineBar | 输入下划线效果；Input、DateInput |
-| BackdropFade | 遮罩透明度；Popover 及复用遮罩的 Drawer 家族 |
-| PixmapScaleProxy | 截图代理与缩放显示；Popover、Tooltip |
-| start_cursor_slide | 两阶段位置与缩放换算；Pagination，通道释放交给公共 runner |
-| Calendar 翻页控制器 | 旧网格截图、新内容渲染、覆盖层清理；位置过渡已接公共入口 |
-| ToastRegion | 队列、折叠、拖拽、进出场与条目移除；几何和透明度已接公共入口 |
-| InputOTP 光标、Toast 倒计时等 QTimer | 焦点、输入与业务计时，不承担重复的连续插值 |
+| 拥有者                               | 保留职责与消费者                                             |
+| ------------------------------------ | ------------------------------------------------------------ |
+| PressScaleEffect                     | 图形效果安装与按压缩放；Button、Card、Pagination             |
+| RippleOverlay                        | 每个水波纹的绘制、覆盖层与退场释放；Button、Card             |
+| CollapseAnimation                    | 高度与透明度组合时序；Accordion                              |
+| FadeScaleAnimation                   | 淡入缩放联动及透明度适配；Popover、Tooltip                   |
+| LabelFloatAnimation                  | 浮动标签语义与回调；Input、Textarea、DateInput               |
+| UnderlineBar                         | 输入下划线效果；Input、DateInput                             |
+| BackdropFade                         | 遮罩透明度；Popover 及复用遮罩的 Drawer 家族                 |
+| PixmapScaleProxy                     | 截图代理与缩放显示；Popover、Tooltip                         |
+| start_cursor_slide                   | 两阶段位置与缩放换算；Pagination，通道释放交给公共 runner    |
+| Calendar 翻页控制器                  | 旧网格截图、新内容渲染、覆盖层清理；位置过渡已接公共入口     |
+| ToastRegion                          | 队列、折叠、拖拽、进出场与条目移除；几何和透明度已接公共入口 |
+| InputOTP 光标、Toast 倒计时等 QTimer | 焦点、输入与业务计时，不承担重复的连续插值                   |
 
 已有语义效果可在自身生命周期内持有固定数量、重复使用的 Qt 动画；水波纹按整个效果对象退场释放。一次性过渡请求统一通过公共 runner 释放。公共效果不反向读取具体组件的私有业务状态。
 

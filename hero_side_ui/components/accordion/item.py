@@ -278,17 +278,7 @@ class AccordionItem(QWidget):
         else:
             self._divider.hide()
 
-        # start_icon / end_icon 渲染
-        from ...utils import load_svg_icon
-
-        icon_color = QColor(dc[400] if is_dark else dc[500])
-        icon_size = size_config["indicator_size"]
-
-        if self._start_icon_name:
-            pixmap = load_svg_icon(self._start_icon_name, size=icon_size, color=icon_color)
-            self._start_icon_label.setFixedSize(icon_size, icon_size)
-            self._start_icon_label.setPixmap(pixmap)
-            self._start_icon_label.show()
+        self._render_start_icon()
 
         # 指示器颜色（如果有自定义 end_icon 也会跟随着色）
         self._indicator.set_color(QColor(indicator_color))
@@ -452,11 +442,22 @@ class AccordionItem(QWidget):
             icon_name: SVG 文件名（不含 .svg 后缀）或内置图标名。
         """
         self._start_icon_name = icon_name
+        self._render_start_icon()
+
+    def _render_start_icon(self):
+        """按当前主题与尺寸档位绘制左侧图标，无图标时不处理。"""
+        if not self._start_icon_name:
+            return
         from ...utils import load_svg_icon
 
-        size = self._start_icon_label.width() or 18
-        pixmap = load_svg_icon(icon_name, size=size)
-        self._start_icon_label.setPixmap(pixmap)
+        is_dark = self._theme == "dark"
+        dc = HEROUI_COLORS["default"]
+        size = ACCORDION_SIZES.get(self._size, ACCORDION_SIZES["md"])["indicator_size"]
+        color = QColor(dc[400] if is_dark else dc[500])
+        self._start_icon_label.setFixedSize(size, size)
+        self._start_icon_label.setPixmap(
+            load_svg_icon(self._start_icon_name, size=size, color=color)
+        )
         self._start_icon_label.show()
 
     def set_end_icon(self, icon_name: str):

@@ -14,6 +14,8 @@ from pathlib import Path
 from PySide6.QtCore import QObject, Signal
 from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication
 
+from ..themes.font import DEFAULT_FONT_FAMILY
+
 # ============================================================
 # 常量: 字体文件夹，字体文件名，字体 family 名
 # ============================================================
@@ -42,9 +44,7 @@ _WEIGHT_BUCKETS = (
     (1000, "Heavy", 900),
 )
 
-_FALLBACK_FAMILY_CSS = (
-    '"Inter", "SF Pro Display", -apple-system, "Segoe UI", "Helvetica Neue", Arial, sans-serif'
-)
+_FALLBACK_FAMILY_CSS = DEFAULT_FONT_FAMILY
 
 
 def _is_ghost_family(name: str, base: str) -> bool:
