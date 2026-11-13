@@ -3,7 +3,6 @@
 import shiboken6
 from PySide6.QtCore import QPoint, Qt
 
-from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS, INPUT_SIZES
 
 
@@ -83,11 +82,10 @@ class InputLayoutMixin:
         f_float = size_config["label_float_font_size"]
         font_size = f_rest + (f_float - f_rest) * progress
 
-        # 字体应用：走 Text/FontProvider 同源，保证全局换字体时跟随。
-        # 按 progress 阔作中间跳阶 weight：<=0.5 normal，>0.5 medium。
+        # 字号与字重交给 Text 自身管理，全局字体切换时才不会被重置。
         weight = "medium" if progress > 0.5 else "normal"
-        font = make_text_qfont(round(font_size), weight)
-        self._inside_label.setFont(font)
+        self._inside_label.set_size(round(font_size))
+        self._inside_label.set_weight(weight)
         self._inside_label.adjustSize()
 
         # ---- 定位 ----

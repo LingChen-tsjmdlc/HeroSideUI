@@ -9,7 +9,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...animation import start_cursor_slide, stop_tween, tween_property
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import PAGINATION_SIZES
 from ._constants import (
     VALID_COLORS,
@@ -142,6 +142,14 @@ class Pagination(QWidget):
         # auto 主题
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
+
+    def _apply_font(self):
+        """页码文字每次绘制时按当前字体构造，字体变化后重绘全部子件。"""
+        for child in self.findChildren(QWidget):
+            child.updateGeometry()
+            child.update()
+        self.update()
 
     # ============================================================
     # UI 构建

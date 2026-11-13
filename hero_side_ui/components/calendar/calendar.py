@@ -21,7 +21,7 @@ from ..._shared.dates import (
     weekday_names,
     year_range,
 )
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import CALENDAR_SIZES, RADIUS
 from ..text import Text
 from . import _palette as pal
@@ -144,9 +144,16 @@ class Calendar(QWidget):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
         self._render_all()
         self._apply_styles()
+
+    def _apply_font(self) -> None:
+        """日期格文字绘制时取当前字体，字体变化后重绘全部子件。"""
+        for child in self.findChildren(QWidget):
+            child.update()
+        self.update()
 
     # ---- 状态工厂（RangeCalendar 覆盖）--------------------------------
 

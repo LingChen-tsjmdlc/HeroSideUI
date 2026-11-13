@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 
 from ..._shared.fields import ClearButton, InputWrapper
 from ...animation import LabelFloatAnimation
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ..text import Text
 from ._autosize import _TextareaAutosizeMixin
 from ._layout import _TextareaLayoutMixin
@@ -157,6 +157,7 @@ class Textarea(
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
         # 平滑滚动 —— Qt 默认整行跳跃太生硬，attach 后变成丝滑过渡
         try:
@@ -184,6 +185,11 @@ class Textarea(
             if v in ("none", "false", "off"):
                 return None
         return "vertical"  # 兜底
+
+    def _apply_font(self):
+        """全局字体变化后重设字体，并按新行高重算输入区高度。"""
+        self._apply_styles()
+        self._update_textarea_height()
 
     # ============================================================
     # UI 结构

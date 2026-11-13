@@ -25,7 +25,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...animation import CheckDrawAnimation, paint_animated_check, tween_property
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import CHECKBOX_SIZES, HEROUI_COLORS, RADIUS
 
 # ============================================================
@@ -174,6 +174,7 @@ class Checkbox(QCheckBox):
         # auto 模式：注册到 ThemeProvider
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # Qt 属性（供 QPropertyAnimation 驱动）
@@ -341,6 +342,10 @@ class Checkbox(QCheckBox):
             CHECKBOX_SIZES 中的配置字典；非法档位回退 md。
         """
         return CHECKBOX_SIZES.get(self._size, CHECKBOX_SIZES["md"])
+
+    def _apply_font(self):
+        """全局字体变化后重设字体并重算尺寸。"""
+        self._refresh_geometry()
 
     def _refresh_geometry(self):
         """按字体与文本重算最小尺寸并通知布局。

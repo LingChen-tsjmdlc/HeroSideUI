@@ -5,10 +5,10 @@ from __future__ import annotations
 from collections.abc import Callable
 
 from PySide6.QtCore import QPointF, QRectF, Qt, Signal
-from PySide6.QtGui import QColor, QFont, QFontMetricsF, QPainter, QPen
+from PySide6.QtGui import QColor, QFontMetricsF, QPainter, QPen
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QVBoxLayout, QWidget
 
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider, make_text_qfont
 from ...themes import (
     BREADCRUMBS_ITEMS_AFTER_COLLAPSE,
     BREADCRUMBS_ITEMS_BEFORE_COLLAPSE,
@@ -247,9 +247,7 @@ class _Crumb(QWidget):
         self._pressed = False
         self._focused = False
         self._clicked = False  # underline="focus"：被点击后的持久标记
-        self._font = QFont()
-        self._font.setPixelSize(BREADCRUMBS_SIZES[self._size]["font"])
-        self._font.setWeight(QFont.Weight.Medium)
+        self._font = make_text_qfont(BREADCRUMBS_SIZES[self._size]["font"], "medium")
         self.setCursor(
             Qt.CursorShape.PointingHandCursor if not item.is_current else Qt.CursorShape.ArrowCursor
         )
@@ -513,7 +511,12 @@ class Breadcrumbs(QWidget):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
+        self._rebuild()
+
+    def _apply_font(self):
+        """各项的宽高由字体度量得到，全局字体变化后整体重建。"""
         self._rebuild()
 
     # ---- 构建 ----

@@ -57,7 +57,7 @@ wheels = [
 
 [[package]]
 name = "herosideui"
-version = "0.17.3"
+version = "0.17.4"
 source = { editable = "." }
 dependencies = [
     { name = "markdown-it-py" },

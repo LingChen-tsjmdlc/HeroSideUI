@@ -17,7 +17,7 @@ from PySide6.QtWidgets import (
 from ..._shared.dates import VALID_GRANULARITIES, DateFieldState, DateTimeValue
 from ..._shared.fields import InputLayoutMixin, InputWrapper
 from ...animation import LabelFloatAnimation, UnderlineBar
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ..text import Text
 from ._segment import _DateSegment, _SegmentLiteral
 from ._styling import _DateInputStylingMixin
@@ -173,6 +173,11 @@ class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
+
+    def _apply_font(self):
+        """段文字宽度随字体变化，全局字体变化后重跑样式以重算最小宽度。"""
+        self._apply_styles()
 
     # ============================================================
     # UI 结构

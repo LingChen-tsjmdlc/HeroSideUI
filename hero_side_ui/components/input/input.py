@@ -16,7 +16,7 @@ from PySide6.QtWidgets import (
 
 from ..._shared.fields import ClearButton, InputLayoutMixin, InputStylingMixin, InputWrapper
 from ...animation import LabelFloatAnimation, UnderlineBar
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ..text import Text
 from ._line_edit import _LineEdit
 
@@ -151,6 +151,7 @@ class Input(InputStylingMixin, InputLayoutMixin, QWidget):
         # 保持透明，所以"挖空"问题不会复发（_apply_styles 已经在上面调过一次了）。
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # UI 结构

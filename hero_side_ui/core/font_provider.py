@@ -264,6 +264,8 @@ class FontProvider(QObject):
 
         Note:
             两者皆无时会抛 TypeError，避免无法刷新的组件被登记。
+            _apply_font() 负责按当前 family 与基准字号重算自身字体，
+            字体影响尺寸时同时刷新几何。
         """
         if not (hasattr(widget, "_apply_font") or hasattr(widget, "set_font_family")):
             raise TypeError(

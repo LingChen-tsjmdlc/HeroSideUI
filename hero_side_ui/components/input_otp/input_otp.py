@@ -8,7 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import (
     INPUT_OTP_CARET_PERIOD_MS,
     INPUT_OTP_SIZES,
@@ -108,6 +108,7 @@ class InputOtp(QWidget):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ---- build ----
 
@@ -508,6 +509,12 @@ class InputOtp(QWidget):
         self._theme = theme
         self._helper_label.set_theme(self._theme)
         self._sync_helper()
+        self._row.update()
+
+    def _apply_font(self):
+        """全局字体变化后重设段字体并重算段行尺寸。"""
+        self._font = self._make_font()
+        self._update_row_size()
         self._row.update()
 
     def _apply_styles(self):

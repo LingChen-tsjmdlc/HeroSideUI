@@ -18,6 +18,15 @@ from ...utils import hex_to_rgba, load_svg_icon
 class InputStylingMixin:
     """输入类组件的样式 mixin，依赖宿主提供的状态与子控件见包说明。"""
 
+    def _apply_font(self):
+        """按尺寸档位与全局字体重设输入框字体，并重排浮动标签。"""
+        from ...core import make_text_qfont
+
+        size_config = self._size_config()
+        self.line_edit.setFont(make_text_qfont(size_config["input_font_size"], "normal"))
+        self._reposition_inside_label()
+        self.updateGeometry()
+
     # ============================================================
     # 样式应用
     # ============================================================
@@ -231,10 +240,7 @@ class InputStylingMixin:
                 padding: 0;
             }}
             """)
-        # 字体走 Text 同源：font-family 不再在 QSS 写，避免二元源。
-        from ...core import make_text_qfont
-
-        self.line_edit.setFont(make_text_qfont(size_config["input_font_size"], "normal"))
+        self._apply_font()
         # 占位符颜色 + 保持 Base 透明（防止 Fusion 覆盖画白色背景）
         pal = self.line_edit.palette()
         pal.setColor(QPalette.ColorRole.PlaceholderText, QColor(placeholder_color))

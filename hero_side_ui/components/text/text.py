@@ -152,6 +152,7 @@ class Text(QLabel):
             return
         self._font_sig = sig
         font = make_text_qfont(self._size, self._weight, style_name=not self._rich_text)
+        font.setUnderline(self.font().underline())
         self.setFont(font)
 
     # ============================================================

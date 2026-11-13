@@ -4,7 +4,7 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QSizePolicy
 
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import DIVIDER_SIZES, HEROUI_COLORS
 
 
@@ -54,6 +54,7 @@ class Divider(QFrame):
         # auto 模式：注册到 ThemeProvider
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # 内部：解析颜色
@@ -136,6 +137,10 @@ class Divider(QFrame):
             self.setStyleSheet(
                 f"#heroDivider {{ background-color: {self._line_color()}; border: none; }}"
             )
+
+    def _apply_font(self):
+        """全局字体变化后重算带文字分割线的高度并重绘。"""
+        self._apply_styles()
 
     def _build_font(self) -> QFont:
         """按 text_size 构建中间文字使用的字体。

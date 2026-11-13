@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...animation import stop_tween, tween_value
+from ...core import FontProvider
 from ...themes import HEROUI_COLORS, TABS_SIZES
 from ...utils import load_svg_icon
 from ._helpers import _resolve_selected_text, _resolve_unselected_text
@@ -122,6 +123,7 @@ class TabItem(QAbstractButton):
             self.set_custom(custom)
 
         self._update_geometry()
+        FontProvider.instance().register(self)
 
     # -------------------- Public API --------------------
 
@@ -421,6 +423,11 @@ class TabItem(QAbstractButton):
 
         self._start_icon_pixmap = _to_pixmap(self._start_icon_src)
         self._end_icon_pixmap = _to_pixmap(self._end_icon_src)
+
+    def _apply_font(self):
+        """全局字体变化后重设字体并重算宽度。"""
+        self._update_geometry()
+        self.update()
 
     def _update_geometry(self):
         """按尺寸配置与内容计算并应用最小宽高。"""

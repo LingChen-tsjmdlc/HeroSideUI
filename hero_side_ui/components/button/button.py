@@ -5,7 +5,7 @@ from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QPushButton
 
 from ...animation import PressScaleEffect, RippleOverlay
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import (
     BUTTON_SIZES,
     HEROUI_COLORS,
@@ -109,6 +109,7 @@ class Button(QPushButton):
         # auto 模式：注册到 ThemeProvider
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # 样式系统
@@ -124,8 +125,15 @@ class Button(QPushButton):
         qss = self._build_qss()
         self.setStyleSheet(qss)
 
-        # 字体走 Text/FontProvider 同源：QSS 里不再写 font-family，
-        # 避免与 setFont() 产生二元源。
+        self._apply_font()
+
+        self.setMouseTracking(True)
+        from PySide6.QtCore import Qt
+
+        self.setCursor(Qt.CursorShape.PointingHandCursor)
+
+    def _apply_font(self):
+        """按尺寸档位与全局字体重设字体，并通知布局重算宽度。"""
         from ...core import make_text_qfont
 
         size_config = BUTTON_SIZES.get(self._size, BUTTON_SIZES["md"])
@@ -135,7 +143,7 @@ class Button(QPushButton):
             fs = 14
         try:
             fw = int(size_config["font_weight"])
-            # QSS font_weight 表达为 100~900，Text 映射为 6 档：取近陫到支持的 token。
+            # QSS font_weight 表达为 100~900，Text 映射为 6 档：取最近的 token。
             if fw <= 250:
                 weight_token = "extralight"
             elif fw <= 350:
@@ -151,11 +159,7 @@ class Button(QPushButton):
         except Exception:
             weight_token = "medium"
         self.setFont(make_text_qfont(fs, weight_token))
-
-        self.setMouseTracking(True)
-        from PySide6.QtCore import Qt
-
-        self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.updateGeometry()
 
     def _apply_geometry(self):
         """应用几何策略：sizePolicy 与固定尺寸。

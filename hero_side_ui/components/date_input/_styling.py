@@ -246,9 +246,7 @@ class _DateInputStylingMixin(InputStylingMixin):
             timeZone 是只读元信息恒用弱化色；字面量分隔符也恒定取
             foreground-500 弱化色，不随填写状态变亮。
         """
-        from ...core import make_text_qfont
-
-        font = make_text_qfont(size_config["input_font_size"], "normal")
+        font_size = size_config["input_font_size"]
         filled_color, placeholder_color = self._resolve_segment_text_colors(is_dark, colors, dc)
         focus_bg = self._resolve_segment_focus_bg(is_dark, colors, dc)
         focus_text = self._resolve_segment_focus_text(is_dark, colors, dc)
@@ -256,7 +254,7 @@ class _DateInputStylingMixin(InputStylingMixin):
         padding_x = size_config["segment_padding_x"]
 
         for seg in self._segment_widgets:
-            seg.setFont(font)
+            seg.set_size(font_size)
             focused = seg.hasFocus()
             if seg.seg_type == "timeZone":
                 # 时区是只读元信息，恒定用弱化色，不参与聚焦态
@@ -276,7 +274,7 @@ class _DateInputStylingMixin(InputStylingMixin):
             )
 
         for lit in self._literal_widgets:
-            lit.setFont(font)
+            lit.set_size(font_size)
             # 分隔符在 HeroUI 里也走 segment slot，但没有 data-editable，
             # 因此恒定取 text-foreground-500（弱化色），不随填写状态变亮。
             lit.apply_visual(text_color=placeholder_color)

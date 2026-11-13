@@ -542,11 +542,9 @@ class _TextareaStylingMixin:
         f_float = size_config["label_float_font_size"]
         font_size = f_rest + (f_float - f_rest) * progress
 
-        from ...core import make_text_qfont
-
         weight = "medium" if progress > 0.5 else "normal"
-        font = make_text_qfont(round(font_size), weight)
-        self._inside_label.setFont(font)
+        self._inside_label.set_size(round(font_size))
+        self._inside_label.set_weight(weight)
         self._inside_label.adjustSize()
 
         wrapper_pos_in_self = self._wrapper.mapTo(self, QPoint(0, 0))

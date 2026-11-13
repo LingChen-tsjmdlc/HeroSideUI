@@ -14,7 +14,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...animation.tween import tween_value
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import SLIDER_SIZES
 from ..text import Text
 from ._api import _SliderAPIMixin
@@ -222,6 +222,7 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # cfg
@@ -340,6 +341,12 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         else:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+
+    def _apply_font(self):
+        """全局字体变化后按新的 marks 行高重算画布尺寸并重绘。"""
+        self._update_canvas_min_size()
+        self._canvas.update()
+        self.updateGeometry()
 
     def _update_canvas_min_size(self):
         """按 thumb 尺寸、ring 留白与 marks 文字带刷新画布最小尺寸。"""

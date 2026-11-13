@@ -18,7 +18,7 @@ from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import QAbstractButton, QWidget
 
 from ...animation.tween import tween_value
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import HEROUI_COLORS, SWITCH_SIZES
 
 
@@ -129,6 +129,7 @@ class Switch(QAbstractButton):
         # auto 模式:注册到 ThemeProvider
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # 尺寸 / 字体
@@ -136,6 +137,12 @@ class Switch(QAbstractButton):
     def _cfg(self) -> dict:
         """返回当前尺寸档位的配置字典。"""
         return SWITCH_SIZES.get(self._size, SWITCH_SIZES["md"])
+
+    def _apply_font(self):
+        """全局字体变化后重设字体并通知布局。"""
+        self._refresh_font()
+        self.updateGeometry()
+        self.update()
 
     def _refresh_font(self):
         """按尺寸档位重设 label 字体。"""

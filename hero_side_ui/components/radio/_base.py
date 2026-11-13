@@ -11,7 +11,7 @@ from PySide6.QtCore import (
 from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 
 from ...animation import tween_property
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import HEROUI_COLORS, RADIO_SIZES
 
 VALID_COLORS = tuple(HEROUI_COLORS.keys())
@@ -112,6 +112,7 @@ class RadioBase(QAbstractButton):
 
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+        FontProvider.instance().register(self)
 
     # ============================================================
     # Qt 属性（驱动动画）
@@ -246,6 +247,10 @@ class RadioBase(QAbstractButton):
             dict: 尺寸配置；未知档位回退到 md。
         """
         return RADIO_SIZES.get(self._size, RADIO_SIZES["md"])
+
+    def _apply_font(self):
+        """全局字体变化后刷新几何与绘制。"""
+        self._refresh_geometry()
 
     def _refresh_geometry(self):
         """在尺寸或文本变化后刷新几何与绘制。

@@ -9,7 +9,7 @@ from PySide6.QtGui import QColor, QGuiApplication, QPainter
 from PySide6.QtWidgets import QScrollArea, QSizePolicy, QVBoxLayout, QWidget
 
 from ..._shared.code import mono_qfont
-from ...core import ThemeProvider
+from ...core import FontProvider, ThemeProvider
 from ...themes import CODE_BLOCK_SPEC, HEROUI_COLORS
 from ..text import Text
 from ._header import _CodeHeaderBar
@@ -175,6 +175,8 @@ class CodeBlock(QWidget):
         )
         # 字体真正落地：QFont（CSS font-family 在富文本里不生效）
         self._code_label.setFont(mono_qfont(self._font_size, font))
+        # 代码字体独立于全局字体，退出 FontProvider 广播，避免被正文字体覆盖
+        FontProvider.instance().unregister(self._code_label)
         self._scroll.setWidget(self._code_label)
         # 滚动区纵向按内容撑开，不吃多余高度
         self._scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
