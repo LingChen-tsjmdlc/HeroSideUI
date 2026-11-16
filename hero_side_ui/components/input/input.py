@@ -23,9 +23,9 @@ from ..._shared.fields import (
 )
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import FontProvider, ThemeProvider
+from ...themes.colors import HEROUI_COLORS
 from ..text import Text
 from ._line_edit import _LineEdit
-from ...themes.colors import HEROUI_COLORS
 
 
 # ============================================================

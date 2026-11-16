@@ -2,11 +2,22 @@
 
 from __future__ import annotations
 
+import pytest
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 
 from hero_side_ui import Card, Image, Table
 from hero_side_ui.components.card import CardBody
 from hero_side_ui.core.shadow_paint import ShadowLayer
+
+# pytest-qt 的 qtbot.addWidget 只持弱引用。调用方若不接住 _show_row 的返回值，宿主窗口会立刻被回收，
+# 里面的 Card / Image 跟着在 C++ 侧被删除（macOS 上表现为 "already deleted"），所以这里统一强引用到测试结束。
+_LIVE_HOSTS: list[QWidget] = []
+
+
+@pytest.fixture(autouse=True)
+def _release_hosts():
+    yield
+    _LIVE_HOSTS.clear()
 
 
 def _layers_in(host: QWidget) -> list:
@@ -21,7 +32,9 @@ def _show_row(qtbot, widgets, spacing: int = 24) -> QWidget:
     lay.setSpacing(spacing)
     for w in widgets:
         lay.addWidget(w)
+    lay.addStretch(1)  # 多出来的宽度给弹簧：否则固定宽度的控件会被布局均分空白，间距不再是 spacing
     qtbot.addWidget(host)
+    _LIVE_HOSTS.append(host)
     host.show()
     qtbot.wait(20)
     return host
@@ -128,7 +141,7 @@ class TestShadowEscapesCompactWrappers:
         return QColor("#FAFBFD").lightness() - QColor(img.pixel(pt.x(), pt.y())).lightness()
 
     def test_layer_is_mounted_on_the_viewport_not_on_the_wrapper(self, qtbot):
-        _host, scroll, wrap, card = self._wrapped(qtbot, "md")
+        _host, scroll, wrap, _card = self._wrapped(qtbot, "md")
         assert [c for c in wrap.children() if isinstance(c, ShadowLayer)] == []
         assert len([c for c in scroll.viewport().children() if isinstance(c, ShadowLayer)]) == 1
 

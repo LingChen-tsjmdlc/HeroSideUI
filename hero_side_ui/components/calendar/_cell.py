@@ -10,10 +10,10 @@ from PySide6.QtWidgets import QAbstractButton
 
 from ...animation import tween_value
 from ...core import make_text_qfont
+from ...themes.theme_values import get_font_px
 from ...utils import aligned_color_pair
 from . import _palette as pal
 from ._grid import CellState
-from ...themes.theme_values import get_font_px
 
 _HOVER_ANIM_MS = 150
 

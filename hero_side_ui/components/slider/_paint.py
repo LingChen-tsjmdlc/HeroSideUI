@@ -10,6 +10,8 @@ from PySide6.QtGui import QColor, QFontMetrics, QPainter, QPainterPath
 from PySide6.QtWidgets import QSizePolicy, QWidget
 
 from ...core import make_text_qfont
+from ...themes.shadow import SHADOW_COLOR
+from ...themes.theme_values import get_foreground
 from . import _palette as palette
 from ._geometry import (
     RING_GAP,
@@ -20,9 +22,6 @@ from ._geometry import (
     track_geom,
     track_visual_geom,
 )
-from ...themes.theme_values import get_foreground
-from ...themes.shadow import SHADOW_COLOR
-
 
 
 def _knob_shadow() -> QColor:

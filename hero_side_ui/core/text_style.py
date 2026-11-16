@@ -75,6 +75,7 @@ WEIGHT_MAP: dict = {
 # 默认正文色（不传 color 时使用）
 # ============================================================
 
+
 class _DefaultTextColors(Mapping):
     """主题默认正文色的只读视图：值取自 foreground 取值，随 setup 配置变化。"""
 

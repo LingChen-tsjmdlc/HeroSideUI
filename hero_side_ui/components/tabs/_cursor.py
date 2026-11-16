@@ -7,8 +7,8 @@ from PySide6.QtCore import QRectF, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
 
-from ._helpers import _resolve_cursor_fill
 from ...themes.shadow import SHADOW_COLOR
+from ._helpers import _resolve_cursor_fill
 
 # ============================================================
 # CursorWidget: 选中指示器（矩形填充 / 下划线）

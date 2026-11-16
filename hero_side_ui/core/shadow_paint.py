@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import math
 from collections import OrderedDict
+from functools import partial
 
 import shiboken6
 from PySide6.QtCore import QEvent, QObject, QPoint, QPointF, QRect, QRectF, Qt
@@ -268,7 +269,11 @@ def prewarm(theme: str) -> None:
         e = shadow_margin(layers)
         sc = round((e + t / 2) * dpr)
         pad = round(e * dpr)
-        _cached(("n", layers, 14.0, dpr), lambda: _compose(2 * sc - 2 * pad, 2 * sc - 2 * pad, 14.0 * dpr, pad, layers, dpr))
+        side = 2 * sc - 2 * pad
+        # partial 当场绑定本轮的值（_cached 虽然立刻调用，但闭包捕获循环变量容易被后续改动改坏）
+        _cached(
+            ("n", layers, 14.0, dpr), partial(_compose, side, side, 14.0 * dpr, pad, layers, dpr)
+        )
 
 
 _WATCH_EVENTS = {
@@ -515,9 +520,14 @@ class ShadowController(QObject):
         target = self.__dict__.get("_target")
         if target is None:
             return False
-        if obj is target and self._layer is None and event.type() in (
-            QEvent.Type.ParentChange,
-            QEvent.Type.Show,
+        if (
+            obj is target
+            and self._layer is None
+            and event.type()
+            in (
+                QEvent.Type.ParentChange,
+                QEvent.Type.Show,
+            )
         ):
             self._refresh()
         return False

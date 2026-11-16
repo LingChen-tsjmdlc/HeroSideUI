@@ -20,8 +20,8 @@ from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 from ...animation.tween import tween_value
 from ...core import FontProvider, ThemeProvider
 from ...themes import HEROUI_COLORS, SWITCH_SIZES
-from ...themes.theme_values import get_color_foreground, get_foreground
 from ...themes.shadow import SHADOW_COLOR
+from ...themes.theme_values import get_color_foreground, get_foreground
 
 
 def _render_svg(svg_str: str, color: QColor | None = None) -> QSvgRenderer:
@@ -211,7 +211,9 @@ class Switch(QAbstractButton):
         if on_checked:
             if self._color == "default":
                 dc = HEROUI_COLORS["default"]
-                return QColor(dc[900] if self._theme == "dark" else get_color_foreground("default", "light"))
+                return QColor(
+                    dc[900] if self._theme == "dark" else get_color_foreground("default", "light")
+                )
             return QColor(get_color_foreground(self._color, self._theme))
         # endContent: text-default-600
         dc = HEROUI_COLORS["default"]

@@ -8,12 +8,25 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtGui import QColor, QPixmap
+from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from hero_side_ui import Image
 
 RADII = ("none", "sm", "md", "lg", "full")
 SHADOWS = ("none", "sm", "md", "lg")
 OBJECT_FITS = ("cover", "contain", "fill", "none", "scale-down")
+
+
+def _in_host(qtbot, img: Image) -> QWidget:
+    """把 Image 放进显示的宿主窗口：阴影层要有父控件才会创建。"""
+    host = QWidget()
+    lay = QHBoxLayout(host)
+    lay.setContentsMargins(60, 60, 60, 60)
+    lay.addWidget(img)
+    qtbot.addWidget(host)
+    host.show()
+    qtbot.wait(20)
+    return host
 
 
 def _make_pixmap(w: int = 80, h: int = 60, color: str = "#3366cc") -> QPixmap:
@@ -131,10 +144,13 @@ class TestImageShadow:
         qtbot.addWidget(img)
         assert img.graphicsEffect() is None
 
-    def test_shadow_lg_attaches_effect(self, qtbot):
+    def test_shadow_lg_creates_a_shadow_layer(self, qtbot):
         img = Image(shadow="lg")
-        qtbot.addWidget(img)
-        assert img.graphicsEffect() is not None
+        host = _in_host(qtbot, img)
+        assert img._shadow_ctl._layer is not None
+        assert not img._shadow_ctl._layer.isHidden()
+        assert img.graphicsEffect() is None  # 阴影是独立的层，不再挂在控件自己的 effect 上
+        assert host is not None
 
 
 # ============================================================
@@ -243,16 +259,18 @@ class TestImageSetters:
         assert img._radius == "full"
         assert img._img._radius == "full"
 
-    def test_set_shadow_attaches_then_clears(self, qtbot):
+    def test_set_shadow_shows_then_hides_the_layer(self, qtbot):
         img = Image(shadow="none")
-        qtbot.addWidget(img)
+        host = _in_host(qtbot, img)
         img.set_shadow("lg")
         assert img._shadow == "lg"
-        assert img.graphicsEffect() is not None
+        assert img._shadow_ctl._layer is not None
+        assert not img._shadow_ctl._layer.isHidden()
 
         img.set_shadow("none")
         assert img._shadow == "none"
-        assert img.graphicsEffect() is None
+        assert img._shadow_ctl._layer.isHidden()
+        assert host is not None
 
     def test_set_object_fit(self, qtbot):
         img = Image(object_fit="cover")
@@ -347,7 +365,9 @@ class TestImageCombinations:
         with qtbot.waitSignal(img.loaded, timeout=1000):
             pass
         assert img._blurred is not None
-        assert img.graphicsEffect() is not None
+        _in_host(qtbot, img)
+        assert img._shadow_ctl._layer is not None
+        assert not img._shadow_ctl._layer.isHidden()
 
     def test_remove_wrapper_with_pixmap(self, qtbot):
         pm = _make_pixmap()

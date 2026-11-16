@@ -85,7 +85,7 @@ class _DropdownStylingMixin:
             优先指定方向：该侧够放最小菜单（80px）就按该侧算；
             不够时 Popover 会翻到另一侧，这时按上下较大的一侧算。
         """
-        place = self._popover._placement
+        place = self._placement  # Dropdown 自己持有设定方向，不去读 Popover 的私有属性
         try:
             below = int(space_below(self._trigger) - 6)
             above = int(space_above(self._trigger) - 6)

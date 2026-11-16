@@ -139,7 +139,9 @@ class InputOtp(QWidget):
         lay.addLayout(helper_lay)
 
         # 官方 w-fit：默认宽度恰好等于内容；full_width 才撑满
-        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        horizontal = (
+            QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        )
         self.setSizePolicy(horizontal, QSizePolicy.Policy.Fixed)
 
     def _update_row_size(self):
@@ -302,7 +304,9 @@ class InputOtp(QWidget):
         elif self._description:
             self._helper_label.setText(self._description)
             # 官方 description text-foreground-400
-            self._helper_label.set_color(HEROUI_COLORS["default"][400 if self._theme == "dark" else 500])
+            self._helper_label.set_color(
+                HEROUI_COLORS["default"][400 if self._theme == "dark" else 500]
+            )
             self._helper_label.setVisible(True)
         else:
             self._helper_label.setVisible(False)

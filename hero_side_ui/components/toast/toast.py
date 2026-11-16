@@ -367,8 +367,9 @@ class Toast(QWidget):
         self._spinner.move(self._icon_label.x(), self._icon_label.y())
 
     def _text_avail_width(self) -> int:
-        """取文本列真实宽度；构造期未定宽时回落 sizeHint。"""
-        w = max(self.width(), self.sizeHint().width())
+        """取文本列可用宽度；已被外部定过宽就按实际宽，否则回落 sizeHint。"""
+        resized = self.testAttribute(Qt.WidgetAttribute.WA_Resized)
+        w = self.width() if resized else self.sizeHint().width()
         pad = self._shadow_pad()
         rect_w = max(0.0, w - 2 * pad - 2 * self._width_inset)
         icon_w = 0 if self._hide_icon else TOAST_SPEC["icon"] + TOAST_SPEC["content_gap"]
@@ -583,7 +584,7 @@ class Toast(QWidget):
         local = self.mapFromGlobal(global_pos)
         return self._content_rect().contains(local.x(), local.y())
 
-    def _card_at(self, global_pos: QPoint) -> "Toast | None":
+    def _card_at(self, global_pos: QPoint) -> Toast | None:
         """找出全局坐标点下真正被点中的卡片：可见主体包含该点、层级最高的那张。"""
         parent = self.parentWidget()
         if parent is None:

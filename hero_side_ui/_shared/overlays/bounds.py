@@ -115,31 +115,38 @@ def clip_to_host(popup: QWidget, anchor: QWidget | None) -> None:
 
 
 def space_below(widget: QWidget) -> int:
-    """控件下沿到宿主窗口底部的可用高度；无宿主窗口时按所在屏幕算。
+    """控件下沿到允许区域底部的可用高度（允许区域 = 宿主窗口 ∩ 所在屏幕可用区）。
 
     Args:
         widget: 触发浮层的控件。
+
+    Note:
+        必须和浮层最终落位用同一个区域（popup_area）：窗口超出屏幕可用区时（如 macOS 菜单栏下），
+        只量到窗口边缘会把菜单上限算大，翻转后被夹到屏幕边缘，压在触发器上。
     """
-    area = host_rect(widget) or screen_rect(widget)
+    area = popup_area(widget)
     return area.bottom() - (widget.mapToGlobal(QPoint(0, 0)).y() + widget.height())
 
 
 def space_above(widget: QWidget) -> int:
-    """控件上沿到宿主窗口顶部的可用高度；无宿主窗口时按所在屏幕算。
+    """控件上沿到允许区域顶部的可用高度（允许区域 = 宿主窗口 ∩ 所在屏幕可用区）。
 
     Args:
         widget: 触发浮层的控件。
+
+    Note:
+        同 space_below：与 popup_area 保持同一个区域。
     """
-    area = host_rect(widget) or screen_rect(widget)
+    area = popup_area(widget)
     return widget.mapToGlobal(QPoint(0, 0)).y() - area.top()
 
 
 __all__ = [
     "clip_to_host",
-    "overflow",
-    "popup_area",
     "host_rect",
     "host_window",
+    "overflow",
+    "popup_area",
     "register_host",
     "screen_rect",
     "space_above",

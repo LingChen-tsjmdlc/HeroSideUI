@@ -1,4 +1,6 @@
 # Themes module - 全局主题、颜色与设计 Token
+from . import component_presets as _presets
+from . import theme_values
 from .colors import HEROUI_COLORS
 from .component_presets import (
     ACCORDION_SIZES,
@@ -105,17 +107,11 @@ from .component_presets import (
 from .font import DEFAULT_FONT_FAMILY
 from .radius import RADIUS
 from .shadow import DEFAULT_SHADOW, SHADOW_TIERS, Layer
-from . import component_presets as _presets
-from . import theme_values  # noqa: E402  (放在 radius 之后：它依赖 colors / radius)
 
 # 预设里的字号绑定到字号档位：font_size 配置变化时原地改写
 theme_values.bind_font_slots([getattr(_presets, _n) for _n in _presets.__all__])
 
 __all__ = [
-    "DEFAULT_SHADOW",
-    "SHADOW_TIERS",
-    "Layer",
-    "theme_values",
     "ACCORDION_SIZES",
     "AUTOCOMPLETE_SIZES",
     "AVATAR_GROUP_GRID_COLS",
@@ -146,6 +142,7 @@ __all__ = [
     "CODE_EDITOR_SYNTAX",
     "DATE_INPUT_SIZES",
     "DEFAULT_FONT_FAMILY",
+    "DEFAULT_SHADOW",
     "DIVIDER_SIZES",
     "DRAWER_SIZES",
     "DRAWER_SPEC",
@@ -172,6 +169,7 @@ __all__ = [
     "RADIO_SIZES",
     "RADIUS",
     "SELECT_SIZES",
+    "SHADOW_TIERS",
     "SLIDER_SIZES",
     "SPINNER_SIZES",
     "SWITCH_SIZES",
@@ -219,4 +217,6 @@ __all__ = [
     "VALID_TOAST_SEVERITIES",
     "VALID_TOAST_SHADOWS",
     "VALID_TOAST_VARIANTS",
+    "Layer",
+    "theme_values",
 ]

@@ -421,14 +421,12 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
     # ============================================================
     def eventFilter(self, obj, event):
         """拦截 QScrollBar 的 Enter/Leave 以驱动 hover 动画。"""
-        # 只关心 QScrollBar 的 Enter/Leave
-        if isinstance(obj, QScrollBar):
-            t = event.type()
-            if t == QEvent.Type.Enter:
-                self._animate_bar(obj, to_hover=True)
-            elif t == QEvent.Type.Leave:
-                self._animate_bar(obj, to_hover=False)
-        return super().eventFilter(obj, event)
+        # 先判事件类型：应用里每个事件都会经过这里，不能对无关事件创建 obj 的 Python 包装
+        t = event.type()
+        if t == QEvent.Type.Enter or t == QEvent.Type.Leave:
+            if isinstance(obj, QScrollBar):
+                self._animate_bar(obj, to_hover=(t == QEvent.Type.Enter))
+        return False
 
     def _animate_bar(self, bar: QScrollBar, *, to_hover: bool):
         """对单条 bar 启动 thickness + color 的过渡动画（颜色优先用 bar 自己的覆盖色）"""

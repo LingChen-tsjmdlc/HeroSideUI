@@ -15,7 +15,6 @@ from ...animation import BackdropFade
 from ...themes.shadow import SHADOW_COLOR
 
 
-
 def _scrim(alpha: int) -> QColor:
     """遮罩色：近黑加透明度。
 

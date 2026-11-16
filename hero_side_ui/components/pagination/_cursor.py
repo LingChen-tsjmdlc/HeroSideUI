@@ -6,8 +6,8 @@ from PySide6.QtWidgets import QWidget
 
 from ...animation import stop_tween, tween_value
 from ...core.text_style import make_text_qfont
-from ._palette import resolve_cursor_fill, resolve_cursor_text
 from ...themes.theme_values import get_font_px
+from ._palette import resolve_cursor_fill, resolve_cursor_text
 
 
 class _CursorWidget(QWidget):

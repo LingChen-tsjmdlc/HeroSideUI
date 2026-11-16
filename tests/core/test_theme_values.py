@@ -39,9 +39,9 @@ class TestDefaults:
         assert theme_values.get_color_foreground("default", "light") == "#FEFEFF"
 
     def test_unknown_color_uses_primary(self):
-        assert theme_values.get_color_foreground("nope", "light") == theme_values.get_color_foreground(
-            "primary", "light"
-        )
+        assert theme_values.get_color_foreground(
+            "nope", "light"
+        ) == theme_values.get_color_foreground("primary", "light")
 
     def test_no_pure_black_or_white_in_defaults(self):
         pure = {"#000000", "#ffffff"}

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import shiboken6
 from PySide6.QtCore import QEvent, QObject, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPalette
 from PySide6.QtWidgets import QHBoxLayout, QLayout, QScrollArea, QVBoxLayout, QWidget
@@ -190,6 +191,7 @@ class ScrollShadow(QScrollArea):
 
         # 上一次广播的 visibility 字符串,用于去抖
         self._last_effective_vis: str = "none"
+        self._refreshing = False  # _refresh_shadow 的重入标志
 
         # --- QScrollArea 基础配置 ---
         # 去掉默认 frame,避免 1px 边框干扰阴影
@@ -449,18 +451,25 @@ class ScrollShadow(QScrollArea):
         Note:
             用 _last_effective_vis 去重，避免同一显隐状态重复广播。
         """
-        start, end, label = self._compute_effective_visibility()
-        self._overlay.configure(
-            orientation=self._orientation,
-            size=self._size,
-            show_start=start,
-            show_end=end,
-            fade_color=self._fade_color(),
-            clip_radius=self._clip_radius(),
-        )
-        if label != self._last_effective_vis:
-            self._last_effective_vis = label
-            self.visibility_changed.emit(label)
+        # 重入或销毁中直接返回：读滚动条会触发事件，事件又回到这里会无限递归
+        if self._refreshing or not shiboken6.isValid(self):
+            return
+        self._refreshing = True
+        try:
+            start, end, label = self._compute_effective_visibility()
+            self._overlay.configure(
+                orientation=self._orientation,
+                size=self._size,
+                show_start=start,
+                show_end=end,
+                fade_color=self._fade_color(),
+                clip_radius=self._clip_radius(),
+            )
+            if label != self._last_effective_vis:
+                self._last_effective_vis = label
+                self.visibility_changed.emit(label)
+        finally:
+            self._refreshing = False
 
     def _clip_radius(self) -> float:
         """取裁剪圆角半径，沿父链 duck-typing 找 current_corner_radius()。

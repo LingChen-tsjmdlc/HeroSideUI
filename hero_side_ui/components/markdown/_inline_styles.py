@@ -5,9 +5,9 @@
 
 from __future__ import annotations
 
+from ..._shared.code import mono_family
 from ...core import resolve_text_color, resolve_text_weight
 from ...themes import HEROUI_COLORS, MARKDOWN_INLINE_CODE
-from ..._shared.code import mono_family
 
 # 支持配置的行内节点类型
 INLINE_STYLE_KEYS = ("strong", "em", "s", "code", "link")

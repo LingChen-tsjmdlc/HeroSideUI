@@ -1,6 +1,5 @@
 """Autocomplete 组件测试"""
 
-
 from hero_side_ui import Autocomplete
 from hero_side_ui.themes import AUTOCOMPLETE_SIZES
 

@@ -5,8 +5,8 @@ from __future__ import annotations
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 
-from ...themes import HEROUI_COLORS
 from ...core.shadow_paint import layers_for, paint_inset, paint_shadow
+from ...themes import HEROUI_COLORS
 from ...themes.theme_values import get_color_foreground, get_foreground, get_popup_background
 from ._constants import ARROW_INSET, ARROW_SIZE
 

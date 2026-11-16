@@ -194,7 +194,7 @@ class _GlobalAutoAttachFilter(QObject):
             except RuntimeError:
                 # obj 的 C++ 端已释放，不再尝试包装或挂载
                 return False
-        return super().eventFilter(obj, event)
+        return False
 
 
 class SmoothScroll:

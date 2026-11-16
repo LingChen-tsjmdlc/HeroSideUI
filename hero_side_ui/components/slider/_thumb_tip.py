@@ -14,8 +14,8 @@ from PySide6.QtWidgets import QWidget
 from ..._shared.overlays.bounds import clip_to_host
 from ...animation import tween_property
 from ...core import ThemeProvider, make_text_qfont
-from ...themes import HEROUI_COLORS, RADIUS, TOOLTIP_SIZES
 from ...core.shadow_paint import layers_for, paint_inset, paint_shadow, tier_margin
+from ...themes import HEROUI_COLORS, RADIUS, TOOLTIP_SIZES
 from ...themes.theme_values import get_color_foreground, get_foreground, get_popup_background
 
 # 箭头三角尺寸

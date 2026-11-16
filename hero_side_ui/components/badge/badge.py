@@ -26,7 +26,6 @@ from ...themes.theme_values import get_background
 from ..text import Text
 from ._styling import build_badge_styles
 
-
 # 官方 disableAnimation=false 时 !duration-300
 ANIM_DURATION = 300
 

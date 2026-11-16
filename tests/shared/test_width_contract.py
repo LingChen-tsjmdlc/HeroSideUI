@@ -17,10 +17,10 @@ from hero_side_ui import (
     Checkbox,
     Chip,
     CodeEditor,
-    Divider,
     DateInput,
     DatePicker,
     DateRangePicker,
+    Divider,
     Input,
     InputOtp,
     NumberInput,
@@ -34,10 +34,27 @@ from hero_side_ui import (
     TimeInput,
 )
 from hero_side_ui._shared.fields import InputWrapper, SuggestedWidthMixin, release_width_floor
-from hero_side_ui.themes import BUTTON_SIZES, DROPDOWN_SIZES, INPUT_SIZES, TABS_SIZES, TEXTAREA_SIZES
+from hero_side_ui.themes import (
+    BUTTON_SIZES,
+    DROPDOWN_SIZES,
+    INPUT_SIZES,
+    TABS_SIZES,
+    TEXTAREA_SIZES,
+)
 from hero_side_ui.themes.width import SUGGESTED_WIDTH
 
 ITEMS = [("a", "Alpha")]
+
+
+# qtbot.addWidget 只持弱引用：调用方丢掉 _show 的返回值时，宿主窗口会被立刻回收，
+# 里面的控件在 C++ 侧一并删除（macOS CI 上表现为 "already deleted"），所以统一强引用到测试结束。
+_LIVE_HOSTS: list[QWidget] = []
+
+
+@pytest.fixture(autouse=True)
+def _release_hosts():
+    yield
+    _LIVE_HOSTS.clear()
 
 
 def _show(qtbot, widget, layout_cls=QHBoxLayout, stretch=True, size=(900, 300)) -> QWidget:
@@ -49,6 +66,7 @@ def _show(qtbot, widget, layout_cls=QHBoxLayout, stretch=True, size=(900, 300)) 
     if stretch:
         lay.addStretch(1)
     qtbot.addWidget(host)
+    _LIVE_HOSTS.append(host)
     host.show()
     qtbot.waitExposed(host)
     qtbot.wait(20)
@@ -170,7 +188,9 @@ class TestSuggestedWidthValues:
 
     def test_presets_have_no_width_keys_left(self):
         for table in (INPUT_SIZES, TEXTAREA_SIZES):
-            assert all("min_width" not in cfg and "default_width" not in cfg for cfg in table.values())
+            assert all(
+                "min_width" not in cfg and "default_width" not in cfg for cfg in table.values()
+            )
 
     def test_natural_width_in_a_row_with_a_spring_is_the_suggested_one(self, qtbot):
         w = Input(label="x")
@@ -278,7 +298,9 @@ class TestContentTypeWidth:
         assert w.sizePolicy().horizontalPolicy() == QSizePolicy.Policy.Maximum
 
 
-@pytest.mark.parametrize("name", ["Button", "Chip", "Checkbox", "Radio", "Switch", "Pagination", "InputOtp"])
+@pytest.mark.parametrize(
+    "name", ["Button", "Chip", "Checkbox", "Radio", "Switch", "Pagination", "InputOtp"]
+)
 def test_content_type_is_never_squeezed_below_its_content(qtbot, name):
     w = CONTENT_FACTORIES[name]()
     qtbot.addWidget(w)
@@ -445,4 +467,3 @@ class TestOfficialNumbers:
         r = Radio("Option", description="x" * 300, variant="card")
         qtbot.addWidget(r)
         assert r.sizeHint().width() <= SUGGESTED_WIDTH
-

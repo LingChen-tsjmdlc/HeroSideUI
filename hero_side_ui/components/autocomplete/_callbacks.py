@@ -126,7 +126,10 @@ class _AutocompleteCallbacksMixin:
         Note:
             关闭且不允许自定义值时，输入文本若不匹配任何 item.label，
             回退到 selected_key 的 label；无选中则清空，避免游离文本。
+            控件已销毁时直接返回。
         """
+        if not isValid(self):  # 浮层是顶层窗口，会比控件活得久：控件销毁后它关闭仍会回调到这里
+            return
         # popover 信号是开关状态的唯一来源。不同步会让 close() 早退，
         # 全局点击过滤器留在 QApplication 上，后续鼠标事件访问已释放对象。
         self._is_open = is_open

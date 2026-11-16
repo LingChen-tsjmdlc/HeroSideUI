@@ -71,7 +71,9 @@ class Accordion(QWidget):
 
     def _apply_full_width(self) -> None:
         """按 full_width 设水平策略：True 撑满；False 宽度恰好等于内容。"""
-        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        horizontal = (
+            QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        )
         self.setSizePolicy(horizontal, QSizePolicy.Policy.Preferred)
 
     def set_full_width(self, v: bool):

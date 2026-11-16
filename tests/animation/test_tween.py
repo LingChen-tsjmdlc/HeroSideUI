@@ -53,7 +53,8 @@ class TestTweenValueBasic:
         qtbot.wait(120)
         # finished 后 runner_attr 应清回 None
         assert owner._r is None
-        assert not isValid(anim)
+        # deleteLater 要等删除事件被处理，固定等待时长在慢机器上不保证（macOS CI 曾失败）
+        qtbot.waitUntil(lambda: not isValid(anim))
 
     def test_on_step_called_with_endpoints(self, qtbot):
         owner = _Owner()
@@ -91,8 +92,7 @@ class TestTweenValuePreemption:
         # owner 现在持有 a2
         assert owner._r is a2
         # 给 Qt 一点时间让 a1 真正停下
-        qtbot.wait(30)
-        assert not isValid(a1)
+        qtbot.waitUntil(lambda: not isValid(a1))
         # 清场：让 a2 结束
         qtbot.wait(600)
         assert owner._r is None
@@ -132,8 +132,7 @@ class TestStopTween:
         stop_tween(owner, "_r")
         assert owner._r is None
         # 给 Qt 一点时间，确认动画真的停了
-        qtbot.wait(30)
-        assert not isValid(anim)
+        qtbot.waitUntil(lambda: not isValid(anim))
 
     def test_stop_when_no_animation(self, qtbot):
         """attr 未设置或为 None 时也不能崩。"""

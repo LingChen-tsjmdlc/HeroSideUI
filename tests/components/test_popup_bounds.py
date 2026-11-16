@@ -2,9 +2,9 @@
 
 from __future__ import annotations
 
+import pytest
 from PySide6.QtCore import QPoint, QRect, Qt
 from PySide6.QtTest import QTest
-import pytest
 from PySide6.QtWidgets import QLabel, QWidget
 
 from hero_side_ui import Autocomplete, Button, Dropdown, Popover, Select, Tooltip
@@ -159,7 +159,9 @@ class TestFlipInsideWindow:
     def test_popover_flips_up_near_the_window_bottom(self, qtbot):
         host = _host(qtbot)
         btn = _put(host, Button("a"), 200, 350)
-        pop = self._open_popover(qtbot, host, btn, QLabel("x\n" * 6 + "content"), placement="bottom")
+        pop = self._open_popover(
+            qtbot, host, btn, QLabel("x\n" * 6 + "content"), placement="bottom"
+        )
         assert pop._actual_placement.startswith("top")
         assert _inside(btn, pop)
         pop.close()
@@ -215,7 +217,7 @@ class TestFlipInsideWindow:
     @pytest.mark.parametrize("y,expect", [(100, "bottom"), (345, "top"), (380, "top")])
     def test_dropdown_flips_and_stays_complete(self, qtbot, y, expect):
         host = _host(qtbot)
-        items = ITEMS if y != 380 else ["Item A", "Item B", "Item C"]
+        items = ITEMS if y != 380 else [("a", "Item A"), ("b", "Item B"), ("c", "Item C")]
         dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in items])
         _put(host, dd, 150, y)
         dd.open()
@@ -306,3 +308,70 @@ class TestOutsideClick:
         for i in range(4):
             _click(qtbot, host, a._trigger if i % 2 == 0 else b._trigger)
             assert int(a.is_open()) + int(b.is_open()) <= 1
+
+
+class TestScreenClipsAvailableSpace:
+    """回归：窗口超出屏幕可用区时，菜单高度上限要按"窗口 ∩ 屏幕"算（macOS 菜单栏下的窗口）。"""
+
+    def test_menu_stays_inside_the_screen_when_the_window_top_is_off_screen(
+        self, qtbot, monkeypatch
+    ):
+        host = _host(qtbot)
+        real = bounds.screen_rect
+        # 屏幕可用区从 y=79 开始，比宿主窗口（y=40）低：窗口上沿 39px 在可用区之外
+        monkeypatch.setattr(
+            bounds,
+            "screen_rect",
+            lambda w: QRect(real(w).left(), 79, real(w).width(), real(w).height() - 79),
+        )
+        dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in ITEMS])
+        _put(host, dd, 150, 345)
+        dd.open()
+        qtbot.wait(450)
+        body = dd._popover._body_global()
+        trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
+        assert body.top() >= 79
+        assert not body.intersects(trigger)
+        dd.close()
+
+    def test_space_helpers_use_the_same_area_as_the_popup(self, qtbot, monkeypatch):
+        host = _host(qtbot)
+        btn = _put(host, Button("b"), 150, 100)
+        real = bounds.screen_rect
+        monkeypatch.setattr(
+            bounds,
+            "screen_rect",
+            lambda w: QRect(real(w).left(), 79, real(w).width(), real(w).height() - 79),
+        )
+        area = bounds.popup_area(btn)
+        top = btn.mapToGlobal(QPoint(0, 0)).y()
+        assert bounds.space_above(btn) == top - area.top()
+        assert bounds.space_below(btn) == area.bottom() - (top + btn.height())
+
+
+class TestPopupOutlivesItsOwner:
+    """回归：浮层是顶层窗口，比控件活得久；控件销毁后它关闭，不能再回调到已销毁的控件上。"""
+
+    @pytest.mark.parametrize(
+        "make",
+        [
+            lambda: Dropdown(trigger=Button("m"), items=["a", "b"]),
+            lambda: Select(items=[("a", "A"), ("b", "B")], label="s"),
+            lambda: Autocomplete(items=[("a", "A")], label="a"),
+        ],
+        ids=["Dropdown", "Select", "Autocomplete"],
+    )
+    def test_closing_after_the_owner_is_destroyed_raises_nothing(self, qtbot, make):
+        import shiboken6
+
+        host = _host(qtbot)
+        w = make()
+        _put(host, w, 40, 40)
+        w.open()
+        qtbot.wait(300)
+        popover = w._popover
+        with qtbot.capture_exceptions() as exceptions:
+            shiboken6.delete(w)
+            popover.closed.emit()
+            qtbot.wait(30)
+        assert exceptions == []

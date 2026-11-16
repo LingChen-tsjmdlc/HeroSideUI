@@ -27,6 +27,7 @@ from hero_side_ui import (
     ThemeProvider,
     Title,
 )
+from hero_side_ui.themes import theme_values
 
 
 @pytest.fixture(autouse=True)
@@ -371,26 +372,26 @@ class TestTextSelectionPalette:
 
     # ---- 新增：选中文字颜色（与原文字色无关）----
     def test_light_highlighted_text_is_dark(self, qtbot):
-        """亮色模式：无论原文字色是什么，选中文字永远是暗色 #18181b"""
+        """亮色模式：无论原文字色是什么，选中文字永远是主题的亮色前景（深色字）"""
         t = Text("Hi", theme="light")
         qtbot.addWidget(t)
         fg = t.palette().color(QPalette.ColorRole.HighlightedText)
-        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1B
+        assert fg == QColor(theme_values.get_foreground("light"))
 
     def test_dark_highlighted_text_is_light(self, qtbot):
-        """暗色模式：无论原文字色是什么，选中文字永远是亮色 #fafafa"""
+        """暗色模式：无论原文字色是什么，选中文字永远是主题的暗色前景（浅色字）"""
         t = Text("Hi", theme="dark")
         qtbot.addWidget(t)
         fg = t.palette().color(QPalette.ColorRole.HighlightedText)
-        assert fg.red() == 0xFA and fg.green() == 0xFA and fg.blue() == 0xFA
+        assert fg == QColor(theme_values.get_foreground("dark"))
 
     def test_highlighted_text_ignores_custom_color(self, qtbot):
         """即使用户设了自定义文字色，选中文字色仍跟随主题"""
         t = Text("Hi", color="#FF8800", theme="light")
         qtbot.addWidget(t)
         fg = t.palette().color(QPalette.ColorRole.HighlightedText)
-        # 仍然是 #18181b，不是 #FF8800
-        assert fg.red() == 0x18 and fg.green() == 0x18 and fg.blue() == 0x1B
+        assert fg == QColor(theme_values.get_foreground("light"))
+        assert fg != QColor("#FF8800")
 
 
 # ============================================================

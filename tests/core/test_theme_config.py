@@ -39,7 +39,10 @@ def _errors(**kwargs) -> str:
 class TestColors:
     def test_valid_ramp_as_list_and_dict(self):
         cfg = _theme_config.validate(
-            colors={"primary": ROSE, "danger": dict(zip(theme_values.COLOR_STEPS, ROSE))},
+            colors={
+                "primary": ROSE,
+                "danger": dict(zip(theme_values.COLOR_STEPS, ROSE, strict=True)),
+            },
             color_foreground={"primary": "#FEFEFF", "danger": "#FEFEFF"},
         )
         assert cfg["colors"]["primary"][500] == "#e11d48"
@@ -103,9 +106,7 @@ class TestSurfaces:
         assert "#RRGGBB" in _errors(foreground={"light": "#FFF", "dark": "#000000"})
 
     def test_layer_order_warns(self):
-        cfg = _theme_config.validate(
-            content_background={"light": "#101010", "dark": "#18181B"}
-        )
+        cfg = _theme_config.validate(content_background={"light": "#101010", "dark": "#18181B"})
         assert any("light 主题" in w for w in cfg["warnings"])
 
 

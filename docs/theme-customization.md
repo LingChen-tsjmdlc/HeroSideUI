@@ -748,3 +748,41 @@ hover 色的一处影响：`state_palette.py` 里菜单 hover 色按"暗色弹�
 修法：卡片收到按下事件时先判断点是否在自己的可见主体内，不在就找真正被点中的那张卡，拖拽转交给它（移动、释放事件也转交）；点在谁的可见主体里都不是的纯透明区，忽略。修复后同样的扫描 0 处点错。
 
 取舍：这只修了拖拽。卡片的透明留白仍然会挡住它下面宿主控件的点击（点透明区时事件被忽略，不会传给卡片下面的控件），要彻底解决需要像弹层那样做命中穿透。
+
+### CI（macOS）失败的修复（2026-11-16）
+
+CI 跑的是已提交的 d4d9429。逐类定位：
+
+- **边界测试**：`dropdown/_styling.py` 读了 `Popover._placement`（私有属性越权，边界测试禁止）。改用 Dropdown 自己持有的 `_placement`。
+- **浮层比控件活得久**：浮层是顶层窗口，宿主销毁后它关闭仍会回调到已销毁的 Dropdown / Select（`QShortcut` / `_LineEdit` already deleted）。三个组件的 `closed` 回调开头加 `isValid(self)` 判断，本地用"先 `shiboken6.delete` 控件再 `closed.emit()`"复现并验证。
+- **flip 测试在 mac 上压住触发器**：`space_above` / `space_below` 只量到宿主窗口边缘，没和屏幕可用区求交集，而浮层落位用的是"窗口 ∩ 屏幕"。窗口上沿在屏幕可用区之外（macOS 菜单栏下）时，菜单上限算大，翻转后被夹到屏幕边缘，压到触发器上。现在两者都走 `popup_area`。本地用"把屏幕可用区上沿设成 79"模拟验证。
+- **测试写法**：`test_popup_bounds` 的 `[380]` 用例 items 数据格式写错；`test_shadow_layout` 的行布局没加弹簧，宿主比内容宽时固定宽度的卡片被均分空白，间距不再是 24（本地也失败）；tween 的 `not isValid(anim)` 依赖固定等待时长，动画靠 `deleteLater` 销毁，改为 `waitUntil`。
+- **未定位**：`test_shadow_layout` 里 mac 上另外 4 个失败（卡片外壳、3 个 Image 尺寸），本地离屏、同进程连续跑前面的文件都通过，需要 CI 的断言输出。
+
+### CI components-4：test_shadow_layout 的 5 个失败（2026-11-16）
+
+失败信息是 `Card / Image already deleted`，根因在测试代码：`_show_row` 创建宿主窗口，只用 `qtbot.addWidget` 登记，而 pytest-qt 只持**弱引用**。调用方不接返回值时（`_show_row(qtbot, cards)`），宿主窗口立刻被回收，里面的控件在 C++ 侧一起删除。接了返回值（`host = _show_row(...)`）的用例不受影响，失败的恰好是丢弃返回值的那 5 处。Windows 上没暴露，macOS 上暴露。
+
+修法：`_show_row` 把宿主放进模块级列表保活，autouse fixture 在每个用例后清空。`test_width_contract.py` 的 `_show` 有同样的写法，一并修了。
+
+之前"本地同进程连跑也通过"的结论不可靠：我的替身 `qtbot` 持有强引用，把这个问题盖住了。替身已改成弱引用，改后在本地复现出与 CI 完全一致的 5 个失败，并验证修复。
+
+### 第二轮 CI 日志（29 个任务）的归类（2026-11-16）
+
+这一轮跑的仍是已提交的 d4d9429。按根因归并：
+
+| 现象 | 根因 | 处理 |
+| --- | --- | --- |
+| components-5：`test_title_elide_fits_column` 286 ≤ 284 | `Toast._text_avail_width` 用 `max(width, sizeHint)`，`sizeHint = 356 + 2×留白`；留白 14 变 18 后 sizeHint(392) 超过卡片真实宽度(384)，可用宽被高估 8px，长标题截不干净（窄窗口下会挤进关闭按钮）。本地精确复现同样数字 | **组件 bug**：已定过宽（`WA_Resized`）时按实际宽，否则回落 sizeHint |
+| components-5：Text 选区色 3 个 | 测试写死旧默认前景 `#18181b` / `#fafafa`，默认前景已改为 `#11181C` / `#ECEDEE` | 测试：期望值改读 `theme_values.get_foreground` |
+| components-2：Image 阴影 3 个 | 测试仍断言 `graphicsEffect() is not None`，阴影早已换成 `ShadowController` 的独立层 | 测试：断言阴影层存在、显隐，且没有 graphicsEffect |
+| components-2：`test_max_height_kept_on_reopen` 80 ≠ 120 | 测试里 `dd.show()` 让 Dropdown 自己成了顶层窗口，窗口只有触发器那么高；菜单限制在宿主窗口内，下方可用高度 −1，上限被压到 80。本地同样失败 | 测试：放进足够大的宿主窗口 |
+| components-2 / 3、animation、shared、components-4 | 见上一节 | 已修 |
+| exit 139（components-2 py3.11 的 `test_icon::test_theme_auto_and_local_override`；components-4 py3.12 的 `test_select::test_theme_dark` 构造 ClearButton 时段错误） | 见下 | **未确认** |
+| Lint | 见上一节 | 已修 |
+
+**exit 139 的两个崩溃没有确认根因。** 能确定的只有：
+
+- test_icon 那条在 3.12 / 3.13 上表现为 `RuntimeError: Error calling Python override of QObject::eventFilter()`，栈里 `ScrollShadow._refresh_shadow → _compute_effective_visibility → verticalScrollBar()` 被嵌套了几百层，也就是 `_refresh_shadow` 在重入自己；3.11 上同一条递归直接栈溢出成段错误。
+- Windows 离屏下，把易崩的场景按固定顺序反复跑（含 teardown/setup 循环，已提交版本和当前版本各跑多次）都没有复现。
+- 做了三处不依赖复现的加固：`ScrollShadow._refresh_shadow` 加重入保护；`ScrollStyle.eventFilter` 先判事件类型，不再对每个事件都创建 `obj` 的 Python 包装；两个全局过滤器不再调用 `super().eventFilter`。是否真的消除了 macOS 上的崩溃，要看下一次 CI。

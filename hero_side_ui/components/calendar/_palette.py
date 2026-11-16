@@ -13,6 +13,7 @@ from ...themes.theme_values import (
     get_popup_background,
 )
 
+
 def _shade(color: str, level: int) -> QColor:
     """从语义色阶取指定深度的颜色。
 

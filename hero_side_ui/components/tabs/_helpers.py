@@ -55,7 +55,11 @@ def _resolve_cursor_fill(variant: str, color: str, theme: str) -> QColor | None:
     # solid / bordered / light: 矩形填充 cursor
     if color == "default":
         # 亮色用内容面底色；暗色 dark:bg-default 取 default-700
-        return QColor(get_content_background(theme)) if theme == "light" else QColor(HEROUI_COLORS["default"][700])
+        return (
+            QColor(get_content_background(theme))
+            if theme == "light"
+            else QColor(HEROUI_COLORS["default"][700])
+        )
     return QColor(HEROUI_COLORS[color][500])
 
 

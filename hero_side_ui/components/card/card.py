@@ -25,7 +25,6 @@ from ...core.shadow_paint import ShadowController
 from ...themes import HEROUI_COLORS, RADIUS
 from ...themes.theme_values import get_content_background, get_foreground
 from ...utils import hex_to_rgba
-
 from ._press import CardPressMixin
 
 # Card 的固定结构参数（对齐 HeroUI，不再暴露 size prop）

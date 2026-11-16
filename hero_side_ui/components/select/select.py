@@ -678,7 +678,9 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
     # 宽度：外壳设宽直接生效（内部 Input 不再守下限，不需要转发）
     def _apply_full_width(self) -> None:
         """按 full_width 设水平策略与下限：True 撑满；False 回到建议宽度且至少 160px。"""
-        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Preferred
+        horizontal = (
+            QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Preferred
+        )
         self.setSizePolicy(horizontal, QSizePolicy.Policy.Preferred)
         QWidget.setMinimumWidth(self, 0 if self._full_width else 160)
 

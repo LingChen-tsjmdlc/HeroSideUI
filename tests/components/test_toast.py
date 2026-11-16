@@ -757,12 +757,22 @@ class TestToastHitTest:
         for i, c in enumerate(cards):
             r = c._content_rect()
             for fy in (0.1, 0.5, 0.9):
-                gp = c.mapTo(host, QPoint(int(r.x() + r.width() * 0.45), int(r.y() + r.height() * fy)))
+                gp = c.mapTo(
+                    host, QPoint(int(r.x() + r.width() * 0.45), int(r.y() + r.height() * fy))
+                )
                 started.clear()
-                QTest.mousePress(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
+                QTest.mousePress(
+                    host.windowHandle(),
+                    Qt.MouseButton.LeftButton,
+                    Qt.KeyboardModifier.NoModifier,
+                    gp,
+                )
                 QTest.mouseMove(host.windowHandle(), gp + QPoint(-6, 0))
                 QTest.mouseRelease(
-                    host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp + QPoint(-6, 0)
+                    host.windowHandle(),
+                    Qt.MouseButton.LeftButton,
+                    Qt.KeyboardModifier.NoModifier,
+                    gp + QPoint(-6, 0),
                 )
                 assert started == [i], f"第 {i} 张 fy={fy} 实际拖动 {started}"
 
@@ -776,9 +786,15 @@ class TestToastHitTest:
         started: list[int] = []
         card.drag_started.connect(lambda: started.append(1))
         r = card._content_rect()
-        gp = card.mapTo(host, QPoint(int(r.x() - 20), int(r.y() + r.height() / 2)))  # 卡片左侧 20px 的透明留白
-        QTest.mousePress(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
-        QTest.mouseRelease(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
+        gp = card.mapTo(
+            host, QPoint(int(r.x() - 20), int(r.y() + r.height() / 2))
+        )  # 卡片左侧 20px 的透明留白
+        QTest.mousePress(
+            host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp
+        )
+        QTest.mouseRelease(
+            host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp
+        )
         assert started == []
 
 

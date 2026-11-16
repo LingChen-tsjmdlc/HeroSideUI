@@ -16,13 +16,13 @@ from PySide6.QtWidgets import (
 from ..._shared.fields import ClearButton, InputWrapper, SuggestedWidthMixin
 from ...animation import LabelFloatAnimation
 from ...core import FontProvider, ThemeProvider
+from ...themes.colors import HEROUI_COLORS
 from ..text import Text
 from ._autosize import _TextareaAutosizeMixin
 from ._layout import _TextareaLayoutMixin
 from ._resize_grip import _ResizeGrip
 from ._styling import _TextareaStylingMixin
 from ._text_edit import _TextEdit
-from ...themes.colors import HEROUI_COLORS
 
 
 # ============================================================

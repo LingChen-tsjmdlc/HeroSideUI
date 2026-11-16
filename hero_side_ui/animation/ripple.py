@@ -14,6 +14,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
+
 from ..themes.theme_values import get_color_foreground
 
 

@@ -18,10 +18,10 @@ from ..._shared.dates import VALID_GRANULARITIES, DateFieldState, DateTimeValue
 from ..._shared.fields import InputLayoutMixin, InputWrapper, SuggestedWidthMixin
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import FontProvider, ThemeProvider
+from ...themes.colors import HEROUI_COLORS
 from ..text import Text
 from ._segment import _DateSegment, _SegmentLiteral
 from ._styling import _DateInputStylingMixin
-from ...themes.colors import HEROUI_COLORS
 
 
 class DateInput(SuggestedWidthMixin, _DateInputStylingMixin, InputLayoutMixin, QWidget):

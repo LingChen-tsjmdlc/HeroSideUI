@@ -1,6 +1,7 @@
 """Select 内部信号回调 mixin（私有）。"""
 
 from PySide6.QtCore import QTimer
+from shiboken6 import isValid
 
 from ...themes import SELECT_SIZES
 
@@ -85,7 +86,11 @@ class _SelectCallbacksMixin:
 
         Args:
             is_open: popover 当前是否打开。
+
+        Note:/n            控件已销毁时直接返回。
         """
+        if not isValid(self):  # 浮层是顶层窗口，会比控件活得久：控件销毁后它关闭仍会回调到这里
+            return
         self._is_open = is_open
         self._refresh_clear_visibility()
         if not self._disable_selector_icon_rotation:

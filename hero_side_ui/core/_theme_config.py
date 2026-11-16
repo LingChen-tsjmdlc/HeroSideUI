@@ -57,7 +57,9 @@ def _check_colors(value, errors: list, warns: list) -> dict:
         return out
     for name, ramp in value.items():
         if name not in theme_values.COLOR_NAMES:
-            errors.append(f"colors：未知色名 {name!r}，只能是 {', '.join(theme_values.COLOR_NAMES)}")
+            errors.append(
+                f"colors：未知色名 {name!r}，只能是 {', '.join(theme_values.COLOR_NAMES)}"
+            )
             continue
         if _is_mapping(ramp):
             if sorted(ramp) != sorted(theme_values.COLOR_STEPS):
@@ -79,14 +81,16 @@ def _check_colors(value, errors: list, warns: list) -> dict:
         lums = [_lum(v) for v in vals]
         if any(lums[i] < lums[i + 1] for i in range(9)):
             warns.append(f"colors[{name!r}]：色阶应从浅到深排列，否则暗色下镜像取色会反相")
-        out[name] = dict(zip(theme_values.COLOR_STEPS, vals))
+        out[name] = dict(zip(theme_values.COLOR_STEPS, vals, strict=True))
     return out
 
 
 def _check_side_pair(label: str, value, errors: list) -> dict | None:
     """校验 {"light": hex, "dark": hex}。"""
     if not _is_mapping(value) or sorted(value) != ["dark", "light"]:
-        errors.append(f"{label}：必须同时写 light 与 dark，如 {{'light': '#RRGGBB', 'dark': '#RRGGBB'}}")
+        errors.append(
+            f"{label}：必须同时写 light 与 dark，如 {{'light': '#RRGGBB', 'dark': '#RRGGBB'}}"
+        )
         return None
     if not (_is_hex(value["light"]) and _is_hex(value["dark"])):
         errors.append(f"{label}：色值必须是 #RRGGBB")
@@ -134,7 +138,9 @@ def _check_font_size(value, errors: list) -> dict | None:
         return None
     lo, hi = _FONT_PX_RANGE
     vals = {k: value[k] for k in theme_values.FONT_TIERS}
-    if not all(isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi for v in vals.values()):
+    if not all(
+        isinstance(v, int) and not isinstance(v, bool) and lo <= v <= hi for v in vals.values()
+    ):
         errors.append(f"font_size：值必须是 {lo}~{hi} 的整数 px")
         return None
     seq = [vals[k] for k in theme_values.FONT_TIERS]
@@ -270,7 +276,8 @@ def validate(
             cfg["radius"] = r
 
     surfaces: dict = {}
-    for key, val in zip(_SURFACE_KEYS, (background, foreground, content_background, popup_background)):
+    given = (background, foreground, content_background, popup_background)
+    for key, val in zip(_SURFACE_KEYS, given, strict=True):
         if val is not None:
             pair = _check_side_pair(key, val, errors)
             if pair:
@@ -287,7 +294,9 @@ def validate(
     if font_size is not None and font_base_size is not None:
         base = font_size.get("md") if _is_mapping(font_size) else None
         if base != font_base_size:
-            errors.append(f"font_base_size={font_base_size} 与 font_size['md']={base} 不一致，只写一个即可")
+            errors.append(
+                f"font_base_size={font_base_size} 与 font_size['md']={base} 不一致，只写一个即可"
+            )
     if font_size is None and font_base_size is not None:
         merged = dict(theme_values.DEFAULT_FONT_SIZE)
         merged["md"] = font_base_size
@@ -304,7 +313,9 @@ def validate(
     if font_family is not None:
         from .font_provider import FontProvider
 
-        fam = _resolve_font("font_family", font_family, errors, lambda: FontProvider.instance().ensure_loaded())
+        fam = _resolve_font(
+            "font_family", font_family, errors, lambda: FontProvider.instance().ensure_loaded()
+        )
         if fam:
             cfg["font_family"] = fam
     if mono_family is not None:
@@ -327,7 +338,9 @@ def _check_order_and_contrast(cfg: dict, warns: list) -> None:
     merged = {k: dict(v) for k, v in theme_values.DEFAULT_SURFACES.items()}
     merged.update(cfg.get("surfaces", {}))
     for side in ("light", "dark"):
-        a, b, c = (merged[k][side] for k in ("background", "content_background", "popup_background"))
+        a, b, c = (
+            merged[k][side] for k in ("background", "content_background", "popup_background")
+        )
         if not _lum(a) <= _lum(b) <= _lum(c):
             warns.append(f"{side} 主题：窗口底、内容面、弹出层应一层比一层不暗，否则层次会倒挂")
 
@@ -344,7 +357,9 @@ def _check_order_and_contrast(cfg: dict, warns: list) -> None:
             step = 700 if (name == "default" and side == "dark") else 500
             ratio = _contrast(fg[name][side], ramps[name][step])
             if ratio < 4.5:
-                warns.append(f"color_foreground[{name!r}] 的 {side} 字色与底色对比度仅 {ratio:.2f}:1（建议 ≥ 4.5）")
+                warns.append(
+                    f"color_foreground[{name!r}] 的 {side} 字色与底色对比度仅 {ratio:.2f}:1（建议 ≥ 4.5）"
+                )
 
 
 def apply(cfg: dict) -> None:
@@ -354,7 +369,18 @@ def apply(cfg: dict) -> None:
         cfg: validate 的返回值。
     """
     had_read = theme_values.was_read()
-    touched = any(k in cfg for k in ("colors", "color_foreground", "radius", "surfaces", "font_size", "shadow", "mono_family"))
+    touched = any(
+        k in cfg
+        for k in (
+            "colors",
+            "color_foreground",
+            "radius",
+            "surfaces",
+            "font_size",
+            "shadow",
+            "mono_family",
+        )
+    )
     if touched and had_read:
         warnings.warn(
             "HeroSideUIProvider.setup() 在组件创建之后才应用主题参数：已创建的组件不会刷新，请在创建组件之前调用 setup。",

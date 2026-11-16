@@ -19,7 +19,9 @@ def _resolve_theme_aware_color() -> str:
     from ..core import ThemeProvider
 
     provider = ThemeProvider.peek()
-    return get_foreground("dark" if provider is not None and provider.current_theme == "dark" else "light")
+    return get_foreground(
+        "dark" if provider is not None and provider.current_theme == "dark" else "light"
+    )
 
 
 def load_svg_icon(

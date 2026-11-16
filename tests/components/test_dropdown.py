@@ -524,13 +524,23 @@ class TestDropdownGeometry:
 
     def test_max_height_kept_on_reopen(self, qtbot):
         # 传了 max_height 后，每次打开都要生效（不能只有首开受限）
+        # 菜单限制在宿主窗口内：Dropdown 自己当顶层窗口只有触发器那么高，必须放进足够大的宿主
+        host = QWidget()
+        host.resize(500, 500)
         dd = Dropdown(
             items=[(str(i), f"Item {i}") for i in range(30)],
             max_height=120,
             disable_animation=True,
+            parent=host,
         )
-        qtbot.addWidget(dd)
-        self._open_and_settle(qtbot, dd)
+        dd.move(20, 20)
+        qtbot.addWidget(host)
+        host.show()
+        qtbot.waitExposed(host)
+        qtbot.addWidget(dd._popover)
+        dd.open()
+        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=2000)
+        qtbot.wait(80)
         assert dd._scroll.minimumHeight() == 120
         dd.close()
         qtbot.waitUntil(lambda: dd.is_open() is False, timeout=2000)

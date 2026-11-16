@@ -177,8 +177,7 @@ def test_destroyed_owner_does_not_receive_completion(qtbot):
         on_finished=lambda: completed.append(True),
     )
     delete(owner)
-    qtbot.wait(120)
-    assert not isValid(anim)
+    qtbot.waitUntil(lambda: not isValid(anim))
     assert completed == []
     assert tween_value(owner, "motion", 0, 1, lambda _: None, duration=100) is None
 

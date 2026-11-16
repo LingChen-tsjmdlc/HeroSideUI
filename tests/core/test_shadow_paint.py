@@ -28,7 +28,11 @@ def _layers(tier: str, theme: str = "light"):
 def _render(layers, w: int, h: int, direct: bool = False, radius: float = 14.0, dpr: float = 1.0):
     """在透明画布上画一档阴影，返回 (图, 留白 m)。"""
     m = sp.shadow_margin(layers) + 2
-    img = QImage(round((w + 2 * m) * dpr), round((h + 2 * m) * dpr), QImage.Format.Format_ARGB32_Premultiplied)
+    img = QImage(
+        round((w + 2 * m) * dpr),
+        round((h + 2 * m) * dpr),
+        QImage.Format.Format_ARGB32_Premultiplied,
+    )
     img.fill(0)
     img.setDevicePixelRatio(dpr)
     p = QPainter(img)
@@ -62,7 +66,7 @@ class TestMargins:
     def test_tier_margin_takes_the_larger_theme(self):
         big = (Layer(0, 40, "#020304", 0.1),)
         small = (Layer(0, 4, "#020304", 0.1),)
-        side = lambda x: {"sm": x, "md": x, "lg": x}  # noqa: E731
+        side = lambda x: {"sm": x, "md": x, "lg": x}
         theme_values.apply({"shadow": {"light": side(small), "dark": side(big)}})
         assert sp.tier_margin("sm") == sp.shadow_margin(big)
 
@@ -375,4 +379,3 @@ class TestShadowController:
         ctl = sp.ShadowController(w)
         ctl.__dict__.pop("_target")
         assert ctl.eventFilter(w, QEvent(QEvent.Type.Show)) is False
-

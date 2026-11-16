@@ -1,6 +1,5 @@
 """Select 组件测试"""
 
-
 from hero_side_ui import Select
 from hero_side_ui.themes import SELECT_SIZES
 

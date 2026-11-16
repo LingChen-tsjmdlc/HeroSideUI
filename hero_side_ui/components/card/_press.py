@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import QEvent, QPoint, QTimer, Qt
+from PySide6.QtCore import QEvent, QPoint, Qt, QTimer
 from PySide6.QtWidgets import QWidget
 
 

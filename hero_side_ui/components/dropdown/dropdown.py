@@ -7,6 +7,7 @@ from collections.abc import Iterable
 from PySide6.QtCore import Qt, QTimer, Signal
 from PySide6.QtGui import QKeySequence, QShortcut
 from PySide6.QtWidgets import QVBoxLayout, QWidget
+from shiboken6 import isValid
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS
@@ -517,7 +518,10 @@ class Dropdown(_DropdownStylingMixin, _DropdownTriggerMixin, QWidget):
 
         Note:
             打开后延迟一帧再量菜单高度，等浮层布局完成。
+            控件已销毁时直接返回。
         """
+        if not isValid(self):  # 浮层是顶层窗口，会比控件活得久：控件销毁后它关闭仍会回调到这里
+            return
         self._is_open = opened
         self._esc.setEnabled(opened)
         if opened:
