@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QWidget
 from ...animation import stop_tween, tween_value
 from ...core.text_style import make_text_qfont
 from ._palette import resolve_cursor_fill, resolve_cursor_text
+from ...themes.theme_values import get_font_px
 
 
 class _CursorWidget(QWidget):
@@ -33,7 +34,7 @@ class _CursorWidget(QWidget):
         self._page_text = ""
         self._old_page_text = ""
         self._text_progress = 1.0
-        self._font_size = 13
+        self._font_size = get_font_px("sm")
         # 文字交叉淡入动画 runner
         self._text_anim: QVariantAnimation | None = None
         # 文字切换偏移幅度 (px)

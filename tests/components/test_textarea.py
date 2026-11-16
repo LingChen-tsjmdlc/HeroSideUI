@@ -436,7 +436,7 @@ class TestTextareaAutoResize:
 
 
 class TestTextareaScrollBarColor:
-    """滚动条颜色注册（color != default 时跟随语义色，default 时用全局 neutral）"""
+    """滚动条颜色注册（color != default 时跟随语义色，default 时用全局 default 灰）"""
 
     def test_default_color_no_override(self, qtbot):
         ta = Textarea(color="default")

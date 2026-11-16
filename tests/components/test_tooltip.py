@@ -486,7 +486,7 @@ class TestColors:
     def test_default_color_light_bg(self, qtbot):
         tt = Tooltip(content="x", color="default", theme="light")
         qtbot.addWidget(tt)
-        assert tt._bg_color().name().lower() == "#ffffff"
+        assert tt._bg_color().name().lower() == "#fefeff"
 
     def test_default_color_dark_bg(self, qtbot):
         tt = Tooltip(content="x", color="default", theme="dark")
@@ -497,7 +497,7 @@ class TestColors:
         """warning 色文字应是黑色（亮底反色规则）"""
         tt = Tooltip(content="x", color="warning")
         qtbot.addWidget(tt)
-        assert tt._text_color().name().lower() == "#000000"
+        assert tt._text_color().name().lower() == "#11181c"
 
     def test_default_text_light(self, qtbot):
         tt = Tooltip(content="x", color="default", theme="light")
@@ -513,4 +513,4 @@ class TestColors:
         """非 default、非 warning 的语义色文字 = 白色"""
         tt = Tooltip(content="x", color="primary")
         qtbot.addWidget(tt)
-        assert tt._text_color().name().lower() == "#ffffff"
+        assert tt._text_color().name().lower() == "#fefeff"

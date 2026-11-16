@@ -1,8 +1,6 @@
 """Dropdown 视觉同步 mixin：主题重刷、菜单宽高刷新与 per-item 配色。"""
 
-from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QApplication
-
+from ..._shared.overlays.bounds import space_above, space_below
 from ...core import ThemeProvider
 from ...themes import DROPDOWN_SIZES
 
@@ -80,46 +78,30 @@ class _DropdownStylingMixin:
             return max(1, int(self._max_height))
         return None
 
-    def _screen_rect(self):
-        """取主屏可用区域。
+    def _room_for_menu(self) -> int | None:
+        """按弹出方向取窗口内可用高度；左右弹出时不限。
 
-        Returns:
-            availableGeometry 的 QRect；无主屏时为 None。
+        Note:
+            优先指定方向：该侧够放最小菜单（80px）就按该侧算；
+            不够时 Popover 会翻到另一侧，这时按上下较大的一侧算。
         """
-        screen = QApplication.primaryScreen()
-        return screen.availableGeometry() if screen is not None else None
-
-    def _available_height_below(self) -> int:
-        """trigger 下方到屏幕底的可用高度。
-
-        Returns:
-            扣除 6px gap 与 popover 下边距后的像素数；无屏幕信息时回退 token 上限。
-        """
-        rect = self._screen_rect()
-        if rect is None:
-            return int(self._size_cfg()["popover_max_height"])
-        pos = self._trigger.mapToGlobal(QPoint(0, 0))
-        _, _, _, bottom_margin = self._popover.frame_margins()
-        return int(rect.bottom() - (pos.y() + self._trigger.height()) - 6 - bottom_margin)
-
-    def _available_height_above(self) -> int:
-        """trigger 上方到屏幕顶的可用高度。
-
-        Returns:
-            扣除 6px gap 与 popover 上边距后的像素数；无屏幕信息时回退 token 上限。
-        """
-        rect = self._screen_rect()
-        if rect is None:
-            return int(self._size_cfg()["popover_max_height"])
-        pos = self._trigger.mapToGlobal(QPoint(0, 0))
-        _, top_margin, _, _ = self._popover.frame_margins()
-        return int(pos.y() - rect.top() - 6 - top_margin)
+        place = self._popover._placement
+        try:
+            below = int(space_below(self._trigger) - 6)
+            above = int(space_above(self._trigger) - 6)
+        except RuntimeError:
+            return None
+        if place.startswith("bottom"):
+            return below if below >= 80 else max(below, above)
+        if place.startswith("top"):
+            return above if above >= 80 else max(below, above)
+        return None
 
     def _menu_height_cap(self, prefer_below: bool) -> int:
         """菜单高度上限。
 
         Args:
-            prefer_below: True 时按上下两侧较大空间截断并留 80px 下限。
+            prefer_below: True 时按窗口内可用高度截断并留 80px 下限。
 
         Returns:
             0 表示不限制（完全贴内容）；否则为所有上限中的最小值。
@@ -128,10 +110,8 @@ class _DropdownStylingMixin:
         user_cap = self._menu_max_height()
         if user_cap is not None:
             caps.append(user_cap)
-        if prefer_below:
-            # 下方放不下会翻到上方，所以按两侧较大的一侧截断；
-            # 再留个下限，别把菜单压成一条缝
-            room = max(self._available_height_below(), self._available_height_above())
+        room = self._room_for_menu() if prefer_below else None
+        if room is not None:
             caps.append(max(80, room))
         return max(1, min(caps)) if caps else 0
 

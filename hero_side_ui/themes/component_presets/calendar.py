@@ -9,9 +9,9 @@ CALENDAR_SIZES = {
     "grid_pad_x": 16,
     "weekday_font": 13,
     "title_font": 13,
-    "day_font": 14,
+    "day_font": 13,
     "picker_height": 224,
-    "picker_item_font": 18,
+    "picker_item_font": 19,
     "picker_empty_offset": 3,
     "nav_icon_size": 16,
 }

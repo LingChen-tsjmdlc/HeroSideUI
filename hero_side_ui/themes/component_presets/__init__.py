@@ -39,7 +39,6 @@ from .breadcrumbs import (
 )
 from .button import BUTTON_SIZES, VALID_BUTTON_VARIANTS
 from .calendar import CALENDAR_SIZES
-from .card import CARD_SHADOWS
 from .checkbox import CHECKBOX_SIZES
 from .chip import (
     CHIP_DOT_SIZE,
@@ -67,7 +66,6 @@ from .drawer import (
 )
 from .dropdown import DROPDOWN_SIZES
 from .icon import ICON_SIZES
-from .image import IMAGE_SHADOWS
 from .input import INPUT_SIZES, NUMBER_INPUT_MIN_WIDTHS
 from .input_otp import (
     INPUT_OTP_CARET_PERIOD_MS,
@@ -78,7 +76,6 @@ from .input_otp import (
     VALID_INPUT_OTP_VARIANTS,
 )
 from .kbd import (
-    KBD_SHADOW,
     KBD_SIZE_TABLE,
     KBD_SIZES,
     VALID_KBD_RADII,
@@ -102,7 +99,6 @@ from .markdown import (
     MARKDOWN_SPACING,
 )
 from .pagination import PAGINATION_SIZES
-from .popover import POPOVER_SHADOWS
 from .progress import CIRCULAR_PROGRESS_SIZES, PROGRESS_SIZES
 from .radio import RADIO_SIZES
 from .select import SELECT_SIZES
@@ -114,7 +110,6 @@ from .tabs import TABS_SIZES
 from .textarea import TEXTAREA_SIZES
 from .toast import (
     TOAST_SEVERITY_ICONS,
-    TOAST_SHADOWS,
     TOAST_SPEC,
     VALID_TOAST_COLORS,
     VALID_TOAST_PLACEMENTS,
@@ -145,7 +140,6 @@ __all__ = [
     "BREADCRUMBS_SIZES",
     "BUTTON_SIZES",
     "CALENDAR_SIZES",
-    "CARD_SHADOWS",
     "CHECKBOX_SIZES",
     "CHIP_DOT_SIZE",
     "CHIP_SIZES",
@@ -162,11 +156,9 @@ __all__ = [
     "DROPDOWN_SIZES",
     "HEADING_SPEC",
     "ICON_SIZES",
-    "IMAGE_SHADOWS",
     "INPUT_OTP_CARET_PERIOD_MS",
     "INPUT_OTP_SIZES",
     "INPUT_SIZES",
-    "KBD_SHADOW",
     "KBD_SIZES",
     "KBD_SIZE_TABLE",
     "LINK_BLOCK",
@@ -180,7 +172,6 @@ __all__ = [
     "MARKDOWN_SPACING",
     "NUMBER_INPUT_MIN_WIDTHS",
     "PAGINATION_SIZES",
-    "POPOVER_SHADOWS",
     "PROGRESS_SIZES",
     "RADIO_SIZES",
     "SELECT_SIZES",
@@ -191,7 +182,6 @@ __all__ = [
     "TABS_SIZES",
     "TEXTAREA_SIZES",
     "TOAST_SEVERITY_ICONS",
-    "TOAST_SHADOWS",
     "TOAST_SPEC",
     "TOOLTIP_SIZES",
     "VALID_AVATAR_COLORS",

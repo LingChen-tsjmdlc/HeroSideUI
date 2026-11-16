@@ -117,11 +117,10 @@ ScrollStyle.instance().remove_global()
 | 亮色 | `<color>-300` | `<color>-400` |
 | 暗色 | `<color>-700` | `<color>-600` |
 
-`<color>` 走 HeroUI v2 色阶。可选值：`neutral` (默认) / `default` / `primary` / `secondary` / `success` / `warning` / `danger`。
+`<color>` 走 HeroUI v2 色阶。可选值：`default` (默认) / `primary` / `secondary` / `success` / `warning` / `danger`。
 
-> **默认 `neutral`**：纯灰、无色相偏移（来自 Tailwind v3 neutral 色阶）。
-> 比 `default` (zinc，略带冷色) 更适合"中性元素"如滚动条 handle，
-> 不会和组件主色串调色。500 色号视觉过重，hover 用 400/600 更柔和。
+> **默认 `default`**：取全库统一的灰色阶，改 `default` 色板时滚动条跟着变。
+> 500 色号视觉过重，hover 用 400/600 更柔和。
 
 ## API 一览
 
@@ -164,10 +163,10 @@ ScrollStyle.instance().remove_global()
 3. **圆角用 `thickness/2`（基于当前进度的瞬时值）**
    动画过程中圆角跟着 thickness 一起变，依然始终保持胶囊形。比固定圆角视觉更对（因为细的时候用 ht/2 会显得太圆，粗的时候用 t/2 又不够圆）。
 
-4. **handle 阴影用 1px border 模拟（仅 neutral 色生效）**
+4. **handle 阴影用 1px border 模拟（仅全局色生效）**
    Qt QSS 不支持 `box-shadow`，`QGraphicsDropShadowEffect` 也不能套到 sub-control 上。用 border + 半透明黑色（normal alpha=15/亮 50/暗，hover alpha=0）是 Qt UI 库的标准做法。border alpha 跟 progress 反向插值（progress=0 满 alpha，progress=1 alpha=0），和粗细/颜色动画走**同一条进度线**，丝滑无缝。
 
-   **仅当 bar 用全局色（默认 neutral）时才有阴影边框**——自定义语义色（primary/success/...）色阶本身鲜明，描边反而显得脏；所以 `Textarea(color="primary")` 滚动条无阴影，`Textarea(color="default")`（走全局 neutral）滚动条带阴影。
+   **仅当 bar 用全局色（默认 default）时才有阴影边框**——自定义语义色（primary/success/...）色阶本身鲜明，描边反而显得脏；所以 `Textarea(color="primary")` 滚动条无阴影，`Textarea(color="default")`（走全局 default）滚动条带阴影。
 
 ## 与 Textarea 等组件的关系
 

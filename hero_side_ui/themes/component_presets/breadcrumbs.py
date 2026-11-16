@@ -1,8 +1,8 @@
 """Breadcrumbs 尺寸：字号 12/14/16，solid/bordered 内边距与分隔符间距。"""
 
 BREADCRUMBS_SIZES = {
-    "sm": {"font": 12, "padding_x": 8, "padding_y": 4},
-    "md": {"font": 14, "padding_x": 10, "padding_y": 6},
+    "sm": {"font": 13, "padding_x": 8, "padding_y": 4},
+    "md": {"font": 13, "padding_x": 10, "padding_y": 6},
     "lg": {"font": 16, "padding_x": 12, "padding_y": 8},
 }
 

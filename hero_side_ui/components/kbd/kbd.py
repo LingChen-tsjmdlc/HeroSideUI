@@ -8,7 +8,6 @@ from PySide6.QtCore import Qt
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import (
     QFrame,
-    QGraphicsDropShadowEffect,
     QHBoxLayout,
     QLabel,
     QSizePolicy,
@@ -16,9 +15,9 @@ from PySide6.QtWidgets import (
 )
 
 from ...core import ThemeProvider
+from ...core.shadow_paint import ShadowController
 from ...themes import (
     HEROUI_COLORS,
-    KBD_SHADOW,
     KBD_SIZE_TABLE,
     VALID_KBD_RADII,
     VALID_KBD_SIZES,
@@ -139,12 +138,8 @@ class Kbd(QFrame):
         self.setFrameShape(QFrame.Shape.NoFrame)
         self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
 
-        # shadow-small
-        self._shadow = QGraphicsDropShadowEffect(self)
-        self._shadow.setOffset(0, KBD_SHADOW["offset_y"])
-        self._shadow.setBlurRadius(KBD_SHADOW["blur"])
-        self._shadow.setColor(QColor(0, 0, 0, int(KBD_SHADOW["opacity"] * 255)))
-        self.setGraphicsEffect(self._shadow)
+        # shadow-small：公共阴影 sm 档（兄弟阴影层，不占布局）
+        self._shadow_ctl = ShadowController(self)
 
         self._layout = QHBoxLayout(self)
         self._layout.setAlignment(Qt.AlignmentFlag.AlignCenter)
@@ -294,6 +289,11 @@ class Kbd(QFrame):
             return f"{h // 2}px"
         return f"{spec['radius'][self._radius]}px"
 
+    def _sync_shadow(self) -> None:
+        """把圆角与主题同步给阴影层。"""
+        radius = float(self._radius_px().removesuffix("px"))
+        self._shadow_ctl.set_style("sm", radius, self._theme)
+
     # ============================================================
     # 样式
     # ============================================================
@@ -322,6 +322,7 @@ class Kbd(QFrame):
             if isinstance(w, (_KbdIconLabel, Text)):
                 w.set_color(fg)
         self.setMinimumHeight(spec["min_height"])
+        self._sync_shadow()
 
     # ============================================================
     # slots 构建

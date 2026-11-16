@@ -16,6 +16,7 @@ from ...themes import (
     VALID_INPUT_OTP_TEXT_ALIGNS,
     VALID_INPUT_OTP_VARIANTS,
 )
+from ...themes.colors import HEROUI_COLORS
 from ..text import Text
 from ._styling import build_input_otp_styles
 from .input_otp_segments import _SegmentRow
@@ -131,7 +132,7 @@ class InputOtp(QWidget):
         helper_lay = QHBoxLayout()
         helper_lay.setContentsMargins(0, 0, 0, 0)
         helper_lay.setSpacing(0)
-        self._helper_label = Text("", size=12, weight="light", theme=self._theme)
+        self._helper_label = Text("", size="sm", weight="light", theme=self._theme)
         self._helper_label.setVisible(False)
         helper_lay.addWidget(self._helper_label)
         helper_lay.addStretch()
@@ -295,12 +296,12 @@ class InputOtp(QWidget):
         show_error = self._is_invalid and bool(self._error_message)
         if show_error:
             self._helper_label.setText(self._error_message)
-            self._helper_label.set_color("#f31260")
+            self._helper_label.set_color(HEROUI_COLORS["danger"][500])
             self._helper_label.setVisible(True)
         elif self._description:
             self._helper_label.setText(self._description)
             # 官方 description text-foreground-400
-            self._helper_label.set_color("#a1a1aa" if self._theme == "dark" else "#71717a")
+            self._helper_label.set_color(HEROUI_COLORS["default"][400 if self._theme == "dark" else 500])
             self._helper_label.setVisible(True)
         else:
             self._helper_label.setVisible(False)

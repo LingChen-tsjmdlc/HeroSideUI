@@ -386,7 +386,7 @@ HeroSideUIProvider.teardown()
 HeroSideUIProvider.setup(app, filter_libpng_warnings=False)
 dark = window()
 ThemeProvider.instance().set_mode("light")
-print(dark == "#0b0d12", window() == "#fafbfd")
+print(dark == "#0d0d0f", window() == "#fafbfd")
 """
     )
     assert out == "True True"
@@ -401,7 +401,7 @@ original = snapshot()
 results = []
 for theme in ("dark", "light", "dark"):
     HeroSideUIProvider.setup(app, theme=theme, filter_libpng_warnings=False)
-    results.append(window() == ("#0b0d12" if theme == "dark" else "#fafbfd"))
+    results.append(window() == ("#0d0d0f" if theme == "dark" else "#fafbfd"))
     HeroSideUIProvider.teardown()
     results.append(snapshot() == original)
 print(all(results))

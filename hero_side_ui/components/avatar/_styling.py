@@ -3,23 +3,20 @@
 from __future__ import annotations
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_background, get_color_foreground
 
 
 def _fg_on_solid(color_name: str, is_dark: bool) -> str:
     """求 solid 底上的前景色（文字 / 图标）。
 
     Args:
-        color_name: 语义色名；warning 底色过亮需用黑字。
-        is_dark: 是否深色主题，仅影响 default 分支。
+        color_name: 语义色名。
+        is_dark: 是否深色主题。
 
     Returns:
         十六进制前景色字符串。
     """
-    if color_name == "warning":
-        return "#000000"
-    if color_name == "default":
-        return "#d4d4d8" if is_dark else "#ffffff"
-    return "#ffffff"
+    return get_color_foreground(color_name, "dark" if is_dark else "light")
 
 
 def build_avatar_styles(color: str, theme: str) -> dict:
@@ -46,7 +43,7 @@ def build_avatar_styles(color: str, theme: str) -> dict:
 
     fg = _fg_on_solid(color, is_dark)
     # ring-offset：与页面背景同色，制造描边与头像之间的缝隙。
-    offset = "#000000" if is_dark else "#ffffff"
+    offset = get_background(theme)
 
     return {
         "bg": bg,

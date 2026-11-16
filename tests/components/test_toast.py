@@ -347,7 +347,7 @@ class TestToastStyling:
         assert s["base_bg"] == HEROUI_COLORS["primary"][500]
 
     @pytest.mark.parametrize(
-        "color,fg", [("primary", "#ffffff"), ("danger", "#ffffff"), ("warning", "#000000")]
+        "color,fg", [("primary", "#FEFEFF"), ("danger", "#FEFEFF"), ("warning", "#11181C")]
     )
     def test_solid_text_contrast(self, color, fg):
         assert build_toast_styles("solid", color, "light")["title_color"] == fg

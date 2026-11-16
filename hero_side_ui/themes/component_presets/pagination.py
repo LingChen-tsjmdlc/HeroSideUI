@@ -4,7 +4,7 @@ PAGINATION_SIZES = {
     "sm": {
         "item_height": 32,
         "item_min_width": 32,
-        "font_size": 12,
+        "font_size": 13,
         "padding_x": 4,
         "list_gap": 4,
         "border_width": 2,
@@ -26,7 +26,7 @@ PAGINATION_SIZES = {
     "lg": {
         "item_height": 40,
         "item_min_width": 40,
-        "font_size": 15,
+        "font_size": 16,
         "padding_x": 8,
         "list_gap": 4,
         "border_width": 2,

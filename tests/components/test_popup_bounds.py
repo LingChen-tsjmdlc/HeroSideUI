@@ -1,0 +1,308 @@
+"""弹出层与宿主窗口：边界辅助函数、超出窗口时的裁剪，以及点击外部关闭（防止同时开两个）。"""
+
+from __future__ import annotations
+
+from PySide6.QtCore import QPoint, QRect, Qt
+from PySide6.QtTest import QTest
+import pytest
+from PySide6.QtWidgets import QLabel, QWidget
+
+from hero_side_ui import Autocomplete, Button, Dropdown, Popover, Select, Tooltip
+from hero_side_ui._shared.overlays import bounds
+from hero_side_ui._shared.overlays.hit_test import HitThroughMixin
+
+
+def _host(qtbot, w: int = 520, h: int = 420) -> QWidget:
+    """比屏幕小的宿主窗口：弹层可以越过它的边缘但仍在屏幕内。"""
+    host = QWidget()
+    host.setGeometry(60, 40, w, h)
+    qtbot.addWidget(host)
+    host.show()
+    qtbot.waitExposed(host)
+    return host
+
+
+def _put(host: QWidget, widget: QWidget, x: int, y: int) -> QWidget:
+    widget.setParent(host)
+    widget.move(x, y)
+    widget.show()
+    return widget
+
+
+def _click(qtbot, host: QWidget, widget: QWidget) -> None:
+    """走窗口句柄的真实点击（命中链与全局事件过滤器都会经过），并等淡入淡出走完。"""
+    pt = widget.mapTo(host, QPoint(widget.width() // 2, widget.height() // 2))
+    QTest.mouseClick(
+        host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pt
+    )
+    qtbot.wait(450)
+
+
+# ============================================================
+# 边界辅助函数
+# ============================================================
+class TestHostBounds:
+    def test_host_rect_is_the_client_area(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 100, 60)
+        assert bounds.host_rect(btn) == QRect(host.mapToGlobal(QPoint(0, 0)), host.size())
+
+    def test_host_rect_is_none_when_the_window_is_not_shown(self, qtbot):
+        w = QWidget()
+        qtbot.addWidget(w)
+        btn = Button("x")
+        btn.setParent(w)
+        assert bounds.host_rect(btn) is None
+
+    def test_space_below_and_above_are_measured_to_the_window_edges(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 100, 60)
+        rect = bounds.host_rect(btn)
+        top = btn.mapToGlobal(QPoint(0, 0)).y()
+        assert bounds.space_below(btn) == rect.bottom() - (top + btn.height())
+        assert bounds.space_above(btn) == top - rect.top()
+
+    def test_space_falls_back_to_the_screen_without_a_visible_window(self, qtbot):
+        w = QWidget()
+        qtbot.addWidget(w)
+        btn = Button("x")
+        btn.setParent(w)
+        assert bounds.space_below(btn) > 0
+
+    def test_popup_inside_a_popup_resolves_to_the_application_window(self, qtbot):
+        host = _host(qtbot)
+        outer_btn = _put(host, Button("outer"), 120, 120)
+        inner_btn = Button("inner")
+        outer = Popover(placement="bottom")
+        qtbot.addWidget(outer)
+        outer.set_content(inner_btn)
+        outer.attach(outer_btn)
+        outer.open(outer_btn)
+        qtbot.wait(50)
+        assert bounds.host_window(inner_btn) is host
+        outer.close()
+
+
+# ============================================================
+# 超出宿主窗口的部分被裁掉
+# ============================================================
+class TestClipToHost:
+    def test_popover_below_the_window_edge_is_masked_to_the_window(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("low"), 200, 380)
+        pop = Popover(placement="bottom")
+        qtbot.addWidget(pop)
+        pop.set_content(QLabel("x\n" * 8 + "tall"))
+        pop.attach(btn)
+        pop.open(btn)
+        qtbot.wait(400)
+        window = bounds.host_rect(btn)
+        assert pop.geometry().bottom() > window.bottom()  # 窗口本身确实越界了
+        assert not pop.mask().isEmpty()
+        visible_bottom = pop.mapToGlobal(pop.mask().boundingRect().bottomLeft()).y()
+        assert visible_bottom <= window.bottom()
+        pop.close()
+
+    def test_popover_inside_the_window_has_no_mask(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("top"), 200, 40)
+        pop = Popover(placement="bottom")
+        qtbot.addWidget(pop)
+        pop.set_content(QLabel("hi"))
+        pop.attach(btn)
+        pop.open(btn)
+        qtbot.wait(400)
+        assert pop.mask().isEmpty()
+        pop.close()
+
+    def test_clip_to_host_without_an_anchor_clears_the_mask(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 100, 60)
+        popup = QWidget()
+        qtbot.addWidget(popup)
+        popup.setWindowFlags(Qt.WindowType.Tool | Qt.WindowType.FramelessWindowHint)
+        origin = host.mapToGlobal(QPoint(10, 380))
+        popup.setGeometry(origin.x(), origin.y(), 100, 100)
+        popup.show()
+        bounds.clip_to_host(popup, btn)
+        assert not popup.mask().isEmpty()
+        bounds.clip_to_host(popup, None)
+        assert popup.mask().isEmpty()
+
+
+# ============================================================
+# 翻转：下面放不下翻到上面，两边都放不下才用切断兜底
+# ============================================================
+ITEMS = [(f"k{i}", f"Item {i}") for i in range(30)]
+
+
+def _inside(anchor: QWidget, pop) -> bool:
+    return bounds.popup_area(anchor).contains(pop._body_global())
+
+
+class TestFlipInsideWindow:
+    def _open_popover(self, qtbot, host, btn, content, **kw):
+        pop = Popover(**kw)
+        qtbot.addWidget(pop)
+        pop.set_content(content)
+        pop.attach(btn)
+        pop.open(btn)
+        qtbot.wait(400)
+        return pop
+
+    def test_overflow_counts_every_side(self):
+        area = QRect(0, 0, 100, 100)
+        assert bounds.overflow(QRect(10, 10, 20, 20), area) == 0
+        assert bounds.overflow(QRect(-5, -3, 20, 20), area) == 8
+        assert bounds.overflow(QRect(90, 90, 20, 20), area) == 20
+
+    def test_popover_flips_up_near_the_window_bottom(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 200, 350)
+        pop = self._open_popover(qtbot, host, btn, QLabel("x\n" * 6 + "content"), placement="bottom")
+        assert pop._actual_placement.startswith("top")
+        assert _inside(btn, pop)
+        pop.close()
+
+    def test_popover_does_not_flip_when_it_fits(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 200, 60)
+        pop = self._open_popover(qtbot, host, btn, QLabel("hello"), placement="bottom")
+        assert pop._actual_placement == "bottom"
+        pop.close()
+
+    def test_top_placement_flips_down_near_the_window_top(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 200, 4)
+        pop = self._open_popover(qtbot, host, btn, QLabel("x\n" * 3 + "c"), placement="top")
+        assert pop._actual_placement.startswith("bottom")
+        assert _inside(btn, pop)
+        pop.close()
+
+    def test_when_neither_side_fits_the_part_outside_the_window_is_cut(self, qtbot):
+        host = _host(qtbot, w=420, h=160)
+        btn = _put(host, Button("s"), 150, 60)
+        pop = self._open_popover(qtbot, host, btn, QLabel("t\n" * 24), placement="bottom")
+        window = bounds.host_rect(btn)
+        assert not pop.mask().isEmpty()
+        assert pop.mapToGlobal(pop.mask().boundingRect().bottomLeft()).y() <= window.bottom()
+        pop.close()
+
+    def test_flip_disabled_keeps_the_placement(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("a"), 200, 350)
+        pop = self._open_popover(
+            qtbot, host, btn, QLabel("x\n" * 6), placement="bottom", allow_flip=False
+        )
+        assert pop._actual_placement == "bottom"
+        pop.close()
+
+    @pytest.mark.parametrize("factory", [Select, Autocomplete])
+    @pytest.mark.parametrize("y,expect", [(120, "bottom"), (345, "top")])
+    def test_select_like_prefers_below_and_flips_only_when_needed(self, qtbot, factory, y, expect):
+        host = _host(qtbot)
+        w = factory(items=ITEMS)
+        _put(host, w, 150, y)
+        w.open()
+        qtbot.wait(450)
+        pop = w._popover
+        trigger = QRect(w.mapToGlobal(QPoint(0, 0)), w.size())
+        assert pop._actual_placement.startswith(expect)
+        assert _inside(w, pop)
+        assert not pop._body_global().intersects(trigger)
+        w.close()
+
+    @pytest.mark.parametrize("y,expect", [(100, "bottom"), (345, "top"), (380, "top")])
+    def test_dropdown_flips_and_stays_complete(self, qtbot, y, expect):
+        host = _host(qtbot)
+        items = ITEMS if y != 380 else ["Item A", "Item B", "Item C"]
+        dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in items])
+        _put(host, dd, 150, y)
+        dd.open()
+        qtbot.wait(450)
+        pop = dd._popover
+        trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
+        assert pop._actual_placement.startswith(expect)
+        assert _inside(dd._trigger, pop)
+        assert not pop._body_global().intersects(trigger)
+        dd.close()
+
+    def test_tooltip_flips_down_near_the_window_top(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("tip"), 200, 4)
+        tt = Tooltip(content="tooltip text here", placement="top")
+        qtbot.addWidget(tt)
+        tt.attach(btn)
+        tt.open()
+        qtbot.wait(300)
+        assert tt._actual_placement == "bottom"
+        assert bounds.popup_area(btn).contains(tt._body_global())
+        tt.close()
+
+
+# ============================================================
+# 留白穿透需要的 _body_global
+# ============================================================
+class TestBodyGlobal:
+    def test_popover_and_tooltip_implement_it(self):
+        # HitThroughMixin 里那份是占位实现（直接抛 NotImplementedError），不能被它盖住
+        assert Popover._body_global is not HitThroughMixin._body_global
+        assert Tooltip._body_global is not HitThroughMixin._body_global
+
+    def test_popover_body_excludes_the_shadow_and_arrow_margins(self, qtbot):
+        host = _host(qtbot)
+        btn = _put(host, Button("top"), 200, 40)
+        pop = Popover(placement="bottom")
+        qtbot.addWidget(pop)
+        pop.set_content(QLabel("body"))
+        pop.attach(btn)
+        pop.open(btn)
+        qtbot.wait(400)
+        ml, mt, mr, mb = pop.frame_margins()
+        g = pop.geometry()
+        assert pop._body_global() == QRect(
+            g.x() + ml, g.y() + mt, g.width() - ml - mr, g.height() - mt - mb
+        )
+        pop.close()
+
+
+# ============================================================
+# 点击外部关闭：不能同时开两个（回归：_body_global 缺失时外部点击会抛异常）
+# ============================================================
+class TestOutsideClick:
+    def _two_dropdowns(self, qtbot):
+        host = _host(qtbot, w=700)
+        items = ["Item A", "Item B", "Item C"]
+        a = Dropdown(trigger=Button("a"), items=items, placement="bottom-start")
+        b = Dropdown(trigger=Button("b"), items=items, placement="bottom-start")
+        _put(host, a, 40, 60)
+        _put(host, b, 300, 60)
+        qtbot.wait(30)
+        return host, a, b
+
+    def test_opening_the_second_closes_the_first(self, qtbot):
+        host, a, b = self._two_dropdowns(qtbot)
+        _click(qtbot, host, a._trigger)
+        assert a.is_open() and not b.is_open()
+        _click(qtbot, host, b._trigger)
+        assert b.is_open() and not a.is_open()
+        _click(qtbot, host, a._trigger)
+        assert a.is_open() and not b.is_open()
+
+    def test_clicking_blank_space_closes_everything(self, qtbot):
+        host, a, b = self._two_dropdowns(qtbot)
+        _click(qtbot, host, a._trigger)
+        QTest.mouseClick(
+            host.windowHandle(),
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+            QPoint(500, 380),
+        )
+        qtbot.wait(450)
+        assert not a.is_open() and not b.is_open()
+
+    def test_rapid_alternating_clicks_never_leave_two_open(self, qtbot):
+        host, a, b = self._two_dropdowns(qtbot)
+        for i in range(4):
+            _click(qtbot, host, a._trigger if i % 2 == 0 else b._trigger)
+            assert int(a.is_open()) + int(b.is_open()) <= 1

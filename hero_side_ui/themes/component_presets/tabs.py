@@ -6,7 +6,7 @@
 TABS_SIZES = {
     "sm": {
         "tab_height": 28,
-        "tab_font_size": 12,
+        "tab_font_size": 13,
         "tab_padding_x": 12,
         "tab_padding_y": 4,
         "list_padding": 4,
@@ -38,7 +38,7 @@ TABS_SIZES = {
     },
     "lg": {
         "tab_height": 36,
-        "tab_font_size": 15,
+        "tab_font_size": 16,
         "tab_padding_x": 12,
         "tab_padding_y": 4,
         "list_padding": 4,

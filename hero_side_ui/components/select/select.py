@@ -221,7 +221,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             radius="md",
             backdrop="transparent",
             trigger_scale_on_open=False,
-            allow_flip=False,
+            allow_flip=True,  # 优先向下；窗口内下方放不下最小列表时才翻到上方
             disable_animation=disable_animation,
             theme=theme,
         )

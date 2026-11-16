@@ -31,10 +31,10 @@ from PySide6.QtWidgets import (
 
 from ...animation import tween_property
 from ...core import ThemeProvider
+from ...core.shadow_paint import layers_for, paint_inset, paint_shadow, tier_margin
 from ...themes import (
     RADIUS,
     TOAST_SEVERITY_ICONS,
-    TOAST_SHADOWS,
     TOAST_SPEC,
 )
 from ...utils import load_svg_icon, safe_delete
@@ -255,9 +255,8 @@ class Toast(QWidget):
 
     def _shadow_pad(self) -> int:
         """卡片四周为阴影（及关闭按钮外溢）预留的空间。"""
-        cfg = TOAST_SHADOWS.get(self._shadow, TOAST_SHADOWS["sm"])
         overhang = TOAST_SPEC["close"] // 2 + 2
-        return max(cfg["blur"] + abs(cfg["offset_y"]) + 2, overhang)
+        return max(tier_margin(self._shadow), overhang)
 
     @property
     def pad_top(self) -> int:
@@ -406,7 +405,7 @@ class Toast(QWidget):
             painter.drawPixmap(0, 0, self._fade_pixmap)
             return
 
-        cfg = TOAST_SHADOWS.get(self._shadow, TOAST_SHADOWS["sm"])
+        layers = layers_for(self._shadow, self._theme)
         rect = self._content_rect()
         if rect.width() <= 0 or rect.height() <= 0:
             return
@@ -415,24 +414,14 @@ class Toast(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing, True)
         radius = self._resolve_radius()
 
-        # 1) 阴影：多层半透明，越外越淡
-        if cfg["layers"] > 0:
-            painter.save()
-            painter.setPen(Qt.PenStyle.NoPen)
-            for i in range(cfg["layers"]):
-                t = (i + 1) / cfg["layers"]
-                grow = cfg["blur"] * (1 - t) + 1
-                off = cfg["offset_y"] * (1 - t)
-                painter.setBrush(QColor(0, 0, 0, int(cfg["alpha"] * t)))
-                painter.drawRoundedRect(
-                    rect.adjusted(-grow, -grow + off, grow, grow + off), radius, radius
-                )
-            painter.restore()
+        # 1) 阴影：公共阴影（多层预合成 + 九宫格缓存）
+        paint_shadow(painter, QRectF(rect), radius, layers)
 
         # 2) 主体背景 + 边框
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(QColor(self._styles["base_bg"]))
         painter.drawRoundedRect(rect, radius, radius)
+        paint_inset(painter, QRectF(rect), radius, layers)
 
         bw = self._styles["border_width"]
         if bw > 0 and self._styles["border_color"]:

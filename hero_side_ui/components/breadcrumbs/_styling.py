@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_foreground
 
 
 def _qcolor(hex_color: str, alpha: float = 1.0) -> QColor:
@@ -29,9 +30,9 @@ def _foreground(theme: str) -> str:
         theme: 主题名。
 
     Returns:
-        暗色 #ffffff，亮色 #000000。
+        foreground 取值的当前值。
     """
-    return "#ffffff" if theme == "dark" else "#000000"
+    return get_foreground(theme)
 
 
 def color_base(color: str, theme: str) -> str:

@@ -19,6 +19,8 @@ from PySide6.QtWidgets import (
 )
 
 from ..._shared.overlays import Backdrop
+from ..._shared.overlays.bounds import clip_to_host
+from ..._shared.overlays.hit_test import HitThroughMixin
 from ...animation import (
     FadeScaleAnimation,
     PaddingSqueezeAnimation,
@@ -44,6 +46,7 @@ class Popover(
     _PopoverPaintMixin,
     _PopoverGeometryMixin,
     _PopoverTriggerMixin,
+    HitThroughMixin,  # 紧挨 QWidget：_body_global 由前面的 _PopoverGeometryMixin 提供
     QWidget,
 ):
     """HeroUI 风格 Popover。
@@ -84,7 +87,7 @@ class Popover(
             color: 底色主题色名（default/primary/...）。
             size: 尺寸档位（sm/md/lg）。
             radius: 圆角档位（none/sm/md/lg/full）。
-            shadow: 阴影档位（对应 POPOVER_SHADOWS 配置键）。
+            shadow: 阴影档位 sm / md / lg / none（公共阴影配置）。
             placement: 弹出方向（12 种 placement 之一）。
             backdrop: 遮罩类型 transparent/opaque/blur。
             arrow: 是否显示指向 trigger 的箭头。
@@ -532,6 +535,25 @@ class Popover(
             纯文字模式下曾用 pixmap 代理缩放隐藏真实内容，此处 end() 恢复。
         """
         self._scale_proxy.end()
+
+    def _body_local(self):
+        """可见主体（不含阴影与箭头留白）在窗口内的矩形。"""
+        ml, mt, mr, mb = self._frame_margins()
+        return self.rect().adjusted(ml, mt, -mr, -mb)
+
+    def _update_clip(self):
+        """按宿主窗口客户区裁掉超出的部分。"""
+        clip_to_host(self, getattr(self, "_near", None) or getattr(self, "_trigger", None))
+
+    def moveEvent(self, event):
+        """位置变化后重算裁剪区域。"""
+        super().moveEvent(event)
+        self._update_clip()
+
+    def resizeEvent(self, event):
+        """尺寸变化后重算裁剪区域。"""
+        super().resizeEvent(event)
+        self._update_clip()
 
     def hideEvent(self, event):
         """保险：无论出于什么原因 hide 了（Qt 内部的切窗口等），

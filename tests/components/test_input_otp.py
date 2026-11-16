@@ -229,7 +229,7 @@ class TestVisualTokens:
         otp = InputOtp(variant="bordered", color="primary", theme="light")
         qtbot.addWidget(otp)
         s = otp._segment_styles()
-        assert s["bg"] == "#ffffff"
+        assert s["bg"] == "#FAFBFD"
         assert s["border"] == "#99c7fb"
         assert s["border_w"] == 2
         assert s["text"] == "#006FEE"

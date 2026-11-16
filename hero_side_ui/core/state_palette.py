@@ -11,6 +11,7 @@ from typing import Literal
 from PySide6.QtGui import QColor
 
 from ..themes import HEROUI_COLORS
+from ..themes.theme_values import get_color_foreground, get_foreground
 
 __all__ = ["Color", "State", "StatePalette", "Theme", "Variant"]
 
@@ -164,22 +165,22 @@ class StatePalette:
 
         if variant == "solid":
             if color == "default":
-                return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
-            return QColor("#FFFFFF")
+                return QColor(get_foreground(theme))
+            return QColor(get_color_foreground(color, theme))
 
         if variant == "shadow":
             if color == "default":
-                return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
-            return QColor("#FFFFFF")
+                return QColor(get_foreground(theme))
+            return QColor(get_color_foreground(color, theme))
 
         if variant == "flat":
             if color == "default":
-                return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
+                return QColor(get_foreground(theme))
             return QColor(palette[500] if theme == "light" else palette[400])
 
         if variant == "faded":
             if color == "default":
-                return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
+                return QColor(get_foreground(theme))
             return QColor(palette[500] if theme == "light" else palette[400])
 
         if variant == "bordered":

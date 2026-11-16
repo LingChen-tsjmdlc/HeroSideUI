@@ -22,6 +22,7 @@ from ._layout import _TextareaLayoutMixin
 from ._resize_grip import _ResizeGrip
 from ._styling import _TextareaStylingMixin
 from ._text_edit import _TextEdit
+from ...themes.colors import HEROUI_COLORS
 
 
 # ============================================================
@@ -343,8 +344,8 @@ class Textarea(
         )
 
         # label 颜色（动画插值起止）
-        self._label_color_resting = QColor("#a1a1aa")
-        self._label_color_floated = QColor("#71717a")
+        self._label_color_resting = QColor(HEROUI_COLORS["default"][400])
+        self._label_color_floated = QColor(HEROUI_COLORS["default"][500])
 
         self._relayout_for_label_placement()
 

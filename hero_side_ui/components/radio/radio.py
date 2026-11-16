@@ -15,6 +15,7 @@ from PySide6.QtWidgets import QWidget
 
 from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_content_background, get_foreground
 from ._base import VALID_COLORS, VALID_SIZES, VALID_VARIANTS, RadioBase
 
 
@@ -192,7 +193,7 @@ class Radio(RadioBase):
         hover_bg = QColor(dc[700] if is_dark else dc[100])
 
         # label / description
-        label_color = QColor("#ecedee" if is_dark else "#11181c")
+        label_color = QColor(get_foreground(self._theme))
         desc_color = QColor(dc[400] if is_dark else dc[400])
 
         if self._is_invalid:
@@ -211,8 +212,8 @@ class Radio(RadioBase):
         dc = HEROUI_COLORS["default"]
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
 
-        # bg-content1 ≈ default-50（亮）/ default-900（暗）
-        card_bg = QColor("#ffffff" if not is_dark else dc[900])
+        # bg-content1：内容面底色
+        card_bg = QColor(get_content_background(self._theme))
         # hover: bg-content2 ≈ default-100 / default-800
         card_bg_hover = QColor(dc[100] if not is_dark else dc[800])
         # 透明边框默认；选中时使用主色

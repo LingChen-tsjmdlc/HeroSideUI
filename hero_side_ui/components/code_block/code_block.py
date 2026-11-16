@@ -65,7 +65,7 @@ class CodeBlock(QWidget):
         font_size:       代码字号(px)；None 用默认（CODE_BLOCK_SPEC["font_size"]）
         tabs:            多 tab 列表，每项 dict 含 name/code，可选 language/highlight_lines；传了 tabs 则忽略 code/filename
         show_line_numbers: 是否显示行号（自动换行时依然保留行号）
-        theme:           "auto" / "light" / "dark"，代码区底色随主题走 Tailwind neutral
+        theme:           "auto" / "light" / "dark"，代码区底色随主题走 default 色阶
     """
 
     def __init__(
@@ -266,7 +266,7 @@ class CodeBlock(QWidget):
         """外壳底色。
 
         Returns:
-            按主题取 neutral 色阶的 QColor。
+            按主题取 default 色阶的 QColor。
         """
         shade = (
             CODE_BLOCK_SPEC["shell_bg_shade_dark"]

@@ -14,7 +14,7 @@ CHECKBOX_SIZES = {
         "box": 20,
         "icon_w": 16,
         "icon_h": 12,
-        "label_font_size": 14,
+        "label_font_size": 13,
         "gap": 8,
         "border_width": 2,
         "box_radius_ratio": 0.6,

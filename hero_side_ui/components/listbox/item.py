@@ -540,7 +540,7 @@ class ListboxItem(QAbstractButton):
         self._shortcut_label.setStyleSheet(
             f"color: {StatePalette.text_description(self._theme).name()};"
             f" border: 1px solid {StatePalette.shortcut_border(self._theme).name()};"
-            f" border-radius: 4px;"
+            f" border-radius: {RADIUS['sm']};"
             f" padding: 0 4px;"
             f" background: transparent;"
         )

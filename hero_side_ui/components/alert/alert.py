@@ -9,6 +9,7 @@ from PySide6.QtWidgets import QHBoxLayout, QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import RADIUS
+from ...themes.colors import HEROUI_COLORS
 from ...utils import load_svg_icon, safe_delete
 from ..button import Button
 from ..text import Text
@@ -245,7 +246,7 @@ class Alert(QWidget):
         if name is None:
             self._icon_label.setText("")
             return
-        clr = getattr(self, "_icon_color", "#71717a")
+        clr = getattr(self, "_icon_color", HEROUI_COLORS["default"][500])
         pix = load_svg_icon(name, size=_ICO_SIZE, color=clr)
         self._icon_label.clear()
         size = _ICO_SIZE

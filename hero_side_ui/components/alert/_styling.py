@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_color_foreground
 from ...utils import hex_to_rgba
 
 
@@ -41,17 +42,13 @@ def _fg_on_solid(color_name: str, is_dark: bool) -> str:
     """求 solid 变体的前景色，保证实色底上文字可读。
 
     Args:
-        color_name: 语义色名；warning 底色过亮，需改用黑字。
-        is_dark: 是否深色主题，仅影响 default 分支。
+        color_name: 语义色名。
+        is_dark: 是否深色主题。
 
     Returns:
         十六进制前景色字符串。
     """
-    if color_name == "warning":
-        return "#000000"
-    if color_name == "default":
-        return "#d4d4d8" if is_dark else "#ffffff"
-    return "#ffffff"
+    return get_color_foreground(color_name, "dark" if is_dark else "light")
 
 
 # ---- solid ----

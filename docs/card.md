@@ -73,14 +73,16 @@ Card **不帮你决定尺寸**。你写多大就多大，shadow 永远画在卡�
 | `setMinimumWidth` / `setMaximumWidth` 等 | 限制自适应范围           | `card.setMinimumWidth(280)`   |
 | 不调尺寸 API                             | 由内容 sizeHint 自然撑开 | —                             |
 
-这些 setter 在 Card 内部被**代理到内层 `_content`**，所以你写的数字就是**可视 Card 尺寸**——Card 外壳会自动向外扩 `2 × shadow_margin` 来容纳阴影空间。换句话说：
+这些 setter 直接作用在 Card 自己身上，你写的数字就是**可视 Card 尺寸**，点击、悬停的范围也恰好是这块区域。阴影**不占布局位置**（和 CSS 的 `box-shadow` 一样），所以：
 
 ```python
 card = Card(shadow="lg")
 card.setFixedWidth(360)
-# 可视 Card 宽度 = 360（不管 shadow 多大）
-# 外壳实际宽度 = 360 + 2×shadow_margin（例如 lg 下 ≈ 410）
+# 可视 Card 宽度 = 360，不管 shadow 是 sm / md / lg
+# 并排的几张 Card 间距由布局的 spacing 决定，不随阴影档位变化
 ```
+
+阴影不会被包着 Card 的普通容器裁掉，只有**滚动区的视口**和**窗口**会裁（和 CSS 的 `overflow` 一致）。Card 贴着窗口边缘或滚动区边缘时，那一侧的阴影会被截断；需要完整显示就给外层留出边距，lg 档向外约 120px。
 
 ### sizePolicy
 
@@ -95,14 +97,16 @@ Card 的 sizePolicy 默认：
 
 ## shadow 可选值
 
-| 值     | 说明   | 模糊半径 | 偏移 Y | 不透明度 |
-| ------ | ------ | -------- | ------ | -------- |
-| `none` | 无阴影 | 0        | 0      | 0        |
-| `sm`   | 小阴影 | 8px      | 1px    | 6%       |
-| `md`   | 中阴影 | 14px     | 4px    | 8%       |
-| `lg`   | 大阴影 | 30px     | 8px    | 12%      |
+| 值     | 说明   |
+| ------ | ------ |
+| `none` | 无阴影 |
+| `sm`   | 小阴影 |
+| `md`   | 中阴影 |
+| `lg`   | 大阴影 |
 
-阴影由 `paintEvent` 用多层半透明圆角矩形**自绘**实现（没有使用 `QGraphicsDropShadowEffect`）。这样做是为了避免和子控件自带的 `QGraphicsEffect`（如 Button 的 `PressScaleEffect`）嵌套渲染冲突，否则子控件会整片消失。
+三档的具体数值来自全库公共的阴影配置（官方 HeroUI 的 `shadow-small / medium / large`，亮暗各一套，每档多层叠加），可在 `HeroSideUIProvider.setup(shadow=...)` 里整体改，详见 [theme-customization.md](theme-customization.md)。
+
+阴影由一个**兄弟阴影层**绘制：模糊只在缓存未命中时做一次，之后每次绘制只是贴图（没有使用 `QGraphicsDropShadowEffect`，避免和子控件自带的 `QGraphicsEffect`，如 Button 的 `PressScaleEffect`，嵌套渲染冲突）。
 
 ---
 
@@ -194,6 +198,7 @@ card.pressed.connect(lambda: print("Card pressed!"))
 - **水波纹**：点击位置扩散（`RippleOverlay`）
 - **缩放动画**：按下 97%、松开复位（`PressScaleEffect`，对齐 HeroUI 的 `scale-[0.97]`）
 - **手形光标**
+- **点击文字也能触发**：标题、正文里的 `Text` / `QLabel` 会照常收到自己的鼠标事件（可选中文字），卡片同时收到按压；不用再点卡片空白处。后置装配的文字、`set_is_pressable(True)` 之后新增的内容也一样。卡片里本来就可交互的控件（Button、链接等）仍按自己的方式响应。
 - **`pressed` 信号**：鼠标松开且仍在 Card 范围内时触发
 
 ### 禁用 (Disabled)
@@ -286,7 +291,7 @@ card.set_full_width(True)
 
 ```
 QWidget
-  ├── Card           (外壳：paintEvent 自绘阴影 + 尺寸 setter 代理)
+  ├── Card           (外壳：与可视卡片一样大；阴影由 ShadowLayer 负责)
   │     └── _content (内层：QSS 背景、QPropertyAnimation hover、装配槽位)
   ├── CardHeader
   ├── CardBody
@@ -295,9 +300,9 @@ QWidget
 
 `Card` 对外就是一个普通 `QWidget`，但内部使用**外壳 + 内层 `_content` 双层结构**：
 
-- 外壳负责 `paintEvent` 自绘阴影；
+- 外壳不画任何东西，也不留阴影空间，阴影由 `ShadowLayer`（挂在最近的滚动区视口或窗口下，叠在 Card 上方，不进布局、鼠标穿透；Card 本体区域已挖空，不会被盖住）绘制；
 - 内层 `_content` 承载 QSS 背景、圆角、边框、`hover_progress` 动画、以及全部装配槽位；
-- 所有尺寸 setter 被代理到 `_content`，外壳自动向外扩出阴影空间。
+- 外壳与 `_content` 永远一样大（没有阴影留白，也没有尺寸代理）。
 
 这样做是为了避免 `QGraphicsDropShadowEffect` 离屏渲染和子控件自带 `QGraphicsEffect`（如 Button 的按压缩放）嵌套冲突。
 

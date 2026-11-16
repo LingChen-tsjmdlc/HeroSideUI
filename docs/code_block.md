@@ -63,8 +63,8 @@ info 串首词作为语言标记，无需额外配置。
 
 ## 设计说明
 
-- 代码区底色**随主题切换**，用 Tailwind neutral 色系：亮色 `neutral-100`（`#f5f5f5`）、
-  暗色 `neutral-800`（`#262626`）。标题栏 / 外壳底色走 `default` 色阶，同样随主题亮暗。
+- 代码区底色**随主题切换**，走 `default` 色阶：外壳底色亮色取 `default-50`、暗色取 `default-900`，
+  标题栏同样随主题亮暗。
 - 语法高亮配色见 `themes/component_presets/code_block.py` 的 `CODE_BLOCK_SYNTAX`（按主题分
   `light`/`dark` 两套，取 One Light / One Dark 的文字色），按 Pygments token 类型映射到语义色。
 - 代码字体通过 `QFont` + `setFont` 落地——Qt 富文本 `<pre>` 的 CSS `font-family`

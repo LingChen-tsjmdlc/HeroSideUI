@@ -3,7 +3,9 @@
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 
-from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
+from ...themes import HEROUI_COLORS
+from ...core.shadow_paint import layers_for, paint_inset, paint_shadow
+from ...themes.theme_values import get_color_foreground, get_foreground, get_popup_background
 from ._constants import ARROW_INSET, ARROW_SIZE
 
 
@@ -17,11 +19,10 @@ class _PopoverPaintMixin:
         """解析当前 popover 底色。
 
         Returns:
-            QColor: default 在亮/暗下取固定灰阶；其余取调色板 500 色。
+            QColor: default 取 popup_background；其余取调色板 500 色。
         """
-        is_dark = self._theme == "dark"
         if self._color == "default":
-            return QColor("#ffffff" if not is_dark else "#27272a")
+            return QColor(get_popup_background(self._theme))
         c = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
         return QColor(c[500])
 
@@ -37,14 +38,11 @@ class _PopoverPaintMixin:
         """解析内容文字色（供裸 QLabel 反色使用）。
 
         Returns:
-            QColor: 默认主题取近黑/近白；warning 取纯黑；彩色取纯白。
+            QColor: 默认色取 foreground；其余取该语义色的实色字色。
         """
-        is_dark = self._theme == "dark"
         if self._color == "default":
-            return QColor("#11181c" if not is_dark else "#ecedee")
-        if self._color == "warning":
-            return QColor("#000000")
-        return QColor("#ffffff")
+            return QColor(get_foreground(self._theme))
+        return QColor(get_color_foreground(self._color, self._theme))
 
     # ============================================================
     # 圆角
@@ -112,33 +110,21 @@ class _PopoverPaintMixin:
             return
 
         m = self._effective_frame_margins()
-        cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
+        layers = layers_for(self._shadow, self._theme)
         bg = self._bg_color()
         radius = self._resolve_radius()
 
         # 内容矩形（即 frame 内层）
         content_rect = QRectF(m[0], m[1], self.width() - m[0] - m[2], self.height() - m[1] - m[3])
 
-        # ---- 1) 阴影：多层半透明，越往外越透明 ----
-        if cfg["layers"] > 0:
-            painter.save()
-            painter.setPen(Qt.PenStyle.NoPen)
-            # 从外到内画 layers 层，外层扩散大但透明度低
-            for i in range(cfg["layers"]):
-                t = (i + 1) / cfg["layers"]  # 0..1，内→外
-                grow = cfg["blur"] * (1 - t) + 1
-                off = cfg["offset_y"] * (1 - t)
-                rect = content_rect.adjusted(-grow, -grow + off, grow, grow + off)
-                # alpha 渐进：外层最淡（t 小），内层最浓（t→1）
-                alpha = int(cfg["alpha"] * t)
-                painter.setBrush(QColor(0, 0, 0, alpha))
-                painter.drawRoundedRect(rect, radius, radius)
-            painter.restore()
+        # ---- 1) 阴影：公共阴影（多层预合成 + 九宫格缓存）----
+        paint_shadow(painter, content_rect, radius, layers)
 
-        # ---- 2) 主体背景 ----
+        # ---- 2) 主体背景 + 暗色内描边 ----
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(bg)
         painter.drawRoundedRect(content_rect, radius, radius)
+        paint_inset(painter, content_rect, radius, layers)
 
         # ---- 3) arrow（仅当 arrow=True）----
         if self._arrow:

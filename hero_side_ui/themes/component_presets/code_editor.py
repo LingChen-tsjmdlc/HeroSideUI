@@ -10,7 +10,7 @@ CODE_EDITOR_SYNTAX = CODE_BLOCK_SYNTAX
 # 外壳 / 边框 / 代码区规格
 CODE_EDITOR_SPEC = {
     "radius": 12,  # 外壳圆角（编辑器比展示块略收敛）
-    "font_size": 14,  # 默认代码字号(px)
+    "font_size": 13,  # 默认代码字号(px)
     "border_width": 1,  # 外壳描边宽
     "border_shade": 300,  # 亮色描边取 default 色阶 300
     "border_shade_dark": 700,  # 暗色描边取 default 色阶 700

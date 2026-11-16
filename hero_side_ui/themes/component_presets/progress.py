@@ -8,8 +8,8 @@ PROGRESS_SIZES = {
     },
     "md": {
         "track_height": 12,
-        "label_font_size": 14,
-        "value_font_size": 14,
+        "label_font_size": 13,
+        "value_font_size": 13,
     },
     "lg": {
         "track_height": 20,
@@ -28,13 +28,13 @@ CIRCULAR_PROGRESS_SIZES = {
     "md": {
         "diameter": 44,
         "stroke_width": 5.0,
-        "label_font_size": 14,
-        "value_font_size": 11,
+        "label_font_size": 13,
+        "value_font_size": 10,
     },
     "lg": {
         "diameter": 56,
         "stroke_width": 7.0,
-        "label_font_size": 15,
+        "label_font_size": 16,
         "value_font_size": 13,
     },
 }

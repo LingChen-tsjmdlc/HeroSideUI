@@ -13,6 +13,7 @@ from ...core import make_text_qfont
 from ...utils import aligned_color_pair
 from . import _palette as pal
 from ._grid import CellState
+from ...themes.theme_values import get_font_px
 
 _HOVER_ANIM_MS = 150
 
@@ -36,7 +37,7 @@ class _CalendarCell(QAbstractButton):
         self._cs: CellState | None = None
         self._color = "primary"
         self._theme = "light"
-        self._font_size = 14
+        self._font_size = get_font_px("sm")
         self._hovered = False
 
         # hover 背景补间：0=无底，1=完全 hover 底

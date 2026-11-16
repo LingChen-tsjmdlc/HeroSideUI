@@ -3,7 +3,7 @@
 # 字号 (px) —— 与 SIZE_MAP 对齐
 LINK_SIZES = {
     "sm": {
-        "font_size": 14,  # text-small
+        "font_size": 13,  # text-small
         "icon_size": 14,
         "block_pad_x": 8,  # px-2
         "block_pad_y": 4,  # py-1
@@ -15,7 +15,7 @@ LINK_SIZES = {
         "block_pad_y": 4,
     },
     "lg": {
-        "font_size": 18,  # text-large
+        "font_size": 19,  # text-large
         "icon_size": 18,
         "block_pad_x": 8,
         "block_pad_y": 4,

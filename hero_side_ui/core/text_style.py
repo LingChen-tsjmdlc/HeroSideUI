@@ -6,10 +6,12 @@ Text 与自绘文字组件共用，保证颜色口径与字体来源全项目唯
 from __future__ import annotations
 
 import re
+from collections.abc import Mapping
 
 from PySide6.QtGui import QColor, QFont
 
 from ..themes import HEROUI_COLORS
+from ..themes.theme_values import FONT_TIERS, get_font_px, get_foreground
 from .font_provider import make_qfont
 
 # ============================================================
@@ -21,15 +23,10 @@ SizeInput = str | int | float
 WeightInput = str | int | QFont.Weight
 
 # ============================================================
-# Tailwind text-* 字号 token
+# text-* 字号档位名：xs~xl 取 font_size 配置的当前值，2xl 及以上为常量
 # ============================================================
 
-SIZE_MAP: dict = {
-    "xs": 12,
-    "sm": 14,
-    "md": 16,
-    "lg": 18,
-    "xl": 20,
+_FIXED_SIZES = {
     "2xl": 24,
     "3xl": 30,
     "4xl": 36,
@@ -39,6 +36,25 @@ SIZE_MAP: dict = {
     "8xl": 96,
     "9xl": 128,
 }
+
+
+class _SizeMap(Mapping):
+    """字号档位名的只读视图：xs~xl 每次读取都取当前 font_size 档位。"""
+
+    def __getitem__(self, key: str) -> int:
+        if key in FONT_TIERS:
+            return get_font_px(key)
+        return _FIXED_SIZES[key]
+
+    def __iter__(self):
+        yield from FONT_TIERS
+        yield from _FIXED_SIZES
+
+    def __len__(self) -> int:
+        return len(FONT_TIERS) + len(_FIXED_SIZES)
+
+
+SIZE_MAP = _SizeMap()
 
 # ============================================================
 # 6 档物理字重 token（与思源 VF 原生 instance 一一对应）
@@ -59,10 +75,24 @@ WEIGHT_MAP: dict = {
 # 默认正文色（不传 color 时使用）
 # ============================================================
 
-DEFAULT_TEXT_COLORS: dict = {
-    "light": "#27272a",  # default-800
-    "dark": "#e4e4e7",  # default-200
-}
+class _DefaultTextColors(Mapping):
+    """主题默认正文色的只读视图：值取自 foreground 取值，随 setup 配置变化。"""
+
+    _KEYS = ("light", "dark")
+
+    def __getitem__(self, theme: str) -> str:
+        if theme not in self._KEYS:
+            raise KeyError(theme)
+        return get_foreground(theme)
+
+    def __iter__(self):
+        return iter(self._KEYS)
+
+    def __len__(self) -> int:
+        return len(self._KEYS)
+
+
+DEFAULT_TEXT_COLORS = _DefaultTextColors()
 
 # ============================================================
 # 颜色解析
@@ -252,12 +282,12 @@ def selection_palette(
         bg.setAlphaF(0.35 if theme == "dark" else 0.22)
     # ---- 选中文字色 ----
     if force_selection_text_color:
-        fg = QColor("#18181b" if theme == "light" else "#fafafa")
+        fg = QColor(get_foreground(theme))
     else:
         if text_color is not None:
             fg = QColor(text_color)
         else:
-            fg = QColor(DEFAULT_TEXT_COLORS.get(theme, "#27272a"))
+            fg = QColor(DEFAULT_TEXT_COLORS.get(theme, DEFAULT_TEXT_COLORS["light"]))
     return bg, fg
 
 

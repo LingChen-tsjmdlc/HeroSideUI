@@ -68,7 +68,7 @@ img = Image(src=src, height=120)  # 宽度加载完成后按原图比例推算
 img = Image(src=src, shadow="md")
 ```
 
-可选值：`none` / `sm` / `md` / `lg`，底层使用 `QGraphicsDropShadowEffect`。
+可选值：`none` / `sm` / `md` / `lg`，使用全库公共的阴影（不占布局位置，`width` / `height` 就是图像可视尺寸）。阴影不会被包着 Image 的普通容器（比如图片加说明文字的小容器）裁掉，只有滚动区视口和窗口会裁，贴边的一侧需要时给外层留边距。
 
 ### Hover 放大（isZoomed）
 
@@ -165,6 +165,6 @@ img = Image(src=src, remove_wrapper=True)
 - **fade-in**：data-loaded 后图像 opacity 0→1，300ms `OutCubic`。
 - **isZoomed**：300ms `OutCubic` 缩放至 `zoom_factor`（默认 1.25，可配）。
 - **isBlurred**：副本被缩到 200px 内做 saturate + alpha 预处理后再 `QGraphicsBlurEffect`，默认半径 10px，可通过 `blur_amount` 倍率调节。
-- **shadow**：`QGraphicsDropShadowEffect`，参数表 `IMAGE_SHADOWS`（`themes.component_presets.image`）。
+- **shadow**：公共阴影配置（`HeroSideUIProvider.setup(shadow=...)` 可配），由兄弟阴影层绘制；`is_blurred` 的模糊副本溢出留白仍在 Image 自身内部。
 - **Skeleton**：完全复用项目 `Skeleton` 组件，加载完成 `set_loaded(True)` 触发 300ms 交叉淡入淡出。
 - **远程 URL 节流**：进程级单例 `_UrlRequestQueue` 把所有 `http(s)` 请求串行化，相邻两次实际发起的间隔随机 1.0–1.5s。本地路径 / `QPixmap` / `QImage` 不受影响。

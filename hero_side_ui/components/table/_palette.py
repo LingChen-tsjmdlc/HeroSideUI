@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_content_background, get_foreground
 
 __all__ = [
     "cell_text",
@@ -28,7 +29,7 @@ def wrapper_bg(theme: str) -> QColor:
     """返回表体实心底色。
 
     Args:
-        theme: 主题名；light 取白色，dark 取 default-900。
+        theme: 主题名；取 content_background。
 
     Returns:
         恒为不透明的 QColor 底色。
@@ -36,8 +37,7 @@ def wrapper_bg(theme: str) -> QColor:
     Note:
         滚动区内必须铺不透明底，否则半透明行条叠在未清空缓冲上会黑底加重影。
     """
-    dc = HEROUI_COLORS["default"]
-    return QColor("#ffffff") if theme == "light" else QColor(dc[900])
+    return QColor(get_content_background(theme))
 
 
 def _pal(color: str) -> dict:
@@ -112,7 +112,7 @@ def selected_text(color: str, theme: str) -> QColor:
     """选中行字色（td data-selected text-*）。"""
     if color == "default":
         # default-foreground：light 深字 / dark 浅字
-        return QColor("#000000") if theme == "light" else QColor("#ffffff")
+        return QColor(get_foreground(theme))
     pal = _pal(color)
     if color in ("success", "warning"):
         return QColor(pal[600]) if theme == "light" else QColor(pal[400])

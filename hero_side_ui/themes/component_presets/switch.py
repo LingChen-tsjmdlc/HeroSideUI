@@ -11,7 +11,7 @@ SWITCH_SIZES = {
         "pressed_shift": 12,  # 按压且选中时 thumb 左边距 -- ml-3
         "content_pad": 6,  # startContent/endContent 距左/右边距 (start/end-1.5)
         "label_font_size": 13,  # text-small
-        "icon_font_size": 12,  # text-tiny
+        "icon_font_size": 13,  # text-tiny
         "label_gap": 8,  # label 与 wrapper 的间距 (ms-2)
     },
     "md": {
@@ -23,8 +23,8 @@ SWITCH_SIZES = {
         "selected_shift": 20,  # ms-5
         "pressed_shift": 16,  # ml-4
         "content_pad": 6,
-        "label_font_size": 14,
-        "icon_font_size": 14,
+        "label_font_size": 13,
+        "icon_font_size": 13,
         "label_gap": 8,
     },
     "lg": {

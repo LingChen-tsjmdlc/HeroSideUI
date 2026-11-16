@@ -24,6 +24,7 @@ from ...core.text_style import (
     SizeInput,
     WeightInput,
 )
+from ...themes.colors import HEROUI_COLORS
 
 # ============================================================
 # Text 组件
@@ -388,7 +389,7 @@ class Subtitle(Text):
         """以 sm 字号创建副标题，未指定颜色时按主题取灰色。"""
         if color is None:
             theme_now = self._resolve_theme(theme)
-            color = "#71717a" if theme_now == "light" else "#a1a1aa"
+            color = HEROUI_COLORS["default"][500 if theme_now == "light" else 400]
         super().__init__(
             text,
             size="sm",  # 14px
@@ -417,7 +418,7 @@ class Caption(Text):
         """以 xs 字号创建辅助提示，未指定颜色时按主题取灰色。"""
         if color is None:
             theme_now = self._resolve_theme(theme)
-            color = "#a1a1aa" if theme_now == "light" else "#71717a"
+            color = HEROUI_COLORS["default"][400 if theme_now == "light" else 500]
         super().__init__(
             text,
             size="xs",  # 12px

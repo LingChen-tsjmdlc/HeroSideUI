@@ -5,10 +5,10 @@ embedded 为 ancestor 局部坐标）。
 from __future__ import annotations
 
 from PySide6.QtCore import QPoint, QRect
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtWidgets import QWidget
 
-from ...themes import POPOVER_SHADOWS
+from ..._shared.overlays.bounds import overflow, popup_area
+from ...core.shadow_paint import tier_margin
 from ._constants import ARROW_SIZE
 
 __all__ = [
@@ -23,8 +23,7 @@ def frame_margins(
     shadow: str, show_arrow: bool, actual_placement: str
 ) -> tuple[int, int, int, int]:
     """内 layout 四方向让出空间给 arrow 和阴影。返回 (left, top, right, bottom)。"""
-    cfg = POPOVER_SHADOWS.get(shadow, POPOVER_SHADOWS["sm"])
-    sm = cfg["blur"] + abs(cfg["offset_y"])
+    sm = tier_margin(shadow)
     arrow = ARROW_SIZE if show_arrow else 0
     m = [sm, sm, sm, sm]
     if actual_placement.startswith("top"):
@@ -155,28 +154,20 @@ def calc_position(
     tr_w = trigger.width()
     tr_h = trigger.height()
 
-    # 用 trigger 实际所在的 screen，而不是 primaryScreen——
-    # 多屏配置下 primaryScreen 的几何范围可能与 trigger 所在屏完全不同
-    # （例如主屏在 (0,0,1920,1080)，副屏在 (1920,0,1920,1080)，trigger 在副屏），
-    # 这时 tr_pos.x ~ 2500 永远 > primaryScreen.right=1920 → 所有 placement 都被误判
-    # 越界 → top 全 flip 到 bottom、bottom 全 flip 到 top（与"位置反了"截图完全吻合）。
-    win = trigger.window() if hasattr(trigger, "window") else None
-    win_handle = win.windowHandle() if win is not None else None
-    scr = win_handle.screen() if win_handle is not None else None
-    if scr is None:
-        scr = QGuiApplication.screenAt(tr_pos) or QGuiApplication.primaryScreen()
-    screen = scr.availableGeometry()
+    # 可用区域 = 窗口客户区 ∩ trigger 所在屏（多屏下取主屏会把副屏 trigger 误判越界）。
+    area = popup_area(trigger)
     pos = compute_pos_for(placement, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
-
-    rect = QRect(pos.x(), pos.y(), my_w, my_h)
-    if (
-        rect.left() < screen.left()
-        or rect.top() < screen.top()
-        or rect.right() > screen.right()
-        or rect.bottom() > screen.bottom()
-    ):
+    ml, mt, mr, mb = margins
+    body = QRect(pos.x() + ml, pos.y() + mt, max(1, my_w - ml - mr), max(1, my_h - mt - mb))
+    miss = overflow(body, area)
+    if miss > 0:
         flipped = flip_placement(placement)
         new_pos = compute_pos_for(flipped, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
-        return new_pos, flipped
+        new_body = QRect(
+            new_pos.x() + ml, new_pos.y() + mt, max(1, my_w - ml - mr), max(1, my_h - mt - mb)
+        )
+        # 两边都放不下取越界更少的一边；仍越界的部分由 clip_to_host 裁掉
+        if overflow(new_body, area) < miss:
+            return new_pos, flipped
 
     return pos, placement

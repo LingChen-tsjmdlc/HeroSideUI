@@ -28,7 +28,7 @@ class _ResizeGrip(QWidget):
         self.setFixedSize(14, 14)
         self.setCursor(self._cursor_for_mode())
         self.setMouseTracking(True)
-        self._line_color = QColor("#a1a1aa")  # neutral-400 默认；外部可 set_line_color
+        self._line_color = QColor("#a1a1aa")  # default-400 初值；外部可 set_line_color
 
     def _cursor_for_mode(self) -> Qt.CursorShape:
         """按拖动轴向返回对应的鼠标光标形状。"""

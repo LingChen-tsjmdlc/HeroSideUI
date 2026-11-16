@@ -12,6 +12,19 @@ from PySide6.QtWidgets import (
 )
 
 from ...animation import BackdropFade
+from ...themes.shadow import SHADOW_COLOR
+
+
+
+def _scrim(alpha: int) -> QColor:
+    """遮罩色：近黑加透明度。
+
+    Args:
+        alpha: 不透明度 0~255。
+    """
+    c = QColor(SHADOW_COLOR)
+    c.setAlpha(alpha)
+    return c
 
 
 class Backdrop(QWidget):
@@ -227,11 +240,11 @@ class Backdrop(QWidget):
 
         if self._kind == "blur" and self._blur_pixmap is not None:
             painter.drawPixmap(self.rect(), self._blur_pixmap)
-            painter.fillRect(self.rect(), QColor(0, 0, 0, 76))
+            painter.fillRect(self.rect(), _scrim(76))
         elif self._kind == "opaque":
-            painter.fillRect(self.rect(), QColor(0, 0, 0, 128))
+            painter.fillRect(self.rect(), _scrim(128))
         else:
-            painter.fillRect(self.rect(), QColor(0, 0, 0, 76))
+            painter.fillRect(self.rect(), _scrim(76))
 
     def mousePressEvent(self, event):
         """点击遮罩时发出 clicked。"""

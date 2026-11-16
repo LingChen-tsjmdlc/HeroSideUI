@@ -7,7 +7,7 @@ SLIDER_SIZES = {
         "track_thickness": 4,  # h-1 (水平) / w-1 (垂直)
         "label_font_size": 13,  # text-small
         "value_font_size": 13,
-        "mark_font_size": 12,
+        "mark_font_size": 13,
         "mark_offset": 4,  # mt-1 默认
     },
     "md": {
@@ -23,9 +23,9 @@ SLIDER_SIZES = {
         "thumb": 28,  # w-7 h-7
         "inner_dot": 20,  # after:w-5 h-5
         "track_thickness": 28,  # h-7 / w-7
-        "label_font_size": 15,
-        "value_font_size": 15,
-        "mark_font_size": 14,
+        "label_font_size": 16,
+        "value_font_size": 16,
+        "mark_font_size": 13,
         "mark_offset": 8,  # mt-2
     },
 }

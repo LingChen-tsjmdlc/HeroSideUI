@@ -14,6 +14,7 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
+from ..themes.theme_values import get_color_foreground
 
 
 class _SingleRipple(QObject):
@@ -103,12 +104,12 @@ class RippleOverlay(QWidget):
 
         Args:
             parent: 需要覆盖的宿主控件。
-            color: 水波纹基色；省略时使用白色。
+            color: 水波纹基色；省略时使用实色上的近白字色。
             ripple_enabled: 是否接受新的水波纹请求。
         """
         super().__init__(parent)
         self._ripples: list[_SingleRipple] = []
-        self._color = color or QColor(255, 255, 255)
+        self._color = color or QColor(get_color_foreground("primary", "light"))
         self._enabled = ripple_enabled
 
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents)

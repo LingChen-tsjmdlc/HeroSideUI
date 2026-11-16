@@ -15,7 +15,7 @@ from hero_side_ui import Title, Subtitle, Caption, Body
 ## 基本用法
 
 ```python
-# 默认: md (14px) / normal / 跟随主题正文色 / theme="auto"
+# 默认: md (16px) / normal / 跟随主题正文色 / theme="auto"
 Text("Hello World")
 
 # Tailwind 风格的 size + weight
@@ -54,17 +54,21 @@ Text("Always dark",  theme="dark")
 | `theme`        | `"auto"` / `"light"` / `"dark"`                                | `"auto"`   | 主题模式；`auto` 自动跟随 `ThemeProvider`，硬锁不参与全局切换                        |
 | `parent`       | `QWidget \| None`                                              | `None`     | Qt 父对象                                                                            |
 
-### `size` 值表（参考 Tailwind `text-*`）
+### `size` 值表
 
-| token | 像素 | token | 像素 |
-| ----- | ---: | ----- | ---: |
-| `xs`  |   12 | `3xl` |   30 |
-| `sm`  |   13 | `4xl` |   36 |
-| `md`  |   14 | `5xl` |   48 |
-| `lg`  |   16 | `6xl` |   60 |
-| `xl`  |   18 | `7xl` |   72 |
-| `2xl` |   24 | `8xl` |   96 |
-|       |      | `9xl` |  128 |
+| token | 默认像素 | token | 像素 |
+| ----- | -------: | ----- | ---: |
+| `xs`  |       10 | `3xl` |   30 |
+| `sm`  |       13 | `4xl` |   36 |
+| `md`  |       16 | `5xl` |   48 |
+| `lg`  |       19 | `6xl` |   60 |
+| `xl`  |       22 | `7xl` |   72 |
+| `2xl` |       24 | `8xl` |   96 |
+|       |          | `9xl` |  128 |
+
+`xs` ~ `xl` 这五档是全库统一的字号档位：组件的 `sm / md / lg` 档也取同一套值，可以在 `HeroSideUIProvider.setup(font_size={"xs": 10, "sm": 13, "md": 16, "lg": 19, "xl": 22})` 里整体调整（要写满五档，整数像素，要求从小到大）。`2xl` 及以上是常量，不可配。
+
+想恢复到 Tailwind / 官方 HeroUI 的数值：`font_size={"xs": 12, "sm": 14, "md": 16, "lg": 18, "xl": 20}`。
 
 也可以直接传整数像素：`Text("Custom", size=22)`。
 
@@ -87,7 +91,7 @@ HeroSideUI 内置 VF 思源黑体只有 6 个原生 instance，只提供下面 6
 
 1. **HeroUI token**：`"primary"` / `"primary-500"` / `"default-300"` …
    - 不带数字时默认走 500 档；可用色阶 50/100/200/300/400/500/600/700/800/900。
-   - 可用色名：`default`、`primary`、`secondary`、`success`、`warning`、`danger`、`neutral`。
+   - 可用色名：`default`、`primary`、`secondary`、`success`、`warning`、`danger`。
 2. **HEX**：`"#FF8800"` (6 位 RGB)，`"#80FF8800"` (Qt 的 8 位 hex 是 `#AARRGGBB` 格式)。
    - 如果想用 RGBA，更直观的写法是 tuple `(255, 136, 0, 200)` 或 `"rgba(...)"` 字符串。
 3. **CSS rgb()/rgba()**：`"rgb(255, 0, 0)"`、`"rgba(0, 111, 238, 0.8)"`（alpha 0~1 浮点或 0~255 整数都接受）。
@@ -186,8 +190,8 @@ t_dark = Text("永远暗色", theme="dark")  # 不受 toggle 影响
 
 ```python
 Title("Welcome back")                # level=1 → 24px Bold
-Title("Section title", level=2)      # 18px Bold
-Title("Card title",   level=3)       # 16px Bold
+Title("Section title", level=2)      # 22px Bold（xl 档）
+Title("Card title",   level=3)       # 19px Bold（lg 档）
 
 Subtitle("Log in to your account.")
 Caption("Tip: click to toggle.")

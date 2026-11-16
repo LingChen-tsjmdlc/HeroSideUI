@@ -8,6 +8,7 @@ from PySide6.QtGui import QColor, QPainter, QPainterPath
 from PySide6.QtWidgets import QWidget
 
 from ._helpers import _resolve_cursor_fill
+from ...themes.shadow import SHADOW_COLOR
 
 # ============================================================
 # CursorWidget: 选中指示器（矩形填充 / 下划线）
@@ -90,7 +91,8 @@ class _CursorWidget(QWidget):
 
         # default 色（亮色 = 白）画一个 shadow-small：底部一层柔和阴影
         if self._color == "default":
-            shadow = QColor(0, 0, 0, 26 if self._theme == "light" else 0)
+            shadow = QColor(SHADOW_COLOR)
+            shadow.setAlpha(26 if self._theme == "light" else 0)
             if shadow.alpha() > 0:
                 # 简化版 shadow-small: 向下 2px、blur 3px 的轻阴影
                 for i in range(3):

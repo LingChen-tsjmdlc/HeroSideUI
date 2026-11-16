@@ -34,7 +34,9 @@ class _HostGeometryWatcher(QObject):
         if et == QEvent.Type.Move:
             # 整窗拖动：popover 与 trigger 同步平移即可
             self._owner._on_scroll_detected(0)
+            self._owner._update_clip()
         elif et == QEvent.Type.Resize:
             # 窗口缩放：layout 重排，必须完整重算位置
             self._owner._request_full_reposition()
+            self._owner._update_clip()
         return False

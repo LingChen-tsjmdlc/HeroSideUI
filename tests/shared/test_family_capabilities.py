@@ -1,8 +1,7 @@
 """家族共享能力的公开接口，以及它们的真实消费者。"""
 
 import pytest
-from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+from PySide6.QtWidgets import QScrollArea, QWidget
 
 from hero_side_ui import (
     Autocomplete,
@@ -173,16 +172,44 @@ class TestPopupHeight:
         w._refresh_popover_height()
         assert w._scroll.maximumHeight() == w._popover_max_height()
 
-    def test_available_height_subtracts_gap_and_popover_margin(self, qtbot):
-        anchor = QWidget()
-        qtbot.addWidget(anchor)
-        anchor.resize(100, 30)
+    def _anchor_in_window(self, qtbot, y: int):
+        """放在 520x420 窗口里、纵向位置为 y 的锚点。"""
+        host = QWidget()
+        host.setGeometry(60, 40, 520, 420)
+        qtbot.addWidget(host)
+        host.show()
+        anchor = QWidget(host)
+        anchor.setGeometry(100, y, 100, 30)
+        anchor.show()
+        return host, anchor
+
+    def test_available_height_is_measured_to_the_host_window_bottom(self, qtbot):
+        from hero_side_ui._shared.overlays.bounds import space_below
+
+        host, anchor = self._anchor_in_window(qtbot, 60)
         p = Popover()
         qtbot.addWidget(p)
-        bottom = QApplication.primaryScreen().availableGeometry().bottom()
-        below = anchor.mapToGlobal(QPoint(0, 0)).y() + anchor.height()
-        expected = bottom - below - 6 - p.frame_margins()[3]
-        assert available_height_below(anchor, p, fallback=0) == expected
+        value = available_height_below(anchor, p, fallback=0)
+        assert value == space_below(anchor) - 6
+        assert 0 < value < host.height()  # 量到窗口底，而不是屏幕底
+
+    def test_available_height_uses_the_larger_side_when_below_is_too_small(self, qtbot):
+        from hero_side_ui._shared.overlays.bounds import space_above, space_below
+
+        _host, anchor = self._anchor_in_window(qtbot, 350)
+        p = Popover()
+        qtbot.addWidget(p)
+        below = space_below(anchor) - 6
+        above = space_above(anchor) - 6
+        assert below < 80 <= above  # 下方放不下最小列表，Popover 会翻到上方
+        assert available_height_below(anchor, p, fallback=0) == above
+
+    def test_available_height_shrinks_as_the_anchor_moves_down_while_below_still_fits(self, qtbot):
+        _h1, high = self._anchor_in_window(qtbot, 60)
+        _h2, mid = self._anchor_in_window(qtbot, 200)
+        p = Popover()
+        qtbot.addWidget(p)
+        assert 80 <= available_height_below(mid, p, 0) < available_height_below(high, p, 0)
 
 
 # ============================================================
@@ -237,7 +264,7 @@ class TestDateModel:
 
 
 class TestCalendarSurface:
-    @pytest.mark.parametrize("theme,color", [("light", "#ffffff"), ("dark", "#27272a")])
+    @pytest.mark.parametrize("theme,color", [("light", "#FEFEFF"), ("dark", "#27272A")])
     def test_popover_surface_matches_the_popover_background(self, qtbot, theme, color):
         c = Calendar(surface="popover", theme=theme)
         qtbot.addWidget(c)

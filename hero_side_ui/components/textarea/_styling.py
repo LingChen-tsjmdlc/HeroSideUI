@@ -254,8 +254,8 @@ class _TextareaStylingMixin:
 
         # ---- 把自己的滚动条颜色注册给 ScrollStyle，让 hover 动画也用这个色 ----
         # 仅当组件 color 不是 "default" 时才注册自定义色；否则让全局 ScrollStyle 默认色
-        # （neutral —— 纯灰中性色）生效。这样 Textarea(color="primary") 滚动条用 primary，
-        # Textarea(color="default") 滚动条用 neutral（更纯灰、更中性）。
+        # （default 灰阶）生效。这样 Textarea(color="primary") 滚动条用 primary，
+        # Textarea(color="default") 滚动条跟随全局灰。
         try:
             from ...core import ScrollStyle
 
@@ -267,9 +267,9 @@ class _TextareaStylingMixin:
         except Exception:
             pass  # 没装 ScrollStyle 也不影响 textarea 工作
 
-        # ---- grip 颜色跟随主题（亮色 neutral-400，暗色 neutral-500）----
+        # ---- grip 颜色跟随主题（亮色 default-400，暗色 default-500）----
         if hasattr(self, "_resize_grip"):
-            grip_color = HEROUI_COLORS["neutral"][500] if is_dark else HEROUI_COLORS["neutral"][400]
+            grip_color = HEROUI_COLORS["default"][500] if is_dark else HEROUI_COLORS["default"][400]
             self._resize_grip.set_line_color(QColor(grip_color))
 
     # ------------------------------------------------------------

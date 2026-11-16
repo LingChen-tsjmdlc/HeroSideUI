@@ -30,6 +30,7 @@ from ...themes import (
     HEROUI_COLORS,
     PROGRESS_SIZES,
 )
+from ...themes.theme_values import get_foreground
 from ..text import Text
 
 
@@ -513,7 +514,7 @@ class Progress(QWidget):
         Returns:
             str: 十六进制色值，暗色浅字、亮色深字。
         """
-        return "#ecedee" if self._theme == "dark" else "#18181b"
+        return get_foreground(self._theme)
 
     def _resolve_radius(self, track_h: int) -> float:
         """把 radius token 解析为绘制用的圆角半径。

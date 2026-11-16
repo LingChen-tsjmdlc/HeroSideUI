@@ -1,5 +1,5 @@
 """Image 组件：wrapper 内 blurred 副本 + Skeleton 占位 + 圆角图像三层。
-shadow 走 QGraphicsDropShadowEffect 挂 wrapper。
+shadow 走公共阴影层（兄弟控件，不占布局）。
 """
 
 from __future__ import annotations
@@ -12,10 +12,13 @@ from PySide6.QtWidgets import QWidget
 
 from ..._shared.images import ImageLoader, ImageSrc
 from ...animation import tween_property
+from ...core import ThemeProvider
+from ...core.shadow_paint import ShadowController
 from ..skeleton import Skeleton
 from ._blurred import BlurredImage
 from ._rounded_image import _RoundedImage
-from ._shadow import content_margins, make_shadow_effect
+from ._shadow import content_margins
+from ._styling import resolve_radius_px
 
 # 未传 width/height 且还未加载完成时的占位尺寸
 _FALLBACK_W, _FALLBACK_H = 300, 200
@@ -85,7 +88,8 @@ class Image(QWidget):
 
         Note:
             传了 fallback_src 时按 HeroUI 语义默认禁用 Skeleton；
-            _apply_size 必须在 _apply_shadow 之后调用，宽高需算上阴影 margin。
+            阴影不占布局，width/height 就是图像可视尺寸（模糊副本留白另算）。
+            贴着父控件边缘的一侧阴影会被父控件裁掉，需要时给父容器留边距。
         """
         super().__init__(parent)
         self.setObjectName("HeroImage")
@@ -113,9 +117,10 @@ class Image(QWidget):
         self._loaded_pixmap: QPixmap | None = None
         self._fallback_pixmap: QPixmap | None = None
 
+        self._shadow_ctl = ShadowController(self)
         self._setup_ui()
+        self._apply_size()
         self._apply_shadow()
-        self._apply_size()  # 必须在 _apply_shadow 之后：宽高需要算上阴影 margin
         self._kick_load()
 
     # ============================================================
@@ -287,18 +292,27 @@ class Image(QWidget):
     # ============================================================
     # 阴影
     # ============================================================
+    def _shadow_theme(self) -> str:
+        """当前主题名：Image 无主题参数，跟随已存在的 ThemeProvider。"""
+        provider = ThemeProvider.peek()
+        return provider.current_theme if provider is not None else "light"
+
     def _apply_shadow(self):
-        """应用 QGraphicsDropShadowEffect，无阴影时清空。"""
-        eff = make_shadow_effect(self, self._shadow, self._remove_wrapper)
-        self.setGraphicsEffect(eff)
+        """把档位、圆角、主题与可视区内缩同步给阴影层。"""
+        mt, mr, mb, ml = self._content_margins()
+        cw = max(0, self.width() - ml - mr)
+        ch = max(0, self.height() - mt - mb)
+        tier = "none" if self._remove_wrapper else self._shadow
+        radius = resolve_radius_px(self._radius, cw, ch)
+        self._shadow_ctl.set_style(tier, radius, self._shadow_theme(), (mt, mr, mb, ml))
 
     def _content_margins(self) -> tuple:
         """返回 (top, right, bottom, left) 四向独立 margin。
 
         Returns:
-            阴影与模糊副本需求逐向取最大值后的四元组。
+            模糊副本溢出所需的四元组（阴影不占位）。
         """
-        return content_margins(self._shadow, self._is_blurred, self._remove_wrapper)
+        return content_margins(self._is_blurred, self._remove_wrapper)
 
     # ============================================================
     # 尺寸
@@ -372,6 +386,8 @@ class Image(QWidget):
             offset_x = ml + (cw - ext_w) // 2
             offset_y = mt + (ch - ext_h) // 2 + 6
             self._blurred.setGeometry(offset_x, offset_y, ext_w, ext_h)
+
+        self._apply_shadow()  # 可视区尺寸变了：圆角（full）与内缩需要跟着刷新
 
     # ============================================================
     # hover (isZoomed)
@@ -449,24 +465,20 @@ class Image(QWidget):
         self._img.set_radius(r)
         if self._skeleton is not None:
             self._skeleton.set_radius(r)
+        self._apply_shadow()
         self.update()
 
     def set_shadow(self, s: str):
-        """切换阴影档位并重算尺寸与图层几何。
+        """切换阴影档位。
 
         Args:
             s: 阴影档位名。
 
         Note:
-            阴影档位变化会改变 margin，wrapper 整体尺寸需重算，
-            并主动触发一次 resizeEvent 让所有图层重新分配几何。
+            阴影不占布局，只需刷新阴影层，不影响 wrapper 尺寸。
         """
         self._shadow = s
         self._apply_shadow()
-        # shadow 档位变化会改变 _shadow_margin，wrapper 整体尺寸需要重算
-        self._apply_size()
-        # 触发一次 resizeEvent 让所有图层重新分配几何
-        self.resizeEvent(None)
 
     def set_is_zoomed(self, v: bool):
         """切换 hover 放大开关。

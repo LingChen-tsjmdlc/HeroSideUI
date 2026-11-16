@@ -20,8 +20,8 @@ class TestScrollStyleDefaults:
         ss = ScrollStyle.instance()
         assert ss.thickness == 6
         assert ss.hover_thickness == 8  # 6 + 2
-        # 默认色 neutral
-        assert ss.color == "neutral"
+        # 默认色 default
+        assert ss.color == "default"
 
     def test_hover_thickness_computed(self, qtbot):
         ss = ScrollStyle.instance()
@@ -50,7 +50,7 @@ class TestScrollStyleSetters:
         ss = ScrollStyle.instance()
         ss.set_color("primary")
         assert ss.color == "primary"
-        ss.set_color("neutral")  # 恢复
+        ss.set_color("default")  # 恢复
 
     def test_set_color_invalid_raises(self, qtbot):
         ss = ScrollStyle.instance()
@@ -92,17 +92,23 @@ class TestScrollStyleSetters:
 class TestScrollStyleColorRamp:
     """颜色规则：亮 300→400, 暗 700→600"""
 
-    def test_neutral_light(self, qtbot):
+    def test_default_light(self, qtbot):
         ss = ScrollStyle.instance()
-        normal, hover = ss._resolve_handle_colors("neutral", is_dark=False)
-        assert normal.name() == "#d4d4d4"  # neutral-300
-        assert hover.name() == "#a3a3a3"  # neutral-400
+        normal, hover = ss._resolve_handle_colors("default", is_dark=False)
+        assert normal.name() == "#d4d4d8"  # default-300
+        assert hover.name() == "#a1a1aa"  # default-400
 
-    def test_neutral_dark(self, qtbot):
+    def test_default_dark(self, qtbot):
         ss = ScrollStyle.instance()
-        normal, hover = ss._resolve_handle_colors("neutral", is_dark=True)
-        assert normal.name() == "#404040"  # neutral-700
-        assert hover.name() == "#525252"  # neutral-600
+        normal, hover = ss._resolve_handle_colors("default", is_dark=True)
+        assert normal.name() == "#3f3f46"  # default-700
+        assert hover.name() == "#52525b"  # default-600
+
+    def test_neutral_removed(self, qtbot):
+        import pytest
+
+        with pytest.raises(ValueError):
+            ScrollStyle.instance().set_color("neutral")
 
     def test_primary_light(self, qtbot):
         ss = ScrollStyle.instance()
@@ -133,12 +139,12 @@ class TestScrollStyleQss:
         # 简单检查：无 1px solid rgba 段
         assert "1px solid rgba" not in qss
 
-    def test_build_qss_neutral_has_border(self, qtbot):
-        """全局 neutral 色 build_qss 带 border 阴影"""
+    def test_build_qss_global_has_border(self, qtbot):
+        """全局 default 色 build_qss 带 border 阴影"""
         ss = ScrollStyle.instance()
-        # 确保全局是 neutral
-        assert ss.color == "neutral"
-        qss = ss.build_qss()  # 默认色 = neutral
+        # 确保全局是 default
+        assert ss.color == "default"
+        qss = ss.build_qss()  # 默认色 = default
         # 应有 1px solid rgba
         assert "1px solid rgba" in qss
 

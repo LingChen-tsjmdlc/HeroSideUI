@@ -1,7 +1,5 @@
 """Select 组件测试"""
 
-import pytest
-from PySide6.QtCore import Qt
 
 from hero_side_ui import Select
 from hero_side_ui.themes import SELECT_SIZES
@@ -25,8 +23,8 @@ class TestSelectInit:
         assert sel.selected_keys() == set()
         assert sel.selected_key() is None
         assert sel.is_open() is False
-        # Select 与 Autocomplete 一样：下拉方向必须保持向下
-        assert sel._popover._allow_flip is False
+        # Select 与 Autocomplete 一样：优先向下，窗口内下方放不下最小列表时才翻到上方
+        assert sel._popover._allow_flip is True
         # trigger 内 line_edit 永远 readOnly
         assert sel._input.line_edit.isReadOnly() is True
 

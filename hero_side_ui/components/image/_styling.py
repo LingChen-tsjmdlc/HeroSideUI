@@ -2,8 +2,6 @@
 
 from __future__ import annotations
 
-from ...themes import IMAGE_SHADOWS
-
 # Image 专属圆角档位——比全局 RADIUS 整体大一号
 _IMAGE_RADIUS_PX = {
     "none": 0.0,
@@ -35,16 +33,4 @@ def resolve_radius_px(radius: str, w: int, h: int) -> float:
     return _IMAGE_RADIUS_PX.get(radius, _IMAGE_RADIUS_PX["lg"])
 
 
-def resolve_shadow(shadow: str) -> dict:
-    """返回阴影规格。
-
-    Args:
-        shadow: 阴影档位名。
-
-    Returns:
-        含 offset_y / blur / opacity 的 dict；未知档位回退 none。
-    """
-    return IMAGE_SHADOWS.get(shadow, IMAGE_SHADOWS["none"])
-
-
-__all__ = ["resolve_radius_px", "resolve_shadow"]
+__all__ = ["resolve_radius_px"]

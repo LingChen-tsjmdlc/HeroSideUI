@@ -5,13 +5,13 @@ from __future__ import annotations
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
-
-# HeroUI 语义色的「on-color」文字色（对齐 xxx-foreground）：
-# 除 warning 用深色字外，其余选中态都用白字。
-_FOREGROUND_ON_COLOR = {
-    "warning": "#000000",
-}
-
+from ...themes.theme_values import (
+    get_background,
+    get_color_foreground,
+    get_content_background,
+    get_foreground,
+    get_popup_background,
+)
 
 def _shade(color: str, level: int) -> QColor:
     """从语义色阶取指定深度的颜色。
@@ -38,7 +38,7 @@ def selected_bg(color: str, theme: str) -> QColor:
         语义色用 500；foreground 用主题前景色（暗底浅 / 亮底深）。
     """
     if color == "foreground":
-        return QColor("#ecedee") if theme == "dark" else QColor("#11181c")
+        return QColor(get_foreground(theme))
     return _shade(color, 500)
 
 
@@ -54,8 +54,8 @@ def selected_text(color: str, theme: str) -> QColor:
         foreground 选中时字用主题背景色（与底反相）。
     """
     if color == "foreground":
-        return QColor("#000000") if theme == "dark" else QColor("#ffffff")
-    return QColor(_FOREGROUND_ON_COLOR.get(color, "#ffffff"))
+        return QColor(get_background(theme))
+    return QColor(get_color_foreground(color, theme))
 
 
 def hover_bg(color: str, theme: str) -> QColor:
@@ -103,7 +103,7 @@ def normal_text(theme: str) -> QColor:
     Returns:
         主题前景色（本月、未选中、未 hover 状态）。
     """
-    return QColor("#ffffff") if theme == "dark" else QColor("#11181c")
+    return QColor(get_foreground(theme))
 
 
 def disabled_text(theme: str) -> QColor:
@@ -117,7 +117,7 @@ def disabled_text(theme: str) -> QColor:
         亮色取 default-300。
     """
     if theme == "dark":
-        c = QColor("#ffffff")
+        c = QColor(get_foreground("dark"))
         c.setAlphaF(0.28)
         return c
     return _shade("default", 300)
@@ -134,7 +134,7 @@ def today_ring(color: str, theme: str) -> QColor:
         语义色用 500；foreground 用主题前景色。
     """
     if color == "foreground":
-        return QColor("#ecedee") if theme == "dark" else QColor("#11181c")
+        return QColor(get_foreground(theme))
     return _shade(color, 500)
 
 
@@ -151,11 +151,9 @@ def surface_content1(theme: str) -> QColor:
         theme: 主题名。
 
     Returns:
-        暗色 #101114、亮色 #ffffff。
+        内容面底色（content_background）。
     """
-    if theme == "dark":
-        return QColor("#101114")
-    return QColor("#ffffff")
+    return QColor(get_content_background(theme))
 
 
 def surface_base(theme: str) -> str:
@@ -168,7 +166,7 @@ def surface_base(theme: str) -> str:
         hex 色串供 QSS 使用；让日期主区融入外部背景，
         仅顶部 header / 星期名条（content1）浮起。
     """
-    return "#0b0d12" if theme == "dark" else "#fafbfd"
+    return get_background(theme)
 
 
 def surface_popover(theme: str) -> str:
@@ -180,7 +178,7 @@ def surface_popover(theme: str) -> str:
     Returns:
         hex 色串供 QSS 使用。
     """
-    return "#27272a" if theme == "dark" else "#ffffff"
+    return get_popup_background(theme)
 
 
 def picker_highlight_bg(theme: str) -> QColor:
@@ -212,7 +210,7 @@ def range_middle_bg(color: str, theme: str) -> QColor:
         primary / secondary / danger 取 50；success / warning 按主题取 50/100。
     """
     if color == "foreground":
-        c = QColor("#000000") if theme == "light" else QColor("#ffffff")
+        c = QColor(get_foreground(theme))
         c.setAlphaF(0.10)
         return c
     if color in ("primary", "secondary", "danger"):
@@ -232,7 +230,7 @@ def range_middle_text(color: str, theme: str) -> QColor:
         foreground 用主题前景色；语义色按主题取 500/600。
     """
     if color == "foreground":
-        return QColor("#ecedee") if theme == "dark" else QColor("#11181c")
+        return QColor(get_foreground(theme))
     if color in ("primary", "secondary"):
         return _shade(color, 500)
     return _shade(color, 500 if theme == "dark" else 600)

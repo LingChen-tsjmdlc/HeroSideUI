@@ -5,7 +5,9 @@ from __future__ import annotations
 from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QPainter, QPainterPath
 
-from ...themes import HEROUI_COLORS, POPOVER_SHADOWS
+from ...themes import HEROUI_COLORS
+from ...core.shadow_paint import layers_for, paint_inset, paint_shadow
+from ...themes.theme_values import get_color_foreground, get_foreground, get_popup_background
 from ._constants import ARROW_INSET, ARROW_SIZE
 
 __all__ = ["_TooltipPaintMixin"]
@@ -17,20 +19,16 @@ class _TooltipPaintMixin:
     # ---- 颜色 ----
     def _bg_color(self) -> QColor:
         """返回当前主题与配色下的背景色。"""
-        is_dark = self._theme == "dark"  # type: ignore[attr-defined]
         if self._color == "default":  # type: ignore[attr-defined]
-            return QColor("#ffffff" if not is_dark else "#27272a")
+            return QColor(get_popup_background(self._theme))  # type: ignore[attr-defined]
         c = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])  # type: ignore[attr-defined]
         return QColor(c[500])
 
     def _text_color(self) -> QColor:
         """返回当前主题与配色下的文字色。"""
-        is_dark = self._theme == "dark"  # type: ignore[attr-defined]
         if self._color == "default":  # type: ignore[attr-defined]
-            return QColor("#11181c" if not is_dark else "#ecedee")
-        if self._color == "warning":  # type: ignore[attr-defined]
-            return QColor("#000000")
-        return QColor("#ffffff")
+            return QColor(get_foreground(self._theme))  # type: ignore[attr-defined]
+        return QColor(get_color_foreground(self._color, self._theme))  # type: ignore[attr-defined]
 
     # ---- 圆角 ----
     def _resolve_radius(self) -> float:
@@ -77,7 +75,7 @@ class _TooltipPaintMixin:
             return
 
         m = self._frame_margins()  # type: ignore[attr-defined]
-        cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["sm"])  # type: ignore[attr-defined]
+        layers = layers_for(self._shadow, self._theme)  # type: ignore[attr-defined]
         bg = self._bg_color()
         radius = self._resolve_radius()
 
@@ -88,24 +86,14 @@ class _TooltipPaintMixin:
             self.height() - m[1] - m[3],  # type: ignore[attr-defined]
         )
 
-        # 阴影
-        if cfg["layers"] > 0:
-            painter.save()
-            painter.setPen(Qt.PenStyle.NoPen)
-            for i in range(cfg["layers"]):
-                t = (i + 1) / cfg["layers"]
-                grow = cfg["blur"] * (1 - t) + 1
-                off = cfg["offset_y"] * (1 - t)
-                rect = content_rect.adjusted(-grow, -grow + off, grow, grow + off)
-                alpha = int(cfg["alpha"] * t)
-                painter.setBrush(QColor(0, 0, 0, alpha))
-                painter.drawRoundedRect(rect, radius, radius)
-            painter.restore()
+        # 阴影：公共阴影（多层预合成 + 九宫格缓存）
+        paint_shadow(painter, content_rect, radius, layers)
 
-        # 主体
+        # 主体 + 暗色内描边
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(bg)
         painter.drawRoundedRect(content_rect, radius, radius)
+        paint_inset(painter, content_rect, radius, layers)
 
         # 箭头
         if self._show_arrow:  # type: ignore[attr-defined]

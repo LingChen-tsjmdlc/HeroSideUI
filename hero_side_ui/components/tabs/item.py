@@ -22,6 +22,7 @@ from PySide6.QtWidgets import (
 from ...animation import stop_tween, tween_value
 from ...core import FontProvider
 from ...themes import HEROUI_COLORS, TABS_SIZES
+from ...themes.theme_values import get_foreground
 from ...utils import load_svg_icon
 from ._helpers import _resolve_selected_text, _resolve_unselected_text
 
@@ -99,7 +100,7 @@ class TabItem(QAbstractButton):
         self._disable_animation = False
 
         self._unselected_color = QColor(HEROUI_COLORS["default"][500])
-        self._selected_color = QColor("#000000")
+        self._selected_color = QColor(get_foreground("light"))
         # 当前实际渲染色（动画驱动）—— 同时驱动 icon 着色
         self._current_text_color = QColor(self._unselected_color)
         # 透明度 0.0 ~ 1.0（hover-unselected -> 0.5）

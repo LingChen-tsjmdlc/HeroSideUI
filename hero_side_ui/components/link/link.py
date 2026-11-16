@@ -38,6 +38,7 @@ from ...themes import (
     VALID_LINK_SIZES,
     VALID_LINK_UNDERLINES,
 )
+from ...themes.theme_values import get_foreground
 from ...utils.icon_utils import load_svg_icon
 from ..text import Text
 
@@ -299,7 +300,7 @@ class Link(QFrame):
         """
         if self._color == "foreground":
             # foreground = 主题正文色
-            return QColor("#18181b" if self._theme == "light" else "#ECEDEE")
+            return QColor(get_foreground(self._theme))
         # 其余 5 个语义色：HeroUI 在亮色用 500、暗色亦用 500（不变）
         return QColor(HEROUI_COLORS[self._color][500])
 

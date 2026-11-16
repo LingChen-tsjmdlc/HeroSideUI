@@ -3,6 +3,7 @@
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_color_foreground, get_foreground
 
 # ============================================================
 # default 语义 token: dark 模式色阶反转
@@ -48,12 +49,8 @@ def resolve_cursor_fill(color: str, theme: str) -> QColor:
 def resolve_cursor_text(color: str, theme: str) -> QColor:
     """cursor 上文字色 = text-{color}-foreground。"""
     if color == "default":
-        # text-default-foreground: light=黑, dark=白
-        return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
-    if color == "warning":
-        # warning 反差为黑色
-        return QColor("#000000")
-    return QColor("#FFFFFF")
+        return QColor(get_foreground(theme))
+    return QColor(get_color_foreground(color, theme))
 
 
 # ============================================================
@@ -63,7 +60,7 @@ def resolve_cursor_text(color: str, theme: str) -> QColor:
 
 def resolve_item_text(theme: str) -> QColor:
     """普通 item 文字色 = text-default-foreground。"""
-    return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
+    return QColor(get_foreground(theme))
 
 
 def resolve_item_disabled_text(theme: str) -> QColor:

@@ -11,20 +11,20 @@ from PySide6.QtGui import (
 )
 from PySide6.QtWidgets import QWidget
 
+from ..._shared.overlays.bounds import clip_to_host
 from ...animation import tween_property
 from ...core import ThemeProvider, make_text_qfont
-from ...themes import HEROUI_COLORS, TOOLTIP_SIZES
+from ...themes import HEROUI_COLORS, RADIUS, TOOLTIP_SIZES
+from ...core.shadow_paint import layers_for, paint_inset, paint_shadow, tier_margin
+from ...themes.theme_values import get_color_foreground, get_foreground, get_popup_background
 
 # 箭头三角尺寸
 _ARROW = 5
 # tooltip 距 thumb 顶部的间距
 _GAP = 6
-# 手绘多层羽化阴影（不用 QGraphicsDropShadowEffect：在 Windows 上 effect 上报的 dirty
-# rect 会超出 widget 边界 → UpdateLayeredWindowIndirect 参数错误警告）
-_SHADOW_LAYERS = 4  # 层数，越多越柔和
-_SHADOW_SPREAD = 6  # 最外层阴影距 body 的距离（也是上下左右预留 margin）
-_SHADOW_OFFSET_Y = 1  # 阴影整体下偏量
-_SHADOW_MARGIN = _SHADOW_SPREAD  # widget 四周预留
+# 阴影用公共阴影的 sm 档（不用 QGraphicsDropShadowEffect：在 Windows 上 effect 上报的
+# dirty rect 会超出 widget 边界 → UpdateLayeredWindowIndirect 参数错误警告）
+_SHADOW_TIER = "sm"
 
 
 class _SliderThumbTip(QWidget):
@@ -115,20 +115,16 @@ class _SliderThumbTip(QWidget):
     # ---- 颜色 ----
     def _bg_color(self) -> QColor:
         """返回 tooltip 主体背景色，default 随主题翻转。"""
-        is_dark = self._theme == "dark"
         if self._color == "default":
-            return QColor("#ffffff" if not is_dark else "#27272a")
+            return QColor(get_popup_background(self._theme))
         c = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
         return QColor(c[500])
 
     def _text_color(self) -> QColor:
-        """返回 tooltip 文字颜色，warning 固定用黑字。"""
-        is_dark = self._theme == "dark"
+        """返回 tooltip 文字颜色：default 取 foreground，其余取实色字色。"""
         if self._color == "default":
-            return QColor("#11181c" if not is_dark else "#ecedee")
-        if self._color == "warning":
-            return QColor("#000000")
-        return QColor("#ffffff")
+            return QColor(get_foreground(self._theme))
+        return QColor(get_color_foreground(self._color, self._theme))
 
     # ---- 内容 ----
     def set_text(self, text: str):
@@ -156,23 +152,9 @@ class _SliderThumbTip(QWidget):
         text_h = fm.height()
         body_w = text_w + pad * 2
         body_h = text_h + pad * 2
-        # 总尺寸 = body + 底部箭头 + 阴影 margin（四周，底部另加 offset）
-        self.resize(
-            body_w + _SHADOW_MARGIN * 2,
-            body_h + _ARROW + _SHADOW_MARGIN * 2 + _SHADOW_OFFSET_Y,
-        )
-
-    # ---- 阴影 ----
-    def _draw_soft_shadow(self, p: QPainter, body_rect: QRectF, radius: float):
-        """多层半透明圆角矩形模拟高斯柔化阴影。全部画在 widget 内部。"""
-        # 阴影中心 = body 下偏 _SHADOW_OFFSET_Y
-        for i in range(_SHADOW_LAYERS, 0, -1):
-            grow = _SHADOW_SPREAD * i / _SHADOW_LAYERS
-            # 外层 alpha 低，内层 alpha 高；整体强度比之前减半
-            alpha = int(4 + 3 * (_SHADOW_LAYERS - i))  # 4, 7, 10, 13
-            r = body_rect.adjusted(-grow, -grow + _SHADOW_OFFSET_Y, grow, grow + _SHADOW_OFFSET_Y)
-            p.setBrush(QColor(0, 0, 0, alpha))
-            p.drawRoundedRect(r, radius + grow, radius + grow)
+        # 总尺寸 = body + 底部箭头 + 阴影留白（四周）
+        margin = tier_margin(_SHADOW_TIER)
+        self.resize(body_w + margin * 2, body_h + _ARROW + margin * 2)
 
     # ---- 位置 ----
     def show_at(self, thumb_top_center: QPointF):
@@ -181,12 +163,13 @@ class _SliderThumbTip(QWidget):
         w = self.width()
         h = self.height()
         gp = self._anchor.mapToGlobal(QPoint(int(thumb_top_center.x()), int(thumb_top_center.y())))
-        # 箭头尖端在 widget 内部 y = _SHADOW_MARGIN + body_h + _ARROW；下方还有 _SHADOW_MARGIN + offset
+        # 箭头尖端在 widget 内部 y = margin + body_h + _ARROW；下方还有 margin
         # 希望箭头尖端到 thumb_top 距离 = _GAP → widget.y = gp.y - _GAP - (箭头尖在 widget 内的 y)
-        arrow_tip_in_widget = h - _SHADOW_MARGIN - _SHADOW_OFFSET_Y
+        arrow_tip_in_widget = h - tier_margin(_SHADOW_TIER)
         x = gp.x() - w // 2
         y = gp.y() - _GAP - arrow_tip_in_widget
         self.move(x, y)
+        clip_to_host(self, self._anchor)
         if not self.isVisible():
             self.show()
         self.raise_()
@@ -226,21 +209,24 @@ class _SliderThumbTip(QWidget):
 
         bg = self._bg_color()
         fg = self._text_color()
-        # body 位于 widget 中部，四周预留 _SHADOW_MARGIN 供阴影层渲染
-        body_x = float(_SHADOW_MARGIN)
-        body_y = float(_SHADOW_MARGIN)
-        body_w = self.width() - _SHADOW_MARGIN * 2
-        body_h = self.height() - _ARROW - _SHADOW_MARGIN * 2 - _SHADOW_OFFSET_Y
+        # body 位于 widget 中部，四周预留阴影留白
+        margin = tier_margin(_SHADOW_TIER)
+        body_x = float(margin)
+        body_y = float(margin)
+        body_w = self.width() - margin * 2
+        body_h = self.height() - _ARROW - margin * 2
         body_rect = QRectF(body_x, body_y, body_w, body_h)
-        radius = 6.0
+        radius = float(RADIUS["md"].removesuffix("px"))
+        layers = layers_for(_SHADOW_TIER, self._theme)
 
-        # 柔和阴影（多层半透明圆角矩模拟高斯）
+        # 公共阴影（多层预合成 + 九宫格缓存）
+        paint_shadow(p, body_rect, radius, layers)
+
+        # 主体 + 暗色内描边
         p.setPen(Qt.PenStyle.NoPen)
-        self._draw_soft_shadow(p, body_rect, radius)
-
-        # 主体
         p.setBrush(bg)
         p.drawRoundedRect(body_rect, radius, radius)
+        paint_inset(p, body_rect, radius, layers)
 
         # 底部箭头（朝下）
         cx = body_x + body_w / 2.0

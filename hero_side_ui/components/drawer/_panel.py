@@ -6,6 +6,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import DRAWER_SPEC, HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_content_background
 from ...utils import clear_layout, safe_delete
 from ..button import Button
 
@@ -187,11 +188,9 @@ class _DrawerPanel(QWidget):
         """面板底色。
 
         Returns:
-            HeroUI bg-content1（无独立 token，用 default 色阶换算）：
-            暗色 default-900、亮色 #ffffff。
+            HeroUI bg-content1：内容面底色（content_background）。
         """
-        dc = HEROUI_COLORS["default"]
-        return QColor(dc[900]) if self._theme == "dark" else QColor("#ffffff")
+        return QColor(get_content_background(self._theme))
 
     def bg_color(self) -> QColor:
         """返回面板当前底色，供需要与面板融合的子组件读取。

@@ -1,4 +1,4 @@
-"""TOAST_SPEC（宽 356、折叠露出 8px、动效时长）与 TOAST_SHADOWS 四档。"""
+"""TOAST_SPEC：宽 356、折叠露出 8px、动效时长等；阴影走公共阴影配置。"""
 
 TOAST_SPEC = {
     # ---- 尺寸 ----
@@ -32,13 +32,6 @@ TOAST_SPEC = {
     "swipe_threshold_y": 20,  # HeroUI: SWIPE_THRESHOLD_Y
     "progress_alpha": 0.2,  # HeroUI: progressIndicator opacity-20
     "collapse_delay": 120,  # 鼠标离开后延迟折叠，避免卡片间移动闪烁
-}
-
-TOAST_SHADOWS = {
-    "none": {"layers": 0, "blur": 0, "offset_y": 0, "alpha": 0},
-    "sm": {"layers": 2, "blur": 4, "offset_y": 1, "alpha": 12},
-    "md": {"layers": 3, "blur": 8, "offset_y": 2, "alpha": 16},
-    "lg": {"layers": 4, "blur": 16, "offset_y": 4, "alpha": 20},
 }
 
 VALID_TOAST_PLACEMENTS = (
@@ -82,7 +75,6 @@ TOAST_SEVERITY_ICONS = {
 
 __all__ = [
     "TOAST_SEVERITY_ICONS",
-    "TOAST_SHADOWS",
     "TOAST_SPEC",
     "VALID_TOAST_COLORS",
     "VALID_TOAST_PLACEMENTS",

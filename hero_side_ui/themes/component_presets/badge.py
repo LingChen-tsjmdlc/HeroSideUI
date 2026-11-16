@@ -13,7 +13,7 @@ BADGE_SIZES = {
         "one_char": 20,
         "multi_height": 20,
         "padding_x": 4,
-        "text_size": 14,
+        "text_size": 13,
     },
     "lg": {
         "dot": 16,

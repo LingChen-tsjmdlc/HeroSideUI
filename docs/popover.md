@@ -7,7 +7,7 @@
 - **顶层弹出**：`Popover` 是独立的 `QWidget`（`Qt.Tool` 窗口），不进父布局；外部点击自动关闭
 - **触发器绑定**：`popover.attach(any_widget)` 即可，自动监听点击
 - **12 种 placement**：top / top-start / top-end / bottom / bottom-start / bottom-end / left / left-start / left-end / right / right-start / right-end
-- **auto-flip**：屏幕边缘溢出时自动反向
+- **不伸出应用窗口**：弹出层是独立的顶层窗口，定位以触发控件所在窗口的客户区（与所在屏幕求交）为边界。指定方向放不下就翻到相反方向；两边都放不下取越界更少的一边，窗口外的部分被裁掉（切断），不会伸出窗口。Popover 里再打开的弹出层，边界仍是最外层的应用窗口
 - **6 种颜色**（default + 5 语义色）
 - **3 种尺寸** / **5 种圆角**（`none/sm/md/lg/full`）/ **4 级阴影**（`none/sm/md/lg`）
 - **backdrop**：`transparent` / `opaque`（黑色 50%）/ `blur`（黑色 30% 近似）
@@ -85,7 +85,7 @@ p.attach(my_settings_button)
 ## 与 HeroUI 的差异
 
 - `backdrop="blur"` 在 Qt 中没有真正的背景模糊滤镜，用半透明黑（α=76）近似；视觉接近但不会真模糊后面的内容
-- 阴影由 `paintEvent` 多层半透明圆角矩形自绘（避免 `QGraphicsDropShadowEffect` 与子控件 `QGraphicsEffect` 嵌套冲突）
+- 阴影使用全库公共阴影配置（多层预合成 + 九宫格缓存），窗口四周按档位预留留白；不用 `QGraphicsDropShadowEffect`（避免与子控件 `QGraphicsEffect` 嵌套冲突）
 - `trigger_scale_on_open` 只调透明度（0.7），不缩放（避免和 Button 自带的 PressScaleEffect 打架）
 - `attach()` 支持 `event="hover"` / `"manual"`，HeroUI 原版只有 click
 - 自定义插槽（含复合组件如 Listbox/Input 等）只走 opacity fade 动画，不做 scale 或 squeeze（Qt 无 GPU compositor，raster scale 会糊字/冻结子动画）

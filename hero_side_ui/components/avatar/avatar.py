@@ -25,6 +25,7 @@ from ...themes import (
     RADIUS,
     VALID_AVATAR_SIZES,
 )
+from ...themes.theme_values import get_color_foreground
 from ...utils import load_svg_icon
 from ..text import Text
 from ._styling import build_avatar_styles
@@ -71,7 +72,7 @@ class _IconCanvas(QLabel):
         self.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._icon_name = "heroui--avatar-person"
         self._px = 24
-        self._color = "#ffffff"
+        self._color = get_color_foreground("default", "light")
 
     def apply(self, icon_name: str, px: int, color: str):
         """应用图标名、尺寸与颜色并重渲染。

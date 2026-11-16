@@ -1,10 +1,11 @@
 """Card 组件测试"""
 
 import pytest
-from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QLabel, QSizePolicy
+from PySide6.QtCore import QPoint, Qt
+from PySide6.QtTest import QTest
+from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
-from hero_side_ui import Card, CardBody, CardFooter, CardHeader, Divider
+from hero_side_ui import Button, Card, CardBody, CardFooter, CardHeader, Divider, Text
 
 
 # ============================================================
@@ -403,6 +404,101 @@ class TestCardSignals:
         card.pressed.connect(lambda: signals_emitted.append(True))
         qtbot.mouseClick(card, Qt.MouseButton.LeftButton)
         assert len(signals_emitted) == 0
+
+    def _card_with_text(self, qtbot, **kwargs):
+        """搭一个标题/正文都是 Text 的 Pressable Card，返回宿主、卡片、标题文字。"""
+        host = QWidget()
+        host.resize(900, 300)
+        lay = QHBoxLayout(host)
+        lay.setContentsMargins(20, 20, 20, 100)
+        card = Card(shadow="none", **kwargs)
+        fired: list = []
+        card.pressed.connect(lambda: fired.append(1))
+        header = CardHeader()
+        label = Text("Pressable", size="lg", weight="bold")
+        header.layout().addWidget(label)
+        card.add_header(header)
+        body = CardBody()
+        body.layout().addWidget(Text("Click me! I have a ripple animation."))
+        card.add_body(body)
+        card.setFixedWidth(220)
+        lay.addWidget(card)
+        lay.addStretch(1)
+        qtbot.addWidget(host)
+        host.show()
+        qtbot.waitExposed(host)
+        return host, card, fired, label
+
+    def _click_text(self, host, label):
+        """走真实命中链点击文字局部坐标 (20, 中线)。"""
+        QTest.mouseClick(
+            host.windowHandle(),
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+            label.mapTo(host, QPoint(20, label.height() // 2)),
+        )
+
+    def test_clicking_text_triggers_one_press_and_one_ripple(self, qtbot):
+        """点标题/正文文字应像点卡片空白处一样触发一次水波纹和 pressed。"""
+        host, card, fired, label = self._card_with_text(qtbot, is_pressable=True)
+        body_label = card._body.findChild(Text)
+        for text in (label, body_label):
+            fired.clear()
+            before = len(card._ripple_overlay._ripples)
+            self._click_text(host, text)
+            qtbot.wait(30)
+            assert len(fired) == 1
+            assert len(card._ripple_overlay._ripples) - before == 1  # 逐层传播不能重复加水波纹
+
+    def test_clicking_text_ignored_when_not_pressable_or_disabled(self, qtbot):
+        for kwargs in (dict(is_pressable=False), dict(is_pressable=True, is_disabled=True)):
+            host, card, fired, label = self._card_with_text(qtbot, **kwargs)
+            before = len(card._ripple_overlay._ripples) if card._ripple_overlay else 0
+            self._click_text(host, label)
+            qtbot.wait(30)
+            assert fired == []
+            after = len(card._ripple_overlay._ripples) if card._ripple_overlay else 0
+            assert after == before
+
+    def test_child_added_after_construction_also_passes_through(self, qtbot):
+        """后置装配的文字也触发（ChildAdded 自动挂过滤器）。"""
+        host, card, _fired, _label = self._card_with_text(qtbot, is_pressable=True)
+        footer = CardFooter()
+        late = Text("Late footer", size="sm")
+        footer.layout().addWidget(late)
+        card.add_footer(footer)
+        qtbot.wait(20)
+        fired = []
+        card.pressed.connect(lambda: fired.append(1))
+        self._click_text(host, late)
+        qtbot.wait(30)
+        assert len(fired) == 1
+
+    def test_interactive_child_still_receives_clicks(self, qtbot):
+        """卡片内 Button 自己的点击不能被子控件透传吞掉。"""
+        host = QWidget()
+        host.resize(600, 200)
+        lay = QHBoxLayout(host)
+        card = Card(shadow="none")
+        btn = Button("go")
+        body = CardBody()
+        body.layout().addWidget(btn)
+        card.add_body(body)
+        card.setFixedWidth(200)
+        lay.addWidget(card)
+        qtbot.addWidget(host)
+        host.show()
+        qtbot.waitExposed(host)
+        clicked: list = []
+        btn.clicked.connect(lambda *_: clicked.append(1))
+        QTest.mouseClick(
+            host.windowHandle(),
+            Qt.MouseButton.LeftButton,
+            Qt.KeyboardModifier.NoModifier,
+            btn.mapTo(host, QPoint(10, 10)),
+        )
+        qtbot.wait(30)
+        assert len(clicked) == 1
 
 
 # ============================================================

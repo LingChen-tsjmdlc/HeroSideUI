@@ -20,6 +20,8 @@ from PySide6.QtWidgets import QAbstractButton, QWidget
 from ...animation.tween import tween_value
 from ...core import FontProvider, ThemeProvider
 from ...themes import HEROUI_COLORS, SWITCH_SIZES
+from ...themes.theme_values import get_color_foreground, get_foreground
+from ...themes.shadow import SHADOW_COLOR
 
 
 def _render_svg(svg_str: str, color: QColor | None = None) -> QSvgRenderer:
@@ -195,29 +197,27 @@ class Switch(QAbstractButton):
         return QColor(HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])[500])
 
     def _thumb_bg(self) -> QColor:
-        """返回 thumb 的背景色，固定为白色。"""
-        return QColor("#ffffff")
+        """返回 thumb 的背景色：实色上的近白字色。"""
+        return QColor(get_color_foreground("primary", "light"))
 
     def _thumb_icon_color(self) -> QColor:
-        """返回 thumbIcon 的默认颜色，固定为黑色。"""
-        return QColor("#000000")
+        """返回 thumbIcon 的默认颜色：深色文字。"""
+        return QColor(get_foreground("light"))
 
     def _content_color(self, on_checked: bool) -> QColor:
         """取 startContent/endContent 颜色：start 用前景对比色，end 用 default-600。"""
         if on_checked:
             if self._color == "default":
                 dc = HEROUI_COLORS["default"]
-                return QColor(dc[900] if self._theme == "dark" else "#ffffff")
-            if self._color == "warning":
-                return QColor("#000000")
-            return QColor("#ffffff")
+                return QColor(dc[900] if self._theme == "dark" else get_color_foreground("default", "light"))
+            return QColor(get_color_foreground(self._color, self._theme))
         # endContent: text-default-600
         dc = HEROUI_COLORS["default"]
         return QColor(dc[400] if self._theme == "dark" else dc[600])
 
     def _label_color(self) -> QColor:
         """返回 wrapper 外 label 的文字色。"""
-        return QColor("#ecedee" if self._theme == "dark" else "#11181c")
+        return QColor(get_foreground(self._theme))
 
     # ============================================================
     # 状态切换 → 动画
@@ -457,8 +457,9 @@ class Switch(QAbstractButton):
         painter.save()
         painter.setPen(Qt.PenStyle.NoPen)
         painter.setBrush(self._thumb_bg())
-        # 轻微阴影:在 thumb 下画一层半透明黑色椭圆偏移
-        shadow = QColor(0, 0, 0, 35)
+        # 轻微阴影:在 thumb 下画一层半透明近黑椭圆偏移（被控件矩形裁剪的小件，不走 sm/md/lg 档）
+        shadow = QColor(SHADOW_COLOR)
+        shadow.setAlpha(35)
         painter.setBrush(shadow)
         painter.drawRoundedRect(QRectF(thumb_x, thumb_y + 1, thumb_w, thumb_h), thumb_r, thumb_r)
         painter.setBrush(self._thumb_bg())

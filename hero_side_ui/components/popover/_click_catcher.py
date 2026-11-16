@@ -54,8 +54,8 @@ class _GlobalClickCatcher(QObject):
                 gp = event.globalPosition().toPoint()
             except AttributeError:
                 gp = event.globalPos()
-            # 点到 popover 自己 → 保持打开
-            if owner.geometry().contains(gp):
+            # 点到 popover 可见主体 → 保持打开（阴影留白不算）
+            if owner._body_global().contains(gp):
                 return False
             # 点到 trigger → 也保持（让 trigger 的 click 逻辑走 toggle，
             # 否则这里先关一次，用户点击再开一次，体感还是"点两次")

@@ -1,7 +1,5 @@
 """Autocomplete 组件测试"""
 
-import pytest
-from PySide6.QtCore import Qt
 
 from hero_side_ui import Autocomplete
 from hero_side_ui.themes import AUTOCOMPLETE_SIZES
@@ -25,8 +23,8 @@ class TestAutocompleteInit:
         assert ac.selected_key() is None
         assert ac.input_value() == ""
         assert ac.is_open() is False
-        # Autocomplete 是 combobox 语义，下拉方向由内部高度裁剪保证，不能让 Popover auto-flip 到上方
-        assert ac._popover._allow_flip is False
+        # Autocomplete 优先向下（高度按下方空间裁剪）；窗口内下方放不下最小列表时才翻到上方
+        assert ac._popover._allow_flip is True
 
     def test_with_items(self, qtbot):
         ac = Autocomplete(

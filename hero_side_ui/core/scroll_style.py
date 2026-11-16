@@ -12,10 +12,10 @@ from PySide6.QtWidgets import QApplication, QScrollBar
 
 from ..animation.tween import stop_tween, tween_value
 from ..themes import HEROUI_COLORS
+from ..themes.shadow import SHADOW_COLOR
 from .theme_provider import ThemeProvider
 
 VALID_COLORS = (
-    "neutral",
     "default",
     "primary",
     "secondary",
@@ -68,9 +68,8 @@ class ScrollStyle(QObject):
         # 默认配置
         self._thickness: int = 6
         self._hover_thickness_delta: int = 2
-        # 全局默认色：neutral（纯灰，无色相偏移；比 default/zinc 更"中性"）
-        # Textarea 等组件会用 set_bar_color 覆盖成自己的语义色
-        self._color: str = "neutral"
+        # 全局默认色：default 灰阶；Textarea 等组件会用 set_bar_color 覆盖成自己的语义色
+        self._color: str = "default"
         self._min_handle_length: int = 24
         self._track_padding: int = 4
         self._duration: int = 150  # hover 过渡时长 (ms)
@@ -230,6 +229,19 @@ class ScrollStyle(QObject):
             return QColor(ramp[700]), QColor(ramp[600])
         return QColor(ramp[300]), QColor(ramp[400])
 
+    @staticmethod
+    def _border_color(alpha: int) -> QColor | None:
+        """handle 阴影描边色：近黑加透明度；alpha<=0 时无描边。
+
+        Args:
+            alpha: 不透明度 0~255。
+        """
+        if alpha <= 0:
+            return None
+        c = QColor(SHADOW_COLOR)
+        c.setAlpha(int(alpha))
+        return c
+
     def _is_dark(self) -> bool:
         """判断当前主题是否为暗色。"""
         try:
@@ -333,10 +345,10 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
         c = color if color is not None else self._color
         is_d = is_dark if is_dark is not None else self._is_dark()
         normal, _hover = self._resolve_handle_colors(c, is_d)
-        # border 阴影仅在使用全局色（默认 neutral）时画；显式传语义色不带阴影
+        # border 阴影仅在使用全局色（默认 default）时画；显式传语义色不带阴影
         if c == self._color:
             max_alpha = self._shadow_alpha_dark if is_d else self._shadow_alpha_light
-            border = QColor(0, 0, 0, max_alpha) if max_alpha > 0 else None
+            border = self._border_color(max_alpha)
         else:
             border = None
         return self._build_bar_qss(
@@ -365,7 +377,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
         normal_color, _hover = self._resolve_handle_colors(self._color, self._is_dark())
         # 静态层（normal 状态）：handle 带满 alpha 的 border 阴影
         max_alpha = self._shadow_alpha_dark if self._is_dark() else self._shadow_alpha_light
-        static_border = QColor(0, 0, 0, max_alpha) if max_alpha > 0 else None
+        static_border = self._border_color(max_alpha)
         static_qss = self._build_bar_qss(
             thickness=self._thickness,
             handle_color=normal_color,
@@ -468,7 +480,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             int(normal_color.green() + (hover_color.green() - normal_color.green()) * progress),
             int(normal_color.blue() + (hover_color.blue() - normal_color.blue()) * progress),
         )
-        # border 阴影：仅在 bar **使用全局色**（neutral）时才有，
+        # border 阴影：仅在 bar **使用全局色**（默认 default）时才有，
         # 自定义语义色（primary/success/...）色阶本身鲜明，不需要描边
         if self._bar_uses_custom_color(bar):
             border_color = None
@@ -477,7 +489,7 @@ QScrollBar::add-page:horizontal, QScrollBar::sub-page:horizontal {{
             max_alpha = self._shadow_alpha_dark if is_dark else self._shadow_alpha_light
             # alpha 反向插值：progress=0 满 alpha；progress=1 alpha=0
             border_alpha = round(max_alpha * (1.0 - progress))
-            border_color = QColor(0, 0, 0, border_alpha) if border_alpha > 0 else None
+            border_color = self._border_color(border_alpha)
 
         bar.setStyleSheet(
             self._build_bar_qss(

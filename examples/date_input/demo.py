@@ -32,7 +32,7 @@ from hero_side_ui.themes import (
 BIRTH_PLACEHOLDER = parse_date("1995-11-06")
 
 # 枚举一律从 themes token 取，不在 demo 里硬编码。
-# HEROUI_COLORS 含 neutral（调色板色阶，非组件语义色），故显式列语义色；
+# 显式列出语义色，避免 demo 随调色板键变化；
 # RADIUS 含 no/small/medium/large 别名且不含动态算的 full，故按主 key 列举后补 full。
 DEMO_COLORS = (
     "default",

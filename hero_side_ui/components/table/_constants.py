@@ -2,8 +2,8 @@
 
 from ...themes import HEROUI_COLORS, RADIUS
 
-# color: HeroUI 全语义色（不含 neutral）。对应 table.ts color variants 的 6 档。
-VALID_COLORS = tuple(k for k in HEROUI_COLORS if k != "neutral")
+# color: HeroUI 全语义色。对应 table.ts color variants 的 6 档。
+VALID_COLORS = tuple(HEROUI_COLORS)
 
 VALID_SIZES = ("sm", "md", "lg")
 

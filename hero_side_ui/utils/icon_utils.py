@@ -6,6 +6,7 @@ from PySide6.QtCore import QSize, Qt
 from PySide6.QtGui import QColor, QPixmap
 
 from ..icons import IconNotFoundError, get_icon, resolve_icon
+from ..themes.theme_values import get_foreground
 
 
 def _resolve_theme_aware_color() -> str:
@@ -18,7 +19,7 @@ def _resolve_theme_aware_color() -> str:
     from ..core import ThemeProvider
 
     provider = ThemeProvider.peek()
-    return "#fafafa" if provider is not None and provider.current_theme == "dark" else "#18181b"
+    return get_foreground("dark" if provider is not None and provider.current_theme == "dark" else "light")
 
 
 def load_svg_icon(

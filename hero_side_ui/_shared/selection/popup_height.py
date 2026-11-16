@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QApplication, QScrollArea, QWidget
+from PySide6.QtWidgets import QScrollArea, QWidget
+
+from ..overlays.bounds import space_above, space_below
 
 if TYPE_CHECKING:
     from ...components.listbox import Listbox
@@ -18,22 +19,25 @@ _MIN_HEIGHT = 80
 
 
 def available_height_below(anchor: QWidget, popover: Popover, fallback: int) -> int:
-    """计算触发控件下沿到屏幕可用区域底部可容纳的滚动区高度。
+    """触发控件在宿主窗口内可容纳的滚动区高度。
 
     Args:
         anchor: 触发控件。
-        popover: 承载列表的浮层，用于扣除下边距。
-        fallback: 没有可用屏幕时返回的高度。
+        popover: 承载列表的浮层（保留参数以兼容旧调用）。
+        fallback: 拿不到窗口信息时返回的高度。
 
-    Returns:
-        可用像素高度。
+    Note:
+        优先向下：下方够放最小列表就按下方空间算（内容多时由列表滚动承接）；
+        下方比最小列表还小，Popover 会翻到上方，这时按上下较大的一侧算。
+        函数名沿用旧名。
     """
-    screen = QApplication.primaryScreen()
-    if screen is None:
+    try:
+        below = int(space_below(anchor) - _POPOVER_GAP)
+        if below >= _MIN_HEIGHT:
+            return below
+        return max(below, int(space_above(anchor) - _POPOVER_GAP))
+    except RuntimeError:
         return fallback
-    bottom = screen.availableGeometry().bottom()
-    top = anchor.mapToGlobal(QPoint(0, 0)).y() + anchor.height()
-    return int(bottom - top - _POPOVER_GAP - popover.frame_margins()[3])
 
 
 def fit_popup_height(
@@ -50,7 +54,7 @@ def fit_popup_height(
         scroll: 包裹列表的滚动区。
         listbox: 列表，提供可见内容高度。
         token_max: 当前尺寸档位的高度上限。
-        available: 触发控件下方可用高度；None 表示不受屏幕限制。
+        available: 触发控件下方可用高度；None 表示不受窗口限制。
     """
     cap = token_max if available is None else min(token_max, available)
     cap = min(token_max, max(_MIN_HEIGHT, int(cap)))

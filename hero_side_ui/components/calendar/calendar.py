@@ -23,6 +23,7 @@ from ..._shared.dates import (
 )
 from ...core import FontProvider, ThemeProvider
 from ...themes import CALENDAR_SIZES, RADIUS
+from ...themes.colors import HEROUI_COLORS
 from ..text import Text
 from . import _palette as pal
 from ._header import _CalendarHeader
@@ -491,7 +492,7 @@ class Calendar(QWidget):
         elif self._theme == "dark":
             border = "rgba(255, 255, 255, 0.08)"
         else:
-            border = "rgba(0, 0, 0, 0.08)"
+            border = HEROUI_COLORS["default"][200]
         # 边框模拟卡片浮起。禁用 QGraphicsDropShadowEffect：给含交互子按钮的容器加
         # effect 会走离屏渲染，Windows 下子按钮被合成到错误偏移。
         self.setStyleSheet(

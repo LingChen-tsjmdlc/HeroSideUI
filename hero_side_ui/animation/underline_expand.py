@@ -8,20 +8,23 @@ from PySide6.QtCore import (
 )
 from PySide6.QtGui import QColor, QPainter
 from PySide6.QtWidgets import QWidget
+from ..themes.theme_values import get_foreground
 
 
 class UnderlineBar(QWidget):
     """绘制并控制下划线的展开进度。"""
 
-    def __init__(self, color: QColor | str = "#000000", parent: QWidget | None = None):
+    def __init__(self, color: QColor | str | None = None, parent: QWidget | None = None):
         """初始化下划线控件。
 
         Args:
-            color: 下划线颜色。
+            color: 下划线颜色；省略时取 foreground。
             parent: Qt 父对象。
         """
         super().__init__(parent)
         self._progress = 0.0
+        if color is None:
+            color = get_foreground("light")
         self._color = QColor(color) if not isinstance(color, QColor) else color
         self.setFixedHeight(2)
         self.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, True)

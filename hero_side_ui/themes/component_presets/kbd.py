@@ -5,7 +5,7 @@ KBD_SIZES = {
     "padding_x": 6,  # px-1.5 = 6px
     "padding_y": 2,  # py-0.5 = 2px
     "spacing": 2,  # space-x-0.5 = 2px (key 之间)
-    "font_size": 14,  # text-small (Tailwind text-sm 约 14px)
+    "font_size": 13,  # sm 档字号
     "icon_size": 14,  # icon 渲染尺寸 (与字号同档)
     "min_height": 22,  # 视觉锚点（避免内容过少时高度塌陷）
 }
@@ -17,7 +17,7 @@ KBD_SIZE_TABLE = {
         "padding_x": 5,
         "padding_y": 1,
         "spacing": 2,
-        "font_size": 12,
+        "font_size": 13,
         "icon_size": 12,
         "min_height": 18,
         # h=18, half=9 → lg=7 与 full=9 相差 2px
@@ -46,15 +46,7 @@ VALID_KBD_SIZES = tuple(KBD_SIZE_TABLE.keys())
 # （三档 radius 表的 keys 必须一致）
 VALID_KBD_RADII = (*tuple(KBD_SIZE_TABLE["sm"]["radius"].keys()), "full")
 
-# shadow-small 阴影预设（与 Card sm 同源，对齐 HeroUI shadow-small）
-KBD_SHADOW = {
-    "offset_y": 1,
-    "blur": 8,
-    "opacity": 0.06,
-}
-
 __all__ = [
-    "KBD_SHADOW",
     "KBD_SIZES",
     "KBD_SIZE_TABLE",
     "VALID_KBD_RADII",

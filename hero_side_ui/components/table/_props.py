@@ -66,11 +66,12 @@ class _PropsMixin:
         self._radius = r
         if self._card is not None:
             self._card.set_radius(self._card_radius())
+        self._sync_shadow()
         self._propagate_style()
         self.update()
 
     def set_shadow(self, s: str):
-        """设置阴影档位并同步 Card。
+        """设置阴影档位并同步阴影层。
 
         Args:
             s: 目标阴影档位。
@@ -81,8 +82,7 @@ class _PropsMixin:
         if s not in VALID_SHADOWS:
             return
         self._shadow = s
-        if self._card is not None:
-            self._card.set_shadow(s)
+        self._sync_shadow()
         self.update()
 
     def set_is_striped(self, v: bool):

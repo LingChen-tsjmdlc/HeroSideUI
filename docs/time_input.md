@@ -31,32 +31,32 @@ ti = TimeInput(
 
 ## 参数
 
-| 参数                            | 类型                     | 默认值      | 说明                                                                   |
-| ------------------------------- | ------------------------ | ----------- | ---------------------------------------------------------------------- |
-| `label`                         | `str`                    | `""`        | 标签文本                                                               |
-| `value`                         | `DateTimeValue \| None`  | `None`      | 当前值                                                                 |
-| `placeholder_value`             | `DateTimeValue \| None`  | `None`      | 占位起点；默认当前时刻（对齐 react-aria），且不触发时区段              |
-| `variant`                       | `str`                    | `"flat"`    | `flat` / `faded` / `bordered` / `underlined`                           |
-| `color`                         | `str`                    | `"default"` | `default` / `primary` / `secondary` / `success` / `warning` / `danger` |
-| `size`                          | `str`                    | `"md"`      | `sm` / `md` / `lg`                                                     |
-| `radius`                        | `str \| None`            | `None`      | `none` / `sm` / `md` / `lg` / `full`；`None` 跟随 size                 |
-| `label_placement`               | `str`                    | `"inside"`  | `inside` / `outside` / `outside-left` / `outside-top`                  |
-| `granularity`                   | `str`                    | `"minute"`  | `hour` / `minute` / `second`，决定显示到哪一级时间段                   |
-| `hour_cycle`                    | `int \| None`            | `None`      | `12` / `24`；`None` 跟随 locale 习惯                                   |
-| `hide_time_zone`                | `bool`                   | `False`     | 隐藏时区段                                                             |
-| `should_force_leading_zeros`    | `bool`                   | `True`      | 数字段补前导零                                                         |
-| `min_value` / `max_value`       | `DateTimeValue \| None`  | `None`      | 时刻范围约束；越界自动进入 invalid 视觉（只比较时刻）                  |
-| `locale`                        | `str`                    | `"en_US"`   | ICU locale，决定段顺序与分隔符                                         |
-| `calendar`                      | `str`                    | `"gregorian"` | ICU 历法（段序随历法变化）                                           |
-| `is_disabled`                   | `bool`                   | `False`     | 禁用                                                                   |
-| `is_invalid`                    | `bool`                   | `False`     | 无效态                                                                 |
-| `is_required`                   | `bool`                   | `False`     | 必填（label 后加红色 `*`）                                             |
-| `is_readonly`                   | `bool`                   | `False`     | 只读                                                                   |
-| `full_width`                    | `bool`                   | `True`      | 撑满父容器宽度                                                         |
-| `description`                   | `str`                    | `""`        | 描述文本                                                               |
-| `error_message`                 | `str`                    | `""`        | 错误提示（`is_invalid=True` 时显示）                                   |
-| `start_content` / `end_content` | `str \| QWidget \| None` | `None`      | 首尾内容；字符串按图标名解析                                           |
-| `theme`                         | `str`                    | `"auto"`    | `auto` / `light` / `dark`                                              |
+| 参数                            | 类型                     | 默认值        | 说明                                                                   |
+| ------------------------------- | ------------------------ | ------------- | ---------------------------------------------------------------------- |
+| `label`                         | `str`                    | `""`          | 标签文本                                                               |
+| `value`                         | `DateTimeValue \| None`  | `None`        | 当前值                                                                 |
+| `placeholder_value`             | `DateTimeValue \| None`  | `None`        | 占位起点；默认当前时刻（对齐 react-aria），且不触发时区段              |
+| `variant`                       | `str`                    | `"flat"`      | `flat` / `faded` / `bordered` / `underlined`                           |
+| `color`                         | `str`                    | `"default"`   | `default` / `primary` / `secondary` / `success` / `warning` / `danger` |
+| `size`                          | `str`                    | `"md"`        | `sm` / `md` / `lg`                                                     |
+| `radius`                        | `str \| None`            | `None`        | `none` / `sm` / `md` / `lg` / `full`；`None` 跟随 size                 |
+| `label_placement`               | `str`                    | `"inside"`    | `inside` / `outside` / `outside-left` / `outside-top`                  |
+| `granularity`                   | `str`                    | `"minute"`    | `hour` / `minute` / `second`，决定显示到哪一级时间段                   |
+| `hour_cycle`                    | `int \| None`            | `None`        | `12` / `24`；`None` 跟随 locale 习惯                                   |
+| `hide_time_zone`                | `bool`                   | `False`       | 隐藏时区段                                                             |
+| `should_force_leading_zeros`    | `bool`                   | `True`        | 数字段补前导零                                                         |
+| `min_value` / `max_value`       | `DateTimeValue \| None`  | `None`        | 时刻范围约束；越界自动进入 invalid 视觉（只比较时刻）                  |
+| `locale`                        | `str`                    | `"en_US"`     | ICU locale，决定段顺序与分隔符                                         |
+| `calendar`                      | `str`                    | `"gregorian"` | ICU 历法（段序随历法变化）                                             |
+| `is_disabled`                   | `bool`                   | `False`       | 禁用                                                                   |
+| `is_invalid`                    | `bool`                   | `False`       | 无效态                                                                 |
+| `is_required`                   | `bool`                   | `False`       | 必填（label 后加红色 `*`）                                             |
+| `is_readonly`                   | `bool`                   | `False`       | 只读                                                                   |
+| `full_width`                    | `bool`                   | `True`        | 撑满父容器宽度                                                         |
+| `description`                   | `str`                    | `""`          | 描述文本                                                               |
+| `error_message`                 | `str`                    | `""`          | 错误提示（`is_invalid=True` 时显示）                                   |
+| `start_content` / `end_content` | `str \| QWidget \| None` | `None`        | 首尾内容；字符串按图标名解析                                           |
+| `theme`                         | `str`                    | `"auto"`      | `auto` / `light` / `dark`                                              |
 
 注意：`granularity="day"` 在 TimeInput 中是非法值，传入会抛 `ValueError`（DateInput 才支持日期粒度）。
 

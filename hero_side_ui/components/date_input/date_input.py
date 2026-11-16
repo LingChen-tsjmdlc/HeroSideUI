@@ -21,6 +21,7 @@ from ...core import FontProvider, ThemeProvider
 from ..text import Text
 from ._segment import _DateSegment, _SegmentLiteral
 from ._styling import _DateInputStylingMixin
+from ...themes.colors import HEROUI_COLORS
 
 
 class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
@@ -277,8 +278,8 @@ class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
         self._label_anim = LabelFloatAnimation(
             on_progress=self._on_label_progress, duration=200, parent=self
         )
-        self._label_color_resting = QColor("#a1a1aa")
-        self._label_color_floated = QColor("#71717a")
+        self._label_color_resting = QColor(HEROUI_COLORS["default"][400])
+        self._label_color_floated = QColor(HEROUI_COLORS["default"][500])
 
         self._relayout_for_label_placement()
 

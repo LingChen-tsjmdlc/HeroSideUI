@@ -12,6 +12,7 @@ from ...themes import (
     RADIUS,
     VALID_BUTTON_VARIANTS,
 )
+from ...themes.theme_values import get_color_foreground, get_foreground
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -283,20 +284,16 @@ class Button(QPushButton):
         c_text = colors[200] if is_dark else c600
         c_text_hover = colors[100] if is_dark else colors[700]
 
-        fg_on_solid = "#FFFFFF"
-        if self._color == "warning":
-            fg_on_solid = "#000000"
+        fg_on_solid = get_color_foreground(self._color, self._theme)
         if self._color == "default":
             if is_dark:
-                # 暗色模式: solid 底色用深灰，文字用中灰（不要纯白）
-                fg_on_solid = "#d4d4d8"
+                # 暗色模式: solid 底色用深灰
                 c500 = colors[700]
                 c600 = colors[600]
                 c_text = colors[300]
                 c_text_hover = colors[200]
             else:
                 # 亮色模式: solid 底色用更深的灰（不要太浅）
-                fg_on_solid = "#FFFFFF"
                 c500 = colors[500]
                 c600 = colors[600]
                 c_text = colors[700]
@@ -424,11 +421,9 @@ class Button(QPushButton):
 
         if self._variant in ("solid", "ghost"):
             # solid/ghost 按钮底色深，用白色水波纹
-            if self._color == "warning":
-                return QColor(0, 0, 0)  # warning 底色浅，用黑色
-            if self._color == "default" and self._theme == "light":
-                return QColor(0, 0, 0)  # 亮色 default 底色也算浅
-            return QColor(255, 255, 255)
+            if self._color == "warning" or (self._color == "default" and self._theme == "light"):
+                return QColor(get_foreground("light"))  # 底色浅，用深色波纹
+            return QColor(get_color_foreground(self._color, self._theme))
         else:
             # 其他变体: 用主色
             hex_color = colors[500].lstrip("#")
@@ -463,12 +458,7 @@ class Button(QPushButton):
         is_dark = self._theme == "dark"
 
         # fg_on_solid: 和 _get_variant_styles 保持一致
-        if self._color == "warning":
-            fg_on_solid = "#000000"
-        elif self._color == "default":
-            fg_on_solid = "#d4d4d8" if is_dark else "#FFFFFF"
-        else:
-            fg_on_solid = "#FFFFFF"
+        fg_on_solid = get_color_foreground(self._color, self._theme)
 
         variant = self._variant
 

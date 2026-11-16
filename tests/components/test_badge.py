@@ -263,15 +263,15 @@ class TestStyles:
         b = Badge(content="5", show_outline=True, theme="light")
         qtbot.addWidget(b)
         assert b._badge._border_width == 2
-        assert b._badge._border_color.name() == "#ffffff"
+        assert b._badge._border_color.name() == "#fafbfd"
         b.set_show_outline(False)
         assert b._badge._border_color is None
         assert b._badge._border_width == 0
 
-    def test_outline_dark_uses_black(self, qtbot):
+    def test_outline_dark_uses_window_background(self, qtbot):
         b = Badge(content="5", show_outline=True, theme="dark")
         qtbot.addWidget(b)
-        assert b._badge._border_color.name() == "#000000"
+        assert b._badge._border_color.name() == "#0d0d0f"
 
     def test_shadow_variant_has_effect(self, qtbot):
         b = Badge(content="5", variant="shadow", color="primary")

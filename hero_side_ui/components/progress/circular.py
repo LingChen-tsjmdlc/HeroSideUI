@@ -18,6 +18,7 @@ from PySide6.QtWidgets import (
 from ...animation import SpinAnimation, tween_property
 from ...core import ThemeProvider
 from ...themes import CIRCULAR_PROGRESS_SIZES, HEROUI_COLORS
+from ...themes.theme_values import get_foreground
 from ..text import Text
 
 
@@ -246,7 +247,7 @@ class CircularProgress(QWidget):
         Returns:
             str: 十六进制色值。
         """
-        return "#ecedee" if self._theme == "dark" else "#18181b"
+        return get_foreground(self._theme)
 
     def _stroke_width(self) -> float:
         """返回环线宽度（px），优先用自定义覆盖值。

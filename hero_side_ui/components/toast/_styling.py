@@ -2,28 +2,61 @@
 
 from __future__ import annotations
 
+from collections.abc import Mapping
+
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import (
+    get_background,
+    get_color_foreground,
+    get_content_background,
+    get_foreground,
+)
 
 # 语义色阶（HeroUI common.* 只有这 10 档，暗色 swap 靠首尾反转）
 _SHADES = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900)
 
-# HeroUI semantic: background / foreground / content1 的 DEFAULT
-_BACKGROUND = {"light": "#FFFFFF", "dark": "#000000"}
-_FOREGROUND = {"light": "#11181C", "dark": "#ECEDEE"}
-_CONTENT1 = {"light": "#FFFFFF", "dark": "#18181b"}
 
-# solid 变体的文字色（readableColor 的结果，warning/success 为深色底浅字）
-_SOLID_FG = {
-    "primary": "#ffffff",
-    "secondary": "#ffffff",
-    "success": "#000000",
-    "warning": "#000000",
-    "danger": "#ffffff",
-}
+class _TokenView(Mapping):
+    """亮/暗两侧的只读视图：键 light/dark，值每次取自当前主题取值。"""
+
+    def __init__(self, getter):
+        self._get = getter
+
+    def __getitem__(self, side: str) -> str:
+        if side not in ("light", "dark"):
+            raise KeyError(side)
+        return self._get(side)
+
+    def __iter__(self):
+        return iter(("light", "dark"))
+
+    def __len__(self) -> int:
+        return 2
+
+
+# 窗口底 / 默认文字 / 内容面：随 setup 配置变化
+_BACKGROUND = _TokenView(get_background)
+_FOREGROUND = _TokenView(get_foreground)
+_CONTENT1 = _TokenView(get_content_background)
 
 # default.DEFAULT 不参与暗色 swap
 _DEFAULT_SOLID_BG = {"light": "#d4d4d8", "dark": "#3f3f46"}
-_DEFAULT_SOLID_FG = {"light": "#000000", "dark": "#ffffff"}
+_DEFAULT_SOLID_FG = _FOREGROUND
+
+
+def _solid_fg(color: str, side: str) -> str:
+    """solid 变体的文字色。
+
+    Args:
+        color: 语义色名。
+        side: "light" 或 "dark"。
+
+    Note:
+        success 底色偏亮，浅字对比度不足，固定用深色文字；其余取 color_foreground。
+    """
+    if color == "success":
+        return get_foreground("light")
+    return get_color_foreground(color, side)
 
 
 def _shade(scale: dict, n: int, is_dark: bool) -> str:
@@ -156,7 +189,7 @@ def _solid(c: dict, d: dict, is_dark: bool, color: str) -> dict:
     else:
         # HeroUI: bg-${color} 取 DEFAULT（不参与暗色 swap），secondary 暗色为 400
         bg = c[400 if is_dark and color == "secondary" else 500]
-        fg = _SOLID_FG.get(color, "#ffffff")
+        fg = _solid_fg(color, bg_key)
     return _pack(
         bg=bg,
         border=None,

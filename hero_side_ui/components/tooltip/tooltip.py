@@ -7,6 +7,7 @@ auto-flip、箭头与显隐延迟。
 
 from PySide6.QtCore import (
     QPoint,
+    QRect,
     Qt,
     QTimer,
     Signal,
@@ -17,6 +18,8 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
+from ..._shared.overlays.bounds import clip_to_host, register_host
+from ..._shared.overlays.hit_test import HitThroughMixin
 from ...animation import FadeScaleAnimation, PixmapScaleProxy
 from ...core import ThemeProvider
 from ...themes import TOOLTIP_SIZES
@@ -29,6 +32,7 @@ from ._trigger import _TooltipTriggerMixin
 
 
 class Tooltip(
+    HitThroughMixin,
     _TooltipPaintMixin,
     _TooltipTriggerMixin,
     _TooltipScrollFollowMixin,
@@ -398,6 +402,27 @@ class Tooltip(
         """入场动画结束回调：结束缩放代理。"""
         self._scale_proxy.end()
 
+    def _body_local(self) -> QRect:
+        """可见主体（不含阴影与箭头留白）在窗口内的矩形。"""
+        ml, mt, mr, mb = self._frame_margins()
+        return self.rect().adjusted(ml, mt, -mr, -mb)
+
+    def _update_clip(self):
+        """顶层模式下按宿主窗口客户区裁掉超出的部分。"""
+        trigger = getattr(self, "_trigger", None)
+        if not self._embedded and trigger is not None:
+            clip_to_host(self, trigger)
+
+    def moveEvent(self, event):
+        """位置变化后重算裁剪区域。"""
+        super().moveEvent(event)
+        self._update_clip()
+
+    def resizeEvent(self, event):
+        """尺寸变化后重算裁剪区域。"""
+        super().resizeEvent(event)
+        self._update_clip()
+
     def hideEvent(self, event):
         """隐藏时同步清理打开态、缩放代理与滚动监听。"""
         if self._is_open:
@@ -419,6 +444,14 @@ class Tooltip(
         """返回当前阴影、箭头与方位下四边让出的空间。"""
         return _pos.frame_margins(self._shadow, self._show_arrow, self._actual_placement)
 
+    def _body_global(self) -> QRect:
+        """可见主体（扣掉阴影与箭头留白）的全局矩形，供留白穿透与点击外部判断使用。
+
+        Note:
+            按窗口当前实际几何算（不用 sizeHint：淡入缩放期间 sizeHint 会缩水）。
+        """
+        return self._body_local().translated(self.mapToGlobal(QPoint(0, 0)))
+
     def _calc_position(self, trigger: QWidget) -> QPoint:
         """计算 tooltip 坐标（含 auto-flip）。
 
@@ -431,6 +464,8 @@ class Tooltip(
         Note:
             每次从 _placement 重新出发，避免上次 flip 的中间态污染。
         """
+        if not self._embedded:
+            register_host(self, trigger)
         # 先 reset 到用户设定的 placement，重置 margins + sizeHint。
         # 这是为了让 flip 检测基于清洁初始态，不被上次 flip 的状态干扰
         if self._actual_placement != self._placement:

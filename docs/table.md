@@ -28,7 +28,7 @@ t.set_rows([
 | `color` | `default` / `primary` / `secondary` / `success` / `warning` / `danger` | `default` | 选中行条与选中字色的配色 |
 | `size` | `sm` / `md` / `lg` | `md` | 字号 + 行高 + padding 三档预设 |
 | `radius` | `none` / `sm` / `md` / `lg` / `full` | `lg` | 表头与选中/hover 行条的圆角；`full` 时行条变药丸，外壳 Card 自动退回 `lg`（不跟随 full） |
-| `shadow` | `none` / `sm` / `md` / `lg` | `sm` | wrapper 阴影（复用内置 Card 的阴影系统） |
+| `shadow` | `none` / `sm` / `md` / `lg` | `sm` | wrapper 阴影（公共阴影，由 Table 自己的阴影层绘制，内部 Card 不再画阴影） |
 | `layout` | `auto` / `fixed` | `auto` | 列宽策略 |
 | `selection_mode` | `none` / `single` / `multiple` | `none` | 选择模式；`multiple` 时首列出现 checkbox 与全选 |
 | `selected_keys` | `Iterable[str]` | `None` | 初始选中行 key |
@@ -157,7 +157,7 @@ t.set_theme("dark")
 
 | HeroUI slot / variant | HeroSideUI 实现 |
 | --- | --- |
-| `wrapper`（bg-content1, shadow, rounded） | 复用内置 **Card** 组件（自带阴影系统 + content1 背景 + 圆角 + 主题自治） |
+| `wrapper`（bg-content1, shadow, rounded） | 复用内置 **Card** 组件（content1 背景 + 圆角 + 主题自治；阴影由 Table 自己的阴影层负责） |
 | `th`（bg-default-100, text-tiny font-semibold） | `_TableColumnHeader` 自绘底色 + 首尾列圆角 |
 | `td`（py-2 px-3, text-small） | `_TableCell` 内容槽位 + padding |
 | `td::before`（选中/hover 行条） | `_TableCell.paintEvent` 自绘 before 行条；单选每行独立药丸，多选/hover 整块连续（仅表首行上圆角、表尾行下圆角、中行直角，对齐 `isMultiSelectable`） |

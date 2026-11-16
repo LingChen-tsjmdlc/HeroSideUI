@@ -1,9 +1,10 @@
-"""Popover 定位 mixin：12 placement 几何 + 边界翻转 + frame margins。"""
+"""Popover 定位 mixin：12 placement 几何 + 窗口内翻转 + frame margins。"""
 
-from PySide6.QtCore import QPoint
-from PySide6.QtWidgets import QApplication, QWidget
+from PySide6.QtCore import QPoint, QRect
+from PySide6.QtWidgets import QWidget
 
-from ...themes import POPOVER_SHADOWS
+from ..._shared.overlays.bounds import overflow, popup_area, register_host
+from ...core.shadow_paint import tier_margin
 from ._constants import ARROW_SIZE
 
 
@@ -22,8 +23,7 @@ class _PopoverGeometryMixin:
         Note:
             仅当 self._arrow 为 True 时，对应方向额外加上 ARROW_SIZE。
         """
-        cfg = POPOVER_SHADOWS.get(self._shadow, POPOVER_SHADOWS["md"])
-        sm = cfg["blur"] + abs(cfg["offset_y"])
+        sm = tier_margin(self._shadow)
         # arrow 占用一边（仅在 self._arrow=True 时保留空间）
         arrow = ARROW_SIZE if self._arrow else 0
         place = self._actual_placement
@@ -60,57 +60,82 @@ class _PopoverGeometryMixin:
             base[3] + extra[3],
         )
 
+    def _body_global(self) -> QRect:
+        """可见主体（扣掉阴影与箭头留白）的全局矩形，供留白穿透与点击外部判断使用。
+
+        Note:
+            按窗口当前实际几何算（不用 sizeHint：淡入缩放期间 sizeHint 会缩水）。
+        """
+        return self._body_local().translated(self.mapToGlobal(QPoint(0, 0)))
+
+    def _body_at(self, pos: QPoint) -> QRect:
+        """窗口位于 pos 时，可见主体（不含阴影与箭头留白）的全局矩形。
+
+        Args:
+            pos: 浮层左上角的全局坐标。
+        """
+        ml, mt, mr, mb = self._frame_margins()
+        size = self.sizeHint()
+        return QRect(
+            pos.x() + ml,
+            pos.y() + mt,
+            max(1, size.width() - ml - mr),
+            max(1, size.height() - mt - mb),
+        )
+
+    def _layout_for(self, place: str, tr_pos: QPoint, tr_w: int, tr_h: int) -> tuple[QPoint, QRect]:
+        """按指定 placement 重排版，返回浮层左上角与可见主体矩形（全局坐标）。
+
+        Args:
+            place: 要尝试的 placement。
+            tr_pos: trigger 左上角的全局坐标。
+            tr_w: trigger 宽度。
+            tr_h: trigger 高度。
+
+        Note:
+            先把 _actual_placement、外边距和窗口尺寸切到该 placement 再算位置，
+            保证箭头所在边的额外边距、窗口尺寸与位置三者一致。
+        """
+        self._actual_placement = place
+        self._outer.setContentsMargins(*self._frame_margins())
+        self.adjustSize()
+        # adjustSize 在某些平台上只采用当前可用宽度，显式 resize 到 sizeHint 才可靠
+        self.resize(self.sizeHint())
+        pos = self._compute_pos_for(place, tr_pos, tr_w, tr_h)
+        return pos, self._body_at(pos)
+
     def _calc_position(self, trigger: QWidget) -> QPoint:
-        """计算 popover 在屏幕坐标下的左上角位置（含 auto-flip）。
+        """计算 popover 左上角的全局坐标。
 
         Args:
             trigger: 作为定位锚点的控件。
 
-        Returns:
-            QPoint: popover 左上角的全局坐标。
-
         Note:
-            越界时自动反向翻转 placement（_allow_flip 为 True 时）；
-            多屏配置下使用 trigger 所在屏幕而非主屏，避免误判越界。
+            可用区域 = 触发控件所在窗口的客户区 ∩ 所在屏幕。先按指定方向排；
+            放不下且允许翻转时试相反方向；两边都放不下取越界更少的一边（并列取指定方向）。
+            翻转后仍放不下的部分，由 clip_to_host 在窗口边缘处裁掉，不会伸出窗口。
         """
+        register_host(self, trigger)
         tr_pos = trigger.mapToGlobal(QPoint(0, 0))
-        tr_w = trigger.width()
-        tr_h = trigger.height()
+        tr_w, tr_h = trigger.width(), trigger.height()
+        area = popup_area(trigger)
 
-        # 用 trigger 实际所在的 screen，而不是 primaryScreen——
-        # 多屏配置下 primaryScreen 的几何范围可能与 trigger 所在屏不同
-        # （副屏 trigger 的全局坐标永远超出主屏 rect → 所有 placement 都被误判越界
-        # → 全部 flip，表现为"top 跑下面、bottom 跑上面"）。
-        win = trigger.window() if hasattr(trigger, "window") else None
-        win_handle = win.windowHandle() if win is not None else None
-        scr = win_handle.screen() if win_handle is not None else None
-        if scr is None:
-            scr = QApplication.screenAt(tr_pos) or QApplication.primaryScreen()
-        screen = scr.availableGeometry()
+        candidates = [self._placement]
+        if getattr(self, "_allow_flip", True):
+            flipped = self._flip_placement(self._placement)
+            if flipped != self._placement:
+                candidates.append(flipped)
 
-        # 先按用户指定方向算
-        place = self._placement
-        pos = self._compute_pos_for(place, tr_pos, tr_w, tr_h)
-
-        # 检查是否越界，越界则反向
-        my_w = self.sizeHint().width()
-        my_h = self.sizeHint().height()
-        rect = (pos.x(), pos.y(), my_w, my_h)
-        if getattr(self, "_allow_flip", True) and (
-            rect[0] < screen.left()
-            or rect[1] < screen.top()
-            or rect[0] + rect[2] > screen.right()
-            or rect[1] + rect[3] > screen.bottom()
-        ):
-            flipped = self._flip_placement(place)
-            new_pos = self._compute_pos_for(flipped, tr_pos, tr_w, tr_h)
-            self._actual_placement = flipped
-            self._outer.setContentsMargins(*self._frame_margins())
-            self.adjustSize()
-            return new_pos
-
-        self._actual_placement = place
-        self._outer.setContentsMargins(*self._frame_margins())
+        best = None  # (越界量, 序号, placement)
+        for idx, cand in enumerate(candidates):
+            _pos, body = self._layout_for(cand, tr_pos, tr_w, tr_h)
+            miss = overflow(body, area)
+            if best is None or miss < best[0]:
+                best = (miss, idx, cand)
+            if miss == 0:
+                break
+        chosen = best[2]
+        pos, _body = self._layout_for(chosen, tr_pos, tr_w, tr_h)
         return pos
 
     def _compute_pos_for(self, place: str, tr_pos: QPoint, tr_w: int, tr_h: int) -> QPoint:

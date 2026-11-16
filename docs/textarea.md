@@ -290,7 +290,7 @@ Textarea(label="Free", resizable="both")
 - HeroUI 暴露 `cacheMeasurements` prop（react-textarea-autosize 优化），HeroSideUI 不需要——QFontMetrics 调用本身极快
 - HeroUI 不支持 `underlined` Textarea，HeroSideUI 同样限制（传入会降级）
 - **滚动条颜色策略**：
-  - `Textarea(color="default")`（默认）→ 滚动条用全局 ScrollStyle 默认色（`neutral`，纯灰中性色）
+  - `Textarea(color="default")`（默认）→ 滚动条用全局 ScrollStyle 默认色（`default` 灰阶）
   - `Textarea(color="primary"/"success"/...)` → 滚动条跟随该语义色
   - 详见 [`ScrollStyle`](./scroll_style.md) 的 `set_bar_color`
 

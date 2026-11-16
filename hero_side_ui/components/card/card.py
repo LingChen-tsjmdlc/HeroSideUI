@@ -6,11 +6,10 @@
 
 from PySide6.QtCore import (
     Property,
-    QRectF,
     Qt,
     Signal,
 )
-from PySide6.QtGui import QColor, QPainter, QPalette
+from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -22,8 +21,12 @@ from PySide6.QtWidgets import (
 
 from ...animation import PressScaleEffect, RippleOverlay, tween_property
 from ...core import ThemeProvider
-from ...themes import CARD_SHADOWS, HEROUI_COLORS, RADIUS
+from ...core.shadow_paint import ShadowController
+from ...themes import HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_content_background, get_foreground
 from ...utils import hex_to_rgba
+
+from ._press import CardPressMixin
 
 # Card 的固定结构参数（对齐 HeroUI，不再暴露 size prop）
 # padding 统一 12，字号由用户自己在子控件上设置（header 用 h3，body 用正文）
@@ -151,7 +154,7 @@ class CardFooter(QWidget):
         self._is_blurred = b
 
 
-class Card(QWidget):
+class Card(CardPressMixin, QWidget):
     """HeroUI 风格卡片容器：Header/Body/Footer 插槽 + hover 过渡。"""
 
     pressed = Signal()
@@ -169,7 +172,7 @@ class Card(QWidget):
         theme: str = "auto",
         parent: QWidget | None = None,
     ):
-        """创建卡片容器：外壳自绘阴影 + 内层 QSS 背景的双层结构。
+        """创建卡片容器：外壳 + 内层 QSS 背景的双层结构，阴影由公共阴影层承担。
 
         Args:
             shadow: 阴影级别。
@@ -184,8 +187,10 @@ class Card(QWidget):
             parent: Qt 父对象。
 
         Note:
-            不用 QGraphicsDropShadowEffect——会与子控件自带 GraphicsEffect
-            嵌套冲突导致子控件消失，改为外壳 paintEvent 多层自绘阴影。
+            阴影不占布局：由 ShadowController 在父控件里挂一个兄弟阴影层绘制，
+            卡片尺寸就是可视尺寸。贴着父控件边缘的一侧阴影会被父控件裁掉，
+            需要时给父容器留出边距。不用 QGraphicsDropShadowEffect（会与子控件
+            自带的 GraphicsEffect 嵌套冲突）。
         """
         super().__init__(parent)
         self._shadow = shadow
@@ -201,6 +206,7 @@ class Card(QWidget):
 
         self._is_hovered = False
         self._is_pressed_state = False
+        self._handled_mouse: tuple | None = None  # 同一次鼠标事件，避免逐层转发重复触发
 
         self._header: CardHeader | None = None
         self._body: CardBody | None = None
@@ -214,7 +220,7 @@ class Card(QWidget):
         self._setup_ui()
         self._apply_styles()
 
-        # 按压动画（挂在内层 _content 上，避免影响外壳 paintEvent 阴影）
+        # 按压动画（挂在内层 _content 上）
         self._press_scale: PressScaleEffect | None = None
         self._ripple_overlay: RippleOverlay | None = None
         if self._is_pressable:
@@ -255,16 +261,14 @@ class Card(QWidget):
 
         Note:
             外壳不挂 QSS 背景也不用 WA_TranslucentBackground（会影响子树
-            渲染），只负责 paintEvent 画阴影；QSS 背景挂在内层 _content。
+            渲染）；QSS 背景挂在内层 _content，阴影由 ShadowController 管。
         """
-        # 外壳: 不挂 QSS 背景、也不使用 WA_TranslucentBackground（会影响子树渲染）
-        # 只负责 paintEvent 画阴影 + 用外 margin 给阴影留空间
         self.setAttribute(Qt.WidgetAttribute.WA_StyledBackground, False)
+        self._shadow_ctl = ShadowController(self)
 
-        # 外层 layout: 只留阴影 margin，把 _content 放进去
+        # 外层 layout：无边距，_content 与外壳等大
         self._outer_layout = QVBoxLayout(self)
-        m = self._shadow_margin()
-        self._outer_layout.setContentsMargins(m, m, m, m)
+        self._outer_layout.setContentsMargins(0, 0, 0, 0)
         self._outer_layout.setSpacing(0)
 
         # 内层 _content: 承载 QSS 背景 + 所有装配内容
@@ -279,75 +283,13 @@ class Card(QWidget):
         self._layout.setSpacing(0)
 
         self.setMouseTracking(True)
+        # 内容子树里的文字等子控件会吃掉鼠标事件：装过滤器转发按压给 Card
+        self.install_press_forwarding(self._content)
 
-    def _shadow_margin(self) -> int:
-        """根据阴影级别计算外壳四周预留的绘制空间。
-
-        Returns:
-            blur 一半 + |offset_y| + 2 的富余；disabled 或无阴影时为 0。
-        """
-        if self._is_disabled:
-            return 0
-        scfg = CARD_SHADOWS.get(self._shadow, CARD_SHADOWS["md"])
-        if scfg["opacity"] <= 0:
-            return 0
-        # margin = blur 半径 + offset 的绝对值，再加一点富余
-        return int(scfg["blur"]) // 2 + abs(int(scfg["offset_y"])) + 2
-
-    # ============================================================
-    # 外壳 paintEvent: 多层半透明圆角矩形模拟阴影（替代 QGraphicsDropShadowEffect）
-    # 好处: 不会对整个子树做离屏渲染，子控件自带的 QGraphicsEffect（如 Button 的
-    #       PressScaleEffect）可以正常工作。
-    # ============================================================
-    def paintEvent(self, event):
-        """外壳自绘多层半透明圆角矩形模拟阴影。
-
-        Args:
-            event: Qt 绘制事件。
-
-        Note:
-            不对整个子树做离屏渲染，子控件自带的 QGraphicsEffect
-            （如 Button 的 PressScaleEffect）可正常工作。
-        """
-        if self._is_disabled:
-            return
-        scfg = CARD_SHADOWS.get(self._shadow, CARD_SHADOWS["md"])
-        if scfg["opacity"] <= 0:
-            return
-
-        m = self._shadow_margin()
-        if m <= 0:
-            return
-
-        # _content 在外壳中的实际 rect（考虑外 margin）
-        inner = self._content.geometry()
-        r = self._resolve_radius()
-
-        painter = QPainter(self)
-        painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(Qt.PenStyle.NoPen)
-
-        # 多层叠加模拟 blur: 从外到内扩散，alpha 从低到高
-        layers = max(4, int(scfg["blur"]) // 2)
-        max_alpha = scfg["opacity"] * 255
-        offset_y = int(scfg["offset_y"])
-
-        for i in range(layers, 0, -1):
-            # 第 i 层从 inner 向外扩 (i * m / layers) 像素
-            expand = int(i * m / layers)
-            rect = QRectF(
-                inner.x() - expand,
-                inner.y() - expand + offset_y,
-                inner.width() + 2 * expand,
-                inner.height() + 2 * expand,
-            )
-            # 外层 alpha 低，内层 alpha 高（形成扩散感）
-            # 用 (layers - i + 1) / layers^2 这种递减权重
-            alpha = max_alpha * (layers - i + 1) / (layers * layers)
-            painter.setBrush(QColor(0, 0, 0, int(alpha)))
-            painter.drawRoundedRect(rect, r + expand, r + expand)
-
-        painter.end()
+    def _sync_shadow(self) -> None:
+        """把当前档位、圆角、主题同步给阴影层；禁用时不显示阴影。"""
+        tier = "none" if self._is_disabled else self._shadow
+        self._shadow_ctl.set_style(tier, self._resolve_radius(), self._theme)
 
     # ============================================================
     # QSS 背景（挂在内层 _content 上，不会被任何离屏渲染遮挡子控件）
@@ -357,17 +299,13 @@ class Card(QWidget):
         """正常态背景色。
 
         Returns:
-            磨砂态返回半透明底；普通态亮色纯白、暗色 default-900。
+            磨砂态返回半透明底；普通态取 content_background。
         """
-        is_dark = self._theme == "dark"
-        dc = HEROUI_COLORS["default"]
+        base = get_content_background(self._theme)
         if self._is_blurred:
-            return (
-                self._parse_color(hex_to_rgba("#18181b", 0.20))
-                if is_dark
-                else self._parse_color(hex_to_rgba("#ffffff", 0.45))
-            )
-        return QColor(dc[900]) if is_dark else QColor("#ffffff")
+            alpha = 0.20 if self._theme == "dark" else 0.45
+            return self._parse_color(hex_to_rgba(base, alpha))
+        return QColor(base)
 
     def _get_hover_bg(self) -> QColor:
         """hover 态背景色。
@@ -378,11 +316,8 @@ class Card(QWidget):
         is_dark = self._theme == "dark"
         dc = HEROUI_COLORS["default"]
         if self._is_blurred:
-            return (
-                self._parse_color(hex_to_rgba("#18181b", 0.30))
-                if is_dark
-                else self._parse_color(hex_to_rgba("#ffffff", 0.55))
-            )
+            alpha = 0.30 if is_dark else 0.55
+            return self._parse_color(hex_to_rgba(get_content_background(self._theme), alpha))
         return QColor(dc[800]) if is_dark else QColor(dc[100])
 
     @staticmethod
@@ -544,20 +479,16 @@ class Card(QWidget):
     # ============================================================
 
     def _apply_styles(self):
-        """整体样式刷新：阴影 margin、QSS、效果、尺寸策略与光标。
+        """整体样式刷新：阴影层、QSS、效果、尺寸策略与光标。
 
         Note:
-            disabled 半透明挂 _content（不影响外壳阴影绘制）；
+            disabled 半透明挂 _content；
             pressable 时 _content 上已有 PressScaleEffect，不得覆盖。
         """
-        # 更新外层阴影 margin（shadow 级别变了会需要重算）
-        if hasattr(self, "_outer_layout"):
-            m = self._shadow_margin()
-            self._outer_layout.setContentsMargins(m, m, m, m)
-
         self._refresh_qss()
+        self._sync_shadow()
 
-        # disabled: 整体半透明（挂在 _content 上，不影响外壳阴影绘制）
+        # disabled: 整体半透明（挂在 _content 上）
         if hasattr(self, "_content") and self._content is not None:
             if self._is_disabled:
                 eff = QGraphicsOpacityEffect(self._content)
@@ -571,13 +502,8 @@ class Card(QWidget):
                 if not self._is_pressable:
                     self._content.setGraphicsEffect(None)
 
-        # 外壳触发重绘（阴影）
-        self.update()
-
         # sizePolicy: 默认水平 Preferred + 垂直 Fixed —— 避免父 layout (如 QHBoxLayout)
-        # 把所有 Card 等高拉伸，导致 _content 被外 margin 挤压变小。
-        # 视觉上每张 Card 的高度由各自内容 sizeHint 决定，shadow 变大时
-        # 外壳跟着长高（多出的是阴影空间），_content 内容区始终稳定。
+        # 把所有 Card 等高拉伸；每张 Card 的高度由各自内容 sizeHint 决定。
         if self._full_width:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
@@ -621,7 +547,7 @@ class Card(QWidget):
             self._footer.set_padding(p)
             fbg, fex = "transparent", ""
             if self._is_footer_blurred:
-                fbg = hex_to_rgba("#18181b", 0.7) if is_dark else hex_to_rgba("#ffffff", 0.7)
+                fbg = hex_to_rgba(get_content_background(self._theme), 0.7)
                 fex = "border-top: 1px solid rgba(255, 255, 255, 0.1);"
             self._footer.setStyleSheet(f"""
                 #heroCardFooter {{
@@ -667,9 +593,9 @@ class Card(QWidget):
         """按主题取水波纹颜色。
 
         Returns:
-            暗色白波纹、亮色黑波纹。
+            取 foreground：暗色浅波纹、亮色深波纹。
         """
-        return QColor(255, 255, 255) if self._theme == "dark" else QColor(0, 0, 0)
+        return QColor(get_foreground(self._theme))
 
     # ============================================================
     # 交互
@@ -696,48 +622,6 @@ class Card(QWidget):
             self._is_hovered = False
             tween_property(self, "_hover_anim", b"hover_progress", 0.0, duration=300)
         super().leaveEvent(event)
-
-    def mousePressEvent(self, event):
-        """鼠标按下：pressable 时触发水波纹与按压缩放。
-
-        Args:
-            event: Qt 鼠标按下事件。
-
-        Note:
-            水波纹坐标需从外壳映射到内层 _content。
-        """
-        if (
-            self._is_pressable
-            and not self._is_disabled
-            and event.button() == Qt.MouseButton.LeftButton
-        ):
-            self._is_pressed_state = True
-            if self._ripple_overlay:
-                # 坐标从外壳转到内层 _content
-                pos_in_content = self._content.mapFrom(self, event.position().toPoint())
-                self._ripple_overlay.add_ripple(pos_in_content)
-            if self._press_scale:
-                self._press_scale.press()
-        super().mousePressEvent(event)
-
-    def mouseReleaseEvent(self, event):
-        """鼠标释放：恢复缩放，仍在卡内才发 pressed 信号。
-
-        Args:
-            event: Qt 鼠标释放事件。
-        """
-        if (
-            self._is_pressable
-            and not self._is_disabled
-            and event.button() == Qt.MouseButton.LeftButton
-        ):
-            if self._press_scale:
-                self._press_scale.release()
-            if self._is_pressed_state:
-                self._is_pressed_state = False
-                if self.rect().contains(event.position().toPoint()):
-                    self.pressed.emit()
-        super().mouseReleaseEvent(event)
 
     # ============================================================
     # 公共 API
@@ -877,66 +761,6 @@ class Card(QWidget):
         """
         self._full_width = v
         self._apply_styles()
-
-    # ============================================================
-    # 尺寸代理: 把外部传入的固定/最小/最大尺寸作用到内层 _content
-    # 这样 "setFixedWidth(350)" 的 350 是可视 Card 宽度，
-    # 而 Card 外壳会自动扩展到 350 + 2 * shadow_margin 以容纳阴影。
-    # ============================================================
-
-    def setFixedSize(self, *args):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setFixedSize(*args)
-        else:
-            super().setFixedSize(*args)
-
-    def setFixedWidth(self, w: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setFixedWidth(w)
-        else:
-            super().setFixedWidth(w)
-
-    def setFixedHeight(self, h: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setFixedHeight(h)
-        else:
-            super().setFixedHeight(h)
-
-    def setMinimumWidth(self, w: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMinimumWidth(w)
-        else:
-            super().setMinimumWidth(w)
-
-    def setMinimumHeight(self, h: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMinimumHeight(h)
-        else:
-            super().setMinimumHeight(h)
-
-    def setMinimumSize(self, *args):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMinimumSize(*args)
-        else:
-            super().setMinimumSize(*args)
-
-    def setMaximumWidth(self, w: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMaximumWidth(w)
-        else:
-            super().setMaximumWidth(w)
-
-    def setMaximumHeight(self, h: int):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMaximumHeight(h)
-        else:
-            super().setMaximumHeight(h)
-
-    def setMaximumSize(self, *args):  # type: ignore[override]
-        if self._content is not None:
-            self._content.setMaximumSize(*args)
-        else:
-            super().setMaximumSize(*args)
 
     def header(self) -> CardHeader | None:
         """返回 header 插槽。

@@ -89,6 +89,8 @@ VF 字体是否成功注册。`False` 时 `style_for_weight` / `resolve_qfont_we
 
 设置基准字号（像素），广播刷新已注册组件 + 发射 `base_size_changed`。
 
+> 通过 `HeroSideUIProvider.setup(font_size=...)` 配字号档位时，`font_size["md"]` 会同步到这里；`setup(font_base_size=N)` 是 `font_size["md"] = N` 的简写。字体（`font_family`）可以写字体名，也可以写 `.ttf` / `.otf` 文件路径，字体不存在会直接报错。
+
 ### `provider.register(widget) / unregister(widget)`
 
 把组件加入广播订阅列表（`WeakSet`，自动清理）。组件需提供 `_apply_font()` 方法（推荐）或 `set_font_family(family)` 旧接口。

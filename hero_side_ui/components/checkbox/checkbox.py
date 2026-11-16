@@ -27,6 +27,7 @@ from PySide6.QtWidgets import (
 from ...animation import CheckDrawAnimation, paint_animated_check, tween_property
 from ...core import FontProvider, ThemeProvider
 from ...themes import CHECKBOX_SIZES, HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_color_foreground, get_foreground
 
 # ============================================================
 # 内部资源：check / minus (indeterminate) svg
@@ -424,20 +425,13 @@ class Checkbox(QCheckBox):
         # 选中填充色 = 主色 500；default 特殊处理
         if self._color == "default":
             fill = QColor(dc[300] if is_dark else dc[500])
-            icon = QColor(dc[900] if is_dark else "#ffffff")
+            icon = QColor(dc[900] if is_dark else get_color_foreground("default", "light"))
         else:
             fill = QColor(colors[500])
-            # warning 的 foreground 偏黑
-            if self._color == "warning":
-                icon = QColor("#000000")
-            else:
-                icon = QColor("#ffffff")
+            icon = QColor(get_color_foreground(self._color, self._theme))
 
         # label: 默认前景色
-        if is_dark:
-            label = QColor("#ecedee")
-        else:
-            label = QColor("#11181c")
+        label = QColor(get_foreground(self._theme))
 
         if self._is_invalid:
             label = QColor(HEROUI_COLORS["danger"][500])

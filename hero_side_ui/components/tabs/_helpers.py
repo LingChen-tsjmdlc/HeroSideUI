@@ -3,6 +3,7 @@
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_color_foreground, get_content_background, get_foreground
 
 # ============================================================
 # 工具：选中态文字色 / 未选中文字色 / cursor 填充色 解析
@@ -32,18 +33,15 @@ def _resolve_unselected_text(theme: str) -> QColor:
 
 
 def _resolve_selected_text(variant: str, color: str, theme: str) -> QColor:
-    """取选中态文字色：contrast 色（warning 黑/其余白），underlined 用主色 500。"""
+    """取选中态文字色：contrast 色（实色字色），underlined 用主色 500。"""
     if variant == "underlined":
         if color == "default":
-            return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
+            return QColor(get_foreground(theme))
         return QColor(HEROUI_COLORS[color][500])
     # solid/bordered/light: foreground 文字
     if color == "default":
-        # default 选中态: foreground (light=黑, dark=白)
-        return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
-    if color == "warning":
-        return QColor("#000000")
-    return QColor("#FFFFFF")
+        return QColor(get_foreground(theme))
+    return QColor(get_color_foreground(color, theme))
 
 
 def _resolve_cursor_fill(variant: str, color: str, theme: str) -> QColor | None:
@@ -52,12 +50,12 @@ def _resolve_cursor_fill(variant: str, color: str, theme: str) -> QColor | None:
         # underlined 下 cursor 是底边线条，不画矩形填充
         # 这里返回线条颜色
         if color == "default":
-            return QColor("#000000") if theme == "light" else QColor("#FFFFFF")
+            return QColor(get_foreground(theme))
         return QColor(HEROUI_COLORS[color][500])
     # solid / bordered / light: 矩形填充 cursor
     if color == "default":
-        # bg-background 亮色 = 白；dark:bg-default 暗色 = default-100/200
-        return QColor("#FFFFFF") if theme == "light" else QColor(HEROUI_COLORS["default"][700])
+        # 亮色用内容面底色；暗色 dark:bg-default 取 default-700
+        return QColor(get_content_background(theme)) if theme == "light" else QColor(HEROUI_COLORS["default"][700])
     return QColor(HEROUI_COLORS[color][500])
 
 

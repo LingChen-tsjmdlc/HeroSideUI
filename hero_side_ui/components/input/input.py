@@ -19,6 +19,7 @@ from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import FontProvider, ThemeProvider
 from ..text import Text
 from ._line_edit import _LineEdit
+from ...themes.colors import HEROUI_COLORS
 
 
 # ============================================================
@@ -274,8 +275,8 @@ class Input(InputStylingMixin, InputLayoutMixin, QWidget):
         )
 
         # --- 静态 label 颜色（动画时插值需要记住起止色）---
-        self._label_color_resting = QColor("#a1a1aa")
-        self._label_color_floated = QColor("#71717a")
+        self._label_color_resting = QColor(HEROUI_COLORS["default"][400])
+        self._label_color_floated = QColor(HEROUI_COLORS["default"][500])
 
         # 适配不同 label placement 的显示/隐藏
         self._relayout_for_label_placement()

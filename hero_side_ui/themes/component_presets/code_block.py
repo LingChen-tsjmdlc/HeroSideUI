@@ -7,7 +7,7 @@ CODE_BLOCK_SPEC = {
     "header_pad_y": 6,  # 标题栏上下内边距
     "code_pad_x": 16,  # 代码区左右内边距
     "code_pad_y": 12,  # 代码区上下内边距
-    "font_size": 14,  # 默认代码字号(px)，可由 font_size 参数覆盖
+    "font_size": 13,  # 默认代码字号(px)，可由 font_size 参数覆盖
     # 代码区底色：Tailwind zinc 浅/深（亮 zinc-100 / 暗 zinc-800）
     "code_bg_light": "#f4f4f5",
     "code_bg_dark": "#27272a",

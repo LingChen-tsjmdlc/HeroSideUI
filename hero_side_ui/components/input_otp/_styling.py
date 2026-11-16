@@ -5,6 +5,7 @@
 from __future__ import annotations
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_background, get_foreground
 
 # 色阶镜像序列（暗色取反：_SHADES[i] ↔ _SHADES[9-i]）
 _SHADES = (50, 100, 200, 300, 400, 500, 600, 700, 800, 900)
@@ -33,9 +34,9 @@ def _foreground(theme: str) -> str:
         theme: 主题名（light / dark）。
 
     Returns:
-        str: 亮色返回黑、暗色返回白。
+        str: foreground 取值的当前值。
     """
-    return "#ffffff" if theme == "dark" else "#000000"
+    return get_foreground(theme)
 
 
 def build_input_otp_styles(
@@ -63,8 +64,8 @@ def build_input_otp_styles(
     c = HEROUI_COLORS.get(color, HEROUI_COLORS["default"])
     HEROUI_COLORS["default"]
     danger = HEROUI_COLORS["danger"]
-    # bg-background：亮白暗黑（注意与 default-foreground 正好相反）
-    fg_bg = "#000000" if is_dark else "#ffffff"
+    # bg-background：窗口底色（注意与 default-foreground 正好相反）
+    fg_bg = get_background(theme)
     filled_fg = _foreground(theme) if color == "default" else c[500]
 
     if is_invalid:

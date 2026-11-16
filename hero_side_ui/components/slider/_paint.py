@@ -20,6 +20,16 @@ from ._geometry import (
     track_geom,
     track_visual_geom,
 )
+from ...themes.theme_values import get_foreground
+from ...themes.shadow import SHADOW_COLOR
+
+
+
+def _knob_shadow() -> QColor:
+    """拇指贴身的轻微投影色：近黑加透明度（被控件矩形裁剪的小件，不走 sm/md/lg 档）。"""
+    c = QColor(SHADOW_COLOR)
+    c.setAlpha(35)
+    return c
 
 
 class _SliderCanvas(QWidget):
@@ -224,7 +234,7 @@ class _SliderCanvas(QWidget):
         painter.save()
         painter.setFont(make_text_qfont(cfg["mark_font_size"], "normal"))
         fm = QFontMetrics(painter.font())
-        text_color = QColor("#ecedee" if owner._theme == "dark" else "#11181c")
+        text_color = QColor(get_foreground(owner._theme))
         for v, lbl in owner._marks:
             r = ratio_of(v, owner._min, owner._max)
             in_range = (filler_lo - 1e-9) <= v <= (filler_hi + 1e-9)
@@ -291,7 +301,7 @@ class _SliderCanvas(QWidget):
                 radius + RING_WIDTH + RING_GAP,
             )
         # 阴影 (轻微, 模拟 shadow-small): 向下偏移 1px
-        painter.setBrush(QColor(0, 0, 0, 35))
+        painter.setBrush(_knob_shadow())
         painter.setPen(Qt.PenStyle.NoPen)
         painter.drawRoundedRect(
             QRectF(

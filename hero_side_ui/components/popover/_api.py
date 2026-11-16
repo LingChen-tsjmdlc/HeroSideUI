@@ -101,7 +101,7 @@ class _PopoverApiMixin:
         """设置 popover 阴影档位，并刷新布局边距。
 
         Args:
-            shadow: 阴影 token（对应 POPOVER_SHADOWS 配置键）。
+            shadow: 阴影档位 sm / md / lg / none（公共阴影配置）。
         """
         self._shadow = shadow
         self._outer.setContentsMargins(*self._frame_margins())

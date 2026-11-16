@@ -7,6 +7,7 @@ from PySide6.QtWidgets import QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_content_background
 from .item import AccordionItem
 
 
@@ -84,11 +85,9 @@ class Accordion(QWidget):
             self._layout.setSpacing(0)
 
         elif self._variant == "shadow":
-            bg = dc[900] if is_dark else "#ffffff"
+            bg = get_content_background(self._theme)
             # Qt QSS 不支持 box-shadow，用浅色边框 + 背景模拟卡片感
-            border_hint = (
-                f"border: 1px solid {dc[800]};" if is_dark else "border: 1px solid #f0f0f0;"
-            )
+            border_hint = f"border: 1px solid {dc[800] if is_dark else dc[100]};"
             self.setStyleSheet(f"""
                 #heroAccordion {{
                     background-color: {bg};

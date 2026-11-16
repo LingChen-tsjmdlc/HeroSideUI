@@ -20,7 +20,6 @@ from .component_presets import (
     BREADCRUMBS_SIZES,
     BUTTON_SIZES,
     CALENDAR_SIZES,
-    CARD_SHADOWS,
     CHECKBOX_SIZES,
     CHIP_DOT_SIZE,
     CHIP_SIZES,
@@ -37,11 +36,9 @@ from .component_presets import (
     DROPDOWN_SIZES,
     HEADING_SPEC,
     ICON_SIZES,
-    IMAGE_SHADOWS,
     INPUT_OTP_CARET_PERIOD_MS,
     INPUT_OTP_SIZES,
     INPUT_SIZES,
-    KBD_SHADOW,
     KBD_SIZE_TABLE,
     KBD_SIZES,
     LINK_BLOCK,
@@ -55,7 +52,6 @@ from .component_presets import (
     MARKDOWN_SPACING,
     NUMBER_INPUT_MIN_WIDTHS,
     PAGINATION_SIZES,
-    POPOVER_SHADOWS,
     PROGRESS_SIZES,
     RADIO_SIZES,
     SELECT_SIZES,
@@ -66,7 +62,6 @@ from .component_presets import (
     TABS_SIZES,
     TEXTAREA_SIZES,
     TOAST_SEVERITY_ICONS,
-    TOAST_SHADOWS,
     TOAST_SPEC,
     TOOLTIP_SIZES,
     VALID_AVATAR_COLORS,
@@ -110,8 +105,18 @@ from .component_presets import (
 )
 from .font import DEFAULT_FONT_FAMILY
 from .radius import RADIUS
+from .shadow import DEFAULT_SHADOW, SHADOW_TIERS, Layer
+from . import component_presets as _presets
+from . import theme_values  # noqa: E402  (放在 radius 之后：它依赖 colors / radius)
+
+# 预设里的字号绑定到字号档位：font_size 配置变化时原地改写
+theme_values.bind_font_slots([getattr(_presets, _n) for _n in _presets.__all__])
 
 __all__ = [
+    "DEFAULT_SHADOW",
+    "SHADOW_TIERS",
+    "Layer",
+    "theme_values",
     "ACCORDION_SIZES",
     "AUTOCOMPLETE_SIZES",
     "AVATAR_GROUP_GRID_COLS",
@@ -131,7 +136,6 @@ __all__ = [
     "BREADCRUMBS_SIZES",
     "BUTTON_SIZES",
     "CALENDAR_SIZES",
-    "CARD_SHADOWS",
     "CHECKBOX_SIZES",
     "CHIP_DOT_SIZE",
     "CHIP_SIZES",
@@ -150,11 +154,9 @@ __all__ = [
     "HEADING_SPEC",
     "HEROUI_COLORS",
     "ICON_SIZES",
-    "IMAGE_SHADOWS",
     "INPUT_OTP_CARET_PERIOD_MS",
     "INPUT_OTP_SIZES",
     "INPUT_SIZES",
-    "KBD_SHADOW",
     "KBD_SIZES",
     "KBD_SIZE_TABLE",
     "LINK_BLOCK",
@@ -167,7 +169,6 @@ __all__ = [
     "MARKDOWN_QUOTE",
     "MARKDOWN_SPACING",
     "PAGINATION_SIZES",
-    "POPOVER_SHADOWS",
     "PROGRESS_SIZES",
     "RADIO_SIZES",
     "RADIUS",
@@ -179,7 +180,6 @@ __all__ = [
     "TABS_SIZES",
     "TEXTAREA_SIZES",
     "TOAST_SEVERITY_ICONS",
-    "TOAST_SHADOWS",
     "TOAST_SPEC",
     "TOOLTIP_SIZES",
     "VALID_AVATAR_COLORS",

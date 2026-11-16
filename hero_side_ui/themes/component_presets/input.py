@@ -10,11 +10,11 @@ INPUT_SIZES = {
         "inside_padding_y": 6,
         "gap": 8,  # start_icon / input / end_icon 之间的间距
         # 字号（单位 px，对齐 HeroUI 的 text-tiny/small/medium）
-        "label_font_size": 12,  # resting label font
+        "label_font_size": 13,  # resting label font
         "label_float_font_size": 10,  # floated label font (≈ scale 85%)
         "input_font_size": 13,
-        "outside_label_font_size": 12,
-        "helper_font_size": 11,
+        "outside_label_font_size": 13,
+        "helper_font_size": 10,
         # 其它
         "default_radius": "sm",
         "clear_icon_size": 16,
@@ -36,10 +36,10 @@ INPUT_SIZES = {
         "inside_padding_y": 8,
         "gap": 8,
         "label_font_size": 13,
-        "label_float_font_size": 11,
-        "input_font_size": 14,
+        "label_float_font_size": 10,
+        "input_font_size": 13,
         "outside_label_font_size": 13,
-        "helper_font_size": 12,
+        "helper_font_size": 13,
         "default_radius": "md",
         "clear_icon_size": 18,
         "start_icon_size": 18,
@@ -57,10 +57,10 @@ INPUT_SIZES = {
         "padding_y": 8,
         "inside_padding_y": 10,
         "gap": 10,
-        "label_font_size": 15,
+        "label_font_size": 16,
         "label_float_font_size": 13,
         "input_font_size": 16,
-        "outside_label_font_size": 14,
+        "outside_label_font_size": 13,
         "helper_font_size": 13,
         "default_radius": "lg",
         "clear_icon_size": 20,

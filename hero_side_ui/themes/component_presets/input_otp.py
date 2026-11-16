@@ -1,8 +1,8 @@
 """INPUT_OTP_SIZES：段 32/40/48，字号 14/14/16，wrapper gap 4。"""
 
 INPUT_OTP_SIZES = {
-    "sm": {"segment": 32, "font": 14, "gap": 4, "padding_y": 8},
-    "md": {"segment": 40, "font": 14, "gap": 4, "padding_y": 8},
+    "sm": {"segment": 32, "font": 13, "gap": 4, "padding_y": 8},
+    "md": {"segment": 40, "font": 13, "gap": 4, "padding_y": 8},
     "lg": {"segment": 48, "font": 16, "gap": 4, "padding_y": 8},
 }
 

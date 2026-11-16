@@ -90,27 +90,27 @@ class TestTextBasics:
     def test_default_color_light(self, qtbot):
         t = Text("Hi", theme="light")
         qtbot.addWidget(t)
-        assert _stylesheet_color(t) == "#27272a"
+        assert _stylesheet_color(t) == "#11181c"
 
     def test_default_color_dark(self, qtbot):
         t = Text("Hi", theme="dark")
         qtbot.addWidget(t)
-        assert _stylesheet_color(t) == "#e4e4e7"
+        assert _stylesheet_color(t) == "#ecedee"
 
 
 # ============================================================
 # Text - size 映射
 # ============================================================
 class TestTextSize:
-    # SIZE_MAP 对齐 Tailwind/网页基准：md=16px=1rem
+    # xs~xl 取 font_size 档位默认值（10/13/16/19/22），2xl 及以上为常量
     @pytest.mark.parametrize(
         "token,expected",
         [
-            ("xs", 12),
-            ("sm", 14),
+            ("xs", 10),
+            ("sm", 13),
             ("md", 16),
-            ("lg", 18),
-            ("xl", 20),
+            ("lg", 19),
+            ("xl", 22),
             ("2xl", 24),
             ("3xl", 30),
             ("4xl", 36),
@@ -267,13 +267,13 @@ class TestTextColor:
         t = Text("Hi", color="not_a_color_at_all_123", theme="light")
         qtbot.addWidget(t)
         # 回退到主题默认正文色
-        assert _stylesheet_color(t) == "#27272a"
+        assert _stylesheet_color(t) == "#11181c"
 
     def test_set_color_none_restores_theme(self, qtbot):
         t = Text("Hi", color="#ff0000", theme="dark")
         qtbot.addWidget(t)
         t.set_color(None)
-        assert _stylesheet_color(t) == "#e4e4e7"
+        assert _stylesheet_color(t) == "#ecedee"
 
     def test_set_color_dynamic(self, qtbot):
         t = Text("Hi", theme="light")
@@ -412,9 +412,9 @@ class TestTextAutoMode:
         provider.set_mode("light")
         t = Text("Hi")
         qtbot.addWidget(t)
-        assert _stylesheet_color(t) == "#27272a"
+        assert _stylesheet_color(t) == "#11181c"
         provider.set_mode("dark")
-        assert _stylesheet_color(t) == "#e4e4e7"
+        assert _stylesheet_color(t) == "#ecedee"
 
     def test_set_theme_auto_to_hardcode_unregisters(self, qtbot):
         t = Text("Hi")
@@ -447,8 +447,8 @@ class TestTitle:
         assert t.font().pixelSize() == 24
         assert t.font().weight() == QFont.Weight.Bold
 
-    # Title level → SIZE_MAP token：1=2xl(24) / 2=xl(20) / 3=lg(18)
-    @pytest.mark.parametrize("level,expected_size", [(1, 24), (2, 20), (3, 18)])
+    # Title level → SIZE_MAP token：1=2xl(24) / 2=xl(22) / 3=lg(19)
+    @pytest.mark.parametrize("level,expected_size", [(1, 24), (2, 22), (3, 19)])
     def test_level_sizes(self, qtbot, level, expected_size):
         t = Title("Hi", level=level)
         qtbot.addWidget(t)
@@ -463,12 +463,12 @@ class TestTitle:
         # Title 没传 color → 用 Text 默认主题前景色
         t = Title("Hi", theme="light")
         qtbot.addWidget(t)
-        assert _stylesheet_color(t) == "#27272a"
+        assert _stylesheet_color(t) == "#11181c"
 
     def test_dark_uses_default_text_color(self, qtbot):
         t = Title("Hi", theme="dark")
         qtbot.addWidget(t)
-        assert _stylesheet_color(t) == "#e4e4e7"
+        assert _stylesheet_color(t) == "#ecedee"
 
 
 # ============================================================
@@ -478,8 +478,8 @@ class TestLegacyAliases:
     def test_subtitle_default(self, qtbot):
         s = Subtitle("Sub", theme="light")
         qtbot.addWidget(s)
-        # Subtitle 走 sm = 14px
-        assert s.font().pixelSize() == 14
+        # Subtitle 走 sm = 13px
+        assert s.font().pixelSize() == 13
         assert s.font().weight() == QFont.Weight.Normal
         assert _stylesheet_color(s) == "#71717a"
 
@@ -491,7 +491,7 @@ class TestLegacyAliases:
     def test_caption_default(self, qtbot):
         c = Caption("Cap", theme="light")
         qtbot.addWidget(c)
-        assert c.font().pixelSize() == 12
+        assert c.font().pixelSize() == 10
         assert _stylesheet_color(c) == "#a1a1aa"
 
     def test_caption_dark(self, qtbot):
@@ -504,7 +504,7 @@ class TestLegacyAliases:
         qtbot.addWidget(b)
         # Body 走 md = 16px (1rem)
         assert b.font().pixelSize() == 16
-        assert _stylesheet_color(b) == "#27272a"
+        assert _stylesheet_color(b) == "#11181c"
         # 段落正文默认自动换行（HeroUI <p> 行为）
         assert b.wordWrap() is True
 
@@ -519,7 +519,7 @@ class TestLegacyAliases:
     def test_body_dark(self, qtbot):
         b = Body("Body", theme="dark")
         qtbot.addWidget(b)
-        assert _stylesheet_color(b) == "#e4e4e7"
+        assert _stylesheet_color(b) == "#ecedee"
 
 
 # ============================================================
@@ -548,8 +548,8 @@ class TestColorOverride:
         t = Title("Hi", color="#ff0000", theme="dark")
         qtbot.addWidget(t)
         t.set_color(None)
-        # Title 现在的默认色 = Text 默认色 = #e4e4e7
-        assert _stylesheet_color(t) == "#e4e4e7"
+        # Title 现在的默认色 = Text 默认色 = #ecedee
+        assert _stylesheet_color(t) == "#ecedee"
 
     def test_set_color_overrides(self, qtbot):
         t = Title("Hi", theme="light")

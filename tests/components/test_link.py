@@ -142,7 +142,7 @@ class TestLinkColors:
     def test_foreground_uses_theme_text_color_light(self, qtbot):
         w = Link("X", color="foreground", theme="light")
         qtbot.addWidget(w)
-        assert w._text_color() == QColor("#18181b")
+        assert w._text_color() == QColor("#11181C")
 
     def test_foreground_uses_theme_text_color_dark(self, qtbot):
         w = Link("X", color="foreground", theme="dark")

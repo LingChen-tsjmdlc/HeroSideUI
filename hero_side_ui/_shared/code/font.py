@@ -9,6 +9,8 @@ from pathlib import Path
 
 from PySide6.QtGui import QFont, QFontDatabase, QGuiApplication
 
+from ...themes.theme_values import get_mono_family
+
 _FONTS_DIR = Path(__file__).resolve().parent.parent.parent / "resources" / "fonts"
 _DEFAULT_MONO_FILE = "MapleMono-NF-CN-Medium.ttf"
 
@@ -53,11 +55,16 @@ def mono_family(font_path: str | None = None) -> str:
     """返回代码区等宽字体的主 family 名。
 
     Args:
-        font_path: 自定义字体路径；None 用内置 Maple Mono。
+        font_path: 自定义字体路径；None 时先看 setup(mono_family=...) 的配置，
+            都没有才用内置 Maple Mono。
 
     Returns:
-        已加载字体的 family 名；加载失败回退 Consolas。
+        family 名；内置字体加载失败回退 Consolas。
     """
+    if font_path is None:
+        configured = get_mono_family()
+        if configured:
+            return configured
     path = Path(font_path) if font_path else _FONTS_DIR / _DEFAULT_MONO_FILE
     return _load_font_family(path) or _FALLBACK_MONO_FAMILY
 

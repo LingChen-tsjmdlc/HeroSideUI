@@ -20,6 +20,7 @@ from PySide6.QtWidgets import (
 )
 
 from ...core import ThemeProvider
+from ...core.shadow_paint import ShadowController
 from ...themes import TABLE_SIZES
 from ..card import Card, CardBody
 from ..checkbox import Checkbox
@@ -197,8 +198,17 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         if bottom_content is not None:
             self.set_bottom_content(bottom_content)
 
+        self._sync_shadow()
+
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+
+    def _sync_shadow(self) -> None:
+        """把档位、圆角、主题同步给 Table 自己的阴影层（内部 Card 不再画阴影）。"""
+        if self._card is None:
+            self._shadow_ctl.set_style("none", 0.0, self._theme)
+            return
+        self._shadow_ctl.set_style(self._shadow, self._card._resolve_radius(), self._theme)
 
     # ------------------------------------------------------------
     # UI 骨架
@@ -213,7 +223,13 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         self._top_content: QWidget | None = None
         self._bottom_content: QWidget | None = None
 
-        # 外壳：复用现成 Card（自带阴影系统 + content1 背景 + 圆角 + 主题）
+        # 外壳：复用现成 Card（content1 背景 + 圆角 + 主题）；阴影由 Table 自己的阴影层画，
+        # 否则内部 Card 的阴影会被 Table 的矩形裁掉
+        self._shadow_ctl = ShadowController(self)
+        # 阴影只包 Card 外壳（Table 还含 top/bottom 附加内容，不应被包进去）
+        self._shadow_ctl.set_body_provider(
+            lambda: self._card.geometry() if self._card is not None else self.rect()
+        )
         self._card: Card | None = None
         if self._remove_wrapper:
             self._card_host = QWidget(self)
@@ -222,7 +238,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             self._inside_v.setSpacing(cfg["wrapper_gap"])
         else:
             self._card = Card(
-                shadow=self._shadow,
+                shadow="none",
                 radius=self._card_radius(),
                 full_width=self._full_width,
                 theme="auto" if self._theme_mode == "auto" else self._theme_mode,
@@ -331,6 +347,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             return
         self._theme = theme
         # Card 在 auto 模式自行跟随 ThemeProvider，无需手动转发
+        self._sync_shadow()
         self._propagate_style()
         self._refresh_empty_color()
         self._grid_host.update()
@@ -356,6 +373,7 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
             return
         if self._card is not None:
             self._card.set_theme(theme)
+        self._sync_shadow()
         self._propagate_style()
         self._refresh_empty_color()
         self._grid_host.update()

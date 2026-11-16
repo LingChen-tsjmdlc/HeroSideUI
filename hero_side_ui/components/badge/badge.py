@@ -21,11 +21,10 @@ from ...themes import (
     VALID_BADGE_SHAPES,
     VALID_BADGE_VARIANTS,
 )
+from ...themes.theme_values import get_background
 from ..text import Text
 from ._styling import build_badge_styles
 
-# showOutline 描边色 = 官方 border-background（bg-background: light=#fff / dark=#000）
-_OUTLINE_COLOR = {"light": "#ffffff", "dark": "#000000"}
 
 # 官方 disableAnimation=false 时 !duration-300
 ANIM_DURATION = 300
@@ -347,7 +346,7 @@ class Badge(QWidget):
         # showOutline（官方默认 true）：2px 宿主背景色描边；False 时连 faded
         # 的边框也被官方 border-0 覆盖 → 无边框
         if self._show_outline:
-            border_color = QColor(_OUTLINE_COLOR.get(self._theme, _OUTLINE_COLOR["light"]))
+            border_color = QColor(get_background(self._theme))
             border_width = 2
         else:
             border_color = None

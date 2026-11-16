@@ -8,7 +8,7 @@
 - **无 Backdrop**：不遮挡其他内容，不拦截点击
 - **不抢焦点**：`WA_ShowWithoutActivating + NoFocus`，不会中断用户当前操作
 - **12 种 placement**：top / top-start / top-end / bottom / bottom-start / bottom-end / left / left-start / left-end / right / right-start / right-end
-- **auto-flip**：屏幕边缘溢出时自动反向
+- **不伸出应用窗口**：顶层模式下以触发控件所在窗口的客户区为边界，放不下就翻到相反方向；两边都放不下取越界更少的一边，窗口外的部分被裁掉
 - **6 种颜色**（default + 5 语义色）
 - **3 种尺寸** / **5 种圆角**（`none/sm/md/lg/full`）/ **4 级阴影**（`none/sm/md/lg`）
 - **offset**：控制 tooltip 与 trigger 的距离（默认 7px）
@@ -100,6 +100,6 @@ tooltip.set_content("新的内容文字")
 
 ## 与 HeroUI 的差异
 
-- 阴影由 `paintEvent` 多层半透明圆角矩形自绘
+- 阴影使用全库公共阴影配置（多层预合成 + 九宫格缓存）
 - `trigger_scale_on_open` 仅设置动态属性 `tooltipOpen`，不直接缩放（避免和 Button 的 PressScaleEffect 冲突）
 - `close_delay` 默认 150ms（HeroUI 原版是 500ms），桌面端 hover 更精确，无需那么长的延迟

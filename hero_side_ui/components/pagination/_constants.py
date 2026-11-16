@@ -7,8 +7,8 @@ from ...themes import HEROUI_COLORS, RADIUS
 # variant: 与 HeroUI v2 pagination.ts 对齐
 VALID_VARIANTS = ("flat", "bordered", "light", "faded")
 
-# color: HeroUI 全语义色（不含 neutral，参考 colors.py 注释）
-VALID_COLORS = tuple(k for k in HEROUI_COLORS if k != "neutral")
+# color: HeroUI 全语义色
+VALID_COLORS = tuple(HEROUI_COLORS)
 
 VALID_SIZES = ("sm", "md", "lg")
 

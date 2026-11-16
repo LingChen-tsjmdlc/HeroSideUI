@@ -249,7 +249,7 @@ class Autocomplete(
             radius="md",
             backdrop="transparent",
             trigger_scale_on_open=False,
-            allow_flip=False,  # Combobox/Autocomplete 下拉框必须优先向下，空间不够时由内部滚动承接
+            allow_flip=True,  # 优先向下，空间不够由内部滚动承接；窗口内下方放不下最小列表时才翻到上方
             disable_animation=disable_animation,
             theme=theme,
         )

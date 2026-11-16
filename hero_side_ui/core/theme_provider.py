@@ -6,6 +6,7 @@ from PySide6.QtCore import QObject, Qt, Signal
 from PySide6.QtGui import QBrush, QColor, QGuiApplication, QPalette
 from PySide6.QtWidgets import QApplication
 
+from ..themes.theme_values import get_background, get_foreground
 from ._registry import WidgetRegistry
 
 VALID_MODES = ("auto", "light", "dark")
@@ -249,18 +250,7 @@ class ThemeProvider(QObject):
             return
 
         theme = self._current_theme
-        if theme == "dark":
-            # HeroUI v2 dark：background 比 content1=#18181b（Card 底）暗一级，
-            # 让 Card 在暗色模式靠"底色亮一级"浮起（shadow 在暗色下不可靠）。
-            # 微调：纯黑 #000 太硬 → 偏冷一点 #0B0D12（R=11 G=13 B=18，蓝>红 7 点，冷感），
-            # 既保留与 Card 的层级差，又不至于死黑。
-            bg, fg = "#0B0D12", "#fafafa"
-        else:
-            # HeroUI v2 light：background=content1=#FFF（Card 靠 shadow 浮起）。
-            # 微调：纯白 #FFF 太刺眼 + 暖白 #FBF9F5 偏暖太多 → 极淡冷白 #FAFBFD
-            # （R=250 G=251 B=253，蓝>红 3 点，冷调克制）。Card 的纯白 #FFF
-            # 仍能比窗口亮一丝浮出，色相统一冷调（不再有暖白 vs 纯白的色相分裂）。
-            bg, fg = "#FAFBFD", "#18181b"
+        bg, fg = get_background(theme, mark=False), get_foreground(theme, mark=False)
 
         pal = app.palette()
         if self._original_palette is None:

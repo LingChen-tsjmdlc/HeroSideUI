@@ -227,13 +227,16 @@ class TestSpecificBorderValues:
 
 class TestSpecificTextValues:
     def test_solid_default_foreground(self):
-        assert StatePalette.text("solid", "default", "light", "hover").name() == "#000000"
-        assert StatePalette.text("solid", "default", "dark", "hover").name() == "#ffffff"
+        assert StatePalette.text("solid", "default", "light", "hover").name() == "#11181c"
+        assert StatePalette.text("solid", "default", "dark", "hover").name() == "#ecedee"
 
-    def test_solid_colored_is_white(self):
+    def test_solid_colored_is_near_white(self):
         for color in ("primary", "danger", "success"):
-            assert StatePalette.text("solid", color, "light", "hover").name() == "#ffffff"
-            assert StatePalette.text("solid", color, "dark", "hover").name() == "#ffffff"
+            assert StatePalette.text("solid", color, "light", "hover").name() == "#fefeff"
+            assert StatePalette.text("solid", color, "dark", "hover").name() == "#fefeff"
+
+    def test_solid_warning_is_dark_text(self):
+        assert StatePalette.text("solid", "warning", "light", "hover").name() == "#11181c"
 
     def test_flat_colored_light_is_500(self):
         c = StatePalette.text("flat", "primary", "light", "hover")
@@ -264,7 +267,7 @@ class TestNeutralHelpers:
         assert StatePalette.text_default("dark").name() == HEROUI_COLORS["default"][100].lower()
 
     def test_text_description_dark_uses_400_for_contrast(self):
-        # dark 模式故意用 400 而非 500，保证在 #0B0D12 上可见
+        # dark 模式故意用 400 而非 500，保证在 #0D0D0F 上可见
         assert StatePalette.text_description("dark").name() == HEROUI_COLORS["default"][400].lower()
         assert (
             StatePalette.text_description("light").name() == HEROUI_COLORS["default"][500].lower()

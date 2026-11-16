@@ -5,6 +5,7 @@ from __future__ import annotations
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS
+from ...themes.theme_values import get_background, get_foreground
 
 __all__ = [
     "filler_color",
@@ -25,7 +26,7 @@ def resolve_color(name: str, theme: str) -> QColor:
         foreground / default 跟随主题翻转黑白；其他色返回 palette[500]。
     """
     if name in ("foreground", "default"):
-        return QColor("#ecedee" if theme == "dark" else "#11181c")
+        return QColor(get_foreground(theme))
     palette = HEROUI_COLORS.get(name, HEROUI_COLORS["primary"])
     return QColor(palette[500])
 
@@ -49,8 +50,8 @@ def thumb_color(name: str, theme: str) -> QColor:
 
 
 def inner_dot_color(theme: str) -> QColor:
-    """返回 inner dot 背景色，亮底白、暗底黑。"""
-    return QColor("#000000" if theme == "dark" else "#ffffff")
+    """返回 inner dot 背景色，取窗口底色。"""
+    return QColor(get_background(theme))
 
 
 def ring_color(theme: str) -> QColor:

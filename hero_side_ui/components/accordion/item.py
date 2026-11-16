@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 
 from ...animation import CollapseAnimation, tween_property
 from ...themes import ACCORDION_SIZES, HEROUI_COLORS, RADIUS
+from ...themes.theme_values import get_content_background
 from ..text import Text
 from ._indicator import _IndicatorWidget
 
@@ -291,10 +292,8 @@ class AccordionItem(QWidget):
         # ---- 各变体子项样式 ----
         if variant == "splitted":
             # splitted: 每项独立 Card — 白底 + 圆角
-            bg = dc[800] if is_dark else "#ffffff"
-            border_hint = (
-                f"border: 1px solid {dc[700]};" if is_dark else "border: 1px solid #f0f0f0;"
-            )
+            bg = get_content_background(self._theme)
+            border_hint = f"border: 1px solid {dc[800] if is_dark else dc[100]};"
             r = RADIUS.get(radius, RADIUS["md"])
             self.setStyleSheet(f"""
                 #heroAccordionItem {{

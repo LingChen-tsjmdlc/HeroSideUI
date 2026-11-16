@@ -84,7 +84,6 @@ class TextDemo(DemoBase):
             "success",
             "warning",
             "danger",
-            "neutral",
         ]
         token_widgets = [
             Text(f"color={n!r}", size="lg", weight="medium", color=n) for n in token_names
