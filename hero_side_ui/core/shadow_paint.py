@@ -507,8 +507,15 @@ class ShadowController(QObject):
         self._layer.set_body_provider(self._body_fn)
 
     def eventFilter(self, obj, event):
-        """目标换父控件或首次显示时补建阴影层。"""
-        if obj is self._target and self._layer is None and event.type() in (
+        """目标换父控件或首次显示时补建阴影层。
+
+        Note:
+            目标的 Python 包装先被回收时，Qt 侧过滤器仍会被调用，此时属性已清空，直接放行。
+        """
+        target = self.__dict__.get("_target")
+        if target is None:
+            return False
+        if obj is target and self._layer is None and event.type() in (
             QEvent.Type.ParentChange,
             QEvent.Type.Show,
         ):

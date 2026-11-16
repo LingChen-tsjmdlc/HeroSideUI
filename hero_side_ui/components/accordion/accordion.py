@@ -3,7 +3,7 @@
 """
 
 from PySide6.QtCore import Qt
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
 from ...core import ThemeProvider
 from ...themes import HEROUI_COLORS, RADIUS
@@ -30,6 +30,7 @@ class Accordion(QWidget):
         radius: str = "md",
         theme: str = "auto",
         show_divider: bool = True,
+        full_width: bool = True,
         parent: QWidget | None = None,
     ):
         """创建手风琴容器并应用容器样式。
@@ -41,6 +42,7 @@ class Accordion(QWidget):
             radius: 容器圆角档位。
             theme: light / dark / auto。
             show_divider: 子项之间是否显示分割线。
+            full_width: 是否撑满可用宽度（官方 fullWidth 默认 true）；False 时宽度跟内容走。
             parent: Qt 父对象。
         """
         super().__init__(parent)
@@ -51,6 +53,8 @@ class Accordion(QWidget):
         self._theme_mode = theme
         self._theme = self._resolve_theme(theme)
         self._show_divider = show_divider
+        self._full_width = bool(full_width)
+        self._apply_full_width()
         self._items: list[AccordionItem] = []
 
         self._layout = QVBoxLayout(self)
@@ -64,6 +68,20 @@ class Accordion(QWidget):
         # auto 模式：注册到 ThemeProvider
         if self._theme_mode == "auto":
             ThemeProvider.instance().register(self)
+
+    def _apply_full_width(self) -> None:
+        """按 full_width 设水平策略：True 撑满；False 宽度恰好等于内容。"""
+        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        self.setSizePolicy(horizontal, QSizePolicy.Policy.Preferred)
+
+    def set_full_width(self, v: bool):
+        """切换是否撑满可用宽度。
+
+        Args:
+            v: True 撑满；False 宽度跟内容走。
+        """
+        self._full_width = bool(v)
+        self._apply_full_width()
 
     def _apply_container_styles(self):
         """应用容器级样式：light / shadow / bordered / splitted 四变体。

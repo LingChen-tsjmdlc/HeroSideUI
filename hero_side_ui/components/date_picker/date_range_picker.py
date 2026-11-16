@@ -223,8 +223,8 @@ class DateRangePicker(QWidget):
         layout.setSpacing(0)
         layout.addWidget(self._field)
 
-        if not full_width:
-            self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        horizontal = QSizePolicy.Policy.Expanding if full_width else QSizePolicy.Policy.Preferred
+        self.setSizePolicy(horizontal, QSizePolicy.Policy.Fixed)
 
         self._calendar.change.connect(self._on_calendar_change)
         self._field.range_changed.connect(self._on_field_change)

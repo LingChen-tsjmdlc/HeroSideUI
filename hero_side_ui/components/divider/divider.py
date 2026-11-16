@@ -1,11 +1,12 @@
 """Divider 分割线组件：水平/垂直纯色线，水平方向可选中间文字。"""
 
-from PySide6.QtCore import QRectF, Qt
+from PySide6.QtCore import QRectF, QSize, Qt
 from PySide6.QtGui import QColor, QFont, QFontMetrics, QPainter, QPen
 from PySide6.QtWidgets import QFrame, QSizePolicy
 
 from ...core import FontProvider, ThemeProvider
 from ...themes import DIVIDER_SIZES, HEROUI_COLORS
+from ...themes.width import SUGGESTED_WIDTH
 
 
 class Divider(QFrame):
@@ -213,6 +214,19 @@ class Divider(QFrame):
     # ============================================================
     # 公共 API
     # ============================================================
+
+    def sizeHint(self) -> QSize:
+        """沿长边的首选长度取全库统一的建议宽度。
+
+        官方 Divider 是 w-full / h-full（占父容器 100%），放进任何容器都铺满；
+        Qt 没有"百分比"，不给首选长度的话，横排加弹簧（水平线）或竖排加弹簧（垂直线）
+        时会塌成 0。仍是 Expanding：有空间就拉满，空间不够就缩到 0（官方 shrink-0 的
+        对应物是不设最小长度之外的限制，这里与布局行为保持一致）。
+        """
+        hint = super().sizeHint()
+        if self._orientation == "vertical":
+            return QSize(hint.width(), max(hint.height(), SUGGESTED_WIDTH))
+        return QSize(max(hint.width(), SUGGESTED_WIDTH), hint.height())
 
     def set_orientation(self, orientation: str):
         """切换分割线方向并重算样式。

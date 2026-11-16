@@ -128,7 +128,7 @@ NumberInput(label="Price", value=1234.5,
 
 继承 `Input`（`_object_name = "heroNumberInput"`），stepper 为独立的 `_NumberStepper`（两个透明小按钮，hover/pressed 用透明度反馈），插入 wrapper 布局末尾。图标使用资源库 `teenyicons--up-solid` / `teenyicons--down-solid`；图标色随 `color` 与明暗主题切换（default 色用灰阶 400/500，语义色用主色 DEFAULT）。stepper 按钮尺寸随 `label_placement` 收缩（outside 系 14px，inside 18px）。
 
-整体最小宽度不复用文本输入的 240/260/300（数字内容短，用不了那么宽），走 NumberInput 专属 token `NUMBER_INPUT_MIN_WIDTHS`：sm=60 / md=70 / lg=80。用户 `setFixedWidth` / `setMinimumWidth` / `set_width` 显式接管宽度后 token 不再生效。
+宽度和其他输入类一致：建议宽度 320（全库统一，不随 `size` 变化），只当 `sizeHint`，没有硬性的最小宽度。用户 `setFixedWidth` / `setMinimumWidth` / `set_width` 直接生效。见 [width.md](width.md)。
 
 ## 示例
 

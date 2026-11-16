@@ -92,6 +92,7 @@ class ToastRegion(QWidget):
         self._hovering = False
         self._items: list[_ToastItem] = []
         self._counter = 0
+        self._joining = None  # 正在加入、尚未入列的卡片（算统一留白时要带上）
 
         # 空白区透传鼠标（卡片挂在宿主窗口上，不经 region 命中）；
         # 无宿主的顶层 region 自身要接鼠标，不能透传
@@ -130,8 +131,11 @@ class ToastRegion(QWidget):
         host = self.parent()
         if host is not None and card.parent() is not host:
             card.setParent(host)
+        # 统一留白：新卡片与已有卡片的阴影档位可能不同，必须先对齐再定宽
+        self._sync_pads(extra=card)
         # 先定宽并按新宽度校正高度：标题截断与描述换行都依赖宽度算高度
         card.resize(self._card_width(), max(1, card.height()))
+        self._joining = None
         card.sync_height()
         card.setAttribute(Qt.WidgetAttribute.WA_TransparentForMouseEvents, False)
         card.set_placement(self._placement)
@@ -229,8 +233,23 @@ class ToastRegion(QWidget):
 
     def _pad(self) -> int:
         """卡片外扩（阴影 + 关闭按钮溢出），取当前所有卡片的最大值。"""
-        pads = [it.card.pad_left for it in self._items if not it.exiting]
+        pads = [it.card.own_pad() for it in self._items if not it.exiting]
+        if self._joining is not None:
+            pads.append(self._joining.own_pad())
         return max(pads) if pads else 14
+
+    def _sync_pads(self, extra=None):
+        """把统一留白下发给所有卡片（含正在退出的，免得它们在退场动画里缩回去）。
+
+        Args:
+            extra: 还没入列的新卡片，一并按统一值处理。
+        """
+        self._joining = extra
+        pad = self._pad()
+        for it in self._items:
+            it.card.set_pad_override(pad)
+        if extra is not None:
+            extra.set_pad_override(pad)
 
     def _content_width(self) -> int:
         """卡片可见主体的宽度（HeroUI: 356px）。"""
@@ -242,13 +261,19 @@ class ToastRegion(QWidget):
         return self._content_width() + 2 * self._pad()
 
     def _x_for(self, width: int) -> int:
-        """按弹出方位计算卡片左上角的 x 坐标。"""
+        """按弹出方位计算卡片左上角的 x 坐标。
+
+        Note:
+            margin 是"可见主体"到窗口边缘的距离（和竖向一致），所以要把卡片自带的
+            阴影留白扣掉；否则阴影档位越大，卡片离窗口边越远。
+        """
         margin = TOAST_SPEC["margin"]
+        pad = self._pad()
         if self._placement.endswith("left"):
-            return margin
+            return margin - pad
         if self._placement.endswith("center"):
             return (self.width() - width) // 2
-        return self.width() - margin - width
+        return self.width() - margin - width + pad
 
     def _edge_offset(self, index: int, total: int, heights: list) -> int:
         """第 index 条（0=最老）距宿主窗口边缘的距离。"""
@@ -292,6 +317,7 @@ class ToastRegion(QWidget):
         total = len(items)
         if total == 0:
             return
+        self._sync_pads()  # 阴影档位变过 / 有卡片退出后，统一留白可能变了
 
         # region 抬到宿主内容之上；卡片是宿主子件，随后逐个 raise 叠更上层
         self.raise_()

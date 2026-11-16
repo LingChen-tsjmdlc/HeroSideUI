@@ -25,7 +25,6 @@ TEXTAREA_SIZES = {
         "label_float_x": 0,
         "label_float_y": 5,
         "inside_input_top_space": 18,  # textarea 比 input 多一点，让浮起 label 与第一行文字有呼吸
-        "min_width": 240,
     },
     "md": {
         "row_height": 22,
@@ -46,7 +45,6 @@ TEXTAREA_SIZES = {
         "label_float_x": 0,
         "label_float_y": 6,
         "inside_input_top_space": 20,
-        "min_width": 260,
     },
     "lg": {
         "row_height": 26,
@@ -67,7 +65,6 @@ TEXTAREA_SIZES = {
         "label_float_x": 0,
         "label_float_y": 7,
         "inside_input_top_space": 22,
-        "min_width": 300,
     },
 }
 

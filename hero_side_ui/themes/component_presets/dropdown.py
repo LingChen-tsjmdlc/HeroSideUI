@@ -3,7 +3,7 @@
 DROPDOWN_SIZES = {
     "sm": {
         "popover_max_height": 220,
-        "menu_min_width": 180,
+        "menu_min_width": 200,  # 官方 min-w-[200px]，不分档
     },
     "md": {
         "popover_max_height": 260,
@@ -11,7 +11,7 @@ DROPDOWN_SIZES = {
     },
     "lg": {
         "popover_max_height": 300,
-        "menu_min_width": 220,
+        "menu_min_width": 200,
     },
 }
 

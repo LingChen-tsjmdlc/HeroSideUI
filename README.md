@@ -64,6 +64,7 @@ app.exec()
 
 > 组件在 `Provider.setup()` 之前创建也可以——会自动以默认配置降级初始化并给出 warning。
 > 色板、圆角、底色、文字色、阴影、字体与字号都可以在 `setup()` 里一次性定制，见 [docs/theme-customization.md](docs/theme-customization.md)。
+> 组件的默认宽度、`full_width` 和设宽规则见 [docs/width.md](docs/width.md)。
 > 单个组件可用 `theme="light"` / `"dark"` 覆盖全局主题，`"auto"` 跟随 Provider。
 
 ### 运行示例

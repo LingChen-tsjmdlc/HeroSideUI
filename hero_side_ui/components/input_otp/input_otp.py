@@ -138,8 +138,9 @@ class InputOtp(QWidget):
         helper_lay.addStretch()
         lay.addLayout(helper_lay)
 
-        if self._full_width:
-            self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        # 官方 w-fit：默认宽度恰好等于内容；full_width 才撑满
+        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Maximum
+        self.setSizePolicy(horizontal, QSizePolicy.Policy.Fixed)
 
     def _update_row_size(self):
         """按当前段数与尺寸刷新段行固定尺寸。"""

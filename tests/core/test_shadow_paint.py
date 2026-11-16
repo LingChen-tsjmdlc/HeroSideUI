@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import pytest
-from PySide6.QtCore import QRectF
+from PySide6.QtCore import QEvent, QRectF
 from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QWidget
 
@@ -367,3 +367,12 @@ class TestShadowController:
         assert not ctl._layer.isHidden()
         ctl.set_style("none", 8.0, "light")
         assert ctl._layer.isHidden()
+
+    def test_event_filter_survives_a_cleared_python_wrapper(self, qtbot):
+        # 回归：目标的 Python 包装先被回收时，Qt 侧过滤器仍会被调用，此时属性已清空，不能抛异常
+        w = QWidget()
+        qtbot.addWidget(w)
+        ctl = sp.ShadowController(w)
+        ctl.__dict__.pop("_target")
+        assert ctl.eventFilter(w, QEvent(QEvent.Type.Show)) is False
+

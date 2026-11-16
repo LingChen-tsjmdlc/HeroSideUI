@@ -4,6 +4,7 @@ from collections.abc import Callable, Iterable
 
 from PySide6.QtCore import Signal
 from PySide6.QtWidgets import (
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -206,6 +207,9 @@ class Autocomplete(
         # 鼠标进/出由 enterEvent/leaveEvent 维护,不依赖 QSS :hover ——
         # QSS :hover 改不了子 widget 的 visibility,必须 Python 接管。
         self._is_hovered: bool = False
+
+        # 官方 autocomplete 写死 w-full：天生撑满，没有 full_width 开关
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
 
         # ---------- 外层 layout ----------
         self._outer = QVBoxLayout(self)
@@ -578,7 +582,8 @@ class Autocomplete(
         # 让 popover 宽度 = input 实际渲染宽度(对齐 HeroUI:下拉与输入框等宽)。
         # 构造期只能拿到 sizeHint(),但 input 常被父布局拉宽 → sizeHint < 实际宽度;
         # 必须在 open 时用 .width() 拿当前几何,再下发给 scroll 内层 + popover 自身。
-        w = max(self._input.width(), self._input.sizeHint().width())
+        # 输入框已显示就取实际宽度（用户设窄了，弹层也跟着窄）；还没显示才退回 sizeHint
+        w = self._input.width() if self._input.isVisible() else self._input.sizeHint().width()
         self._scroll.setMinimumWidth(w)
         self._scroll.setMaximumWidth(w)
         self._refresh_popover_height(prefer_below=True)

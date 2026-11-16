@@ -11,7 +11,7 @@ from PySide6.QtCore import QEvent, Qt, Signal
 from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QWidget
 
-from ...themes import HEROUI_COLORS, NUMBER_INPUT_MIN_WIDTHS
+from ...themes import HEROUI_COLORS
 from ..input.input import Input
 from ._stepper import _NumberStepper
 
@@ -437,9 +437,3 @@ class NumberInput(Input):
         self._stepper.set_button_size(14 if outside else 18)
         self._stepper.set_buttons_enabled(not self._is_disabled and not self._is_readonly)
         self._stepper.setVisible(not self._hide_stepper)
-
-    def _size_config(self) -> dict:
-        """取 Input 尺寸表并把 min_width 换为数字档（60/70/80）。"""
-        cfg = dict(super()._size_config())
-        cfg["min_width"] = NUMBER_INPUT_MIN_WIDTHS.get(self._size, NUMBER_INPUT_MIN_WIDTHS["md"])
-        return cfg

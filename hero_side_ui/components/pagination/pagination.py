@@ -178,7 +178,7 @@ class Pagination(QWidget):
             self._cursor_opacity_effect.setOpacity(0.0)
             self._cursor.setGraphicsEffect(self._cursor_opacity_effect)
 
-        self.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
 
     def _update_layout_margins(self):
         """根据当前 size 计算 cursor scale 所需的四周留白。"""

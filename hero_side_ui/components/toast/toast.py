@@ -114,6 +114,7 @@ class Toast(QWidget):
         self._variant = variant
         self._radius = radius
         self._shadow = shadow
+        self._pad_override: int | None = None  # 由 region 下发的统一留白（None=用自己档位的）
         self._severity = severity
         self._icon_src = icon
         self._hide_icon = hide_icon
@@ -144,6 +145,7 @@ class Toast(QWidget):
 
         self._drag_origin: QPoint | None = None
         self._drag_delta = QPoint()
+        self._drag_proxy: Toast | None = None  # 点在别人透明留白里时，真正被点中的那张卡
 
         self._build_ui(description)
         self._apply_styles()
@@ -162,15 +164,8 @@ class Toast(QWidget):
     def _build_ui(self, description: str):
         """搭建卡片内部的图标、文本列与关闭按钮布局。"""
         spec = TOAST_SPEC
-        pad = self._shadow_pad()
-
         self._root = QHBoxLayout(self)
-        self._root.setContentsMargins(
-            pad + spec["padding_x"],
-            pad + spec["padding_y"],
-            pad + spec["padding_x"],
-            pad + spec["padding_y"],
-        )
+        self._apply_root_margins()
         self._root.setSpacing(TOAST_SPEC["content_gap"])
 
         # icon（loading 时换成 Spinner）
@@ -253,10 +248,38 @@ class Toast(QWidget):
     # 几何
     # ============================================================
 
-    def _shadow_pad(self) -> int:
-        """卡片四周为阴影（及关闭按钮外溢）预留的空间。"""
+    def own_pad(self) -> int:
+        """按自己的阴影档位算出的留白（不受 region 统一值影响）。"""
         overhang = TOAST_SPEC["close"] // 2 + 2
         return max(tier_margin(self._shadow), overhang)
+
+    def _shadow_pad(self) -> int:
+        """卡片四周为阴影（及关闭按钮外溢）预留的空间。
+
+        Note:
+            同一个 region 里的卡片必须用同一个留白：region 按统一宽度和 x 摆放，
+            若某张卡按自己（更小）的留白绘制，可见主体就会被撑宽并错位。
+        """
+        return self._pad_override if self._pad_override is not None else self.own_pad()
+
+    def _apply_root_margins(self):
+        """内容布局的外边距 = 阴影留白 + 内边距；留白变化时必须重设，否则内容和背景错位。"""
+        pad = self._shadow_pad()
+        px, py = TOAST_SPEC["padding_x"], TOAST_SPEC["padding_y"]
+        self._root.setContentsMargins(pad + px, pad + py, pad + px, pad + py)
+
+    def set_pad_override(self, pad: int | None):
+        """设置 region 下发的统一留白；值变化时重算高度并重绘。
+
+        Args:
+            pad: 统一留白（像素）；None 恢复为自己档位的留白。
+        """
+        if not self._alive() or pad == self._pad_override:
+            return
+        self._pad_override = pad
+        self._apply_root_margins()
+        self._relayout()
+        self.update()
 
     @property
     def pad_top(self) -> int:
@@ -555,32 +578,86 @@ class Toast(QWidget):
         self.hover_changed.emit(False)
         super().leaveEvent(event)
 
-    def mousePressEvent(self, event):
-        """记录拖拽起点并发出 drag_started 信号。"""
-        if event.button() == Qt.MouseButton.LeftButton:
-            self._drag_origin = event.globalPosition().toPoint()
-            self._drag_delta = QPoint()
-            self.drag_started.emit()
-        super().mousePressEvent(event)
+    def _hits_body(self, global_pos: QPoint) -> bool:
+        """全局坐标点是否落在本卡的可见主体内（不含透明的阴影留白）。"""
+        local = self.mapFromGlobal(global_pos)
+        return self._content_rect().contains(local.x(), local.y())
 
-    def mouseMoveEvent(self, event):
-        """拖拽中计算位移并发出 drag_moved 信号。"""
+    def _card_at(self, global_pos: QPoint) -> "Toast | None":
+        """找出全局坐标点下真正被点中的卡片：可见主体包含该点、层级最高的那张。"""
+        parent = self.parentWidget()
+        if parent is None:
+            return None
+        hit = None
+        for sib in parent.children():  # 后面的在上层
+            if isinstance(sib, Toast) and not sib.isHidden() and sib._hits_body(global_pos):
+                hit = sib
+        return hit
+
+    def _begin_drag(self, global_pos: QPoint):
+        """开始拖拽：记录起点并发出 drag_started。"""
+        self._drag_origin = global_pos
+        self._drag_delta = QPoint()
+        self.drag_started.emit()
+
+    def _move_drag(self, global_pos: QPoint):
+        """拖拽中：计算位移并发出 drag_moved。"""
         if self._drag_origin is None:
-            super().mouseMoveEvent(event)
             return
-        self._drag_delta = event.globalPosition().toPoint() - self._drag_origin
+        self._drag_delta = global_pos - self._drag_origin
         self.drag_moved.emit(self._drag_delta.x(), self._drag_delta.y())
-        super().mouseMoveEvent(event)
 
-    def mouseReleaseEvent(self, event):
-        """拖拽结束时发出 drag_finished 信号并清理拖拽态。"""
+    def _end_drag(self):
+        """结束拖拽：发出 drag_finished 并清理拖拽态。"""
         if self._drag_origin is None:
-            super().mouseReleaseEvent(event)
             return
         dx, dy = self._drag_delta.x(), self._drag_delta.y()
         self._drag_origin = None
         self._drag_delta = QPoint()
         self.drag_finished.emit(dx, dy, self._should_close_by_drag(dx, dy))
+
+    def mousePressEvent(self, event):
+        """记录拖拽起点并发出 drag_started 信号。
+
+        Note:
+            卡片控件含透明的阴影留白，相邻卡片的留白会盖住上一张卡的可见区域。
+            点在自己可见主体之外时，把拖拽转交给真正被点中的那张卡；
+            都没点中（纯透明区）就忽略。
+        """
+        if event.button() == Qt.MouseButton.LeftButton:
+            gpos = event.globalPosition().toPoint()
+            if self._hits_body(gpos):
+                self._begin_drag(gpos)
+            else:
+                target = self._card_at(gpos)
+                if target is not None and target is not self:
+                    self._drag_proxy = target
+                    target._begin_drag(gpos)
+                else:
+                    event.ignore()
+                    return
+        super().mousePressEvent(event)
+
+    def mouseMoveEvent(self, event):
+        """拖拽中计算位移并发出 drag_moved 信号。"""
+        gpos = event.globalPosition().toPoint()
+        if self._drag_proxy is not None and shiboken6.isValid(self._drag_proxy):
+            self._drag_proxy._move_drag(gpos)
+        elif self._drag_origin is not None:
+            self._move_drag(gpos)
+        else:
+            super().mouseMoveEvent(event)
+            return
+        super().mouseMoveEvent(event)
+
+    def mouseReleaseEvent(self, event):
+        """拖拽结束时发出 drag_finished 信号并清理拖拽态。"""
+        proxy, self._drag_proxy = self._drag_proxy, None
+        if proxy is not None:
+            if shiboken6.isValid(proxy):
+                proxy._end_drag()
+        elif self._drag_origin is not None:
+            self._end_drag()
         super().mouseReleaseEvent(event)
 
     def _should_close_by_drag(self, dx: int, dy: int) -> bool:
@@ -786,6 +863,7 @@ class Toast(QWidget):
         if not self._alive():
             return
         self._shadow = shadow
+        self._apply_root_margins()
         self._relayout()
         self.update()
 

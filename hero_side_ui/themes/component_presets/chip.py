@@ -4,7 +4,7 @@
 CHIP_SIZES = {
     "sm": {
         "height": 24,
-        "padding_x": 8,
+        "padding_x": 8,  # 官方 base px-1 + content px-1
         "text_size": "xs",
         "avatar_size": 16,
         "close_icon_size": 16,
@@ -14,7 +14,7 @@ CHIP_SIZES = {
     },
     "md": {
         "height": 28,
-        "padding_x": 10,
+        "padding_x": 12,  # 官方 base px-1 + content px-2
         "text_size": "sm",
         "avatar_size": 20,
         "close_icon_size": 18,
@@ -24,7 +24,7 @@ CHIP_SIZES = {
     },
     "lg": {
         "height": 32,
-        "padding_x": 12,
+        "padding_x": 16,  # 官方 base px-2 + content px-2
         "text_size": "md",
         "avatar_size": 24,
         "close_icon_size": 20,

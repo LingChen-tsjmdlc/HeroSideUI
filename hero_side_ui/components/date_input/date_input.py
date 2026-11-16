@@ -15,7 +15,7 @@ from PySide6.QtWidgets import (
 )
 
 from ..._shared.dates import VALID_GRANULARITIES, DateFieldState, DateTimeValue
-from ..._shared.fields import InputLayoutMixin, InputWrapper
+from ..._shared.fields import InputLayoutMixin, InputWrapper, SuggestedWidthMixin
 from ...animation import LabelFloatAnimation, UnderlineBar
 from ...core import FontProvider, ThemeProvider
 from ..text import Text
@@ -24,7 +24,7 @@ from ._styling import _DateInputStylingMixin
 from ...themes.colors import HEROUI_COLORS
 
 
-class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
+class DateInput(SuggestedWidthMixin, _DateInputStylingMixin, InputLayoutMixin, QWidget):
     """HeroUI 风格分段日期输入。
 
     供子类覆写的类属性：_object_name、_valid_granularities、
@@ -144,7 +144,6 @@ class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
 
         self._is_hover = False
         self._is_focused = False
-        self._user_width_locked = False
 
         # ---- 段状态机 ----
         self._state = DateFieldState(
@@ -797,38 +796,8 @@ class DateInput(_DateInputStylingMixin, InputLayoutMixin, QWidget):
         self._apply_styles()
 
     # ============================================================
-    # 宽度接管
+    # 宽度：用户 setFixedWidth / setMinimumWidth / setMaximumWidth 直接生效
     # ============================================================
-    def setFixedWidth(self, w: int):
-        """覆写固定宽度：标记用户锁宽并重算样式。
-
-        Args:
-            w: 固定宽度（像素）。
-        """
-        self._user_width_locked = True
-        super().setFixedWidth(w)
-        self._apply_styles()
-
-    def setMinimumWidth(self, w: int):
-        """覆写最小宽度：标记用户锁宽并重算样式。
-
-        Args:
-            w: 最小宽度（像素）。
-        """
-        self._user_width_locked = True
-        super().setMinimumWidth(w)
-        self._apply_styles()
-
-    def setMaximumWidth(self, w: int):
-        """覆写最大宽度：标记用户锁宽并重算样式。
-
-        Args:
-            w: 最大宽度（像素）。
-        """
-        self._user_width_locked = True
-        super().setMaximumWidth(w)
-        self._apply_styles()
-
     def set_width(self, w: int):
         """便捷接口：等价 setFixedWidth。
 

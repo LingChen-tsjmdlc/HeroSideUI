@@ -31,6 +31,7 @@ from ...themes import (
     PROGRESS_SIZES,
 )
 from ...themes.theme_values import get_foreground
+from ...themes.width import SUGGESTED_WIDTH
 from ..text import Text
 
 
@@ -170,9 +171,9 @@ class _LinearTrack(QWidget):
         """返回建议尺寸。
 
         Returns:
-            QSize: 宽 200、高为宿主轨道高度的尺寸。
+            QSize: 宽为全库统一建议宽度、高为宿主轨道高度的尺寸。
         """
-        return QSize(200, self._owner._track_height())
+        return QSize(SUGGESTED_WIDTH, self._owner._track_height())
 
     def minimumSizeHint(self):
         """返回最小建议尺寸。

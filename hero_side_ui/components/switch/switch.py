@@ -15,7 +15,7 @@ from PySide6.QtGui import (
     QPainter,
 )
 from PySide6.QtSvg import QSvgRenderer
-from PySide6.QtWidgets import QAbstractButton, QWidget
+from PySide6.QtWidgets import QAbstractButton, QSizePolicy, QWidget
 
 from ...animation.tween import tween_value
 from ...core import FontProvider, ThemeProvider
@@ -81,6 +81,8 @@ class Switch(QAbstractButton):
             auto 主题会向 ThemeProvider 注册；color 与 size 直接赋值，未做非法值校验。
         """
         super().__init__(parent)
+        # 内容型：宽度恰好等于内容，不被布局拉宽（官方 inline-flex / max-w-fit）
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, self.sizePolicy().verticalPolicy())
 
         self._color = color
         self._size = size

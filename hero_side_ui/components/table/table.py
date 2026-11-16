@@ -21,7 +21,7 @@ from PySide6.QtWidgets import (
 
 from ...core import ThemeProvider
 from ...core.shadow_paint import ShadowController
-from ...themes import TABLE_SIZES
+from ...themes import CHECKBOX_SIZES, TABLE_SIZES
 from ..card import Card, CardBody
 from ..checkbox import Checkbox
 from ..text import Text
@@ -484,7 +484,9 @@ class Table(_SelectionMixin, _SortingMixin, _VirtualMixin, _PropsMixin, _DataMix
         h.setContentsMargins(cfg["cell_padding_x"], 0, cfg["cell_padding_x"], 0)
         h.setAlignment(Qt.AlignmentFlag.AlignCenter)
         h.addWidget(cb)
-        holder.setFixedWidth(cfg["checkbox_col_width"])
+        # 官方没有这个数：列宽由单元格留白决定，这里 = 复选框方框宽 + 左右留白
+        box = CHECKBOX_SIZES.get(self._size, CHECKBOX_SIZES["md"])["box"]
+        holder.setFixedWidth(box + 2 * cfg["cell_padding_x"])
         return holder
 
     # ------------------------------------------------------------

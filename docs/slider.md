@@ -134,6 +134,7 @@ s.change_end.connect(lambda v: print("released:", v))  # 鼠标抬起/键盘抬�
 - HeroUI 的 `ring-2 ring-background` 用一圈 background 色 rounded-rect 模拟（`_RING_WIDTH=2`、`_RING_GAP=2`）
 - HeroUI `border-x-transparent` 的"track 两端不画圆角"细节用 `track_radius = thickness / 2` 简化处理（视觉等效）
 - HeroUI 的 `flex-col-reverse` 垂直布局通过组件内坐标翻转直接实现（"下=min / 上=max"）
+- 官方靠 `w-full` 撑满容器；Qt 里没有布局撑它时会缩成一条线，所以给了沿滑动方向 320px 的建议长度（全库统一的建议宽度）（只当 `sizeHint`，不是最小长度），见 [width.md](width.md)
 
 ## 设计 Token
 

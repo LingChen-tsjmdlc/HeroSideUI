@@ -4,8 +4,9 @@ from PySide6.QtCore import QPoint, QSize, Qt
 from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy
 
-from ..._shared.fields import fill_slot
+from ..._shared.fields import fill_slot, release_width_floor
 from ...themes import HEROUI_COLORS, RADIUS, TEXTAREA_SIZES
+from ...themes.width import SUGGESTED_WIDTH
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -44,10 +45,9 @@ class _TextareaStylingMixin:
         else:
             self.setStyleSheet("")
 
-        # ---- 最小宽度 ----
-        min_w = size_config.get("min_width", 260)
-        self.setMinimumWidth(min_w)
-        self._wrapper.setMinimumWidth(min_w)
+        # ---- 宽度：建议宽度只当 sizeHint，外框不守下限 ----
+        self.set_suggested_width(SUGGESTED_WIDTH)
+        release_width_floor(self._wrapper)
 
         is_inside = self._label_placement == "inside" and self._has_label()
         is_outside_float = self._label_placement == "outside" and self._has_label()

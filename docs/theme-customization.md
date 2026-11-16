@@ -706,3 +706,45 @@ hover 色的一处影响：`state_palette.py` 里菜单 hover 色按"暗色弹�
 ### Pressable Card 点击文字不触发（用户反馈）
 
 `Card(is_pressable=True)` 里插入的 `Text` / `QLabel` 会消费掉鼠标按下事件，卡片外壳收不到，水波纹和 `pressed` 信号都不触发（只有点空白处才行）。改为在内容子树上装事件过滤器：子控件照常处理自己的事件（文字仍可选中），卡片同时收到转发来的按压；同一事件沿父子链传播多次时用一次性标记去重，每个点击只加一个波纹。新增子控件通过 `ChildAdded` 事件自动装上过滤器。逻辑放在 `components/card/_press.py`，`card.py` 保持在 800 行以内。
+
+### 组件宽度统一（2026-11-16）
+
+不属于主题定制，但同一轮处理。完整约定与全部组件总表见 [width.md](width.md)。
+
+- 输入类（Input / Textarea / NumberInput / DateInput / TimeInput / Select / Autocomplete / DatePicker）：预设里的 `min_width` 改名 `default_width`，只当 `sizeHint`（新增 `_shared/fields/width_mixin.py` 的 `SuggestedWidthMixin`），外框用 `release_width_floor` 解除下限；删除 Input / DateInput 拦截 `setFixedWidth` 等三个方法与 `_user_width_locked`，以及 Select 的设宽转发。顺带修好：Textarea 设宽被无视、Autocomplete 与 DatePicker 设窄宽度时内层外框超出外壳。
+- NumberInput 不再有建议宽度，删除 `NUMBER_INPUT_MIN_WIDTHS`（公开导出，属于不兼容改动）。
+- 内容型（Button / Chip / Checkbox / Radio / Switch / Badge / Pagination / Tabs / InputOtp）水平策略统一为 `Maximum`，对齐官方 `inline-flex` / `max-w-fit`；这些组件的 `minimumSizeHint` 等于 `sizeHint`，所以仍不会被压窄。Button 原为 `Minimum`（会被布局拉宽）。Badge 竖排不再被拉满、头像不再居中错位。
+- Select、Accordion 补 `full_width=True`；Autocomplete 改 Expanding；DatePicker / DateRangePicker 的 `full_width=True` 现在真的是 Expanding；Slider 沿滑动方向建议长度 200。
+- 顺带修：`ShadowController.eventFilter` 在目标 Python 包装先被回收时不再抛异常。
+- 测试：新增 `tests/shared/test_width_contract.py`；同步 `test_number_input.py`、`test_date_input_widget.py`。已写未跑。
+- 已知变化：横排并排两个 Button 不再各被拉到一半宽，各自内容宽（官方横排也是如此）。
+
+### 宽度数字有来历（2026-11-16）
+
+查证后发现各组件的宽度数字来路不一：有照抄官方的，有自己拍的，也有抄错的（Button 最小宽实测 60 / 84 / 106，官方是 64 / 80 / 96）。原则：每个数字只能是三类之一——官方有则照抄；官方没有但 Qt 必须补则全库只用一个；其余按内容算。详见 [width.md](width.md) 末节。
+
+- **统一建议宽度 320**：新增 `themes/width.py` 的 `SUGGESTED_WIDTH`。来源是官方输入类示例里 `max-w-xs`（= 320px）出现 139 次。输入类（含 NumberInput、DateInput、TimeInput、DatePicker）、Slider、Progress 共用，不再按 sm / md / lg 分档；预设里的 `default_width` 字段、DateInput 的"按日期文字估算"、NumberInput 的无建议宽度都删了。
+- **Button**：最小宽 60 / 84 / 106 → 64 / 80 / 96（QSS 里要扣掉左右留白和边框，因为官方 `min-w` 是 border-box）；lg 左右留白 20 → 24（官方 `px-6`）。只有文字很短的按钮会变。
+- **Dropdown**：菜单最小宽 180 / 200 / 220 → 固定 200（官方 `min-w-[200px]`，不分档）。
+- **Chip**：左右留白 8 / 10 / 12 → 8 / 12 / 16（官方 base 与 content 的 padding 叠加）。
+- **删写死的数**：Tabs 标签最小宽 36 / 44 / 52；Table 复选框列宽 36 / 40 / 44 改为"方框宽 + 左右留白"（36 / 44 / 52）。
+- **Radio 卡片上限**：260 / 300 / 340 → 统一借用 320，标为 Qt 补丁。
+- Select / Autocomplete 打开时弹层宽度改取输入框实际宽度（输入框已显示时），不再取 `max(实际宽, sizeHint)`，否则用户把输入框设窄后弹层仍是 320。
+
+### Toast 混用不同阴影档位时错位（用户反馈，2026-11-16）
+
+先点 sm 再点 lg 的 Toast，卡片宽度不一、位置错开，而且 lg 离窗口边缘比 sm 更远。三个原因叠在一起，都出在我把阴影留白改成"随档位变化"（sm 18 / md 48 / lg 121）之后：
+
+- **各画各的留白：** Region 按"所有卡片留白的最大值"统一算卡片宽度和 x，卡片自己绘制却用自己档位的留白，sm 卡片的可见主体被撑宽、错位。改为 Region 把统一留白下发给每张卡片（`set_pad_override`），卡片的 `own_pad()` 仍是它自己档位的值，大卡片退出后其余卡片自动恢复。
+- **内容悬空：** 内容布局的外边距只在构造时按当时的留白设置一次，留白变了背景跟着变、图标和文字不动。留白变化（含 `set_shadow`）时现在会重设（`_apply_root_margins`）。
+- **横向离边缘更远：** 竖向已经按"可见主体"对齐窗口边缘，横向却按卡片控件对齐，留白越大离边越远。`_x_for` 现在扣掉留白，6 个方位下任何档位的可见主体到窗口边缘都是 `margin`（16px）。
+
+已知取舍：同时存在 lg 卡片时，所有卡片的透明留白都是 121px，这块透明区域会挡住它下面宿主控件的点击；只有 sm 时是 18px。这是"卡片挂在宿主窗口、留白是控件一部分"这个结构带来的，没有处理。
+
+### Toast 拖动的是别的卡片（用户反馈，2026-11-16）
+
+展开状态下，卡片控件含透明的阴影留白（sm 18px，lg 121px），相邻卡片的留白会盖住别的卡片的可见区域，鼠标按在可见主体上，事件却被层级更高的那张卡的透明留白接走，拖动的就是它。top 类方位是上面的新卡盖住下面老卡的上部，bottom 类相反。真实点击扫描：旧代码 6 方位 × 2 档位共 72 处点错。
+
+修法：卡片收到按下事件时先判断点是否在自己的可见主体内，不在就找真正被点中的那张卡，拖拽转交给它（移动、释放事件也转交）；点在谁的可见主体里都不是的纯透明区，忽略。修复后同样的扫描 0 处点错。
+
+取舍：这只修了拖拽。卡片的透明留白仍然会挡住它下面宿主控件的点击（点透明区时事件被忽略，不会传给卡片下面的控件），要彻底解决需要像弹层那样做命中穿透。

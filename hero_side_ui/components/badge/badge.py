@@ -8,6 +8,7 @@ from PySide6.QtWidgets import (
     QGraphicsDropShadowEffect,
     QGraphicsOpacityEffect,
     QHBoxLayout,
+    QSizePolicy,
     QVBoxLayout,
     QWidget,
 )
@@ -149,6 +150,8 @@ class Badge(QWidget):
         """
         super().__init__(parent)
         self.setObjectName("HeroBadge")
+        # 内容型：宽度恰好等于内容，不被布局拉宽（官方 inline-flex / max-w-fit）
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, self.sizePolicy().verticalPolicy())
 
         self._widget: QWidget | None = None
         self._content = str(content)

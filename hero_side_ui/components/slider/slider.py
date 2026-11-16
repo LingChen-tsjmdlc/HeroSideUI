@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Callable, Sequence
 
-from PySide6.QtCore import Qt, Signal
+from PySide6.QtCore import QSize, Qt, Signal
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QHBoxLayout,
@@ -16,6 +16,7 @@ from PySide6.QtWidgets import (
 from ...animation.tween import tween_value
 from ...core import FontProvider, ThemeProvider
 from ...themes import SLIDER_SIZES
+from ...themes.width import SUGGESTED_WIDTH
 from ..text import Text
 from ._api import _SliderAPIMixin
 from ._geometry import (
@@ -341,6 +342,14 @@ class Slider(_SliderAPIMixin, _SliderTooltipMixin, QWidget):
             self.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         else:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
+        self.updateGeometry()
+
+    def sizeHint(self) -> QSize:
+        """沿滑动方向的长度不小于建议长度，避免横排布局里被压成一条线。"""
+        hint = super().sizeHint()
+        if self._orientation == "vertical":
+            return QSize(hint.width(), max(hint.height(), SUGGESTED_WIDTH))
+        return QSize(max(hint.width(), SUGGESTED_WIDTH), hint.height())
 
     def _apply_font(self):
         """全局字体变化后按新的 marks 行高重算画布尺寸并重绘。"""

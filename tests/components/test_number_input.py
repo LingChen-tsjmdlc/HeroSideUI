@@ -123,24 +123,24 @@ def test_construct_all_sizes(qtbot):
         assert _make(qtbot, label="x", size=size) is not None
 
 
-def test_min_width_uses_number_token(qtbot):
-    # 数字内容短，最小宽度走 NumberInput 专属 token（120/140/160），不是文本的 240/260/300
-    from hero_side_ui.themes import NUMBER_INPUT_MIN_WIDTHS
+def test_width_uses_the_global_suggested_width_without_a_floor(qtbot):
+    # 全库统一的建议宽度，且不分档、没有硬下限
+    from hero_side_ui.themes.width import SUGGESTED_WIDTH
 
     for size in ("sm", "md", "lg"):
         ni = _make(qtbot, label="x", size=size)
-        expected = NUMBER_INPUT_MIN_WIDTHS[size]
-        assert ni.minimumWidth() == expected
-        assert ni._wrapper.minimumWidth() == expected
-        assert expected < 240
+        assert ni.suggested_width() == SUGGESTED_WIDTH
+        assert ni.minimumWidth() == 0
+        assert ni._wrapper.minimumWidth() == 0
 
 
-def test_min_width_user_locked_not_overridden(qtbot):
-    # 用户显式接管宽度后，restyle 不得用 token 抬高最小宽度
+def test_user_width_survives_restyle(qtbot):
+    # 用户显式设宽后，重算样式不得改动最小/最大宽度
     ni = _make(qtbot, label="x")
     ni.setFixedWidth(80)
     ni.set_color("primary")  # 触发一次 _apply_styles
     assert ni.minimumWidth() == 80
+    assert ni.maximumWidth() == 80
 
 
 # ---------------------------------------------------------------- 步进

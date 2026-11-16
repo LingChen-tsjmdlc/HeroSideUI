@@ -36,7 +36,7 @@ layout.addWidget(dd)  # Dropdown 自身是 QWidget，直接进布局
 | **开合**                                  |                                                              |                 |                                                                      |
 | `placement`                               | `str`                                                        | `"bottom"`      | 12 种方位：`bottom/top/left/right` 与各自的 `-start` / `-end`        |
 | `close_on_select`                         | `bool`                                                       | `True`          | 点击菜单项后是否关闭                                                 |
-| `min_width`                               | `int \| None`                                                | `None`          | 菜单最小宽度；`None` 用 size token（sm 180 / md 200 / lg 220）       |
+| `min_width`                               | `int \| None`                                                | `None`          | 菜单最小宽度；`None` 为 200（官方 min-w-[200px]，不分档）   |
 | `max_height`                              | `int \| None`                                                | `None`          | 菜单固定高度；`None` 时高度完全由内容撑开（只被屏幕剩余空间截断）    |
 | **选中**                                  |                                                              |                 |                                                                      |
 | `selection_mode`                          | `none / single / multiple`                                   | `"none"`        | 纯动作菜单用 `none`；需要勾选态时改 `single` / `multiple`            |

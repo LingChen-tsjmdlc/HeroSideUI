@@ -245,38 +245,30 @@ color == "danger":     success/warning 同款规则的浓度——固定 danger-
 | `set_end_content(content, on_click=None)`   | 设置右侧内容，同上                                                                          |
 | `set_on_start_content_click(cb)`            | 仅更新左侧点击回调                                                                          |
 | `set_on_end_content_click(cb)`              | 仅更新右侧点击回调                                                                          |
-| `set_width(w)`                              | 高层语义 API，等价于 `setFixedWidth(w)`，见下文“宽度接管”                                   |
+| `set_width(w)`                              | 等价于 `setFixedWidth(w)`，见[宽度](#宽度)                                   |
 | `line_edit`                                 | 属性：内部 `QLineEdit` 实例                                                                 |
 | `click_targets()`                           | 构成点击区域的控件元组（输入框、外框、浮动标签），供外部统一监听                            |
 | `refresh_filled_state(animate=True)`        | 外部直接写入文本后，刷新清除按钮与浮动标签                                                  |
 
 ---
 
-## 宽度接管
+## 宽度
 
-Input 默认会按 `size` 注入一个建议最小宽度（`sm=240 / md=260 / lg=300`），用来保证内部 label / icon / 清除按钮等子控件有合适的展示空间。
+Input 有一个**建议宽度** 320（全库统一，不随 `size` 变化）：没人约束它的时候有多宽。它只影响 `sizeHint`，**不是最小宽度**。
 
-但当你需要把 Input 嵌进窄槽位（比如 Slider 的 `top_end_content` 数字输入框、表格单元格等），通常希望**强制压窄**。组件提供了透明的接管协议：
-
-- 一旦你显式调用过下列任意方法，组件即视为“用户接管了宽度”，后续 `_apply_styles()`（hover/focus/setText/theme 切换都会重跑）**不会再用 `min_width` 默认值覆盖你的设置**：
-  - `setFixedWidth(w)`
-  - `setMinimumWidth(w)`
-  - `setMaximumWidth(w)`
-  - `set_width(w)`（推荐，语义更清晰）
-
-- 用户接管宽度后，组件还会顺手把内部 `_wrapper` 的 layout 切到 `SizeConstraint.SetNoConstraint`，避免内部 layout 通过 `minimumSize` 反推父 widget 撑破 `setFixedWidth(80)` 这类极小宽度（否则会出现“左圆右直”——右半边超出视口被父级 clip 掉）。
+你设的宽度直接生效，组件不拦截、不偷偷抬高：
 
 ```python
-# 推荐写法
 num_input = Input(value="42", size="sm", radius="md")
-num_input.set_width(64)  # 立即接管，不会被 240 涨破
-
-# 等价写法
-num_input = Input(value="42", size="sm")
-num_input.setFixedWidth(64)
+num_input.setFixedWidth(64)   # 就是 64
+num_input.set_width(64)       # 等价写法
 ```
 
-> ⚠️ 注意：一旦显式接管宽度，后续 `set_size("lg")` 也不会再帮你升回 300px 的默认下限——组件认为你的宽度由你负责。如果想恢复跟随 size 的默认行为，需要直接改组件源码或新建实例。
+- `setFixedWidth` / `setMinimumWidth` / `setMaximumWidth` 都是原生行为，之后 hover / focus / setText / 切主题都不会改动它们。
+- 内部外框不守任何下限，所以设得很窄（比如 64）也不会出现"左圆右直"（右半边超出视口被裁）。
+- 没设宽时，最小宽度由 Qt 按内部零件（左右留白、图标、清除按钮）自己算。
+
+完整约定见 [width.md](width.md)。
 
 ---
 

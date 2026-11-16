@@ -521,8 +521,9 @@ class Tabs(QWidget):
             else:
                 self._list.setSizePolicy(QSizePolicy.Fixed, QSizePolicy.Expanding)
         else:
-            self.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
-            self._list.setSizePolicy(QSizePolicy.Preferred, QSizePolicy.Preferred)
+            # 官方 inline-flex：宽度跟内容走，不被布局拉宽
+            self.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
+            self._list.setSizePolicy(QSizePolicy.Maximum, QSizePolicy.Preferred)
 
         # panel padding
         if self._placement in ("start", "end"):

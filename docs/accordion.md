@@ -39,6 +39,7 @@ accordion.add_item(AccordionItem(
 | `radius`         | `str`  | `"md"`    | 圆角 (`none` / `sm` / `md` / `lg`)，仅 shadow/bordered/splitted 生效，light 固定无圆角 |
 | `theme`          | `str`  | `"light"` | 主题 (`light` / `dark`)                                                                |
 | `show_divider`   | `bool` | `True`    | 是否显示子项之间的分割线（最后一项不显示）                                             |
+| `full_width`     | `bool` | `True`    | 是否撑满可用宽度（官方 `fullWidth` 默认 true）；`False` 时宽度跟内容走                 |
 
 ## AccordionItem（子项）参数
 

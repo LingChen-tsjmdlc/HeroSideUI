@@ -492,7 +492,6 @@ def test_content_setters(qtbot):
 def test_width_takeover(qtbot):
     di = _make(qtbot, label="x")
     di.set_width(200)
-    assert di._user_width_locked is True
     assert di.width() == 200
 
 

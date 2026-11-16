@@ -35,7 +35,7 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 | `size`           | `str`                   | `"md"`      | 尺寸，见下方 [size 可选值](#size-可选值)                          |
 | `radius`         | `str \| None`           | `None`      | 圆角，`None` 时跟随尺寸默认值。见 [radius 可选值](#radius-可选值) |
 | `is_disabled`    | `bool`                  | `False`     | 禁用状态，禁用后样式变灰且不响应交互                              |
-| `full_width`     | `bool`                  | `False`     | 是否撑满父容器宽度（`QSizePolicy.Expanding`）                     |
+| `full_width`     | `bool`                  | `False`     | 是否撑满父容器宽度（`QSizePolicy.Expanding`）；默认宽度恰好等于内容，竖排布局里也不会被拉宽（`Maximum`）                     |
 | `icon_only`      | `bool`                  | `False`     | 纯图标模式：锁成正方形，详见 [icon_only 模式](#icon_only-模式)    |
 | `icon`           | `str \| None`           | `None`      | 内置图标名或 SVG 路径，颜色随变体/主题/hover 自动适配             |
 | `icon_size`      | `int \| None`           | `None`      | 显式指定 icon 渲染尺寸（px）                                      |
@@ -94,10 +94,12 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 | 值   | 别名     | 字号 | 字重 | 内边距    | 最小宽度 |
 | ---- | -------- | ---- | ---- | --------- | -------- |
-| `sm` | `small`  | 13px | 500  | 6px 12px  | 36px     |
-| `md` | `medium` | 16px | 500  | 10px 16px | 52px     |
-| `lg` | `large`  | 19px | 600  | 14px 20px | 66px     |
+| `sm` | `small`  | 13px | 500  | 6px 12px  | 64px     |
+| `md` | `medium` | 16px | 500  | 10px 16px | 80px     |
+| `lg` | `large`  | 19px | 600  | 14px 24px | 96px     |
 
+> 最小宽度是含左右留白与边框的总宽，对齐官方 `min-w-16 / 20 / 24`；左右留白对齐官方 `px-3 / 4 / 6`。
+>
 > 每种尺寸有自己的默认圆角：sm→sm(4px), md→md(8px), lg→lg(14px)。
 
 ---

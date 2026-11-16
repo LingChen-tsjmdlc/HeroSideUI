@@ -6,7 +6,7 @@
 from collections.abc import Iterable
 
 from PySide6.QtCore import QEvent, Qt, Signal
-from PySide6.QtWidgets import QVBoxLayout, QWidget
+from PySide6.QtWidgets import QSizePolicy, QVBoxLayout, QWidget
 
 from ..._shared.selection import available_height_below, fit_popup_height
 from ...core import ThemeProvider
@@ -63,6 +63,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         size: str = "md",
         radius: str | None = None,
         label_placement: str = "inside",
+        full_width: bool = True,
         start_content: str | QWidget | None = None,
         is_disabled: bool = False,
         is_invalid: bool = False,
@@ -98,6 +99,7 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
             size: 尺寸档位。
             radius: 圆角档位。
             label_placement: label 放置方式。
+            full_width: 是否撑满可用宽度；False 时回到建议宽度，并且至少 160px（对齐官方 min-w-40）。
             start_content: Input 前置内容。
             is_disabled: 是否禁用。
             is_invalid: 是否为非法态。
@@ -173,6 +175,9 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._is_hovered: bool = False
         # 守卫：commit 选中后关闭 popover 触发的自动 FocusIn 不应再次打开。
         self._just_committed: bool = False
+
+        self._full_width = bool(full_width)
+        self._apply_full_width()
 
         # ---------- 外层 layout ----------
         self._outer = QVBoxLayout(self)
@@ -477,7 +482,8 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         """
         if self._is_disabled or self._is_open:
             return
-        w = max(self._input.width(), self._input.sizeHint().width())
+        # 输入框已显示就取实际宽度（用户设窄了，弹层也跟着窄）；还没显示才退回 sizeHint
+        w = self._input.width() if self._input.isVisible() else self._input.sizeHint().width()
         self._scroll.setMinimumWidth(w)
         self._scroll.setMaximumWidth(w)
         self._refresh_popover_height(prefer_below=True)
@@ -669,23 +675,21 @@ class Select(_SelectStylingMixin, _SelectCallbacksMixin, QWidget):
         self._listbox.set_empty_content(text)
 
     # ------------------------------------------------------------
-    # 宽度透传 —— Select 外壳是垂直 layout 套 Input，外壳设宽不会
-    # 压过 Input 的 min_width 守卫（默认 260），导致 Input 撑出 Select
-    # 边界、chevron 被裁。统一把宽度调用转发给 Input
-    def setFixedWidth(self, w: int):
-        """把固定宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
-        self._input.setFixedWidth(int(w))
-        super().setFixedWidth(int(w))
+    # 宽度：外壳设宽直接生效（内部 Input 不再守下限，不需要转发）
+    def _apply_full_width(self) -> None:
+        """按 full_width 设水平策略与下限：True 撑满；False 回到建议宽度且至少 160px。"""
+        horizontal = QSizePolicy.Policy.Expanding if self._full_width else QSizePolicy.Policy.Preferred
+        self.setSizePolicy(horizontal, QSizePolicy.Policy.Preferred)
+        QWidget.setMinimumWidth(self, 0 if self._full_width else 160)
 
-    def setMinimumWidth(self, w: int):
-        """把最小宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
-        self._input.setMinimumWidth(int(w))
-        super().setMinimumWidth(int(w))
+    def set_full_width(self, v: bool):
+        """切换是否撑满可用宽度。
 
-    def setMaximumWidth(self, w: int):
-        """把最大宽度同时转发给内部 Input 与外壳，避免 chevron 被裁。"""
-        self._input.setMaximumWidth(int(w))
-        super().setMaximumWidth(int(w))
+        Args:
+            v: True 撑满；False 回到建议宽度，且至少 160px。
+        """
+        self._full_width = bool(v)
+        self._apply_full_width()
 
     def set_disable_selector_icon_rotation(self, v: bool):
         """设置是否禁用 chevron 旋转并立即复位其角度。"""

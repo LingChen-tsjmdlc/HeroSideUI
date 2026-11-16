@@ -177,8 +177,9 @@ class Button(QPushButton):
         elif self._full_width:
             self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Fixed)
         else:
-            # 普通按钮：宽度按内容自适应，绝不允许弹性缩小，允许弹性增大
-            self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+            # 普通按钮：宽度恰好等于内容（官方 inline-flex + min-w-max）：不被压窄，也不被拉宽；
+            # minimumSizeHint 与 sizeHint 相同，所以 Maximum 同样不会被压窄
+            self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
 
     def _resolve_icon_only_side(self) -> int:
         """解析 icon_only 模式的正方形边长。
@@ -222,7 +223,10 @@ class Button(QPushButton):
                 f"min-height: {content}px; max-height: {content}px;"
             )
         else:
-            box_constraints = f"min-width: {size_config['min_width']};"
+            # 官方 min-w 是含留白与边框的总宽（border-box）；QSS 的 min-width 是内容宽，要扣掉
+            border = 1 if self._variant in ("bordered", "ghost", "faded") else 0
+            content_min = max(0, size_config["min_width"] - 2 * size_config["padding_x"] - 2 * border)
+            box_constraints = f"min-width: {content_min}px;"
 
         normal_colors, hover_colors, disabled_colors = self._get_variant_styles(colors)
 

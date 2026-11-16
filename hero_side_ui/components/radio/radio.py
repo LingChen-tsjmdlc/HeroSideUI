@@ -16,6 +16,7 @@ from PySide6.QtWidgets import QWidget
 from ...core import make_text_qfont
 from ...themes import HEROUI_COLORS
 from ...themes.theme_values import get_content_background, get_foreground
+from ...themes.width import SUGGESTED_WIDTH
 from ._base import VALID_COLORS, VALID_SIZES, VALID_VARIANTS, RadioBase
 
 
@@ -140,7 +141,8 @@ class Radio(RadioBase):
         wrapper = cfg["wrapper"]
         pad = cfg["card_padding"]
         gap = cfg["card_gap"]
-        max_w = cfg["card_max_width"]
+        # Qt 补丁：官方只有 max-w-fit；文字没有上限就不换行，借用全库统一宽度当上限
+        max_w = SUGGESTED_WIDTH
 
         label_w = label_h = desc_w = desc_h = 0
         if self.text():

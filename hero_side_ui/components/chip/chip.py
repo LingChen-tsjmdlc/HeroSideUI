@@ -170,7 +170,7 @@ class Chip(QWidget):
         self._layout.addWidget(self._close_btn, 0, Qt.AlignmentFlag.AlignVCenter)
 
         self._update_children_visibility()
-        self.setSizePolicy(QSizePolicy.Policy.Minimum, QSizePolicy.Policy.Fixed)
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, QSizePolicy.Policy.Fixed)
 
     def _update_children_visibility(self):
         """同步 dot 与关闭按钮的可见性。

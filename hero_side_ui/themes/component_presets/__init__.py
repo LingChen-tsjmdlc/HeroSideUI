@@ -66,7 +66,7 @@ from .drawer import (
 )
 from .dropdown import DROPDOWN_SIZES
 from .icon import ICON_SIZES
-from .input import INPUT_SIZES, NUMBER_INPUT_MIN_WIDTHS
+from .input import INPUT_SIZES
 from .input_otp import (
     INPUT_OTP_CARET_PERIOD_MS,
     INPUT_OTP_SIZES,
@@ -170,7 +170,6 @@ __all__ = [
     "MARKDOWN_LIST",
     "MARKDOWN_QUOTE",
     "MARKDOWN_SPACING",
-    "NUMBER_INPUT_MIN_WIDTHS",
     "PAGINATION_SIZES",
     "PROGRESS_SIZES",
     "RADIO_SIZES",

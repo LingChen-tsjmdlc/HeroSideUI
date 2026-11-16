@@ -445,7 +445,7 @@ class TabItem(QAbstractButton):
         # custom 模式：宽度由 child widget sizeHint 决定
         if self._custom is not None:
             ch = self._custom.sizeHint()
-            w = max(ch.width() + 2 * cfg["tab_padding_x"], cfg["tab_min_width"])
+            w = ch.width() + 2 * cfg["tab_padding_x"]
             self.setMinimumWidth(w)
             return
 
@@ -459,7 +459,7 @@ class TabItem(QAbstractButton):
             icon_w += icon_size + (gap if self._title else 0)
         if self._end_icon_pixmap is not None:
             icon_w += icon_size + (gap if (self._title or self._start_icon_pixmap) else 0)
-        w = max(text_w + icon_w + 2 * cfg["tab_padding_x"], cfg["tab_min_width"])
+        w = text_w + icon_w + 2 * cfg["tab_padding_x"]
         self.setMinimumWidth(w)
 
     def sizeHint(self) -> QSize:
@@ -468,7 +468,7 @@ class TabItem(QAbstractButton):
         if self._custom is not None:
             ch = self._custom.sizeHint()
             return QSize(
-                max(ch.width() + 2 * cfg["tab_padding_x"], cfg["tab_min_width"]),
+                ch.width() + 2 * cfg["tab_padding_x"],
                 cfg["tab_height"],
             )
         from ...core import make_text_qfont
@@ -484,7 +484,7 @@ class TabItem(QAbstractButton):
         if self._end_icon_pixmap is not None:
             icon_w += icon_size + (gap if (self._title or self._start_icon_pixmap) else 0)
         return QSize(
-            max(text_w + icon_w + 2 * cfg["tab_padding_x"], cfg["tab_min_width"]),
+            text_w + icon_w + 2 * cfg["tab_padding_x"],
             cfg["tab_height"],
         )
 

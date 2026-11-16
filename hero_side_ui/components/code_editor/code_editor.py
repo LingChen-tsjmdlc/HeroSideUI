@@ -6,7 +6,7 @@
 
 from __future__ import annotations
 
-from PySide6.QtCore import Qt, QTimer, Signal
+from PySide6.QtCore import QSize, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QTextCursor
 from PySide6.QtWidgets import (
     QHBoxLayout,
@@ -24,6 +24,7 @@ from ...themes import (
     CODE_EDITOR_SYNTAX,
     HEROUI_COLORS,
 )
+from ...themes.width import SUGGESTED_WIDTH
 from ._gutter import _Gutter
 from ._pygments_highlighter import PygmentsHighlighter
 
@@ -540,8 +541,14 @@ class CodeEditor(QWidget):
         if width != self._gutter.width():
             self._gutter.setFixedWidth(width)
 
+    def sizeHint(self) -> QSize:
+        """宽度取全库统一的建议宽度（之前是 Qt 的 QPlainTextEdit 默认值 288，没有来历）。"""
+        hint = super().sizeHint()
+        return QSize(max(hint.width(), SUGGESTED_WIDTH), hint.height())
+
     def _apply_min_height(self) -> None:
-        """按 min_lines × 行高设置编辑区最小高度。"""
+        """按 min_lines × 行高设置编辑区最小高度，并设固定最小宽度。"""
+        self.setMinimumWidth(CODE_EDITOR_SPEC["min_width"])
         self._edit.setMinimumHeight(self._line_height() * self._min_lines)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 

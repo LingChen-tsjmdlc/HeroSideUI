@@ -11,7 +11,6 @@ RADIO_SIZES = {
         # card 变体
         "card_padding": 12,
         "card_radius": 10,
-        "card_max_width": 260,
         "card_gap": 12,
         "card_border_width": 2,
     },
@@ -24,7 +23,6 @@ RADIO_SIZES = {
         "border_width": 2,
         "card_padding": 16,
         "card_radius": 12,
-        "card_max_width": 300,
         "card_gap": 16,
         "card_border_width": 2,
     },
@@ -37,7 +35,6 @@ RADIO_SIZES = {
         "border_width": 2,
         "card_padding": 18,
         "card_radius": 14,
-        "card_max_width": 340,
         "card_gap": 18,
         "card_border_width": 2,
     },

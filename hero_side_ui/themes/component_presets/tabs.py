@@ -18,7 +18,6 @@ TABS_SIZES = {
         "underline_h": 2,
         "underline_ratio": 0.8,
         "border_width": 2,
-        "tab_min_width": 36,
     },
     "md": {
         "tab_height": 32,
@@ -34,7 +33,6 @@ TABS_SIZES = {
         "underline_h": 2,
         "underline_ratio": 0.8,
         "border_width": 2,
-        "tab_min_width": 44,
     },
     "lg": {
         "tab_height": 36,
@@ -50,7 +48,6 @@ TABS_SIZES = {
         "underline_h": 2,
         "underline_ratio": 0.8,
         "border_width": 2,
-        "tab_min_width": 52,
     },
 }
 

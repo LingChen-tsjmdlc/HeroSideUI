@@ -11,7 +11,7 @@ BUTTON_SIZES = {
         "font_weight": "500",
         "default_radius": "sm",
         "height": "18px",
-        "min_width": "36px",
+        "min_width": 64,  # 官方 min-w-16：含左右留白与边框的总宽（border-box）
     },
     "md": {
         "padding_y": 10,
@@ -20,16 +20,16 @@ BUTTON_SIZES = {
         "font_weight": "500",
         "default_radius": "md",
         "height": "26px",
-        "min_width": "52px",
+        "min_width": 80,  # 官方 min-w-20
     },
     "lg": {
         "padding_y": 14,
-        "padding_x": 20,
+        "padding_x": 24,  # 官方 px-6
         "font_size": "19px",
         "font_weight": "600",
         "default_radius": "lg",
         "height": "33px",
-        "min_width": "66px",
+        "min_width": 96,  # 官方 min-w-24
     },
 }
 

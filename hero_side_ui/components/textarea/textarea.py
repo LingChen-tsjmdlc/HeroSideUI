@@ -13,7 +13,7 @@ from PySide6.QtWidgets import (
     QWidget,
 )
 
-from ..._shared.fields import ClearButton, InputWrapper
+from ..._shared.fields import ClearButton, InputWrapper, SuggestedWidthMixin
 from ...animation import LabelFloatAnimation
 from ...core import FontProvider, ThemeProvider
 from ..text import Text
@@ -29,6 +29,7 @@ from ...themes.colors import HEROUI_COLORS
 # Textarea 主体
 # ============================================================
 class Textarea(
+    SuggestedWidthMixin,
     _TextareaStylingMixin,
     _TextareaLayoutMixin,
     _TextareaAutosizeMixin,

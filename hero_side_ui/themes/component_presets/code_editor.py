@@ -20,6 +20,7 @@ CODE_EDITOR_SPEC = {
     "code_bg_light": "#f4f4f5",
     "code_bg_dark": "#27272a",
     "tab_width": 4,  # Tab 转空格的宽度
+    "min_width": 120,  # 最小宽度（用户指定；官方没有 CodeEditor，Qt 补丁，之前由内部零件算出 106）
     "max_lines": 10000,  # 默认最大行数上限
 }
 

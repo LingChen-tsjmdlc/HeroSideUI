@@ -26,7 +26,6 @@ INPUT_SIZES = {
         "label_float_x": 0,  # 贴 wrapper 左 padding 对齐 line_edit 左
         "label_float_y": 5,  # 距 wrapper 顶 5px（留呼吸空间，不要顶死）
         "inside_input_top_space": 14,  # inside 模式下输入文字上方预留高度（容纳浮起 label）
-        "min_width": 240,  # 组件整体最小宽度
     },
     "md": {
         "height": 40,
@@ -48,7 +47,6 @@ INPUT_SIZES = {
         "label_float_x": 0,
         "label_float_y": 6,
         "inside_input_top_space": 16,
-        "min_width": 260,
     },
     "lg": {
         "height": 48,
@@ -70,23 +68,11 @@ INPUT_SIZES = {
         "label_float_x": 0,
         "label_float_y": 7,
         "inside_input_top_space": 18,
-        "min_width": 300,
     },
 }
 
 INPUT_SIZES["small"] = INPUT_SIZES["sm"]
 INPUT_SIZES["medium"] = INPUT_SIZES["md"]
 INPUT_SIZES["large"] = INPUT_SIZES["lg"]
-
-# NumberInput 内容是数字（如 1,234.50 / 50% / ¥1,234.50），比文本短得多，
-# 整体最小宽度不复用文本输入的 240/260/300，单独给一张更紧凑的表。
-NUMBER_INPUT_MIN_WIDTHS = {
-    "sm": 60,
-    "md": 70,
-    "lg": 80,
-}
-NUMBER_INPUT_MIN_WIDTHS["small"] = NUMBER_INPUT_MIN_WIDTHS["sm"]
-NUMBER_INPUT_MIN_WIDTHS["medium"] = NUMBER_INPUT_MIN_WIDTHS["md"]
-NUMBER_INPUT_MIN_WIDTHS["large"] = NUMBER_INPUT_MIN_WIDTHS["lg"]
 
 __all__ = ["INPUT_SIZES"]

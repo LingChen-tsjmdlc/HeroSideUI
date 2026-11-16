@@ -670,6 +670,118 @@ class TestToastRegion:
         assert region.card("nope") is None
 
 
+class TestMixedShadowTiers:
+    """回归：不同阴影档位的卡片同时存在时，不能错位，也不能离窗口边缘更远。"""
+
+    @staticmethod
+    def _visible(card, strip_inset: bool = True):
+        """可见主体的 (左, 右, 上, 下)（相对宿主，扣除折叠堆叠的逐层内缩）。"""
+        r = card._content_rect()
+        inset = card._width_inset if strip_inset else 0.0
+        left = card.x() + r.x() - inset
+        return left, left + r.width() + 2 * inset
+
+    @pytest.mark.parametrize("order", [("sm", "lg"), ("lg", "sm"), ("sm", "md", "lg", "none")])
+    def test_all_cards_share_one_pad_and_one_visible_box(self, qtbot, host, order):
+        region = ToastRegion(parent=host, disable_animation=True)
+        qtbot.addWidget(region)
+        cards = [Toast(title=f"t{s}", shadow=s, timeout=0, parent=region) for s in order]
+        for c in cards:
+            region.add(c)
+        QTest.qWait(30)
+        assert len({c.pad_left for c in cards}) == 1  # 统一留白
+        boxes = {tuple(round(v) for v in self._visible(c)) for c in cards}
+        assert len(boxes) == 1  # 可见主体左右边缘与宽度一致
+
+    def test_content_is_laid_out_with_the_shared_pad(self, qtbot, host):
+        """回归：留白变了而内容布局外边距没跟着变，图标和文字会悬在卡片外。"""
+        region = ToastRegion(parent=host, disable_animation=True)
+        qtbot.addWidget(region)
+        small = _cards(region, 1, shadow="sm")[0]
+        large = Toast(title="big", shadow="lg", timeout=0, parent=region)
+        region.add(large)
+        QTest.qWait(30)
+        assert small.pad_left > small.own_pad()  # 被 lg 带高了
+        margins = small._root.contentsMargins()
+        assert margins.left() == small.pad_left + TOAST_SPEC["padding_x"]
+        assert margins.top() == small.pad_top + TOAST_SPEC["padding_y"]
+
+    def test_pad_returns_to_own_value_when_the_big_card_leaves(self, qtbot, host):
+        region = ToastRegion(parent=host, disable_animation=True)
+        qtbot.addWidget(region)
+        small = _cards(region, 1, shadow="sm")[0]
+        large = Toast(title="big", shadow="lg", timeout=0, parent=region)
+        key = region.add(large)
+        QTest.qWait(30)
+        assert small.pad_left > small.own_pad()
+        region.dismiss(key)
+        QTest.qWait(_EXIT_WAIT)
+        assert small.pad_left == small.own_pad()
+
+    @pytest.mark.parametrize("placement", PLACEMENTS)
+    @pytest.mark.parametrize("shadow", ["none", "sm", "md", "lg"])
+    def test_visible_box_keeps_the_same_distance_from_the_window_edge(
+        self, qtbot, host, placement, shadow
+    ):
+        """回归：阴影档位越大，卡片离窗口边缘越远（横向按卡片控件而不是可见主体对齐）。"""
+        region = ToastRegion(parent=host, placement=placement, disable_animation=True)
+        qtbot.addWidget(region)
+        card = _cards(region, 1, shadow=shadow)[0]
+        QTest.qWait(20)
+        left, right = self._visible(card)
+        if placement.endswith("left"):
+            assert round(left) == TOAST_SPEC["margin"]
+        elif placement.endswith("right"):
+            assert round(host.width() - right) == TOAST_SPEC["margin"]
+        else:
+            assert abs((left + right) / 2 - host.width() / 2) <= 1
+
+
+class TestToastHitTest:
+    """回归：相邻卡片的透明留白盖住别的卡片时，按下/拖动的必须是鼠标下面那张。"""
+
+    @pytest.mark.parametrize("placement", ["top-right", "bottom-right"])
+    @pytest.mark.parametrize("shadow", ["sm", "lg"])
+    def test_press_on_a_visible_body_drags_that_card(self, qtbot, host, placement, shadow):
+        host.resize(1000, 800)
+        host.show()
+        region = ToastRegion(parent=host, placement=placement, disable_animation=True)
+        qtbot.addWidget(region)
+        cards = _cards(region, 4, shadow=shadow)
+        region._set_hovering(True)  # 展开：各卡可见主体互不重叠，但透明留白相互覆盖
+        QTest.qWait(50)
+        cards = sorted([c for c in cards if not c.isHidden()], key=lambda c: c.y())
+        started: list[int] = []
+        for i, c in enumerate(cards):
+            c.drag_started.connect(lambda i=i: started.append(i))
+        for i, c in enumerate(cards):
+            r = c._content_rect()
+            for fy in (0.1, 0.5, 0.9):
+                gp = c.mapTo(host, QPoint(int(r.x() + r.width() * 0.45), int(r.y() + r.height() * fy)))
+                started.clear()
+                QTest.mousePress(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
+                QTest.mouseMove(host.windowHandle(), gp + QPoint(-6, 0))
+                QTest.mouseRelease(
+                    host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp + QPoint(-6, 0)
+                )
+                assert started == [i], f"第 {i} 张 fy={fy} 实际拖动 {started}"
+
+    def test_press_in_pure_transparent_padding_starts_no_drag(self, qtbot, host):
+        host.resize(1000, 800)
+        host.show()
+        region = ToastRegion(parent=host, disable_animation=True)
+        qtbot.addWidget(region)
+        card = _cards(region, 1, shadow="lg")[0]
+        QTest.qWait(30)
+        started: list[int] = []
+        card.drag_started.connect(lambda: started.append(1))
+        r = card._content_rect()
+        gp = card.mapTo(host, QPoint(int(r.x() - 20), int(r.y() + r.height() / 2)))  # 卡片左侧 20px 的透明留白
+        QTest.mousePress(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
+        QTest.mouseRelease(host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, gp)
+        assert started == []
+
+
 class TestToastProvider:
     """provider 与全局函数"""
 

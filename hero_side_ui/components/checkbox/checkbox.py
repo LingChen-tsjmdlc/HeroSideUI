@@ -21,6 +21,7 @@ from PySide6.QtGui import (
 from PySide6.QtSvg import QSvgRenderer
 from PySide6.QtWidgets import (
     QCheckBox,
+    QSizePolicy,
     QWidget,
 )
 
@@ -120,6 +121,8 @@ class Checkbox(QCheckBox):
             样式用空 QSS 让 paintEvent 完全接管外观。
         """
         super().__init__(text, parent)
+        # 内容型：宽度恰好等于内容，不被布局拉宽（官方 inline-flex / max-w-fit）
+        self.setSizePolicy(QSizePolicy.Policy.Maximum, self.sizePolicy().verticalPolicy())
 
         self._color = color
         self._size = size

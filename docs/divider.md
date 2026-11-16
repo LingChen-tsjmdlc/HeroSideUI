@@ -140,37 +140,18 @@ card.add_footer(footer)
 
 ## 已知设计限制与修复建议
 
-### 1. 布局对齐标记下分割线不可见（无内在首选宽度）
+### 1. 布局里的宽度（已修复，对齐官方 `w-full` / `h-full`）
 
-**现象**：把 Divider 用对齐标记加入布局时，分割线完全不可见：
-
-```python
-# 反例：线会消失
-layout.addWidget(divider, 0, Qt.AlignmentFlag.AlignHCenter)
-```
-
-**根因**：Qt 布局中带对齐标记的条目不参与拉伸，按 `sizeHint()` 给位。Divider
-的铺满能力来自 `sizePolicy(Expanding, Fixed)`，但该策略只在布局允许拉伸的语
-境下生效；Divider 本体只有 QSS 背景色、无内容，`sizeHint` 塌到约 0px，对齐
-语境下整条线消失。
-
-**与上游的差距**：React 版 Divider 自带 `w-full`（width: 100%）作为内在属
-性，放入任何容器都天然铺满；PySide 移植版把「铺满」寄托在使用方不加对齐标
-记上——契约只保了一半。
-
-**规避方式**（当前版本）：
+官方 Divider 自带 `w-full`（水平）/ `h-full`（垂直），占父容器 100%。Qt 没有百分比，以前 Divider 没有首选长度，在布局里会塌成 0：
 
 ```python
-# 正例 1：不带对齐标记，由 Expanding 策略铺满
-layout.addWidget(divider)
-
-# 正例 2：需要对齐/定宽场景，显式固定几何
-divider.setFixedWidth(120)
+layout.addWidget(divider, 0, Qt.AlignmentFlag.AlignHCenter)   # 以前：线消失
+hbox.addWidget(divider); hbox.addStretch(1)                    # 以前：宽度 0
 ```
 
-**修复建议**：组件覆写 `sizeHint()`，给出确定的首选尺寸（horizontal →
-`QSize(默认宽, thickness)`，vertical → `QSize(thickness, 默认高)`），使任何
-布局语境下首选尺寸都是确定的一条线，而非依赖使用方布局写法。
+现在 `sizeHint` 沿长边给全库统一的建议长度 320（`themes/width.py` 的 `SUGGESTED_WIDTH`），所以这两种写法都能看到线（320）；放进竖排（水平线）或横排（垂直线）时仍然铺满。窄容器里照旧会被压窄，你设宽直接生效。
+
+和官方的差别：横排加弹簧时水平线是 320，不是整行（Qt 里弹簧和它抢空间，没有"独占"）。想要整行，放进竖排或去掉弹簧。
 
 ---
 

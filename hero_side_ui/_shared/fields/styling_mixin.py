@@ -5,14 +5,15 @@ from PySide6.QtGui import QColor, QPalette
 from PySide6.QtWidgets import (
     QGraphicsOpacityEffect,
     QLabel,
-    QLayout,
     QPushButton,
     QSizePolicy,
     QWidget,
 )
 
 from ...themes import HEROUI_COLORS, RADIUS
+from ...themes.width import SUGGESTED_WIDTH
 from ...utils import hex_to_rgba, load_svg_icon
+from .width_mixin import release_width_floor
 
 
 class InputStylingMixin:
@@ -34,11 +35,8 @@ class InputStylingMixin:
         """计算并应用全部样式：外框、line_edit、label、图标、clear、helper。
 
         Note:
-            用户显式接管过宽度时释放 wrapper 的 min_width 并把内部 layout
-            设为 SetNoConstraint，避免 wrapper 真实宽度超出 Input 视口被裁；
-            必须用 QWidget.setMinimumWidth 而非 self.setMinimumWidth，
-            后者被重写为标记 _user_width_locked 会污染守卫位。
-            首次应用不走颜色补间，避免从全透明淡入。
+            宽度：全库统一的建议宽度只当 sizeHint，外框不守任何下限，
+            用户 setFixedWidth 等直接生效。首次应用不走颜色补间，避免从全透明淡入。
         """
         is_dark = self._theme == "dark"
         size_config = self._size_config()
@@ -62,30 +60,9 @@ class InputStylingMixin:
         height = size_config["inside_height"] if is_inside else size_config["height"]
         self._wrapper.setFixedHeight(height)
 
-        # ---- 最小宽度 ----
-        # 用户调过 setFixedWidth/setMinimumWidth/setMaximumWidth/set_width
-        # 即视为显式接管，避免 size_config 里的 240/260/300 反复抬高
-        # minimumWidth、把 setFixedWidth(80) 这类硬约束涨破。
-        # ★ 注意必须用 QWidget.setMinimumWidth，不能走 self.setMinimumWidth——
-        #   后者被我们重写为"标记 _user_width_locked=True"，组件内部调用一次
-        #   就会把守卫位污染掉，导致以后真的接管失效。
-        from PySide6.QtWidgets import QWidget
-
-        if not getattr(self, "_user_width_locked", False):
-            min_w = size_config.get("min_width", 260)
-            QWidget.setMinimumWidth(self, min_w)
-            QWidget.setMinimumWidth(self._wrapper, min_w)
-        else:
-            # 用户接管宽度（如 setFixedWidth(80)）：必须把 wrapper 的 min_width
-            # 也释放为 0，并把 wrapper 内部 layout 的 SizeConstraint 设为
-            # SetMinAndMaxSize 之外的宽松值——否则 _wrapper 自己 layout 的
-            # minimumSize（左右 padding 12+12 + spacing + 子控件最小宽 ≈ 100+）
-            # 会让 wrapper 强守那个最小宽度，wrapper 真实宽度 > Input.width()=80，
-            # wrapper 右半边超出 Input 视口被父容器 clip，于是只看到左圆右直。
-            QWidget.setMinimumWidth(self._wrapper, 0)
-            wrap_layout = self._wrapper.layout()
-            if wrap_layout is not None:
-                wrap_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        # ---- 宽度：建议宽度只当 sizeHint，外框不守下限 ----
+        self.set_suggested_width(SUGGESTED_WIDTH)
+        release_width_floor(self._wrapper)
 
         # ---- Input 根容器: outside 模式下给顶部预留空间作为浮出 label 的落脚处 ----
         if is_outside_float:

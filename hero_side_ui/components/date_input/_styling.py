@@ -1,10 +1,11 @@
 """DateInput 样式 mixin：外框复用 Input 决策，额外负责段四态配色。"""
 
 from PySide6.QtGui import QColor
-from PySide6.QtWidgets import QGraphicsOpacityEffect, QLayout, QSizePolicy, QWidget
+from PySide6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy
 
-from ..._shared.fields import InputStylingMixin
+from ..._shared.fields import InputStylingMixin, release_width_floor
 from ...themes import DATE_INPUT_SIZES, HEROUI_COLORS, RADIUS
+from ...themes.width import SUGGESTED_WIDTH
 
 
 class _DateInputStylingMixin(InputStylingMixin):
@@ -51,16 +52,9 @@ class _DateInputStylingMixin(InputStylingMixin):
         height = size_config["inside_height"] if is_inside else size_config["height"]
         self._wrapper.setFixedHeight(height)
 
-        # ---- 最小宽度 ----
-        if not getattr(self, "_user_width_locked", False):
-            min_w = self._natural_min_width(size_config)
-            QWidget.setMinimumWidth(self, min_w)
-            QWidget.setMinimumWidth(self._wrapper, min_w)
-        else:
-            QWidget.setMinimumWidth(self._wrapper, 0)
-            wrap_layout = self._wrapper.layout()
-            if wrap_layout is not None:
-                wrap_layout.setSizeConstraint(QLayout.SizeConstraint.SetNoConstraint)
+        # ---- 宽度：全库统一的建议宽度只当 sizeHint，外框不守下限 ----
+        self.set_suggested_width(SUGGESTED_WIDTH)
+        release_width_floor(self._wrapper)
 
         # ---- outside 浮动 label 的顶部预留 ----
         if is_outside_float:
@@ -380,24 +374,6 @@ class _DateInputStylingMixin(InputStylingMixin):
     # ------------------------------------------------------------
     # 尺寸
     # ------------------------------------------------------------
-    def _natural_min_width(self, size_config) -> int:
-        """按段文本实测估算最小宽度，不用 INPUT_SIZES 的固定下限。
-
-        Args:
-            size_config: 尺寸 token（padding_x / gap）。
-
-        Returns:
-            至少 120px 的估算宽度 = 内容 sizeHint + padding + 可见插槽宽度。
-        """
-        content = self._inner.sizeHint().width()
-        pad = size_config["padding_x"] * 2
-        extras = 0
-        if self._start_slot.isVisible():
-            extras += self._start_slot.sizeHint().width() + size_config["gap"]
-        if self._end_slot.isVisible():
-            extras += self._end_slot.sizeHint().width() + size_config["gap"]
-        return max(120, content + pad + extras)
-
     def _resolve_radius(self, size_config: dict) -> str:
         """解析外框圆角值。
 
