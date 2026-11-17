@@ -224,9 +224,20 @@ class TestFlipInsideWindow:
         qtbot.wait(450)
         pop = dd._popover
         trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
-        assert pop._actual_placement.startswith(expect)
-        assert _inside(dd._trigger, pop)
-        assert not pop._body_global().intersects(trigger)
+        body = pop._body_global()
+        # 失败时带上定位用到的全部区域，平台差异（窗口被系统挪动）靠这些数字定位
+        info = (
+            f"body={body.getRect()} trigger={trigger.getRect()} "
+            f"screen={bounds.screen_rect(dd._trigger).getRect()} "
+            f"host={(bounds.host_rect(dd._trigger) or QRect()).getRect()} "
+            f"area={bounds.popup_area(dd._trigger).getRect()} "
+            f"above={bounds.space_above(dd._trigger)} below={bounds.space_below(dd._trigger)} "
+            f"room={dd._room_for_menu()} cap={dd._menu_height_cap(True)} "
+            f"scroll_h={dd._scroll.height()} placement={pop._actual_placement}"
+        )
+        assert pop._actual_placement.startswith(expect), info
+        assert _inside(dd._trigger, pop), info
+        assert not body.intersects(trigger), info
         dd.close()
 
     def test_tooltip_flips_down_near_the_window_top(self, qtbot):

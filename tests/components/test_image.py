@@ -361,13 +361,13 @@ class TestImageCombinations:
 
     def test_blurred_plus_shadow(self, qtbot):
         img = Image(is_blurred=True, shadow="md", src=_make_pixmap())
-        qtbot.addWidget(img)
         with qtbot.waitSignal(img.loaded, timeout=1000):
-            pass
+            # img 随宿主一起关闭，不再单独 addWidget，避免被重复关闭
+            host = _in_host(qtbot, img)
         assert img._blurred is not None
-        _in_host(qtbot, img)
         assert img._shadow_ctl._layer is not None
         assert not img._shadow_ctl._layer.isHidden()
+        assert host is not None
 
     def test_remove_wrapper_with_pixmap(self, qtbot):
         pm = _make_pixmap()

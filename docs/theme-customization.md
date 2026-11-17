@@ -786,3 +786,10 @@ CI 跑的是已提交的 d4d9429。逐类定位：
 - test_icon 那条在 3.12 / 3.13 上表现为 `RuntimeError: Error calling Python override of QObject::eventFilter()`，栈里 `ScrollShadow._refresh_shadow → _compute_effective_visibility → verticalScrollBar()` 被嵌套了几百层，也就是 `_refresh_shadow` 在重入自己；3.11 上同一条递归直接栈溢出成段错误。
 - Windows 离屏下，把易崩的场景按固定顺序反复跑（含 teardown/setup 循环，已提交版本和当前版本各跑多次）都没有复现。
 - 做了三处不依赖复现的加固：`ScrollShadow._refresh_shadow` 加重入保护；`ScrollStyle.eventFilter` 先判事件类型，不再对每个事件都创建 `obj` 的 Python 包装；两个全局过滤器不再调用 `super().eventFilter`。是否真的消除了 macOS 上的崩溃，要看下一次 CI。
+
+### 第三轮 CI（#93）剩余失败（2026-11-17）
+
+绝大多数任务已绿，exit 139 与 shadow_layout 的失败都消失了。剩下两处：
+
+- **`test_blurred_plus_shadow`（components-2，三个 Python 版本）**：我上一轮改这条测试时，先 `qtbot.addWidget(img)` 登记了 img，之后 `_in_host` 又把它挂进新宿主。测试结束时 pytest-qt 先关宿主（连带删掉 img），再去关已删除的 img，报 `Image already deleted`，下一个用例又因"上一个没清理干净"连带 ERROR。改为不再单独登记 img，`waitSignal` 放在放进宿主之前。
+- **`test_dropdown_flips_and_stays_complete[345-top]`（components-3，三个版本）**：只在 macOS 失败，Windows 离屏用多种屏幕上沿、窗口偏移模拟都复现不了。从日志里的数字反推：菜单顶边 79、高 339、底 418，触发器 404 到 448，要刚好不压住触发器上限应为 319，实际 339，相当于上限按"上沿 59"算，而系统把弹层窗口夹到了 79。同样条件下 Select / Autocomplete 通过，因为它们还有 `popover_max_height` 封顶，Dropdown 默认完全由内容撑开。**根因未确认**，没有凭猜测去改取值；先在这条测试的断言里附上屏幕、宿主、可用区、上下空间、上限与菜单高度，下一轮 CI 失败时就能直接读到真实数字。
