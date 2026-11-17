@@ -74,6 +74,7 @@ if TYPE_CHECKING:
         get_toast_provider,
     )
     from .tooltip import Tooltip
+    from .window import Window
 
 _EXPORTS = {
     "Accordion": ".accordion",
@@ -152,6 +153,7 @@ _EXPORTS = {
     "ToastProvider": ".toast",
     "ToastRegion": ".toast",
     "Tooltip": ".tooltip",
+    "Window": ".window",
     "add_toast": ".toast",
     "clear_toasts": ".toast",
     "close_toast": ".toast",
@@ -242,6 +244,7 @@ __all__ = [
     "ToastProvider",
     "ToastRegion",
     "Tooltip",
+    "Window",
     "add_toast",
     "clear_toasts",
     "close_toast",

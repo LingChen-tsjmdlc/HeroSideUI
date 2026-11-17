@@ -24,7 +24,7 @@ app.exec()
 
 ## 内置离线图标与在线生态
 
-组件依赖的 52 个 SVG 随包分发，来自 `hero_side_ui/resources/icons/`。首次使用时读取本地资源，转换为 `IconData`，通过公开的 `add_icon()` 注册，再交给依赖库绘制。无需提前联网，也不依赖用户磁盘缓存。
+组件依赖的 58 个 SVG 随包分发，来自 `hero_side_ui/resources/icons/`。首次使用时读取本地资源，转换为 `IconData`，通过公开的 `add_icon()` 注册，再交给依赖库绘制。无需提前联网，也不依赖用户磁盘缓存。
 
 以下三种写法指向同一份本地图标：
 
@@ -154,4 +154,4 @@ uv run python examples/icon/demo.py
 uv run pytest tests/components/test_icon.py tests/utils/test_icon_resources.py tests/utils/test_icon_utils.py
 ```
 
-示例包含离线图标、颜色和尺寸、hover、局部主题、动画，以及按按钮后才创建的在线图标。回归验证覆盖全部 52 个内置图标与旧绘制的像素一致性、无网络加载、在线共存、资源缓存淘汰、主题切换、描边覆盖与高 DPI。
+示例包含离线图标、颜色和尺寸、hover、局部主题、动画，以及按按钮后才创建的在线图标。回归验证覆盖全部 58 个内置图标与旧绘制的像素一致性、无网络加载、在线共存、资源缓存淘汰、主题切换、描边覆盖与高 DPI。

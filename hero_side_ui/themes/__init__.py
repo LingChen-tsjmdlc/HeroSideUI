@@ -103,6 +103,11 @@ from .component_presets import (
     VALID_TOAST_SEVERITIES,
     VALID_TOAST_SHADOWS,
     VALID_TOAST_VARIANTS,
+    VALID_WINDOW_RADII,
+    VALID_WINDOW_SYSTEMS,
+    WINDOW_RADII,
+    WINDOW_SPEC,
+    WINDOW_TITLE_BAR_HEIGHTS,
 )
 from .font import DEFAULT_FONT_FAMILY
 from .radius import RADIUS
@@ -217,6 +222,11 @@ __all__ = [
     "VALID_TOAST_SEVERITIES",
     "VALID_TOAST_SHADOWS",
     "VALID_TOAST_VARIANTS",
+    "VALID_WINDOW_RADII",
+    "VALID_WINDOW_SYSTEMS",
+    "WINDOW_RADII",
+    "WINDOW_SPEC",
+    "WINDOW_TITLE_BAR_HEIGHTS",
     "Layer",
     "theme_values",
 ]

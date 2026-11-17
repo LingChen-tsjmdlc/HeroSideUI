@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.18.9"
+__version__ = "0.19.0"
 
 from importlib import import_module
 from typing import TYPE_CHECKING
@@ -93,6 +93,7 @@ if TYPE_CHECKING:
         ToastProvider,
         ToastRegion,
         Tooltip,
+        Window,
         add_toast,
         clear_toasts,
         close_toast,
@@ -191,6 +192,7 @@ __all__ = [
     "ToastProvider",
     "ToastRegion",
     "Tooltip",
+    "Window",
     "add_toast",
     "clear_toasts",
     "close_toast",
