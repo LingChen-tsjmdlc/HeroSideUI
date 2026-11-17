@@ -793,3 +793,39 @@ CI 跑的是已提交的 d4d9429。逐类定位：
 
 - **`test_blurred_plus_shadow`（components-2，三个 Python 版本）**：我上一轮改这条测试时，先 `qtbot.addWidget(img)` 登记了 img，之后 `_in_host` 又把它挂进新宿主。测试结束时 pytest-qt 先关宿主（连带删掉 img），再去关已删除的 img，报 `Image already deleted`，下一个用例又因"上一个没清理干净"连带 ERROR。改为不再单独登记 img，`waitSignal` 放在放进宿主之前。
 - **`test_dropdown_flips_and_stays_complete[345-top]`（components-3，三个版本）**：只在 macOS 失败，Windows 离屏用多种屏幕上沿、窗口偏移模拟都复现不了。从日志里的数字反推：菜单顶边 79、高 339、底 418，触发器 404 到 448，要刚好不压住触发器上限应为 319，实际 339，相当于上限按"上沿 59"算，而系统把弹层窗口夹到了 79。同样条件下 Select / Autocomplete 通过，因为它们还有 `popover_max_height` 封顶，Dropdown 默认完全由内容撑开。**根因未确认**，没有凭猜测去改取值；先在这条测试的断言里附上屏幕、宿主、可用区、上下空间、上限与菜单高度，下一轮 CI 失败时就能直接读到真实数字。
+
+### 第四轮 CI：components-4 (py3.12) 的段错误再次出现（2026-11-17）
+
+`test_select.py` 里构造 Select 时崩在 `ClearButton.__init__` 的 `QGraphicsOpacityEffect(self)`，C++ 构造函数里的段错误。这一轮是 `test_theme_light`，上一次是 `test_theme_dark`。
+
+已知事实：
+
+- 两次栈完全一致（`select.py → input.py:136 → input.py:251 → clear_button.py:32`），只是触发它的测试差了一个。
+- 只出现在 macOS + Python 3.12 的 components-4；3.11 / 3.13 没崩过，中间一轮 CI 也没崩。
+- Windows 离屏下，连续反复跑 `test_select`（含 GC 阈值设为 1、每次分配都触发回收）复现不了。
+- 本轮多装了 `pytest-xdist` 插件，崩溃点相应偏移了一个测试，这符合"触发点由对象分配计数决定"。
+
+**根因未确认。** 现有最合理的解释是：GC 恰好在这句原生对象构造途中运行，销毁了某个已经半失效的 PySide 包装。`tests/conftest.py` 里早就记录了同类的 macOS exit 139。
+
+做法：先不把"关闭 GC"当成默认缓解，而是让 CI 一次把证据收齐（见下一节），并用变体做对照。
+`HS_DISABLE_GC=1` 保留为开关，默认不关。
+
+### CI 诊断（2026-11-17）
+
+之前每次崩溃我只有一份 Python 栈，而这个崩溃发生在 C++ 构造函数里，只能猜。现在 CI 默认收集：
+
+| 证据 | 来源 | 看什么 |
+| --- | --- | --- |
+| 逐阶段追踪 | `tests/conftest.py` 写 `HS_TRACE_FILE`，无缓冲 | 崩溃时最后一个没有 END 的阶段、之前 30 行、GC 起止、Qt 警告、进程快照（GC 计数、顶层窗口数、线程、句柄、内存、app 级过滤器） |
+| Qt 消息 | 同一追踪文件 | pytest-qt 的处理器只记录不转发、且只在用例失败时展示，崩溃时全部丢失；现在包了一层同时写入 |
+| C++ 原生栈 | macOS 崩溃报告 `.ips`，由 `.github/scripts/hs_ci_report.py crash` 解析 | 崩溃线程的完整调用栈、出错地址、加载的库 |
+| 运行环境 | 诊断步骤 | 系统、内存、显示、版本 |
+| 完整文件 | `diag-<任务名>-py<版本>` artifact | 追踪日志、lldb 日志、原始崩溃报告 |
+
+额外三个只跑 macOS + 3.12 的 components-4 变体，失败不影响总体结果（`continue-on-error`），用来同时验证三个假设：
+
+- `gcoff`：关闭自动 GC。它不崩而普通版崩，说明 GC 与崩溃相关。
+- `malloc`：开启 macOS 堆调试（`MallocScribble` 等）。释放后使用会更早、更确定地暴露，崩溃报告会指向真正出错的位置。
+- `lldb`：在调试器下运行，崩溃时停在出错指令，直接打印所有线程的 C++ 栈、寄存器和反汇编。
+
+崩溃后读日志的顺序：`Diagnostics` 步骤里的「崩溃/卡住时正在执行的阶段」→「崩溃线程」的 C++ 栈。
