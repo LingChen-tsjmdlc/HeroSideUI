@@ -82,7 +82,7 @@ class _FootnoteRef(QWidget):
         lay.addWidget(self._chip)
 
         if self._body:
-            QTimer.singleShot(0, self._ensure_tip)
+            QTimer.singleShot(0, self, self._ensure_tip)
 
     def showEvent(self, event):  # type: ignore[override]
         """首次可见时尝试挂 Tooltip（与 QTimer 兜底双路）。"""

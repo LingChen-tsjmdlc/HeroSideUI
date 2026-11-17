@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QLabel, QWidget
 from hero_side_ui import Autocomplete, Button, Dropdown, Popover, Select, Tooltip
 from hero_side_ui._shared.overlays import bounds
 from hero_side_ui._shared.overlays.hit_test import HitThroughMixin
+from tests._waits import flush, popup_ready, until
 
 
 def _host(qtbot, w: int = 520, h: int = 420) -> QWidget:
@@ -29,13 +30,14 @@ def _put(host: QWidget, widget: QWidget, x: int, y: int) -> QWidget:
     return widget
 
 
-def _click(qtbot, host: QWidget, widget: QWidget) -> None:
-    """走窗口句柄的真实点击（命中链与全局事件过滤器都会经过），并等淡入淡出走完。"""
+def _click(qtbot, host: QWidget, widget: QWidget, until=None) -> None:
+    """走窗口句柄的真实点击（命中链与全局事件过滤器都会经过）；until 为点击后应成立的条件，按条件等而不是固定时长。"""
     pt = widget.mapTo(host, QPoint(widget.width() // 2, widget.height() // 2))
     QTest.mouseClick(
         host.windowHandle(), Qt.MouseButton.LeftButton, Qt.KeyboardModifier.NoModifier, pt
     )
-    qtbot.wait(450)
+    if until is not None:
+        qtbot.waitUntil(until, timeout=5000)
 
 
 # ============================================================
@@ -78,7 +80,7 @@ class TestHostBounds:
         outer.set_content(inner_btn)
         outer.attach(outer_btn)
         outer.open(outer_btn)
-        qtbot.wait(50)
+        until(qtbot, lambda: popup_ready(outer))
         assert bounds.host_window(inner_btn) is host
         outer.close()
 
@@ -95,7 +97,7 @@ class TestClipToHost:
         pop.set_content(QLabel("x\n" * 8 + "tall"))
         pop.attach(btn)
         pop.open(btn)
-        qtbot.wait(400)
+        until(qtbot, lambda: popup_ready(pop))
         window = bounds.host_rect(btn)
         assert pop.geometry().bottom() > window.bottom()  # 窗口本身确实越界了
         assert not pop.mask().isEmpty()
@@ -111,7 +113,7 @@ class TestClipToHost:
         pop.set_content(QLabel("hi"))
         pop.attach(btn)
         pop.open(btn)
-        qtbot.wait(400)
+        until(qtbot, lambda: popup_ready(pop))
         assert pop.mask().isEmpty()
         pop.close()
 
@@ -147,7 +149,7 @@ class TestFlipInsideWindow:
         pop.set_content(content)
         pop.attach(btn)
         pop.open(btn)
-        qtbot.wait(400)
+        until(qtbot, lambda: popup_ready(pop))
         return pop
 
     def test_overflow_counts_every_side(self):
@@ -206,7 +208,7 @@ class TestFlipInsideWindow:
         w = factory(items=ITEMS)
         _put(host, w, 150, y)
         w.open()
-        qtbot.wait(450)
+        until(qtbot, lambda: popup_ready(w._popover))
         pop = w._popover
         trigger = QRect(w.mapToGlobal(QPoint(0, 0)), w.size())
         assert pop._actual_placement.startswith(expect)
@@ -221,7 +223,7 @@ class TestFlipInsideWindow:
         dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in items])
         _put(host, dd, 150, y)
         dd.open()
-        qtbot.wait(450)
+        until(qtbot, lambda: popup_ready(dd._popover))
         pop = dd._popover
         trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
         body = pop._body_global()
@@ -237,7 +239,7 @@ class TestFlipInsideWindow:
         qtbot.addWidget(tt)
         tt.attach(btn)
         tt.open()
-        qtbot.wait(300)
+        until(qtbot, lambda: popup_ready(tt))
         assert tt._actual_placement == "bottom"
         assert bounds.popup_area(btn).contains(tt._body_global())
         tt.close()
@@ -260,7 +262,7 @@ class TestBodyGlobal:
         pop.set_content(QLabel("body"))
         pop.attach(btn)
         pop.open(btn)
-        qtbot.wait(400)
+        until(qtbot, lambda: popup_ready(pop))
         ml, mt, mr, mb = pop.frame_margins()
         g = pop.geometry()
         assert pop._body_global() == QRect(
@@ -280,34 +282,39 @@ class TestOutsideClick:
         b = Dropdown(trigger=Button("b"), items=items, placement="bottom-start")
         _put(host, a, 40, 60)
         _put(host, b, 300, 60)
-        qtbot.wait(30)
+        flush(qtbot)
         return host, a, b
 
     def test_opening_the_second_closes_the_first(self, qtbot):
         host, a, b = self._two_dropdowns(qtbot)
-        _click(qtbot, host, a._trigger)
+        _click(qtbot, host, a._trigger, until=lambda: a.is_open() and not b.is_open())
         assert a.is_open() and not b.is_open()
-        _click(qtbot, host, b._trigger)
+        _click(qtbot, host, b._trigger, until=lambda: b.is_open() and not a.is_open())
         assert b.is_open() and not a.is_open()
-        _click(qtbot, host, a._trigger)
+        _click(qtbot, host, a._trigger, until=lambda: a.is_open() and not b.is_open())
         assert a.is_open() and not b.is_open()
 
     def test_clicking_blank_space_closes_everything(self, qtbot):
         host, a, b = self._two_dropdowns(qtbot)
-        _click(qtbot, host, a._trigger)
+        _click(qtbot, host, a._trigger, until=a.is_open)
         QTest.mouseClick(
             host.windowHandle(),
             Qt.MouseButton.LeftButton,
             Qt.KeyboardModifier.NoModifier,
             QPoint(500, 380),
         )
-        qtbot.wait(450)
+        qtbot.waitUntil(lambda: not a.is_open() and not b.is_open(), timeout=5000)
         assert not a.is_open() and not b.is_open()
 
     def test_rapid_alternating_clicks_never_leave_two_open(self, qtbot):
         host, a, b = self._two_dropdowns(qtbot)
         for i in range(4):
-            _click(qtbot, host, a._trigger if i % 2 == 0 else b._trigger)
+            _click(
+                qtbot,
+                host,
+                a._trigger if i % 2 == 0 else b._trigger,
+                until=lambda: int(a.is_open()) + int(b.is_open()) == 1,
+            )
             assert int(a.is_open()) + int(b.is_open()) <= 1
 
 
@@ -328,7 +335,7 @@ class TestScreenClipsAvailableSpace:
         dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in ITEMS])
         _put(host, dd, 150, 345)
         dd.open()
-        qtbot.wait(450)
+        until(qtbot, lambda: popup_ready(dd._popover))
         body = dd._popover._body_global()
         trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
         assert body.top() >= 79
@@ -369,12 +376,12 @@ class TestPopupOutlivesItsOwner:
         w = make()
         _put(host, w, 40, 40)
         w.open()
-        qtbot.wait(300)
+        until(qtbot, lambda: popup_ready(w._popover))
         popover = w._popover
         with qtbot.capture_exceptions() as exceptions:
             shiboken6.delete(w)
             popover.closed.emit()
-            qtbot.wait(30)
+            flush(qtbot)
         assert exceptions == []
 
 
@@ -410,7 +417,7 @@ class TestWindowMarginsStayOnScreen:
         dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in items])
         _put(host, dd, 150, y)
         dd.open()
-        qtbot.wait(450)
+        until(qtbot, lambda: popup_ready(dd._popover))
         pop = dd._popover
         trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
         assert self.SCREEN.contains(pop.geometry())

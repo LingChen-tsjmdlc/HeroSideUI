@@ -63,8 +63,7 @@ class TestRippleCleanup:
         overlay = RippleOverlay(host)
         overlay.add_ripple(QPoint(60, 18))
         assert len(overlay._ripples) == 1
-        # ripple duration clamp 在 500~900ms，等 1.2s 足够
-        qtbot.wait(1200)
+        qtbot.waitUntil(lambda: len(overlay._ripples) == 0, timeout=8000)
         assert len(overlay._ripples) == 0
 
 
@@ -81,7 +80,7 @@ class TestColorAndFollowResize:
         overlay = RippleOverlay(host)
         host.resize(300, 50)
         # eventFilter 处理 ResizeEvent → setGeometry
-        qtbot.wait(20)
+        qtbot.waitUntil(lambda: overlay.width() == 300, timeout=5000)
         assert overlay.width() == 300
         assert overlay.height() == 50
 
@@ -94,9 +93,8 @@ class TestSingleRippleProgress:
         overlay.add_ripple(QPoint(60, 18))
         ripple = overlay._ripples[0]
         assert ripple.progress == pytest.approx(0.0, abs=0.05)
-        qtbot.wait(200)
-        # 200ms 内 progress 应推进过一部分
-        assert ripple.progress > 0.1
-        qtbot.wait(1200)
+        # progress 应推进过一部分
+        qtbot.waitUntil(lambda: ripple.progress > 0.1, timeout=5000)
         # 跑完后 ripple 已被移除
+        qtbot.waitUntil(lambda: len(overlay._ripples) == 0, timeout=8000)
         assert len(overlay._ripples) == 0

@@ -14,6 +14,7 @@ import pytest
 from PySide6.QtWidgets import QPushButton
 
 from hero_side_ui.animation import PressScaleEffect
+from tests._waits import flush, until
 
 
 @pytest.fixture
@@ -35,23 +36,23 @@ class TestPressRelease:
     def test_press_animates_to_scale_factor(self, qtbot, host):
         effect = PressScaleEffect(host, press_duration=60)
         effect.press()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: abs(effect._get_scale() - 0.97) < 0.01, timeout=5000)
         # 缩到 0.97 附近
         assert effect._get_scale() == pytest.approx(0.97, abs=0.01)
 
     def test_release_returns_to_one(self, qtbot, host):
         effect = PressScaleEffect(host, press_duration=60, release_duration=80)
         effect.press()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: effect._get_scale() < 1.0, timeout=5000)
         assert effect._get_scale() < 1.0
         effect.release()
-        qtbot.wait(160)
+        qtbot.waitUntil(lambda: abs(effect._get_scale() - 1.0) < 0.001, timeout=5000)
         assert effect._get_scale() == pytest.approx(1.0, abs=0.001)
 
     def test_custom_scale_factor(self, qtbot, host):
         effect = PressScaleEffect(host, scale_factor=0.85, press_duration=60)
         effect.press()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: abs(effect._get_scale() - 0.85) < 0.01, timeout=5000)
         assert effect._get_scale() == pytest.approx(0.85, abs=0.01)
 
 
@@ -62,9 +63,9 @@ class TestRapidToggle:
         effect = PressScaleEffect(host, press_duration=40, release_duration=40)
         for _ in range(5):
             effect.press()
-            qtbot.wait(10)
+            flush(qtbot)
             effect.release()
-            qtbot.wait(10)
-        # 给最后一次 release 完整时间
-        qtbot.wait(120)
+            flush(qtbot)
+        # 等最后一次 release 走完
+        until(qtbot, lambda: abs(effect._get_scale() - 1.0) < 0.05)
         assert effect._get_scale() == pytest.approx(1.0, abs=0.05)

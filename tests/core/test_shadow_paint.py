@@ -10,6 +10,7 @@ from PySide6.QtWidgets import QWidget
 from hero_side_ui.core import shadow_paint as sp
 from hero_side_ui.themes import theme_values
 from hero_side_ui.themes.shadow import Layer
+from tests._waits import flush
 
 
 @pytest.fixture(autouse=True)
@@ -276,7 +277,7 @@ class TestShadowLayerFollowsAncestors:
 
         before = gap()
         scroll.verticalScrollBar().setValue(40)
-        qtbot.wait(30)
+        flush(qtbot)
         assert gap() == before
         assert layer.parentWidget() is vp
 
@@ -291,13 +292,13 @@ class TestShadowLayerFollowsAncestors:
         host.show()
         qtbot.waitExposed(host)
         layer = sp.ShadowLayer(target, 8.0, _layers("md"))
-        qtbot.wait(20)
+        flush(qtbot)
         assert layer.isVisible()
         wrap.hide()
-        qtbot.wait(20)
+        flush(qtbot)
         assert not layer.isVisible()
         wrap.show()
-        qtbot.wait(20)
+        flush(qtbot)
         assert layer.isVisible()
 
     def test_layer_follows_the_target_to_a_new_window(self, qtbot):

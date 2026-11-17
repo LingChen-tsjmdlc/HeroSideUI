@@ -42,6 +42,7 @@ from hero_side_ui.themes import (
     TEXTAREA_SIZES,
 )
 from hero_side_ui.themes.width import SUGGESTED_WIDTH
+from tests._waits import flush, until
 
 ITEMS = [("a", "Alpha")]
 
@@ -69,7 +70,7 @@ def _show(qtbot, widget, layout_cls=QHBoxLayout, stretch=True, size=(900, 300)) 
     _LIVE_HOSTS.append(host)
     host.show()
     qtbot.waitExposed(host)
-    qtbot.wait(20)
+    flush(qtbot)
     return host
 
 
@@ -288,7 +289,7 @@ class TestContentTypeWidth:
         qtbot.addWidget(host)
         host.show()
         qtbot.waitExposed(host)
-        qtbot.wait(20)
+        flush(qtbot)
         assert a.width() == a.sizeHint().width()
         assert b.width() == b.sizeHint().width()
 
@@ -392,7 +393,7 @@ class TestDividerWidth:
         qtbot.addWidget(host)
         host.show()
         qtbot.waitExposed(host)
-        qtbot.wait(20)
+        flush(qtbot)
         assert d.width() == SUGGESTED_WIDTH
 
     def test_user_width_still_wins(self, qtbot):

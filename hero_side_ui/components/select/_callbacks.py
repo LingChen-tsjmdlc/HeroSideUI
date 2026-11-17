@@ -44,7 +44,7 @@ class _SelectCallbacksMixin:
         if self._selection_mode == "single":
             self._just_committed = True
             self.close()
-            QTimer.singleShot(200, lambda: setattr(self, "_just_committed", False))
+            QTimer.singleShot(200, self, lambda: setattr(self, "_just_committed", False))
 
     # ============================================================
     # Clear 按钮
@@ -66,7 +66,7 @@ class _SelectCallbacksMixin:
         self.selection_changed.emit(self._emit_selection_payload())
         self.cleared.emit()
         # HeroUI 行为：clear 后焦点回 trigger
-        QTimer.singleShot(0, self._input.line_edit.setFocus)
+        QTimer.singleShot(0, self._input.line_edit, self._input.line_edit.setFocus)
 
     # ============================================================
     # Selector 按钮（chevron）
@@ -76,7 +76,7 @@ class _SelectCallbacksMixin:
         if self._is_disabled:
             return
         self.toggle()
-        QTimer.singleShot(0, self._input.line_edit.setFocus)
+        QTimer.singleShot(0, self._input.line_edit, self._input.line_edit.setFocus)
 
     # ============================================================
     # Popover open/close

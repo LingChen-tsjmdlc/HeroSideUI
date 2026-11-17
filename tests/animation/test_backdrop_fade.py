@@ -9,6 +9,7 @@ import pytest
 from PySide6.QtWidgets import QWidget
 
 from hero_side_ui.animation import BackdropFade
+from tests._waits import flush, until
 
 
 @pytest.fixture
@@ -24,15 +25,15 @@ class TestPlay:
     def test_play_in_reaches_one(self, qtbot, owner):
         fade = BackdropFade(owner, duration_in=80, duration_out=80)
         fade.play_in()
-        qtbot.wait(150)
+        qtbot.waitUntil(lambda: fade.progress_value() >= 0.99, timeout=5000)
         assert fade.progress_value() == pytest.approx(1.0, abs=0.01)
 
     def test_play_out_reaches_zero(self, qtbot, owner):
         fade = BackdropFade(owner, duration_in=50, duration_out=50)
         fade.play_in()
-        qtbot.wait(100)
+        qtbot.waitUntil(lambda: fade.progress_value() >= 0.99, timeout=5000)
         fade.play_out()
-        qtbot.wait(100)
+        qtbot.waitUntil(lambda: fade.progress_value() <= 0.01, timeout=5000)
         assert fade.progress_value() == pytest.approx(0.0, abs=0.01)
 
 
@@ -40,18 +41,19 @@ class TestAutoHide:
     def test_play_out_auto_hides_owner(self, qtbot, owner):
         fade = BackdropFade(owner, duration_in=40, duration_out=40, auto_hide_on_out=True)
         fade.play_in()
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: fade.progress_value() >= 0.99, timeout=5000)
         assert owner.isVisible()
         fade.play_out()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: not owner.isVisible(), timeout=5000)
         assert not owner.isVisible()
 
     def test_auto_hide_disabled(self, qtbot, owner):
         fade = BackdropFade(owner, duration_in=40, duration_out=40, auto_hide_on_out=False)
         fade.play_in()
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: fade.progress_value() >= 0.99, timeout=5000)
         fade.play_out()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: fade.progress_value() <= 0.01, timeout=5000)
+
         # owner 仍然可见
         assert owner.isVisible()
 
@@ -61,12 +63,12 @@ class TestInterrupt:
         """play_out 进行中再调 play_in 应衔接当前 progress 向 1.0 推进。"""
         fade = BackdropFade(owner, duration_in=80, duration_out=200)
         fade.play_in()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: fade.progress_value() >= 0.99, timeout=5000)
         assert fade.progress_value() == pytest.approx(1.0, abs=0.01)
         fade.play_out()
-        qtbot.wait(60)  # 关闭进行中
+        until(qtbot, lambda: fade.progress_value() < 0.99)  # 关闭进行中
         mid = fade.progress_value()
         assert 0 < mid < 1
         fade.play_in()
-        qtbot.wait(150)
+        until(qtbot, lambda: fade.progress_value() >= 0.99)
         assert fade.progress_value() == pytest.approx(1.0, abs=0.01)

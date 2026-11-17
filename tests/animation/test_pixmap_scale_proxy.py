@@ -18,6 +18,7 @@ from PySide6.QtGui import QColor, QImage, QPainter
 from PySide6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from hero_side_ui.animation import PixmapScaleProxy
+from tests._waits import flush, until
 
 
 @pytest.fixture
@@ -31,7 +32,7 @@ def owner_with_content(qtbot):
     content.setFixedSize(120, 80)
     lay.addWidget(content)
     owner.show()
-    qtbot.wait(20)
+    flush(qtbot)
     return owner, content
 
 

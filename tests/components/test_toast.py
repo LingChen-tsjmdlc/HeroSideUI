@@ -21,6 +21,7 @@ from hero_side_ui import (
 from hero_side_ui.components.toast._provider import _DEFAULTS
 from hero_side_ui.components.toast._styling import build_toast_styles
 from hero_side_ui.themes import HEROUI_COLORS, TOAST_SPEC
+from tests._waits import flush, until
 
 COLORS = ("default", "foreground", "primary", "secondary", "success", "warning", "danger")
 VARIANTS = ("flat", "bordered", "solid")
@@ -34,8 +35,6 @@ PLACEMENTS = (
     "bottom-center",
     "bottom-right",
 )
-
-_EXIT_WAIT = TOAST_SPEC["duration_exit"] + 120
 
 
 @pytest.fixture
@@ -64,15 +63,22 @@ def _cards(region: ToastRegion, count: int, **kw) -> list:
     return cards
 
 
-def _seek_mid(anim, wait: int = 20) -> None:
-    """把进行中的动画确定性地推进到中点，再采样中间态。
+def _settled(region: ToastRegion) -> bool:
+    """所有卡片的入场、位移、淡入动画都已结束。"""
+    return all(
+        not it.entering and it.geo_anim is None and it.fade_anim is None for it in region._items
+    )
 
-    固定 qWait(30) 采样依赖平台动画驱动的首帧时机：macOS 上首帧常在 30ms
-    之后才到，采到的是尚未起步的起点值。seek 直接写属性值，不受墙钟影响。
-    """
+
+def _wait_settled(qtbot, region: ToastRegion) -> None:
+    """按条件等动画结束：收尾时机取决于平台帧率，不能用固定时长。"""
+    qtbot.waitUntil(lambda: _settled(region), timeout=5000)
+
+
+def _seek_mid(anim) -> None:
+    """把进行中的动画同步推进到中点，之后可立即采样中间态（seek 直接写属性，与墙钟无关）。"""
     assert anim is not None
     anim.setCurrentTime(anim.duration() // 2)
-    QTest.qWait(wait)
 
 
 class TestToastInit:
@@ -281,7 +287,6 @@ class TestToastCountdown:
         qtbot.addWidget(t)
         t.start_countdown()
         t.set_paused(True)
-        QTest.qWait(60)
         assert t._timer.isActive() is False
         assert t._paused is True
 
@@ -291,8 +296,8 @@ class TestToastCountdown:
     def test_never_timeout_no_signal(self, qtbot, host):
         t = Toast(title="t", timeout=0, parent=host)
         qtbot.addWidget(t)
-        t.start_countdown()
-        QTest.qWait(120)
+        t.start_countdown()  # timeout<=0 时同步直接返回，定时器不会启动
+        flush(qtbot)
         assert t._timer.isActive() is False
         assert t._progress == 0.0
 
@@ -398,10 +403,8 @@ class TestToastRegion:
             region.add(c)
         assert cards[0].isHidden()
         region._set_hovering(True)
-        QTest.qWait(20)
         assert not cards[0].isHidden()
         region._set_hovering(False)
-        QTest.qWait(20)
         assert cards[0].isHidden()
         for c in cards:
             c.stop_countdown()
@@ -412,7 +415,7 @@ class TestToastRegion:
         _cards(region, 3)
         # t0 只是隐藏；dismiss 最新的 t2 后只剩 t0 / t1 且都显示
         region.dismiss(region.keys()[-1])
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: len(region._items) == 2)
         assert len(region._items) == 2
         assert all(not it.card.isHidden() for it in region._items)
 
@@ -431,7 +434,7 @@ class TestToastRegion:
         cards = _cards(region, 3, timeout=30000)
         y_old = cards[0].y()
         region._set_hovering(True)
-        QTest.qWait(20)
+        until(qtbot, lambda: cards[0].y() < y_old)
         assert cards[0].y() < y_old
         assert all(c._paused for c in cards)
         region._set_hovering(False)
@@ -449,8 +452,7 @@ class TestToastRegion:
         assert card.paint_opacity < 0.5
         item = region._active_items()[-1]
         assert item.entering
-        QTest.qWait(400)
-        assert not item.entering
+        qtbot.waitUntil(lambda: not item.entering, timeout=5000)
         assert card.paint_opacity == pytest.approx(1.0, abs=0.05)
         card.stop_countdown()
 
@@ -477,7 +479,7 @@ class TestToastRegion:
         qtbot.addWidget(region)
         _cards(region, 2)
         region.clear()
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: not region._items)
         assert region.keys() == []
 
     def test_expanded_cards_have_gap(self, qtbot, host):
@@ -500,21 +502,29 @@ class TestToastRegion:
         region = ToastRegion(parent=host)
         qtbot.addWidget(region)
         cards = _cards(region, 5)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)  # 入场动画结束
+        # 入场动画结束（按条件等，不按固定时长：收尾时机取决于平台帧率）
+        qtbot.waitUntil(
+            lambda: all(not it.entering and it.geo_anim is None for it in region._items),
+            timeout=3000,
+        )
         assert sum(c.isHidden() for c in cards) == 2
         region._expanded = True
         region._relayout(True)
         # 被揭示的两张应从透明淡入，原可见三张保持不透明
         assert all(cards[i].paint_opacity < 0.6 for i in range(2))
         assert all(cards[i].paint_opacity > 0.9 for i in range(2, 5))
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 200)
-        assert all(c.paint_opacity > 0.95 for c in cards)
+        # 动画收尾的时机取决于平台帧率，不能用固定时长等：等位移与淡入都真正结束
+        qtbot.waitUntil(lambda: all(it.geo_anim is None for it in region._items), timeout=3000)
+        qtbot.waitUntil(lambda: all(c.paint_opacity > 0.95 for c in cards), timeout=3000)
         expanded_top = cards[0].geometry().top()
+        assert expanded_top == region._items[0].base_geom.top()  # 展开位就是目标几何
 
         # 第二次展开也应有滑动+淡入（折叠淡出的卡现在停在折叠堆叠位，
         # 二次展开的起点天然 != 展开位，滑动真实发生）
         region._set_hovering(False)
-        QTest.qWait(TOAST_SPEC["duration_move"] + 150)
+        qtbot.waitUntil(
+            lambda: cards[0].isHidden() and region._items[0].geo_anim is None, timeout=3000
+        )
         assert cards[0].isHidden()
         folded_top = cards[0].geometry().top()
         region._set_hovering(True)
@@ -522,9 +532,9 @@ class TestToastRegion:
         _seek_mid(region._items[0].geo_anim)
         # 中点处必须严格落在折叠位与展开位之间（滑动真实发生）
         assert expanded_top < cards[0].geometry().top() < folded_top
-        QTest.qWait(TOAST_SPEC["duration_move"] + 150)
+        qtbot.waitUntil(lambda: region._items[0].geo_anim is None, timeout=3000)
         assert cards[0].geometry().top() == expanded_top
-        assert cards[0].paint_opacity > 0.95
+        qtbot.waitUntil(lambda: cards[0].paint_opacity > 0.95, timeout=3000)
 
     def test_collapse_fades_out_hidden_cards(self, qtbot, host):
         """回归：折叠时超配额被藏的卡曾瞬间消失（突然回去）。应先淡出
@@ -532,16 +542,16 @@ class TestToastRegion:
         region = ToastRegion(parent=host)
         qtbot.addWidget(region)
         cards = _cards(region, 5)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        _wait_settled(qtbot, region)
         region._set_hovering(True)
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        _wait_settled(qtbot, region)
         assert all(not c.isHidden() and c.paint_opacity > 0.95 for c in cards)
         region._set_hovering(False)
         _seek_mid(region._items[0].fade_anim)
         # 采样窗口内：被藏的卡仍在淡出（未隐藏、透明度未回到满值）
         assert not cards[0].isHidden()
         assert 0.0 < cards[0].paint_opacity < 1.0
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        _wait_settled(qtbot, region)
         assert cards[0].isHidden()
         assert not cards[2].isHidden()  # 停留卡不受影响
 
@@ -551,16 +561,16 @@ class TestToastRegion:
         region = ToastRegion(parent=host)
         qtbot.addWidget(region)
         cards = _cards(region, 5)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        _wait_settled(qtbot, region)
         region._set_hovering(True)
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        _wait_settled(qtbot, region)
         expanded_top = cards[0].geometry().top()
         region._set_hovering(False)
-        QTest.qWait(TOAST_SPEC["duration_move"] // 2)
+        _seek_mid(region._items[0].geo_anim)  # 把位移动画确定性地推到中点
         # 淡出中途：位置已向折叠位移动（bottom-right 语义为向下浮）
         assert not cards[0].isHidden()
         assert cards[0].geometry().top() > expanded_top
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        _wait_settled(qtbot, region)
         assert cards[0].isHidden()
         # 落点即下次展开的起飞点（_folded_y 共用）
         assert cards[0].y() == region._folded_y(0, 5, cards[0])
@@ -571,15 +581,15 @@ class TestToastRegion:
         region = ToastRegion(parent=host)
         qtbot.addWidget(region)
         cards = _cards(region, 5)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        _wait_settled(qtbot, region)
         region._set_hovering(True)
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        _wait_settled(qtbot, region)
         assert cards[2]._width_inset == pytest.approx(0.0, abs=0.5)
         region._set_hovering(False)
         _seek_mid(cards[2]._inset_anim)
         mid = cards[2]._width_inset
         assert 0.0 < mid < TOAST_SPEC["collapsed_width_step"]
-        QTest.qWait(TOAST_SPEC["duration_move"] + 200)
+        qtbot.waitUntil(lambda: cards[2]._inset_anim is None, timeout=5000)
         assert cards[2]._width_inset == pytest.approx(TOAST_SPEC["collapsed_width_step"])
 
     def test_drag_close_from_text_area(self, qtbot, host):
@@ -589,19 +599,19 @@ class TestToastRegion:
         qtbot.addWidget(region)
         card = Toast(title="drag me", description="d", timeout=0, parent=region)
         region.add(card)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        until(qtbot, lambda: _settled(region))
         # press 落在 title 文字上（子件），依赖冒泡到卡片驱动拖拽
         QTest.mousePress(card._title_label, Qt.MouseButton.LeftButton)
         for i in range(1, 6):
             QTest.mouseMove(card, QPoint(card.width() // 2 + 30 * i, 30))
-            QTest.qWait(20)
+            flush(qtbot)
         QTest.mouseRelease(
             card,
             Qt.MouseButton.LeftButton,
             Qt.KeyboardModifier.NoModifier,
             QPoint(card.width() // 2 + 150, 30),
         )
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: not region._items)
         assert region.keys() == []
 
     def test_rapid_add_finalizes_entering_cards(self, qtbot, host):
@@ -611,15 +621,14 @@ class TestToastRegion:
         qtbot.addWidget(region)
         c2 = Toast(title="first", timeout=0, parent=region)
         region.add(c2)
-        QTest.qWait(60)
         item2 = region._find(region.keys()[-1])
-        assert item2.entering  # 入场进行中（半透明）
+        assert item2.entering  # 刚添加、事件循环还没跑帧，必然仍在入场（半透明）
         c3 = Toast(title="second", timeout=0, parent=region)
         region.add(c3)
         # 上一张被立即定格为实色，不再半透明暴露
         assert not item2.entering
         assert c2.paint_opacity == pytest.approx(1.0, abs=0.05)
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        _wait_settled(qtbot, region)
         assert c3.paint_opacity == pytest.approx(1.0, abs=0.05)
 
     def test_snapshot_takes_over_child_visibility(self, qtbot, host):
@@ -632,7 +641,7 @@ class TestToastRegion:
         # 入场动画进行中：快照接管子件显隐，folded 变更只记意图
         card.set_folded(False)
         assert card._close_btn.isHidden()
-        QTest.qWait(TOAST_SPEC["duration_enter"] + 150)
+        _wait_settled(qtbot, region)
         assert not card._close_btn.isHidden()
 
     @pytest.mark.parametrize("placement", PLACEMENTS)
@@ -640,7 +649,7 @@ class TestToastRegion:
         region = ToastRegion(parent=host, placement=placement, disable_animation=True)
         qtbot.addWidget(region)
         cards = _cards(region, 1)
-        QTest.qWait(20)
+        flush(qtbot)
         card = cards[0]
         if "left" in placement:
             assert card.x() < host.width() // 2
@@ -655,10 +664,10 @@ class TestToastRegion:
         region = ToastRegion(parent=host, placement="bottom-right", disable_animation=True)
         qtbot.addWidget(region)
         cards = _cards(region, 1)
-        QTest.qWait(20)
+        flush(qtbot)
         bottom_y = cards[0].y()
         region.set_placement("top-right")
-        QTest.qWait(20)
+        flush(qtbot)
         assert cards[0].y() < bottom_y
 
     def test_card_by_key(self, qtbot, host):
@@ -688,7 +697,7 @@ class TestMixedShadowTiers:
         cards = [Toast(title=f"t{s}", shadow=s, timeout=0, parent=region) for s in order]
         for c in cards:
             region.add(c)
-        QTest.qWait(30)
+        flush(qtbot)
         assert len({c.pad_left for c in cards}) == 1  # 统一留白
         boxes = {tuple(round(v) for v in self._visible(c)) for c in cards}
         assert len(boxes) == 1  # 可见主体左右边缘与宽度一致
@@ -700,7 +709,7 @@ class TestMixedShadowTiers:
         small = _cards(region, 1, shadow="sm")[0]
         large = Toast(title="big", shadow="lg", timeout=0, parent=region)
         region.add(large)
-        QTest.qWait(30)
+        flush(qtbot)
         assert small.pad_left > small.own_pad()  # 被 lg 带高了
         margins = small._root.contentsMargins()
         assert margins.left() == small.pad_left + TOAST_SPEC["padding_x"]
@@ -712,10 +721,10 @@ class TestMixedShadowTiers:
         small = _cards(region, 1, shadow="sm")[0]
         large = Toast(title="big", shadow="lg", timeout=0, parent=region)
         key = region.add(large)
-        QTest.qWait(30)
+        flush(qtbot)
         assert small.pad_left > small.own_pad()
         region.dismiss(key)
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: len(region._items) == 1)
         assert small.pad_left == small.own_pad()
 
     @pytest.mark.parametrize("placement", PLACEMENTS)
@@ -727,7 +736,7 @@ class TestMixedShadowTiers:
         region = ToastRegion(parent=host, placement=placement, disable_animation=True)
         qtbot.addWidget(region)
         card = _cards(region, 1, shadow=shadow)[0]
-        QTest.qWait(20)
+        flush(qtbot)
         left, right = self._visible(card)
         if placement.endswith("left"):
             assert round(left) == TOAST_SPEC["margin"]
@@ -749,7 +758,7 @@ class TestToastHitTest:
         qtbot.addWidget(region)
         cards = _cards(region, 4, shadow=shadow)
         region._set_hovering(True)  # 展开：各卡可见主体互不重叠，但透明留白相互覆盖
-        QTest.qWait(50)
+        flush(qtbot)
         cards = sorted([c for c in cards if not c.isHidden()], key=lambda c: c.y())
         started: list[int] = []
         for i, c in enumerate(cards):
@@ -782,7 +791,7 @@ class TestToastHitTest:
         region = ToastRegion(parent=host, disable_animation=True)
         qtbot.addWidget(region)
         card = _cards(region, 1, shadow="lg")[0]
-        QTest.qWait(30)
+        flush(qtbot)
         started: list[int] = []
         card.drag_started.connect(lambda: started.append(1))
         r = card._content_rect()
@@ -814,12 +823,12 @@ class TestToastProvider:
         assert provider.card(key) is not None
 
         close_toast(key)
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: all(it.key != key for it in provider.region._items))
         assert key not in provider.region.keys()  # noqa: SIM118  # keys() 是普通方法非 dict
 
         add_toast(title="a", timeout=0, parent=host)
         clear_toasts(host)
-        QTest.qWait(_EXIT_WAIT)
+        until(qtbot, lambda: not provider.region._items)
         assert provider.region.keys() == []
 
     def test_placement_override(self, qtbot, host):

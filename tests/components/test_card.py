@@ -6,6 +6,7 @@ from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QHBoxLayout, QLabel, QSizePolicy, QWidget
 
 from hero_side_ui import Button, Card, CardBody, CardFooter, CardHeader, Divider, Text
+from tests._waits import flush, until
 
 
 # ============================================================
@@ -446,7 +447,7 @@ class TestCardSignals:
             fired.clear()
             before = len(card._ripple_overlay._ripples)
             self._click_text(host, text)
-            qtbot.wait(30)
+            flush(qtbot)
             assert len(fired) == 1
             assert len(card._ripple_overlay._ripples) - before == 1  # 逐层传播不能重复加水波纹
 
@@ -455,7 +456,7 @@ class TestCardSignals:
             host, card, fired, label = self._card_with_text(qtbot, **kwargs)
             before = len(card._ripple_overlay._ripples) if card._ripple_overlay else 0
             self._click_text(host, label)
-            qtbot.wait(30)
+            flush(qtbot)
             assert fired == []
             after = len(card._ripple_overlay._ripples) if card._ripple_overlay else 0
             assert after == before
@@ -467,11 +468,11 @@ class TestCardSignals:
         late = Text("Late footer", size="sm")
         footer.layout().addWidget(late)
         card.add_footer(footer)
-        qtbot.wait(20)
+        flush(qtbot)
         fired = []
         card.pressed.connect(lambda: fired.append(1))
         self._click_text(host, late)
-        qtbot.wait(30)
+        flush(qtbot)
         assert len(fired) == 1
 
     def test_interactive_child_still_receives_clicks(self, qtbot):
@@ -497,7 +498,7 @@ class TestCardSignals:
             Qt.KeyboardModifier.NoModifier,
             btn.mapTo(host, QPoint(10, 10)),
         )
-        qtbot.wait(30)
+        flush(qtbot)
         assert len(clicked) == 1
 
 

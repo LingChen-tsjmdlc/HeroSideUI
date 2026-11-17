@@ -149,7 +149,7 @@ class _CodeHeaderBar(QWidget):
         """复制成功后把图标临时切成 check，2s 后还原。"""
         self._copy_btn.set_icon("lucide--check")
         self._copy_btn.set_color("success")
-        QTimer.singleShot(2000, self._restore_copy_icon)
+        QTimer.singleShot(2000, self, self._restore_copy_icon)
 
     def _restore_copy_icon(self) -> None:
         """把复制按钮还原为 copy 图标与 default 色。"""

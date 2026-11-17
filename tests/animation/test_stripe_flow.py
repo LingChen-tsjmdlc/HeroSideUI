@@ -9,6 +9,7 @@ import pytest
 from PySide6.QtWidgets import QWidget
 
 from hero_side_ui.animation import StripeFlowAnimation
+from tests._waits import flush, until
 
 
 @pytest.fixture
@@ -30,7 +31,7 @@ class TestStripeFlow:
         anim = StripeFlowAnimation(owner, period=64.0, duration=400)
         anim.start()
         assert anim.is_running()
-        qtbot.wait(100)
+        qtbot.waitUntil(lambda: anim.offset > 0, timeout=5000)
         assert anim.offset > 0
         anim.stop()
         assert anim.is_running() is False
@@ -38,7 +39,7 @@ class TestStripeFlow:
     def test_offset_value_getter_matches_offset(self, qtbot, owner):
         anim = StripeFlowAnimation(owner, period=32.0, duration=300)
         anim.start()
-        qtbot.wait(60)
+        until(qtbot, lambda: anim.offset > 0)
         assert anim.offset_value() == anim.offset
         anim.stop()
 
@@ -49,8 +50,8 @@ class TestStripeFlow:
     def test_stop_freezes_offset(self, qtbot, owner):
         anim = StripeFlowAnimation(owner, period=32.0, duration=300)
         anim.start()
-        qtbot.wait(80)
+        until(qtbot, lambda: anim.offset > 0)
         anim.stop()
         frozen = anim.offset
-        qtbot.wait(80)
+        flush(qtbot)
         assert anim.offset == pytest.approx(frozen, abs=0.001)

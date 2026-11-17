@@ -47,7 +47,7 @@ class _TooltipScrollFollowMixin:
         if self._scroll_reposition_pending:  # type: ignore[attr-defined]
             return
         self._scroll_reposition_pending = True  # type: ignore[attr-defined]
-        QTimer.singleShot(0, self._do_scroll_reposition)
+        QTimer.singleShot(0, self, self._do_scroll_reposition)
 
     def _do_scroll_reposition(self) -> None:
         """实际重算 tooltip 位置（复用已有 _refresh_geometry）。"""

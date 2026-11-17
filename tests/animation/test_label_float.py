@@ -8,6 +8,7 @@ from __future__ import annotations
 import pytest
 
 from hero_side_ui.animation import LabelFloatAnimation
+from tests._waits import flush, until
 
 
 class TestFloatUpDown:
@@ -49,7 +50,7 @@ class TestSetState:
         anim = LabelFloatAnimation(captured.append, duration=60)
         anim.set_state(True, animate=True)
         assert anim.is_animating
-        qtbot.wait(120)
+        until(qtbot, lambda: anim.is_floated is True)
         assert anim.is_floated is True
 
     def test_set_state_instant(self, qtbot):

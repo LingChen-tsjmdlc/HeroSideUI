@@ -12,6 +12,7 @@ from PySide6.QtCore import QObject, QRect
 from PySide6.QtGui import QColor, QImage, QPainter
 
 from hero_side_ui.animation import CheckDrawAnimation, paint_animated_check
+from tests._waits import flush, until
 
 
 def _make_canvas(size: int = 60) -> QImage:
@@ -112,7 +113,7 @@ class TestCheckDrawAnimationProgress:
         h = _Holder()
         anim = CheckDrawAnimation(h, duration_in=80, delay_in=10)
         anim.play(True)
-        qtbot.wait(150)
+        qtbot.waitUntil(lambda: anim.progress >= 0.99, timeout=5000)
         assert anim.progress == pytest.approx(1.0, abs=0.01)
 
     def test_play_false_default_jumps_to_one(self, qtbot):
@@ -120,7 +121,7 @@ class TestCheckDrawAnimationProgress:
         h = _Holder()
         anim = CheckDrawAnimation(h, duration_in=50, delay_in=0, draw_out=False)
         anim.play(True)
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: anim.progress >= 0.99, timeout=5000)
         assert anim.progress == pytest.approx(1.0, abs=0.01)
         anim.play(False)
         # 立即跳到 1.0（与"取消时整条对勾可见，让外部 fade 把它擦掉"语义一致）
@@ -131,10 +132,10 @@ class TestCheckDrawAnimationProgress:
         h = _Holder()
         anim = CheckDrawAnimation(h, duration_in=50, duration_out=60, delay_in=0, draw_out=True)
         anim.play(True)
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: anim.progress >= 0.99, timeout=5000)
         assert anim.progress == pytest.approx(1.0, abs=0.01)
         anim.play(False)
-        qtbot.wait(150)
+        qtbot.waitUntil(lambda: anim.progress <= 0.01, timeout=5000)
         assert anim.progress == pytest.approx(0.0, abs=0.01)
 
 
@@ -144,7 +145,7 @@ class TestCheckDrawAnimationCallback:
         seen: list[float] = []
         anim = CheckDrawAnimation(h, on_step=seen.append, duration_in=60, delay_in=0)
         anim.play(True)
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: bool(seen) and seen[-1] >= 0.99, timeout=5000)
         # 至少推到 1.0
         assert seen
         assert seen[-1] == pytest.approx(1.0, abs=0.01)
@@ -167,12 +168,12 @@ class TestDelayCancellation:
         h = _Holder()
         anim = CheckDrawAnimation(h, duration_in=200, delay_in=100, draw_out=False)
         anim.play(True)
-        # 在 delay_in 期间立刻取消
-        qtbot.wait(30)
+        # 在 delay_in 期间立刻取消：此刻延迟计时器必然仍在排队
+        assert anim._delay_timer.isActive()
         anim.play(False)
         # play(False) 默认把 progress 立即设为 1.0
         assert anim.progress == pytest.approx(1.0, abs=0.01)
-        # 再等过原本 delay+duration 的时间，pending_target 已被改，
-        # _start_in_anim 早 return，progress 不会再变化
-        qtbot.wait(350)
+        # 延迟计时器已被取消，不会再触发 _start_in_anim，progress 不会再变化
+        assert not anim._delay_timer.isActive()
+        flush(qtbot)
         assert anim.progress == pytest.approx(1.0, abs=0.01)

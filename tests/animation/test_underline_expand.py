@@ -9,6 +9,7 @@ import pytest
 from PySide6.QtGui import QColor, QImage
 
 from hero_side_ui.animation import UnderlineBar
+from tests._waits import flush, until
 
 
 class TestExpandCollapse:
@@ -24,7 +25,7 @@ class TestExpandCollapse:
         bar.resize(200, 2)
         bar._anim.setDuration(60)
         bar.expand()
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: bar.progress >= 0.99, timeout=5000)
         assert bar.progress == pytest.approx(1.0, abs=0.01)
 
     def test_collapse_back_to_zero(self, qtbot):
@@ -33,9 +34,9 @@ class TestExpandCollapse:
         bar.resize(200, 2)
         bar._anim.setDuration(60)
         bar.expand()
-        qtbot.wait(120)
+        until(qtbot, lambda: bar.progress >= 0.99)
         bar.collapse()
-        qtbot.wait(120)
+        until(qtbot, lambda: bar.progress <= 0.01)
         assert bar.progress == pytest.approx(0.0, abs=0.01)
 
 

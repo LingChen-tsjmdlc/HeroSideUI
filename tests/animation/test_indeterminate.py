@@ -13,6 +13,7 @@ import pytest
 from PySide6.QtWidgets import QWidget
 
 from hero_side_ui.animation import IndeterminateBarAnimation, SpinAnimation
+from tests._waits import flush, until
 
 
 @pytest.fixture
@@ -40,7 +41,7 @@ class TestBarBasic:
         anim.start()
         assert anim.is_running() is True
         # position 推进
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: anim.position > -0.4, timeout=5000)
         assert anim.position > -0.4
         anim.stop()
         assert anim.is_running() is False
@@ -48,10 +49,10 @@ class TestBarBasic:
     def test_stop_freezes_position(self, qtbot, owner):
         anim = IndeterminateBarAnimation(owner, duration=300)
         anim.start()
-        qtbot.wait(60)
+        until(qtbot, lambda: anim.position > -0.4)
         anim.stop()
         frozen = anim.position
-        qtbot.wait(100)
+        flush(qtbot)
         # stop 之后 position 不再变化
         assert anim.position == pytest.approx(frozen, abs=0.001)
 
@@ -76,14 +77,14 @@ class TestSpinBasic:
     def test_start_advances_angle(self, qtbot, owner):
         anim = SpinAnimation(owner, duration=300)
         anim.start()
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: anim.angle > 0, timeout=5000)
         assert anim.angle > 0
         anim.stop()
 
     def test_angle_value_getter(self, qtbot, owner):
         anim = SpinAnimation(owner, duration=200)
         anim.start()
-        qtbot.wait(50)
+        until(qtbot, lambda: anim.angle > 0)
         assert anim.angle_value() == anim.angle
         anim.stop()
 

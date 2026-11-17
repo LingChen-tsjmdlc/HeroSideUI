@@ -170,7 +170,7 @@ class Tabs(QWidget):
                     )
 
         # 自动选中第一个可用 tab
-        QTimer.singleShot(0, self._auto_select_first)
+        QTimer.singleShot(0, self, self._auto_select_first)
 
         # auto 模式：注册到 ThemeProvider
         if self._theme_mode == "auto":
@@ -346,7 +346,7 @@ class Tabs(QWidget):
 
     def _reposition_cursor_async(self):
         """在下一个事件循环异步重定位 cursor。"""
-        QTimer.singleShot(0, lambda: self._move_cursor_to(self._current_index, animate=False))
+        QTimer.singleShot(0, self, lambda: self._move_cursor_to(self._current_index, animate=False))
 
     def set_variant(self, variant: str):
         """设置变体并刷新样式，underlined 时强制无圆角。"""

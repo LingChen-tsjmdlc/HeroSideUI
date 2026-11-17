@@ -12,6 +12,7 @@ from hero_side_ui import (
 )
 from hero_side_ui.components.button import Button
 from hero_side_ui.themes import DROPDOWN_SIZES
+from tests._waits import flush, popup_ready, until
 
 
 # ============================================================
@@ -509,8 +510,8 @@ class TestDropdownGeometry:
         qtbot.addWidget(dd._popover)
         qtbot.waitExposed(dd)
         dd.open()
-        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=2000)
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=15000)
+        until(qtbot, lambda: popup_ready(dd._popover))
 
     def test_visible_menu_height_stable_after_show(self, qtbot):
         # 内容高度不能因为 show 过一次就变（首开 / 再开必须一致）
@@ -519,7 +520,7 @@ class TestDropdownGeometry:
         before = dd._visible_menu_height()
         dd.show()
         qtbot.waitExposed(dd)
-        qtbot.wait(30)
+        flush(qtbot)
         assert dd._visible_menu_height() == before
 
     def test_max_height_kept_on_reopen(self, qtbot):
@@ -539,14 +540,14 @@ class TestDropdownGeometry:
         qtbot.waitExposed(host)
         qtbot.addWidget(dd._popover)
         dd.open()
-        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=2000)
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=15000)
+        until(qtbot, lambda: popup_ready(dd._popover))
         assert dd._scroll.minimumHeight() == 120
         dd.close()
         qtbot.waitUntil(lambda: dd.is_open() is False, timeout=2000)
         dd.open()
-        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=2000)
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=15000)
+        until(qtbot, lambda: popup_ready(dd._popover))
         assert dd._scroll.minimumHeight() == 120
         assert dd._scroll.maximumHeight() == 120
 
@@ -559,8 +560,8 @@ class TestDropdownGeometry:
         dd.close()
         qtbot.waitUntil(lambda: dd.is_open() is False, timeout=2000)
         dd.open()
-        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=2000)
-        qtbot.wait(80)
+        qtbot.waitUntil(lambda: dd.is_open() is True, timeout=15000)
+        until(qtbot, lambda: popup_ready(dd._popover))
         assert dd._scroll.minimumHeight() == first
         assert dd._scroll.maximumHeight() == first
 

@@ -44,13 +44,13 @@ class TestTweenValueBasic:
         anim = tween_value(owner, "_r", 0.0, 1.0, lambda v: None, duration=80)
         assert anim is not None
         assert owner._r is anim
-        # 等动画跑完
-        qtbot.wait(150)
+        # 等动画跑完（按条件，不按固定时长）
+        qtbot.waitUntil(lambda: owner._r is None, timeout=5000)
 
     def test_runner_cleared_after_finish(self, qtbot):
         owner = _Owner()
         anim = tween_value(owner, "_r", 0.0, 1.0, lambda v: None, duration=50)
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: owner._r is None, timeout=5000)
         # finished 后 runner_attr 应清回 None
         assert owner._r is None
         # deleteLater 要等删除事件被处理，固定等待时长在慢机器上不保证（macOS CI 曾失败）
@@ -60,7 +60,7 @@ class TestTweenValueBasic:
         owner = _Owner()
         captured: list[float] = []
         tween_value(owner, "_r", 0.0, 1.0, captured.append, duration=50)
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: owner._r is None, timeout=5000)
         assert len(captured) > 0
         # 终值应该接近 1.0
         assert captured[-1] == pytest.approx(1.0, abs=0.01)
@@ -77,7 +77,7 @@ class TestTweenValueBasic:
             duration=50,
             on_finished=lambda: done.append(True),
         )
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: done == [True], timeout=5000)
         assert done == [True]
 
 
@@ -94,7 +94,7 @@ class TestTweenValuePreemption:
         # 给 Qt 一点时间让 a1 真正停下
         qtbot.waitUntil(lambda: not isValid(a1))
         # 清场：让 a2 结束
-        qtbot.wait(600)
+        qtbot.waitUntil(lambda: owner._r is None, timeout=5000)
         assert owner._r is None
 
 
@@ -112,7 +112,7 @@ class TestTweenValueQColor:
             captured.append,
             duration=50,
         )
-        qtbot.wait(120)
+        qtbot.waitUntil(lambda: owner._r is None, timeout=5000)
         assert len(captured) > 0
         # 终值应为白色
         last = captured[-1]
@@ -164,7 +164,7 @@ class TestTweenGeometry:
         assert anim is not None
         assert w._geo_anim is anim
 
-        qtbot.wait(150)
+        qtbot.waitUntil(lambda: w._geo_anim is None, timeout=5000)
         # 终态应到达目标
         assert w.geometry() == end_rect
         # runner_attr 已清空

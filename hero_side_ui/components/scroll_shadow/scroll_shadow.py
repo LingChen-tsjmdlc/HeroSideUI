@@ -624,7 +624,7 @@ class ScrollShadow(QScrollArea):
         self._theme = theme
         # 推迟到事件循环末尾再重绘: 保证此时其他组件(如父级 Card)也已经
         # 完成 palette 同步,我们读 self.palette().Window 能拿到最新色。
-        QTimer.singleShot(0, self._refresh_shadow)
+        QTimer.singleShot(0, self, self._refresh_shadow)
 
     # --- 响应 palette 变化 (覆盖 QWidget.changeEvent) ---
     def changeEvent(self, event):

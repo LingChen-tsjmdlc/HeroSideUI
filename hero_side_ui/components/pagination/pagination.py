@@ -137,7 +137,7 @@ class Pagination(QWidget):
         self._rebuild_items()
 
         # 自动放置 cursor (首次 show 后)
-        QTimer.singleShot(0, self._initial_cursor_position)
+        QTimer.singleShot(0, self, self._initial_cursor_position)
 
         # auto 主题
         if self._theme_mode == "auto":
@@ -545,7 +545,7 @@ class Pagination(QWidget):
         if self._cursor_pending_animate is None:
             # 无 pending,新建
             self._cursor_pending_animate = animate
-            QTimer.singleShot(0, self._flush_cursor_move)
+            QTimer.singleShot(0, self, self._flush_cursor_move)
         elif animate and not self._cursor_pending_animate:
             # 已有 False pending,升级为 True
             self._cursor_pending_animate = True
@@ -583,7 +583,7 @@ class Pagination(QWidget):
         item_geom = target.geometry()
         if item_geom.width() <= 0 or item_geom.height() <= 0:
             # layout 尚未完成,下一帧重试
-            QTimer.singleShot(0, lambda: self._move_cursor_to_active(animate=animate))
+            QTimer.singleShot(0, self, lambda: self._move_cursor_to_active(animate=animate))
             return
 
         cfg = PAGINATION_SIZES[self._size]

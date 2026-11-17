@@ -146,7 +146,7 @@ class _PopoverScrollMixin:
         if self._scroll_reposition_pending:
             return
         self._scroll_reposition_pending = True
-        QTimer.singleShot(0, self._do_scroll_reposition)
+        QTimer.singleShot(0, self, self._do_scroll_reposition)
 
     def _do_scroll_reposition(self):
         """按 _scroll_anchor_offset 相对 trigger 纯平移 popover。
@@ -197,7 +197,7 @@ class _PopoverScrollMixin:
         if self._full_reposition_pending:
             return
         self._full_reposition_pending = True
-        QTimer.singleShot(0, self._do_full_reposition)
+        QTimer.singleShot(0, self, self._do_full_reposition)
 
     def _do_full_reposition(self):
         """完整重算路径：走 _calc_position 按 placement 重新对齐 trigger。"""

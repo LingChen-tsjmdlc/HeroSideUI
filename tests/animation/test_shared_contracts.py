@@ -31,6 +31,7 @@ from hero_side_ui.animation import (
     tween_property,
     tween_value,
 )
+from tests._waits import flush, until
 
 
 def flush_deletes():
@@ -61,7 +62,7 @@ def test_equal_request_preempts_a_running_transition(qtbot):
         duration=1000,
         on_finished=lambda: completed.append("old"),
     )
-    qtbot.wait(30)
+    until(qtbot, lambda: bool(steps))
     current = steps[-1]
     assert (
         tween_value(
@@ -76,7 +77,7 @@ def test_equal_request_preempts_a_running_transition(qtbot):
         is None
     )
     count = len(steps)
-    qtbot.wait(40)
+    flush(qtbot)  # 已同步取消：再处理事件也不应有新的一步
     assert len(steps) == count
     assert owner.motion is None
     assert completed == ["new"]
@@ -97,7 +98,7 @@ def test_immediate_request_applies_endpoint_before_completion(qtbot):
         animated=False,
         on_finished=lambda: observed.append("done"),
     )
-    qtbot.wait(30)
+    flush(qtbot)
     assert observed == [7, "done"]
     assert owner.motion is None
 
@@ -159,7 +160,7 @@ def test_geometry_immediate_request_stops_previous_motion(qtbot):
     tween_geometry(widget, "motion", end, duration=1000)
     target = widget.geometry()
     tween_geometry(widget, "motion", target, duration=50)
-    qtbot.wait(40)
+    until(qtbot, lambda: widget.motion is None)
     assert widget.geometry() == target
     assert widget.motion is None
 
@@ -269,10 +270,10 @@ def test_real_selector_uses_shared_trigger_and_immediate_preemption(qtbot, facto
     trigger = widget.findChild(SelectorButton)
     assert trigger is not None
     trigger.set_angle(180, animated=True, duration=500)
-    qtbot.wait(40)
+    until(qtbot, lambda: trigger.angle() > 0)
     assert trigger.angle() > 0
-    trigger.set_angle(0, animated=False)
-    qtbot.wait(70)
+    trigger.set_angle(0, animated=False)  # 立即请求：同步落到终态并取消动画
+    flush(qtbot)
     assert trigger.angle() == 0
     assert trigger._angle_anim_runner is None
 
@@ -281,15 +282,17 @@ def test_checkbox_reselection_cancels_previous_delayed_draw(qtbot):
     checkbox = Checkbox()
     qtbot.addWidget(checkbox)
     assert isinstance(checkbox._check_anim, CheckDrawAnimation)
+    timer = checkbox._check_anim._delay_timer
     checkbox.setChecked(True)
-    qtbot.wait(40)
+    assert timer.isActive()  # 延迟描勾已排队
     checkbox.setChecked(False)
+    assert not timer.isActive()  # 取消选中：上一次的延迟被取消
     checkbox.setChecked(True)
-    qtbot.wait(70)
-    assert checkbox.check_draw == 0.0
-    qtbot.waitUntil(lambda: checkbox.check_draw > 0)
+    assert timer.isActive()  # 重新选中：只重新排一次
+    assert checkbox.check_draw == 0.0  # 延迟尚未触发，还没开始描勾
+    until(qtbot, lambda: checkbox.check_draw > 0)
     checkbox.set_disable_animation(True)
-    qtbot.wait(120)
+    until(qtbot, lambda: checkbox.check_draw == 1.0)
     assert checkbox.check_draw == 1.0
     assert checkbox.fill_progress == 1.0
     assert checkbox._fill_anim is None
@@ -300,9 +303,9 @@ def test_skeleton_disabling_motion_settles_both_fade_layers(qtbot):
     qtbot.addWidget(skeleton)
     skeleton.show()
     skeleton.set_loaded(True)
-    qtbot.wait(30)
+    flush(qtbot)
     skeleton.set_disable_animation(True)
-    qtbot.wait(50)
+    until(qtbot, lambda: skeleton._skeleton_opacity == 0.0 and skeleton._content_opacity == 1.0)
     assert skeleton._skeleton_opacity == 0.0
     assert skeleton._content_opacity == 1.0
     assert not skeleton._shimmer.is_running()

@@ -61,7 +61,7 @@ class _VirtualMixin:
         if getattr(self, "_virtual_pending", False):
             return
         self._virtual_pending = True
-        QTimer.singleShot(0, self._do_virtual_scroll)
+        QTimer.singleShot(0, self, self._do_virtual_scroll)
 
     def _do_virtual_scroll(self):
         """执行节流后的窗口重填并同步吸顶表头。

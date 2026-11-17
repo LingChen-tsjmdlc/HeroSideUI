@@ -17,6 +17,7 @@ from hero_side_ui.components.date_input import (
     today,
 )
 from hero_side_ui.themes import HEROUI_COLORS
+from tests._waits import flush, until
 
 
 def _make(qtbot, **kwargs) -> DateInput:
@@ -181,13 +182,13 @@ def test_segment_qss_survives_theme_switch(qtbot):
         # Text._apply_color() 有幂等守卫，主题值没变时不会重写 QSS，
         # 起始态与首个断言态相同会让本测试变成空测试。
         provider.set_mode("light")
-        qtbot.wait(30)
+        flush(qtbot)
         di = _make(qtbot, color="warning", value=parse_date("2024-04-04"))
         seg = di._segment_widgets[0]
 
         for theme in ("dark", "light", "dark"):
             provider.set_mode(theme)
-            qtbot.wait(30)
+            flush(qtbot)
             qss = seg.styleSheet()
             assert "padding-left" in qss, f"{theme}: padding 被覆盖丢失"
             assert "border-radius" in qss, f"{theme}: border-radius 被覆盖丢失"
@@ -226,7 +227,7 @@ def test_segments_never_clipped_across_state_changes(qtbot):
         di.set_size(size)
         for color in ("default", "warning", "primary"):
             di.set_color(color)
-            qtbot.wait(20)
+            flush(qtbot)
             assert_not_clipped(f"size={size} color={color}")
 
 

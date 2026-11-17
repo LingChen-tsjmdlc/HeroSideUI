@@ -249,7 +249,7 @@ class Tooltip(
             self._set_widget_content(content)
         # 如果正在显示，延迟到下一帧刷新（等 trigger 布局更新完）
         if self._is_open and self._trigger is not None:
-            QTimer.singleShot(0, self._refresh_geometry)
+            QTimer.singleShot(0, self, self._refresh_geometry)
 
     def _refresh_geometry(self):
         """刷新 tooltip 尺寸和位置（在下一帧调用，确保 trigger 布局已更新）。"""

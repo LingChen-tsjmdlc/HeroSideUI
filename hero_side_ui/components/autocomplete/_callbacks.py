@@ -80,7 +80,7 @@ class _AutocompleteCallbacksMixin:
         # 兜底：FocusIn 没来时（极端情况），200ms 后强制解锁，避免守卫卡死。
         self._just_committed = True
         self.close()
-        QTimer.singleShot(200, lambda: setattr(self, "_just_committed", False))
+        QTimer.singleShot(200, self, lambda: setattr(self, "_just_committed", False))
 
     def _on_clear_clicked(self):
         """处理清除按钮点击：清空选中与文本并还焦点。
@@ -101,7 +101,7 @@ class _AutocompleteCallbacksMixin:
         # 打开 popover + 焦点回 input（对齐 HeroUI 行为）
         if not self._is_open:
             self.open(trigger="clear")
-        QTimer.singleShot(0, self._input.line_edit.setFocus)
+        QTimer.singleShot(0, self._input.line_edit, self._input.line_edit.setFocus)
 
     def _on_selector_clicked(self):
         """处理右侧 selector 按钮点击：切换 popover 并还焦点。
@@ -114,7 +114,7 @@ class _AutocompleteCallbacksMixin:
             return
         self.toggle(trigger="manual")
         # 点击 selector 后焦点回 input
-        QTimer.singleShot(0, self._input.line_edit.setFocus)
+        QTimer.singleShot(0, self._input.line_edit, self._input.line_edit.setFocus)
 
     def _on_popover_open_changed(self, is_open: bool, trigger: str):
         """同步 popover 开关态并处理图标旋转与文本回退。

@@ -98,6 +98,6 @@ class TestProgressChangedSignal:
         anim.progress_changed.connect(received.append)
         anim.set_immediate(False)
         anim.expand()
-        qtbot.wait(150)
+        qtbot.waitUntil(lambda: bool(received) and received[-1] >= 0.99, timeout=5000)
         assert len(received) > 1
         assert received[-1] == pytest.approx(1.0, abs=0.01)

@@ -11,6 +11,7 @@ from pyside_iconify.network.downloader import DownloadResult
 from hero_side_ui import Button, Icon, ThemeProvider, ThemeSwitcher
 from hero_side_ui.core import resolve_text_color
 from hero_side_ui.icons import resolve_icon
+from tests._waits import flush, until
 
 
 @pytest.mark.parametrize(
@@ -150,7 +151,7 @@ def test_local_and_online_icons_coexist_with_native_api(qtbot, monkeypatch, tmp_
     local = Icon("heroicons--eye-solid")
     qtbot.addWidget(local)
     local.show()
-    qtbot.wait(20)
+    flush(qtbot)
     assert calls == []
     # Unique names also keep this test independent of the in-memory registry.
     prefix = "hsui-" + tmp_path.name.lower().replace("_", "-")

@@ -11,6 +11,7 @@ from PySide6.QtGui import QColor, QPixmap
 from PySide6.QtWidgets import QHBoxLayout, QWidget
 
 from hero_side_ui import Image
+from tests._waits import flush, until
 
 RADII = ("none", "sm", "md", "lg", "full")
 SHADOWS = ("none", "sm", "md", "lg")
@@ -25,7 +26,7 @@ def _in_host(qtbot, img: Image) -> QWidget:
     lay.addWidget(img)
     qtbot.addWidget(host)
     host.show()
-    qtbot.wait(20)
+    flush(qtbot)
     return host
 
 
@@ -95,7 +96,7 @@ class TestImageInit:
         assert img._disable_skeleton is True
         assert img._skeleton is None
         # fallback loader 内部 QTimer.singleShot 已投递，让它跑完再清理 fixture
-        qtbot.wait(20)
+        flush(qtbot)
 
     def test_remove_wrapper_no_skeleton_no_blurred(self, qtbot):
         img = Image(remove_wrapper=True, is_blurred=True)
@@ -216,8 +217,8 @@ class TestImageLoading:
         # 主图先 failed
         with qtbot.waitSignal(img.failed, timeout=1000):
             pass
-        # fallback 是异步发出的，等一帧让它上屏
-        qtbot.wait(50)
+        # fallback 是异步发出的，处理已投递的事件让它上屏
+        flush(qtbot)
         # 主图 status 仍是 failed，但 _img 已挂载 fallback pixmap
         assert img.status() == "failed"
         assert img._img._pixmap is not None

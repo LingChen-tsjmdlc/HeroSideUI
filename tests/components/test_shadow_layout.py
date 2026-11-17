@@ -8,6 +8,7 @@ from PySide6.QtWidgets import QHBoxLayout, QLabel, QWidget
 from hero_side_ui import Card, Image, Table
 from hero_side_ui.components.card import CardBody
 from hero_side_ui.core.shadow_paint import ShadowLayer
+from tests._waits import flush, until
 
 # pytest-qt 的 qtbot.addWidget 只持弱引用。调用方若不接住 _show_row 的返回值，宿主窗口会立刻被回收，
 # 里面的 Card / Image 跟着在 C++ 侧被删除（macOS 上表现为 "already deleted"），所以这里统一强引用到测试结束。
@@ -36,7 +37,7 @@ def _show_row(qtbot, widgets, spacing: int = 24) -> QWidget:
     qtbot.addWidget(host)
     _LIVE_HOSTS.append(host)
     host.show()
-    qtbot.wait(20)
+    flush(qtbot)
     return host
 
 
@@ -127,7 +128,7 @@ class TestShadowEscapesCompactWrappers:
         qtbot.addWidget(host)
         host.show()
         qtbot.waitExposed(host)
-        qtbot.wait(40)
+        flush(qtbot)
         return host, scroll, wrap, card
 
     def _darkness_outside(self, host, wrap, card) -> int:
@@ -184,7 +185,7 @@ class TestPressableHitArea:
                 Qt.KeyboardModifier.NoModifier,
                 card.mapTo(host, local),
             )
-            qtbot.wait(30)
+            flush(qtbot)
             return bool(fired)
 
         h = card.height() // 2
