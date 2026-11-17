@@ -4,26 +4,12 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtCore import QPoint, QRect, Qt
-from PySide6.QtGui import QGuiApplication
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QLabel, QWidget
 
 from hero_side_ui import Autocomplete, Button, Dropdown, Popover, Select, Tooltip
 from hero_side_ui._shared.overlays import bounds
 from hero_side_ui._shared.overlays.hit_test import HitThroughMixin
-
-
-def _pt(p) -> tuple:
-    """QPoint 转元组，便于打印。"""
-    return (p.x(), p.y())
-
-
-def _screens() -> list:
-    """所有屏幕的 (名称, 全区, 可用区, 缩放)。"""
-    return [
-        (s.name(), s.geometry().getRect(), s.availableGeometry().getRect(), s.devicePixelRatio())
-        for s in QGuiApplication.screens()
-    ]
 
 
 def _host(qtbot, w: int = 520, h: int = 420) -> QWidget:
@@ -239,24 +225,9 @@ class TestFlipInsideWindow:
         pop = dd._popover
         trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
         body = pop._body_global()
-        # 失败时带上定位用到的全部区域，平台差异（窗口被系统挪动）靠这些数字定位
-        info = (
-            f"body={body.getRect()} trigger={trigger.getRect()} "
-            f"screen={bounds.screen_rect(dd._trigger).getRect()} "
-            f"host={(bounds.host_rect(dd._trigger) or QRect()).getRect()} "
-            f"area={bounds.popup_area(dd._trigger).getRect()} "
-            f"above={bounds.space_above(dd._trigger)} below={bounds.space_below(dd._trigger)} "
-            f"room={dd._room_for_menu()} cap={dd._menu_height_cap(True)} "
-            f"scroll_h={dd._scroll.height()} placement={pop._actual_placement} "
-            f"pop_geo={pop.geometry().getRect()} pop_frame={pop.frameGeometry().getRect()} "
-            f"calc_pos={_pt(pop._calc_position(dd._trigger))} "
-            f"margins={pop._frame_margins()} body_local={pop._body_local().getRect()} "
-            f"host_frame={host.frameGeometry().getRect()} "
-            f"screens={_screens()} platform={QGuiApplication.platformName()}"
-        )
-        assert pop._actual_placement.startswith(expect), info
-        assert _inside(dd._trigger, pop), info
-        assert not body.intersects(trigger), info
+        assert pop._actual_placement.startswith(expect)
+        assert _inside(dd._trigger, pop)
+        assert not body.intersects(trigger)
         dd.close()
 
     def test_tooltip_flips_down_near_the_window_top(self, qtbot):

@@ -5,7 +5,6 @@ on:
     branches: [main, ci/test-pipeline]
   pull_request:
     branches: [main]
-  workflow_dispatch:
 
 jobs:
   # ============================================================
@@ -14,17 +13,10 @@ jobs:
   #   python  : 3.11 / 3.12 / 3.13 三档并行
   # 总并行度 = 9 × 3 = 27 个 job 同时跑（受 GitHub Actions runner 配额限制）
   # components 按字母序动态分片（shard: "N/5"），新增测试文件无需改 CI
-  #
-  # 诊断：每个 job 都写追踪日志（HS_TRACE_FILE），失败后在日志里打印
-  #   最后一个没结束的阶段与 macOS 崩溃报告的 C++ 栈，并上传为 artifact。
-  # 诊断变体（include）只跑 macOS + 3.12 的 components-4，失败不影响总体结果：
-  #   gcoff  关闭自动 GC        malloc  开启 macOS 堆调试        lldb  挂调试器抓崩溃现场
   # ============================================================
   test:
     name: Test | ${{ matrix.group.name }} (py${{ matrix.python-version }})
     runs-on: ${{ matrix.os }}
-    timeout-minutes: 60
-    continue-on-error: ${{ matrix.group.diag && true || false }}
     # 桌面 GUI 库在 CI 里只跑 macOS：
     # - macOS runner 原生 GUI 栈稳定，是真正可靠的测试信号。
     # - Ubuntu headless 下 Qt 6.11 对 xcb/字体/主题等依赖敏感，容易 SIGABRT。
@@ -35,9 +27,16 @@ jobs:
       matrix:
         os: [macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
-        # 临时：只跑 test_popup_bounds.py（调试 macOS 弹层位置），验证完请恢复完整矩阵
         group:
-          - { name: popup-bounds, path: "tests/components/test_popup_bounds.py" }
+          - { name: core,         path: "tests/core" }
+          - { name: utils,        path: "tests/utils" }
+          - { name: animation,    path: "tests/animation" }
+          - { name: shared,       path: "tests/shared" }
+          - { name: "components-1", path: "tests/components", shard: "1/5" }
+          - { name: "components-2", path: "tests/components", shard: "2/5" }
+          - { name: "components-3", path: "tests/components", shard: "3/5" }
+          - { name: "components-4", path: "tests/components", shard: "4/5" }
+          - { name: "components-5", path: "tests/components", shard: "5/5" }
       fail-fast: false
 
     steps:
@@ -54,14 +53,8 @@ jobs:
         run: uv sync --locked --python "${{ matrix.python-version }}"
 
       - name: Run ${{ matrix.group.name }} tests | 运行 ${{ matrix.group.name }} 测试
-        id: tests
-        env:
-          HS_TRACE_FILE: ${{ runner.temp }}/hs-trace.log
         run: |
-          PY="${{ matrix.python-version }}"
-          DIAG="${{ matrix.group.diag }}"
           SHARD="${{ matrix.group.shard }}"
-          TARGETS="${{ matrix.group.path }}"
           if [ -n "$SHARD" ]; then
             # 动态分片：按字母序排列测试文件，取第 IDX 批（每批 PER 个）
             IDX="${SHARD%%/*}"
@@ -81,79 +74,10 @@ jobs:
               exit 0
             fi
             echo "Shard $IDX/$TOTAL ($COUNT files, $PER per shard): $FILES"
-            TARGETS="$FILES"
+            uv run --locked --python "${{ matrix.python-version }}" python -m pytest $FILES -v --tb=short
+          else
+            uv run --locked --python "${{ matrix.python-version }}" python -m pytest ${{ matrix.group.path }} -v --tb=short
           fi
-
-          # 诊断变体的环境；Malloc* 变量只要存在就生效，所以只在对应变体里 export
-          case "$DIAG" in
-            gcoff)  export HS_DISABLE_GC=1 ;;
-            malloc) export MallocScribble=1 MallocPreScribble=1 MallocGuardEdges=1 MallocNanoZone=0 \
-                           MallocErrorAbort=1 MallocCheckHeapStart=100000 MallocCheckHeapEach=20000 MallocCheckHeapAbort=1 ;;
-          esac
-          export PYTHONFAULTHANDLER=1
-          echo "诊断变体: ${DIAG:-无}"
-          env | grep -E '^(HS_|Malloc|QT_|PYTHON)' | sort
-
-          PYTEST_ARGS="-v --tb=short -ra --durations=15 -o faulthandler_timeout=900"
-          if [ "$DIAG" = "lldb" ]; then
-            # 调试器下运行：崩溃时停在出错指令，直接打印所有线程的 C++ 调用栈与寄存器
-            sudo DevToolsSecurity -enable >/dev/null 2>&1 || true
-            set +e
-            lldb --batch \
-              -o "run" -o "bt all" -o "thread info" -o "register read" \
-              -o "disassemble --pc --count 16" -o "image list" \
-              -- .venv/bin/python -m pytest $TARGETS $PYTEST_ARGS 2>&1 | tee "$RUNNER_TEMP/lldb.log"
-            if grep -qaE "stop reason = (EXC_BAD_ACCESS|EXC_BAD_INSTRUCTION|signal SIGSEGV|signal SIGABRT)" "$RUNNER_TEMP/lldb.log"; then
-              echo "lldb: 进程崩溃"; exit 139
-            fi
-            CODE=$(grep -aoE "exited with status = [0-9]+" "$RUNNER_TEMP/lldb.log" | tail -1 | grep -oE "[0-9]+$")
-            exit "${CODE:-1}"
-          fi
-          uv run --locked --python "$PY" python -m pytest $TARGETS $PYTEST_ARGS
-
-      - name: Diagnostics | 崩溃诊断
-        if: always()
-        env:
-          HS_TRACE_FILE: ${{ runner.temp }}/hs-trace.log
-        run: |
-          set +e
-          PY="${{ matrix.python-version }}"
-          OUTCOME="${{ steps.tests.outcome }}"
-          echo "测试步骤结果: $OUTCOME"
-          uv run --no-project --python "$PY" python .github/scripts/hs_ci_report.py trace "$HS_TRACE_FILE"
-          if [ "$OUTCOME" != "success" ]; then
-            echo "等待系统写出崩溃报告..."
-            sleep 25
-            mkdir -p "$RUNNER_TEMP/diag"
-            find "$HOME/Library/Logs/DiagnosticReports" /Library/Logs/DiagnosticReports \
-              -type f -mmin -120 \( -name '*.ips' -o -name '*.crash' \) \
-              -exec cp {} "$RUNNER_TEMP/diag/" \; 2>/dev/null
-            ls -la "$RUNNER_TEMP/diag"
-            uv run --no-project --python "$PY" python .github/scripts/hs_ci_report.py crash "$RUNNER_TEMP/diag"
-            echo "::group::运行环境"
-            sw_vers; uname -a
-            sysctl -n machdep.cpu.brand_string hw.memsize
-            vm_stat | head -8
-            df -h / | tail -1
-            system_profiler SPDisplaysDataType 2>/dev/null | head -25
-            echo "::endgroup::"
-            echo "::group::追踪日志最后 600 行"
-            tail -n 600 "$HS_TRACE_FILE"
-            echo "::endgroup::"
-          fi
-          exit 0
-
-      - name: Upload diagnostics | 上传诊断文件
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: diag-${{ matrix.group.name }}-py${{ matrix.python-version }}
-          path: |
-            ${{ runner.temp }}/hs-trace.log
-            ${{ runner.temp }}/lldb.log
-            ${{ runner.temp }}/diag/
-          if-no-files-found: ignore
-          retention-days: 14
 
   # ============================================================
   # 代码规范：Ruff lint + format（与 test 并行）
