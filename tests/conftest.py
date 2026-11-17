@@ -87,14 +87,20 @@ def _state() -> str:
     )
 
 
+_GC_T0 = 0.0
+
+
 def _gc_trace(phase: str, info: dict) -> None:
-    """GC 回调：记录每次回收的起止与结果。"""
+    """GC 回调：只记录会改变对象状态的回收（回收了对象、有不可回收对象，或耗时超 50ms）。"""
+    global _GC_T0
     if phase == "start":
-        _trace(f"  GC start gen={info['generation']} count={gc.get_count()}")
-    else:
+        _GC_T0 = time.monotonic()
+        return
+    cost = time.monotonic() - _GC_T0
+    if info["collected"] or info["uncollectable"] or cost > 0.05:
         _trace(
-            f"  GC stop  gen={info['generation']} collected={info['collected']} "
-            f"uncollectable={info['uncollectable']}"
+            f"  GC gen={info['generation']} collected={info['collected']} "
+            f"uncollectable={info['uncollectable']} cost={cost * 1000:.0f}ms"
         )
 
 

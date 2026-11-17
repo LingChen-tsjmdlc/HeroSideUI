@@ -118,8 +118,6 @@ class _PopoverGeometryMixin:
         register_host(self, trigger)
         tr_pos = trigger.mapToGlobal(QPoint(0, 0))
         tr_w, tr_h = trigger.width(), trigger.height()
-        area = popup_area(trigger)
-
         candidates = [self._placement]
         if getattr(self, "_allow_flip", True):
             flipped = self._flip_placement(self._placement)
@@ -129,7 +127,8 @@ class _PopoverGeometryMixin:
         best = None  # (越界量, 序号, placement)
         for idx, cand in enumerate(candidates):
             _pos, body = self._layout_for(cand, tr_pos, tr_w, tr_h)
-            miss = overflow(body, area)
+            # _layout_for 已切到该方位，边距（含箭头所在边）与之一致
+            miss = overflow(body, popup_area(trigger, self._frame_margins()))
             if best is None or miss < best[0]:
                 best = (miss, idx, cand)
             if miss == 0:

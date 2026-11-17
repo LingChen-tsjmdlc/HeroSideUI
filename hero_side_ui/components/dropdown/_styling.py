@@ -87,8 +87,9 @@ class _DropdownStylingMixin:
         """
         place = self._placement  # Dropdown 自己持有设定方向，不去读 Popover 的私有属性
         try:
-            below = int(space_below(self._trigger) - 6)
-            above = int(space_above(self._trigger) - 6)
+            margins = self._popover.frame_margins()
+            below = int(space_below(self._trigger, margins) - 6)
+            above = int(space_above(self._trigger, margins) - 6)
         except RuntimeError:
             return None
         if place.startswith("bottom"):

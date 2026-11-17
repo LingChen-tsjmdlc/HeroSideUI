@@ -23,7 +23,7 @@ def available_height_below(anchor: QWidget, popover: Popover, fallback: int) -> 
 
     Args:
         anchor: 触发控件。
-        popover: 承载列表的浮层（保留参数以兼容旧调用）。
+        popover: 承载列表的浮层，提供窗口四周的透明边距。
         fallback: 拿不到窗口信息时返回的高度。
 
     Note:
@@ -32,10 +32,11 @@ def available_height_below(anchor: QWidget, popover: Popover, fallback: int) -> 
         函数名沿用旧名。
     """
     try:
-        below = int(space_below(anchor) - _POPOVER_GAP)
+        margins = popover.frame_margins()
+        below = int(space_below(anchor, margins) - _POPOVER_GAP)
         if below >= _MIN_HEIGHT:
             return below
-        return max(below, int(space_above(anchor) - _POPOVER_GAP))
+        return max(below, int(space_above(anchor, margins) - _POPOVER_GAP))
     except RuntimeError:
         return fallback
 

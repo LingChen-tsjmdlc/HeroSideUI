@@ -190,7 +190,7 @@ class TestPopupHeight:
         p = Popover()
         qtbot.addWidget(p)
         value = available_height_below(anchor, p, fallback=0)
-        assert value == space_below(anchor) - 6
+        assert value == space_below(anchor, p.frame_margins()) - 6
         assert 0 < value < host.height()  # 量到窗口底，而不是屏幕底
 
     def test_available_height_uses_the_larger_side_when_below_is_too_small(self, qtbot):
@@ -199,8 +199,8 @@ class TestPopupHeight:
         _host, anchor = self._anchor_in_window(qtbot, 350)
         p = Popover()
         qtbot.addWidget(p)
-        below = space_below(anchor) - 6
-        above = space_above(anchor) - 6
+        below = space_below(anchor, p.frame_margins()) - 6
+        above = space_above(anchor, p.frame_margins()) - 6
         assert below < 80 <= above  # 下方放不下最小列表，Popover 会翻到上方
         assert available_height_below(anchor, p, fallback=0) == above
 

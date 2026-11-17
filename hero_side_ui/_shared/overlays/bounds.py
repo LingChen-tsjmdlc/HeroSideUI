@@ -64,16 +64,29 @@ def host_rect(widget: QWidget) -> QRect | None:
     return QRect(win.mapToGlobal(QPoint(0, 0)), win.size())
 
 
-def popup_area(widget: QWidget) -> QRect:
+def system_confines_windows() -> bool:
+    """平台是否把顶层窗口整体限制在屏幕可用区内（macOS 是，Windows 与离屏不是）。"""
+    return QGuiApplication.platformName() == "cocoa"
+
+
+def popup_area(widget: QWidget, margins: tuple = (0, 0, 0, 0)) -> QRect:
     """弹层可见主体应当落在的全局矩形：宿主窗口客户区与所在屏幕可用区的交集。
 
     Args:
         widget: 触发浮层的控件。
+        margins: 弹层窗口四周的透明边距 (左, 上, 右, 下)，用于阴影与箭头。
 
     Returns:
         窗口未显示或与屏幕不相交时退回屏幕可用区。
+
+    Note:
+        仅在系统会夹窗口的平台上，屏幕一侧才按边距收缩：整个弹层窗口
+        （主体 + 透明边距）必须落在可用区内，否则会被整体挪走。
     """
     screen = screen_rect(widget)
+    if system_confines_windows():
+        ml, mt, mr, mb = margins
+        screen = screen.adjusted(ml, mt, -mr, -mb)
     win = host_rect(widget)
     if win is None:
         return screen
@@ -114,30 +127,32 @@ def clip_to_host(popup: QWidget, anchor: QWidget | None) -> None:
         popup.setMask(QRegion(local))
 
 
-def space_below(widget: QWidget) -> int:
+def space_below(widget: QWidget, margins: tuple = (0, 0, 0, 0)) -> int:
     """控件下沿到允许区域底部的可用高度（允许区域 = 宿主窗口 ∩ 所在屏幕可用区）。
 
     Args:
         widget: 触发浮层的控件。
+        margins: 弹层窗口四周的透明边距，见 popup_area。
 
     Note:
         必须和浮层最终落位用同一个区域（popup_area）：窗口超出屏幕可用区时（如 macOS 菜单栏下），
         只量到窗口边缘会把菜单上限算大，翻转后被夹到屏幕边缘，压在触发器上。
     """
-    area = popup_area(widget)
+    area = popup_area(widget, margins)
     return area.bottom() - (widget.mapToGlobal(QPoint(0, 0)).y() + widget.height())
 
 
-def space_above(widget: QWidget) -> int:
+def space_above(widget: QWidget, margins: tuple = (0, 0, 0, 0)) -> int:
     """控件上沿到允许区域顶部的可用高度（允许区域 = 宿主窗口 ∩ 所在屏幕可用区）。
 
     Args:
         widget: 触发浮层的控件。
+        margins: 弹层窗口四周的透明边距，见 popup_area。
 
     Note:
         同 space_below：与 popup_area 保持同一个区域。
     """
-    area = popup_area(widget)
+    area = popup_area(widget, margins)
     return widget.mapToGlobal(QPoint(0, 0)).y() - area.top()
 
 
@@ -151,4 +166,5 @@ __all__ = [
     "screen_rect",
     "space_above",
     "space_below",
+    "system_confines_windows",
 ]

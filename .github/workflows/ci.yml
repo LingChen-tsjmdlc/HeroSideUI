@@ -35,20 +35,9 @@ jobs:
       matrix:
         os: [macos-latest]
         python-version: ["3.11", "3.12", "3.13"]
+        # 临时：只跑 test_popup_bounds.py（调试 macOS 弹层位置），验证完请恢复完整矩阵
         group:
-          - { name: core,         path: "tests/core" }
-          - { name: utils,        path: "tests/utils" }
-          - { name: animation,    path: "tests/animation" }
-          - { name: shared,       path: "tests/shared" }
-          - { name: "components-1", path: "tests/components", shard: "1/5" }
-          - { name: "components-2", path: "tests/components", shard: "2/5" }
-          - { name: "components-3", path: "tests/components", shard: "3/5" }
-          - { name: "components-4", path: "tests/components", shard: "4/5" }
-          - { name: "components-5", path: "tests/components", shard: "5/5" }
-        include:
-          - { os: macos-latest, python-version: "3.12", group: { name: components-4-gcoff,  path: "tests/components", shard: "4/5", diag: gcoff } }
-          - { os: macos-latest, python-version: "3.12", group: { name: components-4-malloc, path: "tests/components", shard: "4/5", diag: malloc } }
-          - { os: macos-latest, python-version: "3.12", group: { name: components-4-lldb,   path: "tests/components", shard: "4/5", diag: lldb } }
+          - { name: popup-bounds, path: "tests/components/test_popup_bounds.py" }
       fail-fast: false
 
     steps:

@@ -155,11 +155,10 @@ def calc_position(
     tr_h = trigger.height()
 
     # 可用区域 = 窗口客户区 ∩ trigger 所在屏（多屏下取主屏会把副屏 trigger 误判越界）。
-    area = popup_area(trigger)
     pos = compute_pos_for(placement, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
     ml, mt, mr, mb = margins
     body = QRect(pos.x() + ml, pos.y() + mt, max(1, my_w - ml - mr), max(1, my_h - mt - mb))
-    miss = overflow(body, area)
+    miss = overflow(body, popup_area(trigger, margins))
     if miss > 0:
         flipped = flip_placement(placement)
         new_pos = compute_pos_for(flipped, tr_pos, tr_w, tr_h, my_w, my_h, margins, offset_gap)
@@ -167,7 +166,7 @@ def calc_position(
             new_pos.x() + ml, new_pos.y() + mt, max(1, my_w - ml - mr), max(1, my_h - mt - mb)
         )
         # 两边都放不下取越界更少的一边；仍越界的部分由 clip_to_host 裁掉
-        if overflow(new_body, area) < miss:
+        if overflow(new_body, popup_area(trigger, margins)) < miss:
             return new_pos, flipped
 
     return pos, placement

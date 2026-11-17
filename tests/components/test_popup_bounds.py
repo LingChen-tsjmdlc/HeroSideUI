@@ -4,12 +4,26 @@ from __future__ import annotations
 
 import pytest
 from PySide6.QtCore import QPoint, QRect, Qt
+from PySide6.QtGui import QGuiApplication
 from PySide6.QtTest import QTest
 from PySide6.QtWidgets import QLabel, QWidget
 
 from hero_side_ui import Autocomplete, Button, Dropdown, Popover, Select, Tooltip
 from hero_side_ui._shared.overlays import bounds
 from hero_side_ui._shared.overlays.hit_test import HitThroughMixin
+
+
+def _pt(p) -> tuple:
+    """QPoint 转元组，便于打印。"""
+    return (p.x(), p.y())
+
+
+def _screens() -> list:
+    """所有屏幕的 (名称, 全区, 可用区, 缩放)。"""
+    return [
+        (s.name(), s.geometry().getRect(), s.availableGeometry().getRect(), s.devicePixelRatio())
+        for s in QGuiApplication.screens()
+    ]
 
 
 def _host(qtbot, w: int = 520, h: int = 420) -> QWidget:
@@ -233,7 +247,12 @@ class TestFlipInsideWindow:
             f"area={bounds.popup_area(dd._trigger).getRect()} "
             f"above={bounds.space_above(dd._trigger)} below={bounds.space_below(dd._trigger)} "
             f"room={dd._room_for_menu()} cap={dd._menu_height_cap(True)} "
-            f"scroll_h={dd._scroll.height()} placement={pop._actual_placement}"
+            f"scroll_h={dd._scroll.height()} placement={pop._actual_placement} "
+            f"pop_geo={pop.geometry().getRect()} pop_frame={pop.frameGeometry().getRect()} "
+            f"calc_pos={_pt(pop._calc_position(dd._trigger))} "
+            f"margins={pop._frame_margins()} body_local={pop._body_local().getRect()} "
+            f"host_frame={host.frameGeometry().getRect()} "
+            f"screens={_screens()} platform={QGuiApplication.platformName()}"
         )
         assert pop._actual_placement.startswith(expect), info
         assert _inside(dd._trigger, pop), info
@@ -386,3 +405,70 @@ class TestPopupOutlivesItsOwner:
             popover.closed.emit()
             qtbot.wait(30)
         assert exceptions == []
+
+
+class TestWindowMarginsStayOnScreen:
+    """回归：系统约束的是整个弹层窗口（含阴影边距），按可见主体算会被整体挪走并压住触发器。"""
+
+    SCREEN = QRect(0, 31, 1024, 677)  # macOS 虚拟屏幕可用区（菜单栏占掉上方 31px）
+
+    @pytest.fixture
+    def clamped(self, monkeypatch):
+        """固定屏幕可用区，并模拟 macOS：系统把弹层窗口整体夹进该区域。"""
+        screen = self.SCREEN
+        monkeypatch.setattr(bounds, "screen_rect", lambda w: QRect(screen))
+        monkeypatch.setattr(bounds, "system_confines_windows", lambda: True)
+        real_move = Popover.move
+
+        def clamped_move(self, *args):
+            p = args[0] if isinstance(args[0], QPoint) else QPoint(args[0], args[1])
+            x = min(max(p.x(), screen.left()), screen.right() + 1 - self.width())
+            y = min(max(p.y(), screen.top()), screen.bottom() + 1 - self.height())
+            real_move(self, QPoint(x, y))
+
+        monkeypatch.setattr(Popover, "move", clamped_move)
+
+    @pytest.mark.parametrize("y", [100, 345, 380])
+    def test_dropdown_never_covers_its_trigger(self, qtbot, clamped, y):
+        host = QWidget()
+        host.setGeometry(60, 59, 520, 420)
+        qtbot.addWidget(host)
+        host.show()
+        qtbot.waitExposed(host)
+        items = ITEMS if y != 380 else ITEMS[:3]
+        dd = Dropdown(trigger=Button("menu"), items=[{"key": k, "label": v} for k, v in items])
+        _put(host, dd, 150, y)
+        dd.open()
+        qtbot.wait(450)
+        pop = dd._popover
+        trigger = QRect(dd._trigger.mapToGlobal(QPoint(0, 0)), dd._trigger.size())
+        assert self.SCREEN.contains(pop.geometry())
+        assert not pop._body_global().intersects(trigger)
+        dd.close()
+
+    def test_platforms_that_do_not_clamp_keep_the_full_screen(self, qtbot, monkeypatch):
+        """Windows / 离屏不会挪动窗口，不能白白收缩可用区。"""
+        monkeypatch.setattr(bounds, "screen_rect", lambda w: QRect(self.SCREEN))
+        monkeypatch.setattr(bounds, "system_confines_windows", lambda: False)
+        host = QWidget()
+        host.setGeometry(0, 0, 400, 400)
+        qtbot.addWidget(host)
+        btn = _put(host, Button("b"), 100, 100)
+        host.show()
+        qtbot.waitExposed(host)
+        assert bounds.popup_area(btn, (48, 48, 48, 48)) == bounds.popup_area(btn)
+        assert bounds.space_above(btn, (0, 48, 0, 0)) == bounds.space_above(btn)
+        assert bounds.space_below(btn, (0, 0, 0, 48)) == bounds.space_below(btn)
+
+    def test_area_shrinks_the_screen_side_by_the_window_margins(self, qtbot, clamped):
+        host = QWidget()
+        host.setGeometry(0, 0, 400, 400)
+        qtbot.addWidget(host)
+        btn = _put(host, Button("b"), 100, 100)
+        host.show()
+        qtbot.waitExposed(host)
+        plain = bounds.popup_area(btn)
+        shrunk = bounds.popup_area(btn, (10, 20, 30, 40))
+        assert shrunk.top() >= plain.top() and shrunk.bottom() <= plain.bottom()
+        assert bounds.space_above(btn, (0, 20, 0, 0)) <= bounds.space_above(btn)
+        assert bounds.space_below(btn, (0, 0, 0, 40)) <= bounds.space_below(btn)
