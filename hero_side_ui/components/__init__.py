@@ -34,6 +34,7 @@ if TYPE_CHECKING:
         today,
     )
     from .date_picker import DatePicker, DateRangePicker
+    from .dialog import Dialog
     from .divider import Divider
     from .drawer import Drawer
     from .dropdown import Dropdown, DropdownItem, DropdownSection
@@ -107,6 +108,7 @@ _EXPORTS = {
     "DatePicker": ".date_picker",
     "DateRangePicker": ".date_picker",
     "DateTimeValue": ".date_input",
+    "Dialog": ".dialog",
     "Divider": ".divider",
     "Drawer": ".drawer",
     "Dropdown": ".dropdown",
@@ -198,6 +200,7 @@ __all__ = [
     "DatePicker",
     "DateRangePicker",
     "DateTimeValue",
+    "Dialog",
     "Divider",
     "Drawer",
     "Dropdown",

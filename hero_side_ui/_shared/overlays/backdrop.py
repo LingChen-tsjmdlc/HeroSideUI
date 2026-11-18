@@ -1,8 +1,9 @@
 """浮层家族共用的全屏遮罩，供 Popover 与 Drawer 使用。"""
 
+from collections.abc import Callable
 from typing import ClassVar
 
-from PySide6.QtCore import QEvent, Qt, QTimer, Signal
+from PySide6.QtCore import QEvent, QRect, Qt, QTimer, Signal
 from PySide6.QtGui import QColor, QPainter, QPixmap
 from PySide6.QtWidgets import (
     QGraphicsBlurEffect,
@@ -46,6 +47,7 @@ class Backdrop(QWidget):
         kind: str = "transparent",
         host: QWidget | None = None,
         blur_quality: str = "fast",
+        region: Callable[[], QRect] | None = None,
     ):
         """构造遮罩。
 
@@ -53,6 +55,7 @@ class Backdrop(QWidget):
             kind: transparent 透明且鼠标穿透 / opaque 黑色 50% / blur 模糊快照叠加黑色 30%。
             host: 宿主窗口，同时作为父控件限定遮罩范围。
             blur_quality: low、fast、great 使用金字塔模糊，high 使用高斯模糊。
+            region: 返回遮罩在宿主坐标系里的覆盖区域；None 覆盖整个宿主。
 
         Raises:
             ValueError: blur_quality 不在支持的档位内。
@@ -65,6 +68,7 @@ class Backdrop(QWidget):
         self._kind = kind
         self._host = host
         self._blur_quality = blur_quality
+        self._region = region
         self._blur_pixmap: QPixmap | None = None
         # 抓取宿主快照期间跳过自身绘制，避免遮罩叠入快照后逐帧变黑。
         self._suppress_paint = False
@@ -86,11 +90,21 @@ class Backdrop(QWidget):
         if host is not None:
             host.installEventFilter(self)
 
+    def cover_rect(self) -> QRect:
+        """遮罩应覆盖的区域（宿主坐标系）。"""
+        if self._region is not None:
+            return self._region()
+        return QRect(0, 0, self._host.width(), self._host.height())
+
+    def sync_geometry(self):
+        """按覆盖区域更新几何。"""
+        self.setGeometry(self.cover_rect())
+
     def eventFilter(self, obj, event):
         """跟随宿主尺寸变化同步几何，并在 blur 模式下节流重抓快照。"""
         if obj is self._host and event.type() == QEvent.Type.Resize:
             try:
-                self.setGeometry(0, 0, self._host.width(), self._host.height())
+                self.sync_geometry()
             except RuntimeError:
                 return super().eventFilter(obj, event)
             if self._kind == "blur":
@@ -105,7 +119,9 @@ class Backdrop(QWidget):
             self.refresh_blur_fast()
 
     def _on_resize_settled(self):
-        """缩放停止后：结束节流并补一次最终刷新。"""
+        """缩放停止后：按最终布局校正几何，结束节流并补一次最终刷新。"""
+        if self._region is not None and self._host is not None:
+            self.sync_geometry()
         self._blur_throttle_timer.stop()
         if self._host is not None and self._kind == "blur":
             self.refresh_blur_fast()
@@ -166,7 +182,7 @@ class Backdrop(QWidget):
             return None
         self._suppress_paint = True
         try:
-            pm = self._host.grab()
+            pm = self._host.grab(self.cover_rect()) if self._region else self._host.grab()
         except RuntimeError:
             return None
         finally:

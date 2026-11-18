@@ -5,7 +5,7 @@
 > 把 HeroUI v2 的视觉与交互语义完整搬到 Qt 桌面端——外观对齐 Web 版，行为遵循桌面惯例。
 
 - **HeroUI v2 全部组件复刻完成**（51 个，含 DateInput/DatePicker/Table/Calendar/Dropdown/Toast/Drawer/Markdown 等高复杂度组件）
-- 桌面端扩展已提供 Icon、Window，另有 13 个组件待开发（Dialog / ContextMenu / Tree 等）
+- 桌面端扩展已提供 Icon、Window、Dialog，另有 12 个组件待开发（ContextMenu / Tree 等）
 
 ---
 
@@ -142,6 +142,7 @@ uv run python examples/icon/demo.py       # Icon：内置离线图标 + pyside-i
 | Spacer 间距填充器        | [spacer.md](docs/spacer.md)                 | ✅   |
 | Icon 图标                | [icon.md](docs/icon.md)                     | ✅   |
 | Window 无边框窗口        | [window.md](docs/window.md)                 | ✅   |
+| Dialog 对话框            | [dialog.md](docs/dialog.md)                 | ✅   |
 
 Icon 基于 [pyside-iconify](https://github.com/LingChen-tsjmdlc/pyside-iconify)；安装本库后也可以直接使用它的公开 API。组件内置的 58 个图标随包离线提供，应用仍可联网加载其他图标。资源入口、主题与静态图标槽位的使用边界见 [Icon 文档](docs/icon.md)。
 
@@ -151,7 +152,6 @@ Icon 基于 [pyside-iconify](https://github.com/LingChen-tsjmdlc/pyside-iconify)
 
 | 组件                        | 说明                                                                                      | 难度       | 必要性     | 状态      |
 | --------------------------- | ----------------------------------------------------------------------------------------- | ---------- | ---------- | --------- |
-| Dialog 对话框               | 模态无边框对话框：遮罩 + 居中弹窗 + Esc，用于消息提示/确认/提交内容，中断用户操作直到关闭 | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
 | ContextMenu 右键菜单        | 右键弹出菜单 + 子菜单 + 分隔线 + 快捷键标注                                               | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
 | Tree 树形控件               | 文件树 / 大纲视图 / 多级嵌套数据展示                                                      | ⭐⭐⭐⭐   | ❤️❤️❤️❤️❤️ | 🔲 待开发 |
 | SystemTray 系统托盘         | 最小化到托盘 + 托盘菜单 + 桌面通知                                                        | ⭐⭐⭐     | ❤️❤️❤️❤️   | 🔲 待开发 |
@@ -180,7 +180,7 @@ Icon 基于 [pyside-iconify](https://github.com/LingChen-tsjmdlc/pyside-iconify)
 | DotPagination 圆点分页 | 已有 Pagination，圆点指示器只是视觉换皮                                                                    |
 | Router 路由            | Web 概念，桌面端 Tabs + QStackedWidget 即可实现页面切换                                                    |
 
-> **进度**：HeroUI v2 复刻 **51 / 51 全部完成**；桌面端专属完成 **2 / 15** 个，待开发 **13** 个；不计划开发 **7** 个。
+> **进度**：HeroUI v2 复刻 **51 / 51 全部完成**；桌面端专属完成 **3 / 15** 个，待开发 **12** 个；不计划开发 **7** 个。
 
 ---
 

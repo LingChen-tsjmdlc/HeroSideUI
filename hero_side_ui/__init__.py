@@ -2,7 +2,7 @@
 HeroSideUI - PySide6 component library inspired by HeroUI v2
 """
 
-__version__ = "0.20.0"
+__version__ = "0.21.0"
 
 from importlib import import_module
 from typing import TYPE_CHECKING
@@ -47,6 +47,7 @@ if TYPE_CHECKING:
         DatePicker,
         DateRangePicker,
         DateTimeValue,
+        Dialog,
         Divider,
         Drawer,
         Dropdown,
@@ -141,6 +142,7 @@ __all__ = [
     "DatePicker",
     "DateRangePicker",
     "DateTimeValue",
+    "Dialog",
     "Divider",
     "Drawer",
     "Dropdown",
