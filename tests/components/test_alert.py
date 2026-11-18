@@ -171,6 +171,21 @@ class TestAlertSetters:
 class TestAlertClose:
     """关闭逻辑"""
 
+    @pytest.mark.parametrize(
+        "color", ["default", "primary", "secondary", "success", "warning", "danger"]
+    )
+    def test_close_button_follows_alert_color(self, qtbot, color):
+        """回归：关闭按钮曾不传 color，悬停底色一直是默认的蓝色。"""
+        a = Alert(title="X", color=color, is_closable=True)
+        qtbot.addWidget(a)
+        assert a._close_btn._color == color
+
+    def test_close_button_color_follows_set_color(self, qtbot):
+        a = Alert(title="X", color="warning", is_closable=True)
+        qtbot.addWidget(a)
+        a.set_color("danger")
+        assert a._close_btn._color == "danger"
+
     def test_close_hides(self, qtbot):
         a = Alert(title="X")
         qtbot.addWidget(a)

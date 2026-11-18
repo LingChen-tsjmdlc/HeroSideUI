@@ -41,7 +41,7 @@ def _resolve_selected_text(variant: str, color: str, theme: str) -> QColor:
     # solid/bordered/light: foreground 文字
     if color == "default":
         return QColor(get_foreground(theme))
-    return QColor(get_color_foreground(color, theme))
+    return QColor(get_color_foreground(color, theme, state="selected"))
 
 
 def _resolve_cursor_fill(variant: str, color: str, theme: str) -> QColor | None:

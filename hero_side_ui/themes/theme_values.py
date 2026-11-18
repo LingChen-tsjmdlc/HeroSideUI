@@ -10,6 +10,7 @@ import copy
 import re
 
 from .colors import HEROUI_COLORS
+from .foreground_spec import DEFAULT_SLOTS, STATE_PRIORITY
 from .radius import RADIUS
 from .shadow import DEFAULT_SHADOW, SHADOW_TIERS
 
@@ -49,6 +50,7 @@ def _fresh_state() -> dict:
     return {
         "surfaces": copy.deepcopy(DEFAULT_SURFACES),
         "color_foreground": copy.deepcopy(DEFAULT_COLOR_FOREGROUND),
+        "fg_user": set(),  # 用户在 setup() 里写过字色的颜色名
         "font_size": dict(DEFAULT_FONT_SIZE),
         "shadow": copy.deepcopy(DEFAULT_SHADOW),
         "mono_family": None,
@@ -115,17 +117,115 @@ def get_popup_background(theme: str) -> str:
     return _surface("popup_background", theme)
 
 
-def get_color_foreground(color: str, theme: str) -> str:
+def _as_states(states) -> tuple:
+    """把状态参数规整成按优先级排好的元组；接受 None、单个状态名或可迭代对象。"""
+    if not states:
+        return ()
+    if isinstance(states, str):
+        states = (states,)
+    return tuple(s for s in STATE_PRIORITY if s in states)
+
+
+def _lookup(node, variant: str, states: tuple, slot: str):
+    """在一个主题下的字色树里按"状态 -> 变体 -> 位置"的顺序查一个值，查不到返回 None。
+
+    Args:
+        node: 一个主题下的取值：旧写法的 #RRGGBB，或新写法的对象。
+        variant: 变体名。
+        states: 已按优先级排好的、当前成立的状态。
+        slot: 位置名。
+
+    Note:
+        旧写法只管实色底上的字：solid（任何状态）与 ghost 悬停。
+        新写法顺序：变体里的"状态.位置"、"状态.default"（逐个状态），变体里的位置、
+        变体 default，最后是主题层 default。default 只兜 DEFAULT_SLOTS 里的位置。
+        状态里有 disabled 时，只看明确写给 disabled 的值，后面几层兜底都不吃。
+    """
+    takes_default = slot in DEFAULT_SLOTS
+    # 禁用态要保持"变淡"的样子：只吃明确写给 disabled 的值，不吃变体 / 主题层的兜底
+    disabled = "disabled" in states
+    if isinstance(node, str):
+        # 旧写法只管实色底上的正文、图标、标题，不管说明、标签、占位符，也不管禁用态
+        if not takes_default or disabled:
+            return None
+        if variant == "solid" or (variant == "ghost" and "hover" in states):
+            return node
+        return None
+    vnode = node.get(variant)
+    if isinstance(vnode, str):
+        if takes_default and not disabled:
+            return vnode
+    elif vnode is not None:
+        for state in states:
+            snode = vnode.get(state)
+            if isinstance(snode, str):
+                if takes_default:
+                    return snode
+            elif snode is not None:
+                if slot in snode:
+                    return snode[slot]
+                if takes_default and "default" in snode:
+                    return snode["default"]
+        if not disabled:
+            if slot in vnode:
+                return vnode[slot]
+            if takes_default and "default" in vnode:
+                return vnode["default"]
+    if takes_default and "default" in node and not disabled:
+        return node["default"]
+    return None
+
+
+def foreground_override(
+    color: str, theme: str, variant: str, *, states=(), slot: str = "text"
+) -> str | None:
+    """用户为某个颜色明确配置过的字色；没配置返回 None，由组件走自己原来的取色规则。
+
+    Args:
+        color: 语义色名。不在六个语义色里（如 foreground）时恒返回 None。
+        theme: "light" 或 "dark"。
+        variant: 变体名。
+        states: 当前成立的状态（单个名字或可迭代）；顺序无所谓，内部按优先级查。
+        slot: 位置名。
+
+    Note:
+        没在 setup() 里写过 color_foreground 的颜色，恒返回 None，保证默认外观不变。
+    """
+    global _read
+    _read = True
+    if color not in _state["fg_user"]:
+        return None
+    node = _state["color_foreground"][color][_side(theme)]
+    return _lookup(node, variant, _as_states(states), slot)
+
+
+def foreground_is_user_set(color: str) -> bool:
+    """用户是否在 setup() 里写过这个颜色的字色。"""
+    return color in _state["fg_user"]
+
+
+def get_color_foreground(color: str, theme: str, *, state: str | None = None) -> str:
     """实色底上的文字色；未知色名按 primary 处理。
 
     Args:
         color: 语义色名。
         theme: "light" 或 "dark"。
+        state: 当前状态（如被选中的格子传 "selected"）；None 表示普通状态。
+
+    Note:
+        等价于 solid 变体的 text 位置。用户没写、或只写了别的变体时，回落到默认字色。
     """
     global _read
     _read = True
     table = _state["color_foreground"]
-    return table.get(color, table["primary"])[_side(theme)]
+    name = color if color in table else "primary"
+    side = _side(theme)
+    if name in _state["fg_user"]:
+        hit = _lookup(table[name][side], "solid", _as_states(state), "text")
+        if hit is not None:
+            return hit
+    node = table[name][side]
+    return node if isinstance(node, str) else DEFAULT_COLOR_FOREGROUND[name][side]
 
 
 def get_font_px(tier: str) -> int:
@@ -276,7 +376,8 @@ def apply(cfg: dict) -> None:
     for name, value in cfg.get("surfaces", {}).items():
         _state["surfaces"][name] = dict(value)
     for name, value in cfg.get("color_foreground", {}).items():
-        _state["color_foreground"][name] = dict(value)
+        _state["color_foreground"][name] = copy.deepcopy(value)
+        _state["fg_user"].add(name)
     if "font_size" in cfg:
         _state["font_size"] = dict(cfg["font_size"])
         _rewrite_font_slots(_state["font_size"])
@@ -297,6 +398,8 @@ __all__ = [
     "apply",
     "bind_font_slots",
     "clear_read_flag",
+    "foreground_is_user_set",
+    "foreground_override",
     "get_background",
     "get_color_foreground",
     "get_content_background",

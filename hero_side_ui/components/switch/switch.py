@@ -214,7 +214,7 @@ class Switch(QAbstractButton):
                 return QColor(
                     dc[900] if self._theme == "dark" else get_color_foreground("default", "light")
                 )
-            return QColor(get_color_foreground(self._color, self._theme))
+            return QColor(get_color_foreground(self._color, self._theme, state="selected"))
         # endContent: text-default-600
         dc = HEROUI_COLORS["default"]
         return QColor(dc[400] if self._theme == "dark" else dc[600])

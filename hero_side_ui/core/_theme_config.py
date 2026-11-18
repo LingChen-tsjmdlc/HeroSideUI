@@ -13,33 +13,18 @@ from pathlib import Path
 from ..themes import theme_values
 from ..themes.colors import HEROUI_COLORS
 from ..themes.shadow import SHADOW_TIERS, Layer
+from ._foreground_config import (
+    check_color_foreground,
+    check_foreground_hints,
+)
+from ._foreground_config import contrast as _contrast
+from ._foreground_config import is_hex as _is_hex
+from ._foreground_config import luminance as _lum
 
 _HEX = re.compile(r"^#[0-9a-fA-F]{6}$")
 _SURFACE_KEYS = ("background", "foreground", "content_background", "popup_background")
 _FONT_EXT = (".ttf", ".otf", ".ttc")
 _FONT_PX_RANGE = (8, 28)
-
-
-def _is_hex(v) -> bool:
-    """是否为 #RRGGBB。"""
-    return isinstance(v, str) and bool(_HEX.match(v))
-
-
-def _lum(h: str) -> float:
-    """相对亮度。"""
-
-    def f(c: float) -> float:
-        c /= 255
-        return c / 12.92 if c <= 0.04045 else ((c + 0.055) / 1.055) ** 2.4
-
-    r, g, b = (int(h[i : i + 2], 16) for i in (1, 3, 5))
-    return 0.2126 * f(r) + 0.7152 * f(g) + 0.0722 * f(b)
-
-
-def _contrast(a: str, b: str) -> float:
-    """WCAG 对比度。"""
-    hi, lo = sorted((_lum(a), _lum(b)), reverse=True)
-    return (hi + 0.05) / (lo + 0.05)
 
 
 def _is_mapping(v) -> bool:
@@ -96,24 +81,6 @@ def _check_side_pair(label: str, value, errors: list) -> dict | None:
         errors.append(f"{label}：色值必须是 #RRGGBB")
         return None
     return {"light": value["light"], "dark": value["dark"]}
-
-
-def _check_color_foreground(value, errors: list) -> dict:
-    """校验实色字色，返回 {色名: {light, dark}}。"""
-    out: dict = {}
-    if not _is_mapping(value):
-        errors.append("color_foreground：必须是 {色名: 色值或 {light, dark}} 字典")
-        return out
-    for name, v in value.items():
-        if name not in theme_values.COLOR_NAMES:
-            errors.append(f"color_foreground：未知色名 {name!r}")
-        elif _is_hex(v):
-            out[name] = {"light": v, "dark": v}
-        else:
-            pair = _check_side_pair(f"color_foreground[{name!r}]", v, errors)
-            if pair:
-                out[name] = pair
-    return out
 
 
 def _check_radius(value, errors: list) -> dict | None:
@@ -269,7 +236,7 @@ def validate(
     if colors is not None:
         cfg["colors"] = _check_colors(colors, errors, warns)
     if color_foreground is not None:
-        cfg["color_foreground"] = _check_color_foreground(color_foreground, errors)
+        cfg["color_foreground"] = check_color_foreground(color_foreground, errors)
     if radius is not None:
         r = _check_radius(radius, errors)
         if r:
@@ -351,6 +318,8 @@ def _check_order_and_contrast(cfg: dict, warns: list) -> None:
     for name in set(cfg.get("colors", {})) | set(cfg.get("color_foreground", {})):
         for side in ("light", "dark"):
             # 只检查用户改动过的：色阶与字色都等于默认值时跳过
+            if not isinstance(fg[name][side], str):
+                continue  # 对象写法由 check_foreground_hints 检查
             same_ramp = ramps[name] == theme_values.DEFAULT_COLORS[name]
             if same_ramp and fg[name][side] == theme_values.DEFAULT_COLOR_FOREGROUND[name][side]:
                 continue
@@ -360,6 +329,7 @@ def _check_order_and_contrast(cfg: dict, warns: list) -> None:
                 warns.append(
                     f"color_foreground[{name!r}] 的 {side} 字色与底色对比度仅 {ratio:.2f}:1（建议 ≥ 4.5）"
                 )
+    check_foreground_hints(cfg.get("color_foreground", {}), cfg, warns)
 
 
 def apply(cfg: dict) -> None:

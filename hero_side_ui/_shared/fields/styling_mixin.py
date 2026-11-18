@@ -13,6 +13,7 @@ from PySide6.QtWidgets import (
 from ...themes import HEROUI_COLORS, RADIUS
 from ...themes.width import SUGGESTED_WIDTH
 from ...utils import hex_to_rgba, load_svg_icon
+from .fg_override import input_fg_overrides
 from .width_mixin import release_width_floor
 
 
@@ -184,6 +185,12 @@ class InputStylingMixin:
 
         # ---- line_edit 样式 ----
         fg_color, placeholder_color = self._resolve_input_text_color(is_dark, colors, dc)
+        # 用户在 color_foreground 里写过的位置覆盖原来的颜色；没写过的保持原样
+        fg_ov = input_fg_overrides(
+            self._color, "dark" if is_dark else "light", self._variant, self._is_invalid
+        )
+        fg_color = fg_ov["text"] or fg_color
+        placeholder_color = fg_ov["placeholder"] or placeholder_color
         # 选区调色板走 core.selection_palette——与 Text 组件同源。
         # 规则：
         #   - bordered/underlined（无底色）：走 adapt，让选区色相跟 colors[500]
@@ -237,8 +244,12 @@ class InputStylingMixin:
             self.setGraphicsEffect(None)
 
         # ---- Label 配色 ----
-        self._label_color_resting = QColor(self._resolve_label_resting_color(is_dark, colors, dc))
-        self._label_color_floated = QColor(self._resolve_label_floated_color(is_dark, colors, dc))
+        self._label_color_resting = QColor(
+            fg_ov["label_resting"] or self._resolve_label_resting_color(is_dark, colors, dc)
+        )
+        self._label_color_floated = QColor(
+            fg_ov["label"] or self._resolve_label_floated_color(is_dark, colors, dc)
+        )
 
         # ---- outside label ----
         outside_label_font = size_config["outside_label_font_size"]
@@ -281,7 +292,7 @@ class InputStylingMixin:
             self._helper_label.show()
         elif self._description:
             self._helper_label.setText(self._description)
-            desc_color = dc[400] if is_dark else dc[500]
+            desc_color = fg_ov["description"] or (dc[400] if is_dark else dc[500])
             self._helper_label.set_size(helper_font)
             self._helper_label.set_color(desc_color)
             self._helper_label.show()

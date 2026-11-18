@@ -8,6 +8,7 @@ from PySide6.QtCore import Qt, Signal
 from PySide6.QtGui import QFont
 from PySide6.QtWidgets import QHBoxLayout, QSizePolicy, QVBoxLayout, QWidget
 
+from ..._shared.fields.fg_override import input_fg_overrides
 from ...core import FontProvider, ThemeProvider
 from ...themes import (
     INPUT_OTP_CARET_PERIOD_MS,
@@ -181,13 +182,20 @@ class InputOtp(QWidget):
         Returns:
             dict: build_input_otp_styles 返回的配色字典。
         """
-        return build_input_otp_styles(
+        tok = build_input_otp_styles(
             self._variant,
             self._color,
             self._theme,
             self._is_invalid,
             self._is_read_only,
         )
+        # 用户在 color_foreground 里写过的位置覆盖：text -> 已填字符，placeholder -> 空段
+        ov = input_fg_overrides(self._color, self._theme, self._variant, self._is_invalid)
+        if ov["text"]:
+            tok["text_filled"] = ov["text"]
+        if ov["placeholder"]:
+            tok["text"] = ov["placeholder"]
+        return tok
 
     # ---- 值编辑 ----
 
@@ -304,8 +312,9 @@ class InputOtp(QWidget):
         elif self._description:
             self._helper_label.setText(self._description)
             # 官方 description text-foreground-400
+            ov = input_fg_overrides(self._color, self._theme, self._variant, False)
             self._helper_label.set_color(
-                HEROUI_COLORS["default"][400 if self._theme == "dark" else 500]
+                ov["description"] or HEROUI_COLORS["default"][400 if self._theme == "dark" else 500]
             )
             self._helper_label.setVisible(True)
         else:

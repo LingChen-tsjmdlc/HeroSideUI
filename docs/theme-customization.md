@@ -263,6 +263,87 @@ color_foreground={
 3. 只提示、不改写：用户写的字色与底色（500 档，暗色下的 default 用 700 档）对比度低于 4.5:1 时给警告，写明实际比值。**只检查用户传入的值，不检查库的默认值**：默认值里 success 白字只有 2.18:1、danger 4.11:1，本来就低于 4.5，这是 HeroUI 沿用至今的外观，不在本次改动范围。
 4. 统一入口 `get_color_foreground(color, theme)`，所有位置改成走它。
 
+#### 按变体、状态、位置细分
+
+上面的写法只管"实色底上的字"。如果 flat、bordered 这类变体的字也要换，可以把 `light` / `dark` 写成对象，一层层往下细分：
+
+```text
+颜色 -> 主题（light / dark）-> 变体 -> 状态 -> 位置
+```
+
+每一层都可以直接写一个 `#RRGGBB`，也可以写成对象继续细分。没写到的地方，用上一层的 `default`；再没有，就是组件原来的颜色。
+
+```python
+color_foreground={
+    "warning": {
+        "light": {
+            "solid": "#11181C",                   # 实色黄底上用近黑字
+            "flat": {
+                "default": "#5B3A00",             # flat 里没单独写的正文、图标、标题
+                "hover": "#4A2F00",               # 悬停时换一个
+                "placeholder": "#7A5C00",         # 占位符单独换
+            },
+            "bordered": "#5B3A00",
+        },
+        "dark": {
+            "default": "#FFE08A",                 # 暗色整体用浅黄字
+            "solid": "#11181C",                   # 但实色底（solid / shadow / ghost 悬停）上要用深色字
+            "shadow": "#11181C",
+            "ghost": {"hover": "#11181C"},
+        },
+    },
+}
+```
+
+规则：
+
+1. **旧写法含义不变。** 单个 hex 仍然只管"实色底上的字"（`solid`，和 `ghost` 悬停）。不写 `color_foreground` 的颜色，所有组件和以前一模一样。
+2. 一侧写 hex、另一侧写对象可以混用；`light` 和 `dark` 必须同时写，两边各管各的。
+3. 变体同名即共享：写 `"flat"` 对所有读 `flat` 的组件都生效。
+4. `default` 只管 `text`、`icon`、`title` 三个位置。占位符、标签、说明文字不吃它，没单独写就保持原来的颜色。
+   主题层的 `default` 会落到所有“没有单独写”的变体上，包括实色底的 `solid`、`shadow` 和 `ghost` 悬停。暗色下写了浅色的 `default`，记得给这几个变体单独写深色字。
+5. 禁用状态只吃明确写给 `disabled` 的值，不吃 `default`。
+6. 多个状态同时成立时，先查 `disabled`，再 `invalid`、`selected`、`focus`、`hover`。
+7. 灰色（`default`）在 Tabs、分页、日历、列表行、Popover、Tooltip 里不读这些配置，因为它们的灰色底是浅色。
+8. 实例上明确传入的颜色（如 `Icon(color=...)`、`Button(icon_color=...)`）优先于配置。
+
+可以写的名字：
+
+| 层   | 名字                                                                                  |
+| ---- | ------------------------------------------------------------------------------------- |
+| 变体 | `solid` `bordered` `flat` `light` `faded` `ghost` `shadow` `dot` `underlined`         |
+| 状态 | `hover` `focus` `selected` `invalid` `disabled`                                       |
+| 位置 | `text` `icon` `title` `description` `label` `label_resting` `placeholder`、另有 `default` |
+
+名字写错、写在不对的层（比如在主题层直接写 `hover`）会报错，一次列出所有问题。
+
+哪些组件读哪些名字（写了没有任何组件读的组合会给警告，只要有一个组件读就是合法的）：
+
+| 组件                                                       | 变体                                         | 状态                       | 位置                                                   |
+| ---------------------------------------------------------- | -------------------------------------------- | -------------------------- | ------------------------------------------------------ |
+| Button                                                     | solid bordered flat light faded ghost        | hover disabled             | text icon                                              |
+| Chip                                                       | solid bordered light flat faded shadow dot   | 无                         | text icon                                              |
+| Badge                                                      | solid flat faded shadow                      | 无                         | text                                                   |
+| Alert                                                      | solid bordered flat faded                    | 无                         | title description icon                                 |
+| Toast                                                      | solid bordered flat                          | 无                         | title description icon（关闭按钮、进度条跟图标）       |
+| Input、NumberInput、Select、Autocomplete、Textarea、DateInput、TimeInput、DatePicker、InputOtp | flat faded bordered underlined | invalid | text placeholder label label_resting description（InputOtp 只有 text、placeholder） |
+| Listbox、Dropdown 的行                                     | solid shadow flat bordered faded light       | hover focus selected disabled | title                                               |
+| Table 的行（选中行按 flat 读）                             | flat                                         | selected                   | title                                                  |
+| Avatar、Calendar、Pagination、Tabs、Checkbox、Switch、Popover、Tooltip、Slider | 当作 solid | selected（选中的那种） | text icon |
+
+警告的样子：对比度过低时，`setup()` 发出一条汇总的警告，中文在上、英文在下：
+
+```text
+有 2 处配色对比度过低：当前亮色模式下，warning 颜色 浅底（flat）变体 正文位置对比度是 4.21，推荐 4.5 对比度。当前暗色模式下，warning 颜色 未单独设置的 solid、shadow 变体 正文位置对比度是 1.58，推荐 4.5 对比度。
+2 color pair(s) with too low contrast: In light mode, ...
+```
+
+多条时按亮色、暗色分句，同一句里用分号连起来。想拿到结构化的清单（比如做自己的界面），用 `hero_side_ui.core._foreground_config` 里的 `collect_foreground_issues` 和 `format_contrast_report`，`examples/foreground/demo.py` 就是这么用的。
+
+检查规则：只检查你写的值，只提示不改写。字色与它所在的背景对比度不足会警告（正文、标题、说明、标签、占位符 4.5:1，图标 3:1），禁用和出错状态不检查；背景按变体取：实色取 500 档，`flat`、`light` 把 500 按透明度叠在窗口底色上，`faded` 取 default 的 100 / 800，输入框取各自的底色，其余取窗口底色。
+
+另外，Toast 的 `solid` 变体里 success 色的字，默认是深色（绿底用浅字看不清）；你写了 `color_foreground["success"]` 之后，才改读你的配置。
+
 ### 3.3 radius
 
 - 组件的 `radius="lg"` 是档位名，永远不变；`setup` 里的 `"lg": 10` 是这个档位的像素值。名字固定、数值可配，不存在"预设档冲突"。

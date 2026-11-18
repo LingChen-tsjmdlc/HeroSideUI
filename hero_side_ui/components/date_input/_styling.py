@@ -4,6 +4,7 @@ from PySide6.QtGui import QColor
 from PySide6.QtWidgets import QGraphicsOpacityEffect, QSizePolicy
 
 from ..._shared.fields import InputStylingMixin, release_width_floor
+from ..._shared.fields.fg_override import input_fg_overrides
 from ...themes import DATE_INPUT_SIZES, HEROUI_COLORS, RADIUS
 from ...themes.width import SUGGESTED_WIDTH
 
@@ -100,8 +101,13 @@ class _DateInputStylingMixin(InputStylingMixin):
             self.setGraphicsEffect(None)
 
         # ---- label 配色 ----
-        self._label_color_resting = QColor(self._resolve_label_resting_color(is_dark, colors, dc))
-        self._label_color_floated = QColor(self._resolve_label_floated_color(is_dark, colors, dc))
+        fg_ov = self._fg_overrides(is_dark)
+        self._label_color_resting = QColor(
+            fg_ov["label_resting"] or self._resolve_label_resting_color(is_dark, colors, dc)
+        )
+        self._label_color_floated = QColor(
+            fg_ov["label"] or self._resolve_label_floated_color(is_dark, colors, dc)
+        )
 
         req_mark = ""
         if self._is_required and self._label_text:
@@ -123,6 +129,12 @@ class _DateInputStylingMixin(InputStylingMixin):
         self._relayout_for_label_placement()
         self._reposition_inside_label()
         self._reposition_underline()
+
+    def _fg_overrides(self, is_dark: bool) -> dict:
+        """用户在 color_foreground 里为这个输入框写的字色（没写的位置是 None）。"""
+        return input_fg_overrides(
+            self._color, "dark" if is_dark else "light", self._variant, self._is_invalid
+        )
 
     def _qcolor(self, s) -> QColor:
         """把 hex / rgba / transparent / QColor 统一转 QColor。
@@ -242,6 +254,11 @@ class _DateInputStylingMixin(InputStylingMixin):
         """
         font_size = size_config["input_font_size"]
         filled_color, placeholder_color = self._resolve_segment_text_colors(is_dark, colors, dc)
+        fg_ov = self._fg_overrides(is_dark)
+        if fg_ov["text"]:
+            filled_color = QColor(fg_ov["text"])
+        if fg_ov["placeholder"]:
+            placeholder_color = QColor(fg_ov["placeholder"])
         focus_bg = self._resolve_segment_focus_bg(is_dark, colors, dc)
         focus_text = self._resolve_segment_focus_text(is_dark, colors, dc)
         radius_px = size_config["segment_radius"]
@@ -366,7 +383,9 @@ class _DateInputStylingMixin(InputStylingMixin):
         elif self._description:
             self._helper_label.setText(self._description)
             self._helper_label.set_size(helper_font)
-            self._helper_label.set_color(dc[400] if is_dark else dc[500])
+            self._helper_label.set_color(
+                self._fg_overrides(is_dark)["description"] or (dc[400] if is_dark else dc[500])
+            )
             self._helper_label.show()
         else:
             self._helper_label.hide()

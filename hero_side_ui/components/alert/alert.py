@@ -162,6 +162,7 @@ class Alert(QWidget):
             icon="heroicons--x-mark-16-solid",
             icon_size=18,
             variant="light",
+            color=self._color,
             radius="full",
             size="md",
             theme=self._theme,
@@ -216,6 +217,9 @@ class Alert(QWidget):
         self._icon_color = s["icon_color"]
         self._title_label.set_color(s["title_color"])
         self._desc_label.set_color(s["desc_color"])
+        # 关闭按钮的悬停底色跟随提示条自己的颜色（图标色由下面单独设置）
+        if self._close_btn._color != self._color:
+            self._close_btn.set_color(self._color)
         self._close_btn.set_icon_color(s["close_btn_color"])
         self._refresh_icon()
 

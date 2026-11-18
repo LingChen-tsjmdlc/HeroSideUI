@@ -6,6 +6,8 @@ from collections.abc import Mapping
 
 from ...themes import HEROUI_COLORS
 from ...themes.theme_values import (
+    foreground_is_user_set,
+    foreground_override,
     get_background,
     get_color_foreground,
     get_content_background,
@@ -52,9 +54,10 @@ def _solid_fg(color: str, side: str) -> str:
         side: "light" 或 "dark"。
 
     Note:
-        success 底色偏亮，浅字对比度不足，固定用深色文字；其余取 color_foreground。
+        success 底色偏亮，浅字对比度不足，默认用深色文字；用户在 color_foreground 里
+        写过 success 的字色就读用户的。其余颜色取 color_foreground。
     """
-    if color == "success":
+    if color == "success" and not foreground_is_user_set("success"):
         return get_foreground("light")
     return get_color_foreground(color, side)
 
@@ -79,10 +82,40 @@ def build_toast_styles(variant: str, color: str, theme: str) -> dict:
     scale = HEROUI_COLORS.get(color, d) if color not in ("default", "foreground") else d
 
     if variant == "solid":
-        return _solid(scale, d, is_dark, color)
-    if variant == "bordered":
-        return _bordered(scale, d, is_dark, color)
-    return _flat(scale, d, is_dark, color)
+        tok = _solid(scale, d, is_dark, color)
+    elif variant == "bordered":
+        tok = _bordered(scale, d, is_dark, color)
+    else:
+        tok = _flat(scale, d, is_dark, color)
+    return _apply_foreground_override(tok, variant, color, theme)
+
+
+def _apply_foreground_override(tok: dict, variant: str, color: str, theme: str) -> dict:
+    """套用用户在 color_foreground 里为这个变体写的字色。
+
+    Args:
+        tok: 组件原来算出的配色 token。
+        variant: 变体名。
+        color: 语义色名；不在六个语义色里（如 foreground）时不处理。
+        theme: 主题名。
+
+    Note:
+        没写过字色的颜色，foreground_override 恒为 None，token 原样返回。
+        关闭按钮、进度条跟随图标色。
+    """
+
+    def get(slot: str):
+        return foreground_override(color, theme, variant, slot=slot)
+
+    title, desc, icon = get("title"), get("description"), get("icon")
+    if title is not None:
+        tok["title_color"] = title
+    if desc is not None:
+        tok["desc_color"] = desc
+    if icon is not None:
+        for key in ("icon_color", "close_color", "close_hover_color", "progress_color"):
+            tok[key] = icon
+    return tok
 
 
 # ---- flat（默认）：浅色底 + 细边框 ----

@@ -5,7 +5,7 @@ from __future__ import annotations
 from PySide6.QtGui import QColor
 
 from ...themes import HEROUI_COLORS, RADIUS
-from ...themes.theme_values import get_content_background, get_foreground
+from ...themes.theme_values import foreground_override, get_content_background, get_foreground
 
 __all__ = [
     "cell_text",
@@ -109,7 +109,16 @@ def selected_before_bg(color: str, theme: str) -> QColor:
 
 
 def selected_text(color: str, theme: str) -> QColor:
-    """选中行字色（td data-selected text-*）。"""
+    """选中行字色（td data-selected text-*）。
+
+    Note:
+        选中行是 flat 风格的半透明底；用户在 color_foreground 里为 flat 写过选中态 / 标题的
+        字色就读用户的。灰色（default）不读，它的底是浅灰。
+    """
+    if color != "default":
+        ov = foreground_override(color, theme, "flat", states="selected", slot="title")
+        if ov is not None:
+            return QColor(ov)
     if color == "default":
         # default-foreground：light 深字 / dark 浅字
         return QColor(get_foreground(theme))

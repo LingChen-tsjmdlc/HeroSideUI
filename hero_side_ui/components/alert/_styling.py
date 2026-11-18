@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...themes import HEROUI_COLORS
-from ...themes.theme_values import get_color_foreground
+from ...themes.theme_values import foreground_override, get_color_foreground
 from ...utils import hex_to_rgba
 
 
@@ -30,12 +30,41 @@ def build_alert_styles(
     d = HEROUI_COLORS["default"]
 
     if variant == "solid":
-        return _solid(c, d, is_dark, color)
-    if variant == "bordered":
-        return _bordered(c, d, is_dark, color)
-    if variant == "faded":
-        return _faded(c, d, is_dark, color)
-    return _flat(c, d, is_dark, color)
+        tok = _solid(c, d, is_dark, color)
+    elif variant == "bordered":
+        tok = _bordered(c, d, is_dark, color)
+    elif variant == "faded":
+        tok = _faded(c, d, is_dark, color)
+    else:
+        tok = _flat(c, d, is_dark, color)
+    return _apply_foreground_override(tok, variant, color, theme)
+
+
+def _apply_foreground_override(tok: dict, variant: str, color: str, theme: str) -> dict:
+    """套用用户在 color_foreground 里为这个变体写的字色。
+
+    Args:
+        tok: 组件原来算出的配色 token。
+        variant: 变体名。
+        color: 语义色名。
+        theme: 主题名。
+
+    Note:
+        没写过字色的颜色，foreground_override 恒为 None，token 原样返回。
+        关闭按钮跟随图标色。
+    """
+
+    def get(slot: str):
+        return foreground_override(color, theme, variant, slot=slot)
+
+    title, desc, icon = get("title"), get("description"), get("icon")
+    if title is not None:
+        tok["title_color"] = tok["base_fg"] = title
+    if desc is not None:
+        tok["desc_color"] = desc
+    if icon is not None:
+        tok["icon_color"] = tok["close_btn_color"] = icon
+    return tok
 
 
 def _fg_on_solid(color_name: str, is_dark: bool) -> str:

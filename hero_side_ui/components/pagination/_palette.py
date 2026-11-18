@@ -50,7 +50,7 @@ def resolve_cursor_text(color: str, theme: str) -> QColor:
     """cursor 上文字色 = text-{color}-foreground。"""
     if color == "default":
         return QColor(get_foreground(theme))
-    return QColor(get_color_foreground(color, theme))
+    return QColor(get_color_foreground(color, theme, state="selected"))
 
 
 # ============================================================

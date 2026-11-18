@@ -431,7 +431,7 @@ class Checkbox(QCheckBox):
             icon = QColor(dc[900] if is_dark else get_color_foreground("default", "light"))
         else:
             fill = QColor(colors[500])
-            icon = QColor(get_color_foreground(self._color, self._theme))
+            icon = QColor(get_color_foreground(self._color, self._theme, state="selected"))
 
         # label: 默认前景色
         label = QColor(get_foreground(self._theme))

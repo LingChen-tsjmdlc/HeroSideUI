@@ -1,5 +1,7 @@
 """Button 组件：HeroUI v2 风格按钮，保持 PySide 原生 API。"""
 
+import re
+
 from PySide6.QtCore import QObject, QSize, Qt
 from PySide6.QtGui import QColor, QIcon
 from PySide6.QtWidgets import QPushButton
@@ -12,7 +14,7 @@ from ...themes import (
     RADIUS,
     VALID_BUTTON_VARIANTS,
 )
-from ...themes.theme_values import get_color_foreground, get_foreground
+from ...themes.theme_values import foreground_override, get_color_foreground, get_foreground
 from ...utils import hex_to_rgba, load_svg_icon
 
 
@@ -399,7 +401,29 @@ class Button(QPushButton):
             normal = f"background-color: {c500}; color: {fg_on_solid}; border: none;"
             hover = f"background-color: {c600};"
 
+        # 用户在 color_foreground 里为这个变体写过字色：替换普通 / 悬停 / 禁用三态的文字色
+        # （没写过的颜色 foreground_override 恒为 None，三态保持上面算出的原值）
+        for state, css in ((), normal), (("hover",), hover), (("disabled",), disabled_style):
+            fg = foreground_override(self._color, self._theme, variant, states=state, slot="text")
+            if fg is not None:
+                css_new = self._swap_text_color(css, fg)
+                if state == ():
+                    normal = css_new
+                elif state == ("hover",):
+                    hover = css_new
+                else:
+                    disabled_style = css_new
         return normal, hover, disabled_style
+
+    @staticmethod
+    def _swap_text_color(css: str, color: str) -> str:
+        """把一段 QSS 里的文字色（不是 background-color / border-color）换成指定颜色。
+
+        Args:
+            css: 含 ``color: xxx;`` 的 QSS 片段。
+            color: 新的文字色。
+        """
+        return re.sub(r"(?<![-\w])color:\s*[^;]+;", f"color: {color};", css, count=1)
 
     # ============================================================
     # 水波纹
@@ -473,6 +497,15 @@ class Button(QPushButton):
 
         colors = HEROUI_COLORS.get(self._color, HEROUI_COLORS["primary"])
         is_dark = self._theme == "dark"
+
+        # 用户在 color_foreground 里配过：优先 icon，没配 icon 就跟文字色（图标本来就跟文字对齐）
+        states = ("disabled",) if not self.isEnabled() else (("hover",) if self._is_hovered else ())
+        for slot in ("icon", "text"):
+            ov = foreground_override(
+                self._color, self._theme, self._variant, states=states, slot=slot
+            )
+            if ov is not None:
+                return ov
 
         # fg_on_solid: 和 _get_variant_styles 保持一致
         fg_on_solid = get_color_foreground(self._color, self._theme)

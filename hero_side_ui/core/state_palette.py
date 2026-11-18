@@ -11,7 +11,7 @@ from typing import Literal
 from PySide6.QtGui import QColor
 
 from ..themes import HEROUI_COLORS
-from ..themes.theme_values import get_color_foreground, get_foreground
+from ..themes.theme_values import foreground_override, get_color_foreground, get_foreground
 
 __all__ = ["Color", "State", "StatePalette", "Theme", "Variant"]
 
@@ -158,6 +158,14 @@ class StatePalette:
         Returns:
             resting/disabled 返回中性默认色；高亮态依赖 variant×color。
         """
+        # 用户在 color_foreground 里为这个变体写的标题字色；灰色（default）不读（决定见提案文档）。
+        # solid 的普通 / 禁用行本来就是中性色，旧写法里的 solid 字色只管"高亮的实色行"，所以跳过。
+        if color != "default" and not (variant == "solid" and state in ("resting", "disabled")):
+            states = () if state == "resting" else (state,)
+            ov = foreground_override(color, theme, variant, states=states, slot="title")
+            if ov is not None:
+                return QColor(ov)
+
         if state in ("resting", "disabled"):
             return StatePalette.text_default(theme)
 

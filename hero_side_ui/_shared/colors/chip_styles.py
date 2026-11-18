@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from ...themes import HEROUI_COLORS
-from ...themes.theme_values import get_color_foreground
+from ...themes.theme_values import foreground_override, get_color_foreground
 from ...utils import hex_to_rgba
 
 
@@ -24,18 +24,43 @@ def build_chip_styles(variant: str, color: str, theme: str) -> dict:
     d = HEROUI_COLORS["default"]
 
     if variant == "bordered":
-        return _bordered(c, d, is_dark, color)
-    if variant == "light":
-        return _light(c, d, is_dark, color)
-    if variant == "flat":
-        return _flat(c, d, is_dark, color)
-    if variant == "faded":
-        return _faded(c, d, is_dark, color)
-    if variant == "shadow":
-        return _shadow(c, d, is_dark, color)
-    if variant == "dot":
-        return _dot(c, d, is_dark, color)
-    return _solid(c, d, is_dark, color)
+        tok = _bordered(c, d, is_dark, color)
+    elif variant == "light":
+        tok = _light(c, d, is_dark, color)
+    elif variant == "flat":
+        tok = _flat(c, d, is_dark, color)
+    elif variant == "faded":
+        tok = _faded(c, d, is_dark, color)
+    elif variant == "shadow":
+        tok = _shadow(c, d, is_dark, color)
+    elif variant == "dot":
+        tok = _dot(c, d, is_dark, color)
+    else:
+        tok = _solid(c, d, is_dark, color)
+    return _apply_foreground_override(tok, variant, color, theme)
+
+
+def _apply_foreground_override(tok: dict, variant: str, color: str, theme: str) -> dict:
+    """套用用户在 color_foreground 里为这个变体写的字色。
+
+    Args:
+        tok: 组件原来算出的配色 token。
+        variant: 变体名。
+        color: 语义色名。
+        theme: 主题名。
+
+    Note:
+        没写过字色的颜色，foreground_override 恒为 None，token 原样返回。
+        关闭按钮色：写了 icon 用 icon，否则跟文字色。
+    """
+    text = foreground_override(color, theme, variant, slot="text")
+    icon = foreground_override(color, theme, variant, slot="icon")
+    if text is not None:
+        tok["fg"] = text
+        tok["close_color"] = text
+    if icon is not None:
+        tok["close_color"] = icon
+    return tok
 
 
 def _fg_on_solid(color_name: str, is_dark: bool) -> str:

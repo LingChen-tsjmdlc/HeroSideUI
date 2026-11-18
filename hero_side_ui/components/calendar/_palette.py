@@ -56,7 +56,7 @@ def selected_text(color: str, theme: str) -> QColor:
     """
     if color == "foreground":
         return QColor(get_background(theme))
-    return QColor(get_color_foreground(color, theme))
+    return QColor(get_color_foreground(color, theme, state="selected"))
 
 
 def hover_bg(color: str, theme: str) -> QColor:
