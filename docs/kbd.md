@@ -17,12 +17,12 @@
 ```python
 from hero_side_ui import Kbd
 
-Kbd(keys="command")                              # ⌘
-Kbd(keys=["command", "shift"], children="N")     # ⌘ ⇧ + "N"
-Kbd(children="Esc")                              # 纯文字
-Kbd(keys="space", use_unicode=True)              # unicode 字符回退
-Kbd(keys="fn", platform="mac")                   # 强制 mac 版 fn (地球仪)
-Kbd(keys="command", radius="full", size="lg")    # 大号胶囊形
+Kbd(keys="command")  # ⌘
+Kbd(keys=["command", "shift"], children="N")  # ⌘ ⇧ + "N"
+Kbd(children="Esc")  # 纯文字
+Kbd(keys="space", use_unicode=True)  # unicode 字符回退
+Kbd(keys="fn", platform="mac")  # 强制 mac 版 fn (地球仪)
+Kbd(keys="command", radius="full", size="lg")  # 大号胶囊形
 ```
 
 ## 构造参数
@@ -31,7 +31,7 @@ Kbd(keys="command", radius="full", size="lg")    # 大号胶囊形
 | ------------- | -------------------------------------------------- | -------- | ------------------------------------------------------------------------- |
 | `children`    | `str`                                              | `""`     | keys 之后追加的自定义文字（HeroUI children 等价）                         |
 | `keys`        | `str \| Sequence[str] \| None`                     | `None`   | 单个 KbdKey 或多个组合（顺序即渲染顺序）                                  |
-| `size`        | `"sm" \| "md" \| "lg"`                             | `"md"`   | 三档尺寸（影响 padding / 字号 / icon 大小）                               |
+| `size`        | `"sm" \| "md" \| "lg"`                             | `"md"`   | 三档尺寸，总高 20 / 24 / 32（影响 padding / 字号 / icon 大小）            |
 | `radius`      | `"none" \| "sm" \| "md" \| "lg" \| "full" \| None` | `None`   | 圆角；`None` 按 size 推断（sm/md→sm, lg→md）；`full` 走当前高度的一半     |
 | `platform`    | `"auto" \| "mac" \| "win" \| "linux"`              | `"auto"` | 平台路由：影响 `fn` / `alt` 的 icon；`auto` 由 `sys.platform` 决定        |
 | `theme`       | `"auto" \| "light" \| "dark"`                      | `"auto"` | 主题模式；auto 跟随 `ThemeProvider`                                       |
@@ -108,7 +108,7 @@ Kbd(keys="command", radius="full", size="lg")    # 大号胶囊形
 
 ## Radii 渲染上限
 
-Qt 会把 `border-radius` 钳制到元素短边的一半。`md` size 高度 22px 时，`lg`(14px) / `full`(11px) 渲染结果都是 11px，视觉无差异。需要看清五档圆角差异，请用 `size="lg"`（高度 28px）演示。
+Qt 会把 `border-radius` 钳制到元素短边的一半。`md` size 高度 24px 时，`lg`(14px) / `full`(12px) 渲染结果都是 12px，视觉无差异。需要看清五档圆角差异，请用 `size="lg"`（高度 32px）演示。
 
 ## 演示
 

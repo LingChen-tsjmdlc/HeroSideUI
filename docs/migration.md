@@ -16,7 +16,6 @@
 ---
 
 > 以下为原始方案设计文档（归档参考）：
-
 > 这份文档是 HeroSideUI 从纯 PySide6 项目演进为"PySide6 优先、PySide2 best-effort 兼容"的双绑定库的**实施手册**。
 > 它服务两类读者：
 >

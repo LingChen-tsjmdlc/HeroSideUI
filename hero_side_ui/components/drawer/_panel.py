@@ -264,7 +264,7 @@ class _DrawerPanel(QWidget):
             icon_only=True,
             variant="light",
             color="default",
-            size="sm",
+            size="md",
             radius="full",
             theme=self._theme,
             parent=self,

@@ -29,8 +29,8 @@ class ThemeSwitcher(Button):
         ThemeProvider.instance().toggle() 切换，icon 随主题广播刷新。
     """
 
-    # 不同 size 的默认 icon 像素尺寸（约占按钮 50%）
-    _ICON_SIZE_MAP: ClassVar[dict[str, int]] = {"sm": 16, "md": 24, "lg": 32}
+    # 不同 size 的默认 icon 像素尺寸（按钮边长 24 / 32 / 40 / 48，icon 约占 55%）
+    _ICON_SIZE_MAP: ClassVar[dict[str, int]] = {"sm": 14, "md": 18, "lg": 22, "xl": 26}
 
     def __init__(
         self,
@@ -55,7 +55,7 @@ class ThemeSwitcher(Button):
             icon_size: icon 像素尺寸；未传时按 Button size 选默认值。
             variant: Button 样式变体。
             color: Button 颜色。
-            size: Button 尺寸，sm / md / lg。
+            size: Button 尺寸，sm / md / lg / xl。
             radius: Button 圆角。
             parent: Qt 父对象。
 

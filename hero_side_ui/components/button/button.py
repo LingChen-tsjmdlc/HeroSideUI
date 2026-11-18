@@ -48,7 +48,7 @@ class Button(QPushButton):
             text: 按钮文字。
             color: 语义色，未命中回退 primary。
             variant: solid / bordered / flat / light / faded / ghost。
-            size: 尺寸档位。
+            size: 尺寸档位 sm / md / lg / xl（高 24 / 32 / 40 / 48），也认 small / medium / large。
             radius: 圆角档位；None 跟随尺寸默认，full 按高度折算。
             is_disabled: 是否禁用。
             full_width: 是否横向撑满。
@@ -228,7 +228,9 @@ class Button(QPushButton):
             content_min = max(
                 0, size_config["min_width"] - 2 * size_config["padding_x"] - 2 * border
             )
-            box_constraints = f"min-width: {content_min}px;"
+            # 内容高度下限：保证总高恰好是 24 / 32 / 40 / 48，不随字体行高漂移
+            content_h = int(str(size_config["height"]).removesuffix("px"))
+            box_constraints = f"min-width: {content_min}px; min-height: {content_h}px;"
 
         normal_colors, hover_colors, disabled_colors = self._get_variant_styles(colors)
 
@@ -257,14 +259,23 @@ class Button(QPushButton):
             size_config: 当前尺寸 token。
 
         Returns:
-            用户指定档位优先；full 按按钮高度折算；其余取全局 token。
+            用户指定档位优先；不传时取尺寸自带的默认像素值；full 取按钮总高的一半（胶囊形）。
         """
         radius_key = self._radius or size_config.get("default_radius", "md")
 
-        # full 圆角需要根据组件高度动态计算
+        # full 圆角按按钮总高折算（icon_only 总高就是边长；文字按钮 = 内容高 + 上下内边距 + 边框）
         if radius_key == "full":
-            h = int(size_config["height"].replace("px", ""))
-            return f"{h // 2}px"
+            if self._icon_only:
+                total = self._resolve_icon_only_side()
+            else:
+                border = 1 if self._variant in ("bordered", "ghost", "faded") else 0
+                content = int(str(size_config["height"]).removesuffix("px"))
+                total = content + 2 * size_config["padding_y"] + 2 * border
+            return f"{total // 2}px"
+
+        # 尺寸默认值可以直接是像素数
+        if isinstance(radius_key, (int, float)):
+            return f"{int(radius_key)}px"
 
         # 从全局 token 中取值
         return RADIUS.get(radius_key, RADIUS["md"])

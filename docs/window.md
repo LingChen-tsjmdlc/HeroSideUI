@@ -107,7 +107,7 @@ win.set_content(Body("窗口内容就是普通 QWidget"))
 win.show()
 
 # 想要全平台一致的自绘圆角（beta）：构造时传档位或数字
-fancy = Window(radius="md")   # 或 radius=16
+fancy = Window(radius="md")  # 或 radius=16
 
 # 子窗口：传 parent 即可
 child = Window(parent=win)
@@ -183,13 +183,13 @@ setter 取值非法时抛 `ValueError`：`system` / `radius` 不在合法取值�
 main = Window(system="windows", title_bar_height=36)
 main.show()
 
-a = Window(parent=main)                     # 全部跟随 main：windows 风格、36 高
+a = Window(parent=main)  # 全部跟随 main：windows 风格、36 高
 b = Window(parent=main, show_maximize=False)  # 隐藏最大化，其余仍跟随 main
-c = Window(parent=main, system="mac")       # 自己是 mac 风格；高度仍跟随 main 的 36
+c = Window(parent=main, system="mac")  # 自己是 mac 风格；高度仍跟随 main 的 36
 
-main.set_title_bar_height(30)                # a、b、c 都变成 30
-c.set_title_bar_height(40)                   # c 独立为 40，不再跟随
-c.set_title_bar_height(None)                 # c 恢复跟随
+main.set_title_bar_height(30)  # a、b、c 都变成 30
+c.set_title_bar_height(40)  # c 独立为 40，不再跟随
+c.set_title_bar_height(None)  # c 恢复跟随
 ```
 
 ### 信号

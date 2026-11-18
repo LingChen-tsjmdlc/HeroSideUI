@@ -162,7 +162,7 @@ class Chip(QWidget):
             variant="light",
             color="default",
             radius="full",
-            size="sm",
+            size="md",
             theme=self._theme,
         )
         self._close_btn.set_icon_only_side(CHIP_SIZES[self._size]["close_icon_size"] + 4)

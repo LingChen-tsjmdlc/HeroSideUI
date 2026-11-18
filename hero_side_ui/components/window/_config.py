@@ -243,8 +243,8 @@ class _ConfigMixin:
 
 __all__ = [
     "QWIDGETSIZE_MAX",
-    "_ConfigMixin",
     "_UNSET",
+    "_ConfigMixin",
     "check_bool",
     "check_choice",
     "check_int",

@@ -10,7 +10,7 @@
 | `allowed_keys`      | `str`  | `"^[0-9]*$"` | 允许字符的正则（逐字符 `fullmatch`）                                   |
 | `variant`           | `str`  | `"flat"`     | `flat` / `bordered` / `faded` / `underlined`                           |
 | `color`             | `str`  | `"default"`  | `default` / `primary` / `secondary` / `success` / `warning` / `danger` |
-| `size`              | `str`  | `"md"`       | `sm` / `md` / `lg`                                                     |
+| `size`              | `str`  | `"md"`       | `sm` / `md` / `lg`（段边长 24 / 32 / 40）                              |
 | `radius`            | `str`  | `"md"`       | `none` / `sm` / `md` / `lg` / `full`                                   |
 | `value`             | `str`  | `""`         | 初始值                                                                 |
 | `description`       | `str`  | `""`         | 底部辅助说明（灰色）                                                   |

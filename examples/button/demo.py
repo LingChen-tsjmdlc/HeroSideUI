@@ -47,6 +47,7 @@ class ButtonDemo(DemoBase):
                 {"text": "Small", "color": "primary", "size": "sm"},
                 {"text": "Medium", "color": "primary", "size": "md"},
                 {"text": "Large", "color": "primary", "size": "lg"},
+                {"text": "Extra Large", "color": "primary", "size": "xl"},
             ],
             labels_bag,
         )
@@ -78,7 +79,7 @@ class ButtonDemo(DemoBase):
 
         # icon_only
         icon_btns = []
-        for s in ["sm", "md", "lg"]:
+        for s in ["sm", "md", "lg", "xl"]:
             icon_btns.append(
                 make_icon_btn(
                     "heroicons--check-solid",

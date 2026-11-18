@@ -26,7 +26,7 @@ class _EndContentWidget(QWidget):
         self.clear_btn = Button(
             variant="light",
             color="default",
-            size="sm",
+            size="md",
             radius="full",
             icon_only=True,
         )

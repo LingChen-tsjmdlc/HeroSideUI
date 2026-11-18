@@ -30,6 +30,8 @@ repos:
       # 再 format（保证修复后的文件格式统一）
       - id: ruff-format
         name: Ruff Format | 代码格式化
+        # 只管 Python：默认还会格式化 Markdown 里的代码块，文档示例不需要机器重排
+        types_or: [python, pyi]
 
   # ============================================================
   # 标准钩子

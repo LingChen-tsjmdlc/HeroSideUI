@@ -163,7 +163,7 @@ class Alert(QWidget):
             icon_size=18,
             variant="light",
             radius="full",
-            size="sm",
+            size="md",
             theme=self._theme,
         )
         self._close_btn.clicked.connect(self._handle_close)

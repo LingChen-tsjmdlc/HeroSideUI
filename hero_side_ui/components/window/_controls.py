@@ -242,7 +242,6 @@ class _CtrlButton(QAbstractButton):
         )
 
 
-
 class _Controls(QWidget):
     """窗口控制按钮组：按风格排布，管理显隐与组宽。"""
 
@@ -348,4 +347,4 @@ class _Controls(QWidget):
         """组本身不画任何东西。"""
 
 
-__all__ = ["_CtrlButton", "_Controls"]
+__all__ = ["_Controls", "_CtrlButton"]

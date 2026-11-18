@@ -124,10 +124,13 @@ class TestFontSlots:
         from hero_side_ui.themes import BUTTON_SIZES
 
         theme_values.apply({"font_size": {"xs": 11, "sm": 14, "md": 17, "lg": 20, "xl": 24}})
-        assert BUTTON_SIZES["sm"]["font_size"] == "14px"
-        assert BUTTON_SIZES["md"]["font_size"] == "17px"
+        # Button 四档字号绑定在 xs / sm / md / lg 档上
+        assert BUTTON_SIZES["sm"]["font_size"] == "11px"
+        assert BUTTON_SIZES["md"]["font_size"] == "14px"
+        assert BUTTON_SIZES["lg"]["font_size"] == "17px"
+        assert BUTTON_SIZES["xl"]["font_size"] == "20px"
         theme_values.reset()
-        assert BUTTON_SIZES["md"]["font_size"] == "16px"
+        assert BUTTON_SIZES["md"]["font_size"] == "13px"
 
     def test_bind_rejects_off_tier_size(self):
         with pytest.raises(ValueError):

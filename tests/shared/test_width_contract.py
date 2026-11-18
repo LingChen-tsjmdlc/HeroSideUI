@@ -424,19 +424,20 @@ class TestSliderSuggestedLength:
 # 数字有来历：和官方 HeroUI 对得上的值
 # ============================================================
 class TestOfficialNumbers:
-    @pytest.mark.parametrize("size,total", [("sm", 64), ("md", 80), ("lg", 96)])
+    @pytest.mark.parametrize("size,total", [("sm", 48), ("md", 64), ("lg", 80), ("xl", 96)])
     @pytest.mark.parametrize("variant", ["solid", "bordered", "faded", "ghost"])
-    def test_button_min_width_is_official_min_w(self, qtbot, size, total, variant):
-        # 官方 min-w-16 / 20 / 24 是含留白与边框的总宽
+    def test_button_min_width_is_border_box_total(self, qtbot, size, total, variant):
+        # 最小宽度是含留白与边框的总宽（官方 min-w-16 / 20 / 24 的桌面端四档版本）
         btn = Button("A", size=size, variant=variant)
         qtbot.addWidget(btn)
         btn.ensurePolished()
         assert btn.sizeHint().width() == total
 
-    def test_button_large_padding_is_official_px_6(self):
-        assert BUTTON_SIZES["lg"]["padding_x"] == 24
-        assert BUTTON_SIZES["md"]["padding_x"] == 16
-        assert BUTTON_SIZES["sm"]["padding_x"] == 12
+    def test_button_horizontal_padding_per_size(self):
+        assert BUTTON_SIZES["xl"]["padding_x"] == 24  # 官方 px-6
+        assert BUTTON_SIZES["lg"]["padding_x"] == 16  # 官方 px-4
+        assert BUTTON_SIZES["md"]["padding_x"] == 12  # 官方 px-3
+        assert BUTTON_SIZES["sm"]["padding_x"] == 8
 
     @pytest.mark.parametrize("size", ["sm", "md", "lg"])
     def test_dropdown_menu_min_width_is_a_single_200(self, size):

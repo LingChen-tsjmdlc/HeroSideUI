@@ -180,9 +180,7 @@ def _d3d11_usable() -> bool:
         d3d11 = ctypes.WinDLL("d3d11")
         device = ctypes.c_void_p()
         # D3D_DRIVER_TYPE_HARDWARE = 1，D3D11_SDK_VERSION = 7
-        hr = d3d11.D3D11CreateDevice(
-            None, 1, None, 0, None, 0, 7, ctypes.byref(device), None, None
-        )
+        hr = d3d11.D3D11CreateDevice(None, 1, None, 0, None, 0, 7, ctypes.byref(device), None, None)
         if hr >= 0 and device.value:
             # 立刻释放：IUnknown::Release 是虚表第 3 项
             vtbl = ctypes.cast(device, ctypes.POINTER(ctypes.POINTER(ctypes.c_void_p))).contents
@@ -220,7 +218,12 @@ def prefer_rhi() -> bool:
 
 
 class _MARGINS(ctypes.Structure):
-    _fields_ = [("left", ctypes.c_int), ("right", ctypes.c_int), ("top", ctypes.c_int), ("bottom", ctypes.c_int)]
+    _fields_ = [
+        ("left", ctypes.c_int),
+        ("right", ctypes.c_int),
+        ("top", ctypes.c_int),
+        ("bottom", ctypes.c_int),
+    ]
 
 
 def apply_system_frame(hwnd: int, rounded: bool, border_rgb: tuple[int, int, int]) -> None:
@@ -462,11 +465,11 @@ __all__ = [
     "apply_system_frame",
     "available",
     "enable_shadow",
-    "prefer_rhi",
     "ensure_styles",
     "handle_message",
     "is_zoomed",
     "maximize",
+    "prefer_rhi",
     "restore",
     "window_overhang",
 ]

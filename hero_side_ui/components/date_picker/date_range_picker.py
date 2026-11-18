@@ -200,16 +200,14 @@ class DateRangePicker(QWidget):
             icon=_CALENDAR_ICON,
             icon_size=_SELECTOR_ICON_SIZE.get(size, 18),
             radius="full",
-            size="sm",
+            size="md",
             variant="light",
             color="default",
             is_disabled=is_disabled,
             theme=theme,
             parent=self,
         )
-        self._selector_btn.setFixedSize(
-            _SELECTOR_BTN_SIZE.get(size, 28), _SELECTOR_BTN_SIZE.get(size, 28)
-        )
+        self._selector_btn.set_icon_only_side(_SELECTOR_BTN_SIZE.get(size, 28))  # 持久边长
         self._popover.attach(self._selector_btn, event="manual")
         self._selector_btn.clicked.connect(self._on_selector_click)
 

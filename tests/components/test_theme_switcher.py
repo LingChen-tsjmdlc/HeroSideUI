@@ -31,26 +31,34 @@ class TestThemeSwitcherInit:
         assert sw._icon_only is True
         assert sw._variant == "flat"
 
-        # 正方形：md size → 46×46（height 26 + padding_y 10×2）
+        # 正方形：md size → 32×32（height 20 + padding_y 6×2）
         assert sw.size().width() == sw.size().height()
-        assert sw.size().width() == 46
-        assert sw.iconSize().width() == 24
+        assert sw.size().width() == 32
+        assert sw.iconSize().width() == 18
 
     def test_size_sm(self, qtbot):
         sw = ThemeSwitcher(size="sm")
         qtbot.addWidget(sw)
-        # sm: 18 + 6*2 = 30
-        assert sw.size().width() == 30
+        # sm: 16 + 4*2 = 24
+        assert sw.size().width() == 24
         assert sw.size().width() == sw.size().height()
-        assert sw.iconSize().width() == 16
+        assert sw.iconSize().width() == 14
 
     def test_size_lg(self, qtbot):
         sw = ThemeSwitcher(size="lg")
         qtbot.addWidget(sw)
-        # lg: 33 + 14*2 = 61
-        assert sw.size().width() == 61
+        # lg: 24 + 8*2 = 40
+        assert sw.size().width() == 40
         assert sw.size().width() == sw.size().height()
-        assert sw.iconSize().width() == 32
+        assert sw.iconSize().width() == 22
+
+    def test_size_xl(self, qtbot):
+        sw = ThemeSwitcher(size="xl")
+        qtbot.addWidget(sw)
+        # xl: 28 + 10*2 = 48
+        assert sw.size().width() == 48
+        assert sw.size().width() == sw.size().height()
+        assert sw.iconSize().width() == 26
 
     def test_custom_icon_size(self, qtbot):
         sw = ThemeSwitcher(icon_size=24)

@@ -123,12 +123,42 @@ class TestButtonVariants:
 class TestButtonSizes:
     """尺寸测试"""
 
-    @pytest.mark.parametrize("size", ["sm", "md", "lg", "small", "medium", "large"])
+    @pytest.mark.parametrize("size", ["sm", "md", "lg", "xl", "small", "medium", "large"])
     def test_all_sizes(self, qtbot, size):
         """所有尺寸（含长名称兼容）都不应该报错"""
         btn = Button("Test", size=size)
         qtbot.addWidget(btn)
         assert btn._size == size
+
+    @pytest.mark.parametrize(
+        "size,total",
+        [
+            ("sm", 24),
+            ("md", 32),
+            ("lg", 40),
+            ("xl", 48),
+            ("small", 24),
+            ("medium", 32),
+            ("large", 40),
+        ],
+    )
+    @pytest.mark.parametrize("variant", ["solid", "flat", "light"])
+    def test_text_button_height(self, qtbot, size, total, variant):
+        """文字按钮总高：24 / 32 / 40 / 48（无边框变体）"""
+        btn = Button("退出 Moza 登录", size=size, variant=variant)
+        qtbot.addWidget(btn)
+        btn.ensurePolished()
+        assert btn.sizeHint().height() == total
+
+    def test_bordered_adds_border_only(self, qtbot):
+        """有边框的变体只多出 2px 边框"""
+        solid = Button("A", size="md", variant="solid")
+        bordered = Button("A", size="md", variant="bordered")
+        qtbot.addWidget(solid)
+        qtbot.addWidget(bordered)
+        solid.ensurePolished()
+        bordered.ensurePolished()
+        assert bordered.sizeHint().height() == solid.sizeHint().height() + 2
 
 
 class TestButtonDynamicAPI:
@@ -183,20 +213,26 @@ class TestButtonIconOnly:
     def test_icon_only_sm_size(self, qtbot):
         btn = Button(icon_only=True, size="sm")
         qtbot.addWidget(btn)
-        # sm height 18 + padding_y 6*2 = 30
-        assert btn.size().width() == 30
+        # sm height 16 + padding_y 4*2 = 24
+        assert btn.size().width() == 24
 
     def test_icon_only_md_size(self, qtbot):
         btn = Button(icon_only=True, size="md")
         qtbot.addWidget(btn)
-        # md height 26 + padding_y 10*2 = 46
-        assert btn.size().width() == 46
+        # md height 20 + padding_y 6*2 = 32
+        assert btn.size().width() == 32
 
     def test_icon_only_lg_size(self, qtbot):
         btn = Button(icon_only=True, size="lg")
         qtbot.addWidget(btn)
-        # lg height 33 + padding_y 14*2 = 61
-        assert btn.size().width() == 61
+        # lg height 24 + padding_y 8*2 = 40
+        assert btn.size().width() == 40
+
+    def test_icon_only_xl_size(self, qtbot):
+        btn = Button(icon_only=True, size="xl")
+        qtbot.addWidget(btn)
+        # xl height 28 + padding_y 10*2 = 48
+        assert btn.size().width() == 48
 
     def test_icon_only_default_false(self, qtbot):
         btn = Button("Hello")
@@ -267,9 +303,9 @@ class TestButtonGeometryIndependence:
         qtbot.addWidget(btn)
 
         btn.set_size("sm")
-        # sm: height 18 + padding_y 6*2 = 30
-        assert btn.maximumWidth() == 30
-        assert btn.maximumHeight() == 30
+        # sm: height 16 + padding_y 4*2 = 24
+        assert btn.maximumWidth() == 24
+        assert btn.maximumHeight() == 24
 
 
 class TestButtonIconOnlyQss:
@@ -280,11 +316,11 @@ class TestButtonIconOnlyQss:
         btn = Button(icon_only=True, size="md")
         qtbot.addWidget(btn)
         qss = btn.styleSheet()
-        # md: side 46 − 2×10 = 26
-        assert "min-width: 26px" in qss
-        assert "max-width: 26px" in qss
-        assert "min-height: 26px" in qss
-        assert "max-height: 26px" in qss
+        # md: side 32 − 2×6 = 20
+        assert "min-width: 20px" in qss
+        assert "max-width: 20px" in qss
+        assert "min-height: 20px" in qss
+        assert "max-height: 20px" in qss
         # 不应再有压扁 icon 的 min-width: 0
         assert "min-width: 0" not in qss
 
@@ -292,8 +328,8 @@ class TestButtonIconOnlyQss:
         """带边框变体 content-box 需再减 2×border"""
         btn = Button(icon_only=True, variant="bordered", size="md")
         qtbot.addWidget(btn)
-        # md: side 46 − 2×10 − 2×1 = 24
-        assert "min-width: 24px" in btn.styleSheet()
+        # md: side 32 − 2×6 − 2×1 = 18
+        assert "min-width: 18px" in btn.styleSheet()
 
     def test_qss_follows_side_override(self, qtbot):
         """set_icon_only_side 后 QSS 约束同步更新"""
@@ -301,6 +337,6 @@ class TestButtonIconOnlyQss:
         qtbot.addWidget(btn)
 
         btn.set_icon_only_side(36)
-        # 36 − 2×10 = 16
-        assert "min-width: 16px" in btn.styleSheet()
-        assert "max-width: 16px" in btn.styleSheet()
+        # 36 − 2×6 = 24
+        assert "min-width: 24px" in btn.styleSheet()
+        assert "max-width: 24px" in btn.styleSheet()

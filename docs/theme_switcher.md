@@ -19,12 +19,13 @@ layout.addWidget(switcher)
 ```python
 # 用你喜欢的颜色
 switcher = ThemeSwitcher(
-    sun_color="#FF8800",       # 橙色太阳
-    moon_color="#88CCFF",      # 浅蓝月亮
+    sun_color="#FF8800",  # 橙色太阳
+    moon_color="#88CCFF",  # 浅蓝月亮
 )
 
 # 或用 QColor
 from PySide6.QtGui import QColor
+
 switcher = ThemeSwitcher(
     sun_color=QColor(255, 200, 0),
     moon_color=QColor(100, 150, 255),
@@ -55,10 +56,10 @@ ThemeSwitcher 继承自 `Button`，所以接受所有 Button 的样式参数：
 
 ```python
 switcher = ThemeSwitcher(
-    variant="flat",      # solid / bordered / flat / light（默认） / faded / ghost
-    color="primary",     # default（默认） / primary / secondary / success / warning / danger
-    size="lg",           # sm（28×28） / md（36×36，默认） / lg（44×44）
-    radius="md",         # full（默认 圆形） / lg / md / sm / none
+    variant="flat",  # solid / bordered / flat / light（默认） / faded / ghost
+    color="primary",  # default（默认） / primary / secondary / success / warning / danger
+    size="lg",  # sm（24×24） / md（32×32，默认） / lg（40×40） / xl（48×48）
+    radius="md",  # full（默认 圆形） / lg / md / sm / none
 )
 ```
 

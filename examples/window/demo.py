@@ -171,7 +171,9 @@ class WindowDemo(Window):
             [
                 self._btn("继承本窗口", self._child_inherit, variant="bordered"),
                 self._btn("隐藏最大化", self._child_no_max, variant="bordered"),
-                self._btn("独立：mac 风格 + 48 高", self._child_mac, color="primary", variant="bordered"),
+                self._btn(
+                    "独立：mac 风格 + 48 高", self._child_mac, color="primary", variant="bordered"
+                ),
                 self._btn("模态子窗口", self._child_modal, color="primary", variant="solid"),
             ],
         )
@@ -266,10 +268,15 @@ class WindowDemo(Window):
         return child
 
     def _child_inherit(self):
-        self._open_child("继承的子窗口", "没有传风格 / 标题栏高度 / 按钮：它们跟随主窗口，主窗口改了它也跟着变。圆角不继承。")
+        self._open_child(
+            "继承的子窗口",
+            "没有传风格 / 标题栏高度 / 按钮：它们跟随主窗口，主窗口改了它也跟着变。圆角不继承。",
+        )
 
     def _child_no_max(self):
-        self._open_child("隐藏最大化", "只覆盖 show_maximize，其余仍然继承主窗口。", show_maximize=False)
+        self._open_child(
+            "隐藏最大化", "只覆盖 show_maximize，其余仍然继承主窗口。", show_maximize=False
+        )
 
     def _child_mac(self):
         self._open_child(
@@ -287,7 +294,9 @@ class WindowDemo(Window):
         )
 
     def _child_modal(self):
-        self._open_child("模态子窗口", "WindowModal：关闭前不能操作主窗口。", modal=True, show_minimize=False)
+        self._open_child(
+            "模态子窗口", "WindowModal：关闭前不能操作主窗口。", modal=True, show_minimize=False
+        )
 
     # ============================================================
     # 回调：尺寸限制

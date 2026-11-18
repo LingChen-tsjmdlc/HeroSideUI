@@ -1,9 +1,9 @@
-"""PAGINATION_SIZES：item 32/36/40、字号、gap 4、cursor 弹簧 1.1/300ms 等字段。"""
+"""PAGINATION_SIZES：item 24/32/40（与按钮 sm/md/lg 同高）、字号、gap 4、cursor 弹簧 1.1/300ms 等字段。"""
 
 PAGINATION_SIZES = {
     "sm": {
-        "item_height": 32,
-        "item_min_width": 32,
+        "item_height": 24,
+        "item_min_width": 24,
         "font_size": 13,
         "padding_x": 4,
         "list_gap": 4,
@@ -13,8 +13,8 @@ PAGINATION_SIZES = {
         "icon_size": 14,
     },
     "md": {
-        "item_height": 36,
-        "item_min_width": 36,
+        "item_height": 32,
+        "item_min_width": 32,
         "font_size": 13,
         "padding_x": 8,
         "list_gap": 4,

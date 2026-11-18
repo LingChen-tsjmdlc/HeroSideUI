@@ -68,8 +68,9 @@ class TestInputOtpInit:
     def test_row_size_hint(self, qtbot):
         otp = InputOtp(length=4)
         qtbot.addWidget(otp)
-        # 段行四周 2px 活动段外扩预留 + 4 段 × md 40 + 3 间隔 × 4
-        assert otp._row.row_size_hint().width() == 4 + 4 * 40 + 3 * 4
+        # 段行四周 2px 活动段外扩预留 + 4 段 × md 段边长 + 3 间隔 × 4
+        seg = INPUT_OTP_SIZES["md"]["segment"]
+        assert otp._row.row_size_hint().width() == 4 + 4 * seg + 3 * 4
         assert otp._row.row_size_hint().height() == 4 + INPUT_OTP_SIZES["md"]["segment"]
 
 
@@ -250,7 +251,7 @@ class TestVisualTokens:
         assert s["text"] == "#f31260"
 
     def test_size_tokens(self, qtbot):
-        for size, side in (("sm", 32), ("md", 40), ("lg", 48)):
+        for size, side in (("sm", 24), ("md", 32), ("lg", 40)):
             otp = InputOtp(size=size)
             qtbot.addWidget(otp)
             assert otp._size_token()["segment"] == side

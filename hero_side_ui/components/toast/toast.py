@@ -218,7 +218,7 @@ class Toast(QWidget):
             icon_size=TOAST_SPEC["close_icon"],
             variant="light",
             radius="full",
-            size="sm",
+            size="md",
             color=_LEGACY_COLOR.get(self._color, self._color),
             theme=self._theme,
             parent=self,

@@ -40,7 +40,7 @@ class _TitleButton(QWidget):
 
         # 底层用真正的 Button 组件承载文字 + 交互 + full 圆角
         self._btn = Button(
-            "", variant="light", radius="full", size="sm", color="default", theme=theme, parent=self
+            "", variant="light", radius="full", size="md", color="default", theme=theme, parent=self
         )
         self._btn.clicked.connect(self.clicked.emit)
 
@@ -201,7 +201,7 @@ class _CalendarHeader(QWidget):
             icon="heroicons--chevron-left",
             variant="light",
             color="default",
-            size="sm",
+            size="md",
             theme=self._theme,
             parent=self,
         )
@@ -210,12 +210,13 @@ class _CalendarHeader(QWidget):
             icon="heroicons--chevron-right",
             variant="light",
             color="default",
-            size="sm",
+            size="md",
             theme=self._theme,
             parent=self,
         )
-        self._prev_btn.setFixedSize(_BTN_SIDE, _BTN_SIDE)
-        self._next_btn.setFixedSize(_BTN_SIDE, _BTN_SIDE)
+        # 边长走 set_icon_only_side：裸 setFixedSize 会被按钮自己的几何重置冲回尺寸档位的边长
+        self._prev_btn.set_icon_only_side(_BTN_SIDE)
+        self._next_btn.set_icon_only_side(_BTN_SIDE)
         self._prev_btn.clicked.connect(self.prev_clicked.emit)
         self._next_btn.clicked.connect(self.next_clicked.emit)
 

@@ -7,7 +7,7 @@ KBD_SIZES = {
     "spacing": 2,  # space-x-0.5 = 2px (key 之间)
     "font_size": 13,  # sm 档字号
     "icon_size": 14,  # icon 渲染尺寸 (与字号同档)
-    "min_height": 22,  # 视觉锚点（避免内容过少时高度塌陷）
+    "min_height": 24,  # 视觉锚点（避免内容过少时高度塌陷）
 }
 
 # 三档 size 表 —— 内嵌独立 radius 像素表
@@ -15,17 +15,17 @@ KBD_SIZES = {
 KBD_SIZE_TABLE = {
     "sm": {
         "padding_x": 5,
-        "padding_y": 1,
+        "padding_y": 0,
         "spacing": 2,
         "font_size": 13,
         "icon_size": 12,
-        "min_height": 18,
-        # h=18, half=9 → lg=7 与 full=9 相差 2px
+        "min_height": 20,
+        # h=20, half=10 → lg=7 与 full=10 相差 3px
         "radius": {"none": 0, "sm": 2, "md": 4, "lg": 7},
     },
     "md": {
         **KBD_SIZES,
-        # h=22, half=11 → lg=9 与 full=11 相差 2px
+        # h=24, half=12 → lg=9 与 full=12 相差 3px
         "radius": {"none": 0, "sm": 3, "md": 6, "lg": 9},
     },
     "lg": {
@@ -34,8 +34,8 @@ KBD_SIZE_TABLE = {
         "spacing": 3,
         "font_size": 16,
         "icon_size": 16,
-        "min_height": 28,
-        # h=28, half=14 → lg=12 与 full=14 相差 2px
+        "min_height": 32,
+        # h=32, half=16 → lg=12 与 full=16 相差 4px
         "radius": {"none": 0, "sm": 4, "md": 8, "lg": 12},
     },
 }

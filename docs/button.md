@@ -90,17 +90,20 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 ## size 可选值
 
-3 种尺寸，同时兼容长名称（`small`/`medium`/`large`）。
+4 种尺寸，兼容官方三档长名称（`small` / `medium` / `large` 对应 `sm` / `md` / `lg`）。
 
-| 值   | 别名     | 字号 | 字重 | 内边距    | 最小宽度 |
-| ---- | -------- | ---- | ---- | --------- | -------- |
-| `sm` | `small`  | 13px | 500  | 6px 12px  | 64px     |
-| `md` | `medium` | 16px | 500  | 10px 16px | 80px     |
-| `lg` | `large`  | 19px | 600  | 14px 24px | 96px     |
+| 值   | 别名     | 总高 | 字号 | 字重 | 内边距（上下 左右） | 最小宽度 | 默认圆角 |
+| ---- | -------- | ---- | ---- | ---- | ------------------- | -------- | -------- |
+| `sm` | `small`  | 24   | 10px | 500  | 4px 8px             | 48px     | sm       |
+| `md` | `medium` | 32   | 13px | 500  | 6px 12px            | 64px     | sm       |
+| `lg` | `large`  | 40   | 16px | 500  | 8px 16px            | 80px     | md       |
+| `xl` | —        | 48   | 19px | 600  | 10px 24px           | 96px     | lg       |
 
-> 最小宽度是含左右留白与边框的总宽，对齐官方 `min-w-16 / 20 / 24`；左右留白对齐官方 `px-3 / 4 / 6`。
+> 默认尺寸是 `md`（高 32）。桌面端的按钮比官方 HeroUI 小一档：官方只有 sm / md / lg 三档（32 / 40 / 48），这里的 lg / xl 对应官方的 md / lg，再向下加了两档小尺寸。**注意：旧代码里传 `size="md"` 的按钮会从 40 变成 32，想保持原大小要改成 `"lg"`。**
 >
-> 每种尺寸有自己的默认圆角：sm→sm(4px), md→md(8px), lg→lg(14px)。
+> 总高是内容高加上下内边距，有边框的变体（`bordered` / `ghost` / `faded`）再多 2px。最小宽度是含左右留白与边框的总宽。
+>
+> 字号绑定全局字号档位（10 / 13 / 16 / 19），在 `setup(font_size=...)` 里改档位，按钮会跟着变。
 
 ---
 
@@ -120,15 +123,15 @@ btn = Button("Dark", color="primary", variant="flat", theme="dark")
 
 ## icon_only 模式
 
-`icon_only=True` 时按钮锁成正方形（边长 = 尺寸高度 + 2×纵向 padding，sm 为 30、md 为 46），适合纯图标按钮（工具栏、rail、输入框内嵌按钮）。
+`icon_only=True` 时按钮锁成正方形（边长等于同尺寸文字按钮的总高：sm 24、md 32、lg 40、xl 48），适合纯图标按钮（工具栏、rail、输入框内嵌按钮）。
 
 ```python
-btn = Button(icon_only=True, variant="flat")          # 自动边长（sm → 30x30）
-btn.set_icon_only_side(36)                            # 显式锁定边长
-btn.setIcon(QIcon("my.png"))                          # 传 QIcon = 自己管颜色
-btn.set_icon("heroicons--eye-solid")                  # 传字符串 = 自动配色
-btn.set_icon_color("#d4af37")                         # 覆盖自动配色
-btn.set_icon_size(20)                                 # 覆盖 icon 渲染尺寸
+btn = Button(icon_only=True, variant="flat")  # 自动边长（md → 32x32）
+btn.set_icon_only_side(36)  # 显式锁定边长
+btn.setIcon(QIcon("my.png"))  # 传 QIcon = 自己管颜色
+btn.set_icon("heroicons--eye-solid")  # 传字符串 = 自动配色
+btn.set_icon_color("#d4af37")  # 覆盖自动配色
+btn.set_icon_size(20)  # 覆盖 icon 渲染尺寸
 ```
 
 ### 尺寸规则（重要）
@@ -219,11 +222,11 @@ btn_dark = Button("Dark", color="primary", variant="flat", theme="dark")
 ```python
 btn = Button("Click me", color="primary")
 
-btn.set_color("danger")       # 切换颜色
-btn.set_variant("bordered")   # 切换变体
-btn.set_size("lg")            # 切换尺寸
-btn.set_radius("full")        # 切换圆角
-btn.set_theme("dark")         # 切换主题
+btn.set_color("danger")  # 切换颜色
+btn.set_variant("bordered")  # 切换变体
+btn.set_size("lg")  # 切换尺寸
+btn.set_radius("full")  # 切换圆角
+btn.set_theme("dark")  # 切换主题
 ```
 
 | 方法                   | 参数  | 说明            |
@@ -278,7 +281,7 @@ for variant in ["solid", "bordered", "flat", "light", "faded", "ghost"]:
     layout.addWidget(Button(variant.capitalize(), color="primary", variant=variant))
 
 # 不同尺寸
-for size in ["sm", "md", "lg"]:
+for size in ["sm", "md", "lg", "xl"]:
     layout.addWidget(Button(f"Size {size}", color="primary", size=size))
 
 # 禁用按钮

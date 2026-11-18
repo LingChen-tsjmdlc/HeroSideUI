@@ -196,14 +196,14 @@ class DatePicker(QWidget):
             icon=_CALENDAR_ICON,
             icon_size=icon_px,
             radius="full",
-            size="sm",
+            size="md",
             variant="light",
             color="default",
             is_disabled=is_disabled,
             theme=theme,
             parent=self,
         )
-        self._selector_btn.setFixedSize(btn_side, btn_side)
+        self._selector_btn.set_icon_only_side(btn_side)  # 持久边长，不被按钮几何重置冲掉
         # event="manual"：只登记 trigger 供 open() 定位，点击由 clicked 驱动，
         # 避免 Popover 的事件过滤器与按钮自身的 clicked 重复 toggle
         self._popover.attach(self._selector_btn, event="manual")

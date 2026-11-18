@@ -390,9 +390,7 @@ class TestRadiusModes:
         assert not w.testAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         assert w._radius_px() == 0
 
-    @pytest.mark.parametrize(
-        "value,px", [("sm", 6), ("md", 10), ("lg", 14), (20, 20), (7.5, 7.5)]
-    )
+    @pytest.mark.parametrize("value,px", [("sm", 6), ("md", 10), ("lg", 14), (20, 20), (7.5, 7.5)])
     def test_custom_modes_are_translucent(self, qtbot, value, px):
         from PySide6.QtCore import Qt
 
